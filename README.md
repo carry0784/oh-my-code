@@ -1,71 +1,57 @@
-# AI Trading System
+# K-Dexter AOS (Algorithmic Operating System) — K-V3
 
-Production-grade crypto trading automation with LLM-powered signal validation and execution.
-
-## Stack
-
-- **API**: FastAPI + Uvicorn
-- **Database**: PostgreSQL + SQLAlchemy (async)
-- **Queue**: Redis + Celery
-- **Exchanges**: Binance, OKX via CCXT
-- **LLM**: Anthropic Claude / OpenAI GPT-4
-
-## Quick Start
-
-```bash
-# 1. Create virtual environment
-python -m venv venv
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/Mac
-
-# 2. Install dependencies
-pip install -r requirements.txt
-
-# 3. Set up environment
-cp .env.example .env
-# Edit .env with your API keys
-
-# 4. Start infrastructure
-docker-compose up -d
-
-# 5. Run migrations
-alembic upgrade head
-
-# 6. Start API server
-uvicorn app.main:app --reload
-
-# 7. Start Celery worker (separate terminal)
-celery -A workers.celery_app worker --loglevel=info
-
-# 8. Start Celery beat (separate terminal, for scheduled tasks)
-celery -A workers.celery_app beat --loglevel=info
-```
-
-## API Endpoints
-
-- `GET /health` - Health check
-- `POST /api/v1/orders/` - Create order
-- `GET /api/v1/orders/` - List orders
-- `POST /api/v1/signals/` - Create signal
-- `POST /api/v1/signals/{id}/validate` - Validate signal with LLM
-- `GET /api/v1/positions/` - List positions
-- `POST /api/v1/agents/analyze` - Run agent analysis
-- `POST /api/v1/agents/execute` - Execute trading pipeline
-
-## Testing
-
-```bash
-pytest
-pytest tests/test_api.py -v
-pytest --cov=app tests/
-```
+K-Dexter AOS is a self-evolving algorithmic trading operating system built in Python 3.11+.
+It is designed for multi-exchange, multi-asset trading with a rigorous governance model,
+full auditability, and runtime self-improvement capabilities.
 
 ## Architecture
 
+### Governance Layers
+| Layer | Role |
+|-------|------|
+| B1 (Constitutional) | Immutable rules, forbidden actions, mandatory constraints |
+| B2 (Build Orchestration) | Strategy assembly, gate sequencing, layer wiring |
+| A  (Runtime Execution) | Live trading loops, order management, state transitions |
+
+### 30-Layer Architecture (L1~L30)
+The system is decomposed into 30 functional layers covering data ingestion, signal
+generation, risk management, order routing, execution, reconciliation, audit, and
+self-improvement.
+
+### Triple State Machine
+- **Work State** — tracks what the system is currently doing
+- **Trust State** — tracks the credibility score of each component/signal
+- **Security State** — tracks threat level and access permissions at runtime
+
+### 4 Loops
+| Loop | Purpose |
+|------|---------|
+| Main | Core trading cycle: ingest → signal → risk → execute → reconcile |
+| Self-Improvement | Backtests recent performance and proposes parameter updates |
+| Evolution | Generates and validates new strategy variants via Claude API |
+| Recovery | Detects anomalies, triggers safe-mode, restores consistent state |
+
+### Gate System
+Gates G-01~G-08 are mandatory pre-execution checkpoints.
+Gates G-16~G-30 are advisory post-execution checkpoints.
+
+### Trading Command Language (TCL)
+TCL is the exchange-agnostic abstraction layer.  All strategies emit TCL commands
+(e.g. `ORDER.BUY`, `ORDER.SELL`, `POSITION.CLOSE`) which are translated by per-exchange
+adapters.
+
+## Supported Exchanges
+- Binance (crypto, REST + WebSocket)
+- Bitget (crypto, USDT pairs, copy-trading)
+- Upbit (KRW crypto)
+- 한국투자증권 / KIS (Korean equities, REST API)
+- 키움증권 / Kiwoom (Korean equities, COM/OpenAPI+)
+
+## Quick Start
+```bash
+pip install -e .
+python -m kdexter
 ```
-Signal Source → Signal Service → LLM Validator → Risk Manager → Order Execution
-                     ↓                                              ↓
-                 Database                                      Exchange API
-                     ↑                                              ↓
-              Celery Workers ←────── Position Sync ←───────── Market Data
-```
+
+## License
+Proprietary — All rights reserved.

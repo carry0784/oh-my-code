@@ -3,39 +3,125 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
-venv/
-.venv/
-env/
-.env
+*.egg
 *.egg-info/
 dist/
 build/
+eggs/
+parts/
+var/
+sdist/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+.installed.cfg
+lib/
+lib64/
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Distribution / packaging
+.Python
+develop-eggs/
+downloads/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django / Flask (not applicable but common)
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.env.*
+*.env
+secrets.toml
+config.local.toml
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre
+.pyre/
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-test.db
-
-# Logs
-*.log
-logs/
-
-# Local
-.env.local
-*.local
-
-# Celery
-celerybeat-schedule
-celerybeat.pid
+*~
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# Project-specific
+data/
+logs/
+*.db
+*.sqlite
+*.sqlite3
+audit_evidence/

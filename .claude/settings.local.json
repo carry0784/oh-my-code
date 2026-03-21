@@ -1,11 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python -m venv:*)",
-      "Bash(. venv/Scripts/activate)",
-      "Bash(pip --version:*)",
-      "Bash(docker:*)",
-      "Bash(docker compose:*)"
+      "Bash(find docs/aos-constitution -name \"*.md\" -type f -exec wc -l {} +)",
+      "Bash(sort -t/ -k3)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//c/Users/Admin/K-V3/docs/aos-constitution/sprints/**)",
+      "Bash(done)"
     ]
   }
 }
