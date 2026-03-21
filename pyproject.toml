@@ -1,8 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
-name = "ai-trading"
+name = "kdexter"
 version = "0.1.0"
-description = "AI-powered crypto trading automation system"
+description = "K-Dexter AOS — Self-evolving algorithmic trading operating system"
+readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "Proprietary" }
+authors = [
+    { name = "K-Dexter Team" }
+]
+keywords = ["algorithmic-trading", "aos", "self-evolving", "crypto", "equities"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "anthropic>=0.25.0",
+    "ccxt>=4.0.0",
+    "pydantic>=2.0.0",
+    "sqlalchemy>=2.0.0",
+    "apscheduler>=3.10.0",
+    "aiosqlite>=0.19.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.23.0",
+    "black>=24.0.0",
+    "ruff>=0.4.0",
+    "mypy>=1.9.0",
+]
+
+[project.scripts]
+kdexter = "kdexter.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kdexter"]
 
 [tool.black]
 line-length = 100
@@ -11,15 +50,11 @@ target-version = ["py311"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-select = ["E", "F", "I", "N", "W", "UP"]
-ignore = ["E501"]
 
 [tool.mypy]
 python_version = "3.11"
-strict = false
-ignore_missing_imports = true
+strict = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = "-v --tb=short"
