@@ -1,6 +1,6 @@
 # 운영 게이트 참조 가이드
 
-> 기준선: OPS-GATE-001~006 (2026-03-21 봉인)
+> 기준선: OPS-GATE-001~008 (2026-03-21 최종 봉인)
 > 본 문서는 운영 통제 체계의 참조 안내이며, 헌법 의미를 변경하지 않는다.
 >
 > **비정의 원칙**: 본 문서는 규칙을 정의하지 않는다. 모든 정의의 원본은
@@ -22,6 +22,9 @@
 | OPS-GATE-003 | Merge Blocker/Approve/Close/Exception/Post-Merge 규칙 | MERGE_RULES.md |
 | OPS-GATE-004 | 리허설 검증 (용어 통일 "merge 금지") | changelog.md (기록만) |
 | OPS-GATE-005 | Merge 직전 게이트 5줄→3줄 최적화 | pull_request_template.md §Merge 직전 게이트 |
+| OPS-GATE-006 | 기준선 봉인, SSOT 우선순위, 참조 관계도, 절차표 | OPS_GUIDE.md (본 문서) |
+| OPS-GATE-007 | Reference Drift Guard, Reference Check 절차 | OPS_GUIDE.md §5, MERGE_RULES.md §5.5 |
+| OPS-GATE-008 | 최종 기준선 봉인, 작업 시작 규약, 게이트 종료 선언 | OPS_GUIDE.md §6~8 |
 
 ### SSOT 우선순위
 
@@ -104,3 +107,48 @@ changelog.md (이력 기록)
 1. PR 리뷰에서 OPS_GUIDE.md와 정의 원본 간 불일치가 발견되면 Reviewer가 지적한다.
 2. 해당 PR에서 즉시 정정하거나, 정정 범위가 PR 목적을 초과하면 별도 ops PR로 분리한다.
 3. Drift가 있는 상태에서는 OPS_GUIDE.md보다 정의 원본(MERGE_RULES.md, template)을 따른다.
+
+## 6. 최종 운영 기준선
+
+### 6.1 기준선 선언
+
+OPS-GATE-001~008이 현재 유효한 운영 통제 체계이다.
+
+| 브랜치 | 역할 | 변경 가능 여부 |
+|--------|------|---------------|
+| master | 운영 기준 브랜치. 모든 새 작업은 여기서 분기 | 가능 (PR 경유만) |
+| main | RC1 baseline 읽기 전용 기준 | 변경 금지 |
+
+### 6.2 작업 시작 규약
+
+새 작업을 시작할 때 아래 규약을 따른다.
+
+| 순서 | 규약 | 위반 시 |
+|------|------|---------|
+| 1 | master에서 브랜치 분기 | base branch 부적합 (MB-07) |
+| 2 | PR 사전 점검 8항목 작성 | 사전 점검 미기입 (MA-05 위반) |
+| 3 | 변경 유형 1개만 선택 | 목적 혼합 (MB-02) |
+| 4 | 구현 후 verify PASS 확인 | verify 미통과 (MB-04) |
+| 5 | PR 생성 (템플릿 전체 기입) | 선언 누락 (MB-06) |
+| 6 | Merge 직전 게이트 3항목 기입 | 게이트 미기입 (MA-07 위반) |
+| 7 | changelog APPEND_ONLY 준수 | changelog 누락 (MB-05) |
+
+## 7. 운영 게이트 종료 선언
+
+OPS-GATE 시리즈는 **008에서 종료**한다.
+
+- 이후 작업은 feature / fix / refactor / docs / ops 변경 유형으로 전환한다.
+- 새 게이트 추가는 **실제 운영 문제가 발생했을 때**에만 허용한다.
+- 게이트 추가 시에도 PR 사전 점검 → verify → Merge 직전 게이트 절차를 동일하게 따른다.
+
+## 8. 작업 시작 프롬프트
+
+다음 세션에서 아래를 그대로 붙여넣어 작업을 시작한다.
+
+```
+현재 운영 기준선: OPS-GATE-001~008 (2026-03-21 최종 봉인)
+base branch: master
+- 작업 유형: [feature / fix / refactor / docs / ops]
+- base branch: master
+- 사전 점검 작성 완료: [예 / 아니오]
+```
