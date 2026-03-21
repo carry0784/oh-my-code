@@ -48,6 +48,8 @@ G-04(Constitution Compliance)의 SHADOW 단계 검증 기반을 마련한다.
 
 ## 5. Mandatory Items
 
+Mandatory 정의 및 상세: DOC-L2-EXT-API-GOV §6
+
 | Mandatory | 관련 구현 과제 |
 |-----------|---------------|
 | M-04 | security check — L3 보안 정책 enforce() 기반 |
