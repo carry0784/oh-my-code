@@ -42,13 +42,12 @@
 
 ---
 
-## Merge 직전 5줄 요약 게이트
+## Merge 직전 게이트
 
 > [!CAUTION]
 > merge 가능 여부가 `불가`이면 merge 금지.
+> 목적·변경 유형은 상단 "PR 사전 점검"을 참조한다.
 
-- 목적:
-- 예상 diff 범위 / 실제 diff 범위:
-- 변경 유형:
+- 예상 diff / 실제 diff:
 - verify:
 - merge 가능 여부: [가능 / 불가]
