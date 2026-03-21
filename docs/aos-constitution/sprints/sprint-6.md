@@ -39,6 +39,8 @@ Self-Improvement Loop의 실행 제한과 안전 장치를 검증한다.
 
 ## 5. Mandatory Items
 
+Mandatory 정의 및 상세: DOC-L2-EXT-API-GOV §6
+
 | Mandatory | 관련 |
 |-----------|------|
 | M-07 | evidence — 개선 과정 EvidenceBundle |

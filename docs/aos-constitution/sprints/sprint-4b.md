@@ -29,19 +29,15 @@ ACTIVE 모드에서 실패 시 실행이 차단됨을 확인한다.
 
 ## 3. 구현 과제
 
-1. G-16(Compliance Gate): M-09, VALIDATING [3] 연결 확인
-2. G-18(Provenance Gate): M-10, Rule Ledger 쓰기 시점 연결 확인
-3. G-19(Drift Gate): M-11, VALIDATING [4] 연결 확인 (OQ-4 기준 미정의)
-4. G-20(Conflict Gate): M-12, VALIDATING [5] 연결 확인
-5. G-21(Pattern Gate): M-13, VALIDATING [6] 연결 확인
-6. G-22(Budget Gate): M-08, VALIDATING [7] 연결 확인
-7. G-23(Trust Gate): M-14, VALIDATING [8] 연결 확인 (OQ-5 기준 미정의)
-8. G-24(Loop Gate): M-15, VALIDATING [9] 연결 확인 (OQ-6 기준 미정의)
-9. G-25(Completion Gate): M-16, VERIFY 시점 연결 확인 (OQ-7 기준 미정의)
-10. G-26(Spec Lock Gate): M-17, VALIDATING [10] 연결 확인
-11. G-27(Research Gate): M-18, PLANNING 선행 조건 연결 확인
-12. 모든 Gate의 phase = ACTIVE 확인 (B1 비준 후)
-13. ACTIVE 모드에서 FAIL 시 실행 차단 확인
+Gate 정의 및 Mandatory 매핑: DOC-L2-EXT-API-GOV §4.3, §5
+VALIDATING 체크리스트 매핑: DOC-L2-EXT-API-GOV §3
+
+1. G-16~G-27 각 Gate의 Mandatory 및 VALIDATING 체크 연결이 DOC-L2-EXT-API-GOV §5 매핑과 일치함을 확인
+2. OQ 기준 미정의 Gate(G-19, G-23, G-24, G-25)의 평가 로직이 미정의 상태를 올바르게 처리함을 확인
+3. G-25(Completion Gate)의 VERIFY 시점 연결 확인 (VALIDATING이 아닌 별도 시점)
+4. G-27(Research Gate)의 PLANNING 선행 조건 연결 확인
+5. 모든 Gate의 phase = ACTIVE 확인 (B1 비준 후)
+6. ACTIVE 모드에서 FAIL 시 실행 차단 확인
 
 ## 4. Gate 활성화
 
@@ -50,6 +46,8 @@ SHADOW→ACTIVE 전환은 B1 비준이 완료된 Gate에 한해 수행한다.
 G-28~G-30은 예약이며 본 Sprint 범위 밖이다.
 
 ## 5. Mandatory Items
+
+Mandatory 정의 및 상세: DOC-L2-EXT-API-GOV §6
 
 | Mandatory | 관련 Gate |
 |-----------|-----------|

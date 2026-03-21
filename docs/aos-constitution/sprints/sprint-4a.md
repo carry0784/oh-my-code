@@ -29,16 +29,13 @@ SHADOW 모드에서 실패는 기록만 되고 실행을 차단하지 않음을 
 
 ## 3. 구현 과제
 
-1. G-01(Shadow Baseline): 기본 통과 기준 검증
-2. G-02(State Recovery): M-05(rollback plan), M-06(recovery simulation) 연결 확인
-3. G-03(Risk Control): M-03(risk check) 연결 확인
-4. G-04(Constitution Compliance): M-04(security check), M-09(compliance check) 연결 확인
-5. G-05(Audit Completeness): M-07(evidence) 연결 확인
-6. G-06(Shadow Signal Quality): 신호 품질 기준 검증
-7. G-07(Shadow Position Sizing): 포지션 크기 기준 검증
-8. G-08(Shadow Risk Filter): 리스크 필터 기준 검증
-9. 모든 Gate의 phase = SHADOW 확인
-10. SHADOW 모드에서 FAIL 시 로그만 기록되고 실행 차단 없음 확인
+Gate 정의 및 Mandatory 매핑: DOC-L2-EXT-API-GOV §4.2, §5
+
+1. G-01~G-08 각 Gate의 evaluate 함수가 GateVerdict를 정확히 반환함을 확인
+2. G-02~G-05의 Mandatory 연결이 DOC-L2-EXT-API-GOV §5 매핑과 일치함을 확인
+3. G-06~G-08의 독립 기준(신호 품질, 포지션 크기, 리스크 필터) 검증
+4. 모든 Gate의 phase = SHADOW 확인
+5. SHADOW 모드에서 FAIL 시 로그만 기록되고 실행 차단 없음 확인
 
 ## 4. Gate 활성화
 
@@ -46,6 +43,8 @@ G-01~G-08을 SHADOW 모드로 활성화한다.
 G-09~G-15는 Phase 4 확장용 예약이며 본 Sprint 범위 밖이다.
 
 ## 5. Mandatory Items
+
+Mandatory 정의 및 상세: DOC-L2-EXT-API-GOV §6
 
 | Mandatory | 관련 Gate |
 |-----------|-----------|

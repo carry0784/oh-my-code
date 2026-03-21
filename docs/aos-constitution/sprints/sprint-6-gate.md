@@ -40,6 +40,8 @@ Self-Improvement 관련 Gate 자격 조건을 ACTIVE로 확인한다.
 
 ## 5. Mandatory Items
 
+Mandatory 정의 및 상세: DOC-L2-EXT-API-GOV §6
+
 | Mandatory | 관련 |
 |-----------|------|
 | M-09 | compliance check — 개선 전 준수율 확인 |

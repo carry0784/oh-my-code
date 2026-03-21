@@ -76,6 +76,8 @@ G-19(Drift Gate), G-23(Trust Gate)의 UncertaintyContext 입력 정규화 기반
 
 ## 5. Mandatory Items
 
+Mandatory 정의 및 상세: DOC-L2-EXT-API-GOV §6
+
 | Mandatory | 관련 구현 과제 |
 |-----------|---------------|
 | M-03 | risk check — UncertaintyContext U2 이상 시 추가 검사 |

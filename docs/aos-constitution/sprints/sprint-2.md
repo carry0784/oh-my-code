@@ -44,6 +44,8 @@ Work State Machine이 Gate 평가를 호출하는 기반 경로를 확인한다.
 
 ## 5. Mandatory Items
 
+Mandatory 정의 및 상세: DOC-L2-EXT-API-GOV §6
+
 | Mandatory | 관련 구현 과제 |
 |-----------|---------------|
 | M-01 | clarify — CLARIFYING 진입 조건 |
