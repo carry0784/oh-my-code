@@ -25,6 +25,8 @@ may_not_define: [CI-xxx, D-xxx, SecurityStateEnum 값, Invariant Lens 정의]
 
 ## 2. SecurityState 에스컬레이션 절차
 
+SecurityState 정의 및 전이 규칙: DOC-L1-CONSTITUTION §6. 아래는 운영자 조치만 기술한다.
+
 | 현재 상태 | 조치 |
 |-----------|------|
 | NORMAL → RESTRICTED | Failure 원인 확인, 자동 복구 대기 |
@@ -72,22 +74,26 @@ Deadlock 감지 조건(DOC-L2-EXT-API-GOV §10) 충족 시:
 
 ## 8. U0~U3 대응 절차
 
+U0~U3 상태 정의: DOC-L2-INVARIANT-LENS §6. 아래는 운영자 대응 수준만 기술한다.
+
 | 상태 | 대응 |
 |------|------|
-| U0 (Certain) | 정상 운영 |
-| U1 (Low Uncertainty) | 추가 정보 수집 권고, 실행 허용 |
-| U2 (High Uncertainty) | 실행 보류, 검토 필요 |
-| U3 (Maximum Uncertainty) | 외부 실행 금지, outbound 시 LOCKDOWN 대상 |
+| U0 | 정상 운영 |
+| U1 | 추가 정보 수집 권고, 실행 허용 |
+| U2 | 실행 보류, 검토 필요 |
+| U3 | 외부 실행 금지, outbound 시 LOCKDOWN 대상 |
 
 ## 9. E0~E4 대응 절차
 
+E0~E4 상태 정의: DOC-L2-INVARIANT-LENS §8. 아래는 운영자 대응 수준만 기술한다.
+
 | 상태 | 대응 |
 |------|------|
-| E0 (No Evidence) | 판단 불가, 증거 수집 필요 |
-| E1 (Partial) | 추가 증거 수집 후 재판정 |
-| E2 (Sufficient) | 판정 진행 가능 |
-| E3 (Complete) | 판정 확정 가능 |
-| E4 (Verified) | 판정 확정 + 교차 검증 완료 |
+| E0 | 판단 불가, 증거 수집 필요 |
+| E1 | 추가 증거 수집 후 재판정 |
+| E2 | 판정 진행 가능 |
+| E3 | 판정 확정 가능 |
+| E4 | 판정 확정 + 교차 검증 완료 |
 
 ### Invariant Lens 반영
 

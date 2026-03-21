@@ -49,8 +49,21 @@ adapters.
 
 ## Quick Start
 ```bash
-pip install -e .
-python -m kdexter
+# Install dependencies
+pip install -r requirements.txt
+
+# Copy and configure environment
+cp .env.example .env
+# Edit .env with your API keys and database settings
+
+# Start infrastructure (Postgres, Redis)
+docker-compose up -d
+
+# Run database migrations
+alembic upgrade head
+
+# Start the API server
+uvicorn app.main:app --reload --port 8000
 ```
 
 ## License
