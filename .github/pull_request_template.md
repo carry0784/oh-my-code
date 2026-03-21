@@ -2,7 +2,7 @@
 > **Merge 차단 조건**
 > 1. 이 PR의 "목적 1문장"과 실제 diff 범위가 일치하지 않으면 merge 금지.
 > 2. 범위 초과 또는 목적 혼합(baseline/dedup/refactor/feature/fix/docs/ops)이 확인되면 PR을 close하고 분리 재구성한다.
-> 3. 변경 유형이 2개 이상 혼합된 PR은 승인 불가.
+> 3. 변경 유형이 2개 이상 혼합된 PR은 merge 금지.
 
 ## PR 사전 점검
 
@@ -45,7 +45,7 @@
 ## Merge 직전 5줄 요약 게이트
 
 > [!CAUTION]
-> merge 가능 여부가 `불가`이면 승인 및 병합 금지.
+> merge 가능 여부가 `불가`이면 merge 금지.
 
 - 목적:
 - 예상 diff 범위 / 실제 diff 범위:
