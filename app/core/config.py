@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     anthropic_api_key: str = ""
 
+    # Governance
+    # Default True — must be explicitly disabled. Production requires True.
+    governance_enabled: bool = True
+
     # Trading
     default_exchange: str = "binance"
     max_position_size_usd: float = 1000.0
