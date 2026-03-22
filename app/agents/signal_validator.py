@@ -37,7 +37,7 @@ Entry Price: {signal.entry_price}
 Stop Loss: {signal.stop_loss}
 Take Profit: {signal.take_profit}
 Source Confidence: {signal.confidence}
-Metadata: {json.dumps(signal.metadata)}
+Metadata: {json.dumps(signal.signal_metadata)}
 
 Evaluate the signal quality and provide your assessment."""
 

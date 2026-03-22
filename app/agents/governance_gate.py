@@ -320,20 +320,24 @@ class GovernanceGate:
             str(result.get("reasoning", "")).encode()
         ).hexdigest()[:16]
 
+        # Determine decision_code from result — approved=False means BLOCKED (F-04 semantic integrity)
+        approved = result.get("approved", result.get("success", False))
+        decision_code = DecisionCode.ALLOWED if approved else DecisionCode.BLOCKED
+
         bundle = EvidenceBundle(
             trigger="GovernanceGate.post_record",
             actor="GovernanceGate",
-            action=f"POST_RECORD:{DecisionCode.ALLOWED.value}",
+            action=f"POST_RECORD:{decision_code.value}",
             before_state=self.security_ctx.current.value,
             after_state=self.security_ctx.current.value,
             artifacts=[{
                 "phase": PhaseCode.POST.value,
-                "decision_code": DecisionCode.ALLOWED.value,
+                "decision_code": decision_code.value,
                 "pre_evidence_id": pre_evidence_id,
                 "task_type": getattr(task, "task_type", "unknown"),
                 "prompt_hash": prompt_hash,
                 "confidence": result.get("confidence", 0.0),
-                "approved": result.get("approved", result.get("success", False)),
+                "approved": approved,
                 "reasoning_hash": prompt_hash,
             }],
         )
@@ -341,7 +345,7 @@ class GovernanceGate:
 
         logger.info(
             "governance_post_record",
-            decision=DecisionCode.ALLOWED.value,
+            decision=decision_code.value,
             evidence_id=evidence_id,
             pre_evidence_id=pre_evidence_id,
         )

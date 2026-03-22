@@ -22,6 +22,7 @@ _STUB_MODULES = [
     "app.models", "app.models.order", "app.models.signal",
     "app.models.position", "app.models.trade",
     "app.core.database",
+    "app.services", "app.services.signal_service",
 ]
 _saved = {}
 for _mod_name in _STUB_MODULES:
@@ -33,6 +34,8 @@ for _mod_name in _STUB_MODULES:
             _stub.get_db = MagicMock()
         if _mod_name == "app.models.signal":
             _stub.Signal = MagicMock()
+        if _mod_name == "app.services.signal_service":
+            _stub.SignalService = MagicMock()
         sys.modules[_mod_name] = _stub
         _saved[_mod_name] = _stub
 
@@ -274,6 +277,150 @@ class TestBypassPrevention:
             assert error_art["decision_code"] == DecisionCode.FAILED.value
             assert error_art["reason_code"] == ReasonCode.POST_EXCEPTION.value
             assert error_art["error_severity"] == "CRITICAL"
+
+    # ── execute() 경로 거버넌스 흐름 테스트 (T-01 해소) ────────────────── #
+
+    @pytest.mark.asyncio
+    async def test_execute_requires_pre_check(self, gate, mock_db):
+        """execute() 경로도 반드시 pre_check를 경유한다."""
+        orchestrator = _make_orchestrator(mock_db, gate)
+        # signal_id 없는 task → signal_validator.validate() 호출되지 않음, risk_manager.execute()만 호출
+        with patch.object(gate, "pre_check", wraps=gate.pre_check) as spy:
+            with patch(
+                "app.agents.risk_manager.RiskManagerAgent.execute",
+                new_callable=AsyncMock,
+                return_value={"approved": True, "confidence": 0.8, "position_size": 100},
+            ):
+                task = AgentTask(
+                    task_type="execute_trade",
+                    symbol="BTC/USDT",
+                    exchange="binance",
+                    context={"price": 50000},
+                )
+                await orchestrator.execute(task)
+                spy.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_execute_pre_check_failure_prevents_execution(self, gate, mock_db):
+        """execute() pre_check 실패 시 LLM 에이전트 미호출."""
+        task = AgentTask(
+            task_type="execute_trade",
+            symbol=None,  # Missing symbol → mandatory check fails
+            exchange="binance",
+        )
+        orchestrator = _make_orchestrator(mock_db, gate)
+        with patch(
+            "app.agents.risk_manager.RiskManagerAgent.execute",
+            new_callable=AsyncMock,
+        ) as mock_risk:
+            result = await orchestrator.execute(task)
+            assert result.success is False
+            assert result.governance_evidence_id is not None
+            mock_risk.assert_not_called()
+
+    # ── execute() evidence 의미 무결성 테스트 (F-04/T-08 해소) ─────────── #
+
+    @pytest.mark.asyncio
+    async def test_execute_risk_rejection_evidence_not_allowed(self, gate, mock_db):
+        """execute() risk 거부 시 evidence가 ALLOWED로 기록되지 않아야 한다."""
+        orchestrator = _make_orchestrator(mock_db, gate)
+        with patch(
+            "app.agents.risk_manager.RiskManagerAgent.execute",
+            new_callable=AsyncMock,
+            return_value={"approved": False, "reasoning": "Risk too high", "confidence": 0.3},
+        ):
+            task = AgentTask(
+                task_type="execute_trade",
+                symbol="BTC/USDT",
+                exchange="binance",
+                context={"price": 50000},
+            )
+            result = await orchestrator.execute(task)
+            assert result.success is False
+            assert result.governance_evidence_id is not None
+
+            # governance_evidence_id와 1:1 일치하는 evidence를 직접 조회
+            eid = result.governance_evidence_id
+            target_bundle = gate.evidence_store.get(eid)
+            assert target_bundle is not None, \
+                f"POST evidence {eid} must exist for risk rejection path"
+            # bundle 내부에서 phase==POST artifact를 명시적으로 찾음
+            post_arts = [
+                a for a in target_bundle.artifacts
+                if isinstance(a, dict) and a.get("phase") == PhaseCode.POST.value
+            ]
+            assert len(post_arts) == 1, \
+                f"Expected exactly 1 POST artifact in bundle {eid}, got {len(post_arts)}"
+            post_art = post_arts[0]
+            # F-04: ALLOWED로 기록되면 의미 오염
+            assert post_art["decision_code"] != DecisionCode.ALLOWED.value, \
+                "Risk rejection should not record decision_code=ALLOWED"
+
+    @pytest.mark.asyncio
+    async def test_execute_validation_rejection_evidence_not_allowed(self, gate, mock_db):
+        """execute() validation 거부 시 evidence가 ALLOWED로 기록되지 않아야 한다."""
+        orchestrator = _make_orchestrator(mock_db, gate)
+
+        # signal_id가 있어야 validation 경로 진입
+        task = AgentTask(
+            task_type="execute_trade",
+            symbol="BTC/USDT",
+            exchange="binance",
+            context={"price": 50000},
+            signal_id="test-signal-123",
+        )
+
+        mock_signal = MagicMock()
+        mock_signal.symbol = "BTC/USDT"
+        mock_signal.exchange = "binance"
+        mock_signal.signal_type.value = "long"
+        mock_signal.entry_price = 50000
+        mock_signal.stop_loss = 49000
+        mock_signal.take_profit = 52000
+        mock_signal.confidence = 0.7
+        mock_signal.signal_metadata = {}
+        mock_signal.id = "test-signal-123"
+
+        # Create a mock SignalService instance with async get_signal
+        mock_signal_service_instance = MagicMock()
+        mock_signal_service_instance.get_signal = AsyncMock(return_value=mock_signal)
+        mock_signal_service_cls = MagicMock(return_value=mock_signal_service_instance)
+
+        with patch(
+            "app.services.signal_service.SignalService",
+            mock_signal_service_cls,
+        ):
+            with patch(
+                "app.agents.signal_validator.SignalValidatorAgent.validate",
+                new_callable=AsyncMock,
+                return_value={"approved": False, "reasoning": "Signal quality too low", "confidence": 0.2},
+            ):
+                with patch(
+                    "app.agents.risk_manager.RiskManagerAgent.execute",
+                    new_callable=AsyncMock,
+                ) as mock_risk:
+                    result = await orchestrator.execute(task)
+                    assert result.success is False
+                    assert result.governance_evidence_id is not None
+
+                    # validation 거부 후 risk 단계로 내려가면 안 됨 (short-circuit 검증)
+                    mock_risk.assert_not_called()
+
+                    # governance_evidence_id와 1:1 일치하는 evidence를 직접 조회
+                    eid = result.governance_evidence_id
+                    target_bundle = gate.evidence_store.get(eid)
+                    assert target_bundle is not None, \
+                        f"POST evidence {eid} must exist for validation rejection path"
+                    # bundle 내부에서 phase==POST artifact를 명시적으로 찾음
+                    post_arts = [
+                        a for a in target_bundle.artifacts
+                        if isinstance(a, dict) and a.get("phase") == PhaseCode.POST.value
+                    ]
+                    assert len(post_arts) == 1, \
+                        f"Expected exactly 1 POST artifact in bundle {eid}, got {len(post_arts)}"
+                    post_art = post_arts[0]
+                    assert post_art["decision_code"] != DecisionCode.ALLOWED.value, \
+                        "Validation rejection should not record decision_code=ALLOWED"
 
 
 # ═══════════════════════════════════════════════════════════════════════════ #
