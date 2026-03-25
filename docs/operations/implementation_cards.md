@@ -183,7 +183,8 @@ Observation Layer (B-20/B-21/B-22)
 > C-04 **Phase 9 Approved** (informational/guard/display). 13 items. Receipt: `evidence/c04_phase9_approval_2026-03-26.md`
 > C-04 **Phase 9 SEALED**: Boundary refinement (13 items). Receipt: `evidence/c04_phase9_completion_review_2026-03-26.md`
 > C-04 **Phase 10 SEALED**: Boundary hardening (operator-clarity text). Receipt: `evidence/c04_phase10_consolidated_2026-03-26.md`
-> **C-04 COMPLETE through Phase 10.** Phase 11+ deferred. 14 permanently forbidden.
+> **C-04 COMPLETE / FROZEN.** Phase 1-10 sealed. Verification complete. Final receipt: `evidence/c04_final_completion_freeze_2026-03-26.md`
+> Production execution requires separate operational authorization. Phase 11+ deferred. 14 permanently forbidden.
 
 ---
 
