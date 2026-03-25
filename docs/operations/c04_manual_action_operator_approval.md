@@ -207,7 +207,7 @@ C-04는 **한 번에 열지 않는다**. 5단계 승인으로 진행.
 
 *문서 확정 시각: 2026-03-26*
 *코드 수정: 없음*
-*C-04 상태: Phase 9 SEALED. Boundary refinement (13 items). 4 deferred. 14 forbidden absent.*
-*Write path = 5 POST. Manual/sync/sealed preserved. 다음: Phase 10 Scope Review.*
-*Receipt: `evidence/c04_phase9_completion_review_2026-03-26.md`*
+*C-04 상태: Phase 10 SEALED. Boundary hardening complete. All phases 1-10 sealed.*
+*Write path = 5 POST. Manual/sync/sealed preserved. Phase 11+ deferred.*
+*Receipt: `evidence/c04_phase10_consolidated_2026-03-26.md`*
 *Phase 1 승인 기록: `evidence/c04_phase1_approval_2026-03-26.md`*
