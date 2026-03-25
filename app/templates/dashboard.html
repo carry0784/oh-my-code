@@ -794,6 +794,14 @@
   <!-- C-04 Manual Action is NOT implemented in this phase.          -->
   <!-- ═══════════════════════════════════════════════════════════════ -->
 
+  <!-- ═══ SECTION: EXECUTION PIPELINE (B-19) ═══ -->
+  <div class="t3-section-divider">EXECUTION PIPELINE</div>
+
+  <div class="b19-pipeline" id="b19-pipeline">
+    <div class="b19-note">Read-only pipeline status. No execution authority. Display only.</div>
+    <div class="b19-stages" id="b19-stages"></div>
+  </div>
+
   <!-- ═══ SECTION: MANUAL ACTION (C-04) ═══ -->
   <div class="t3-section-divider">MANUAL ACTION</div>
 
@@ -4193,6 +4201,7 @@ async function renderTab3SafeCards() {
     _renderC04Phase6({});  // Phase 6/7 descriptive display
     _renderC04Phase8(d);  // Phase 8 guard/display
     _renderC04Phase9(d);  // Phase 9 boundary refinement (informational only)
+    renderB19Pipeline(d);  // B-19 Execution Pipeline (read-only)
     _renderC05(d);
     _renderC06(d);
   } catch(e) {
@@ -4772,6 +4781,56 @@ function _renderC04Phase9(d) {
       staleEl.innerHTML = '<span class="t3sc-c04-p9-stale-text">Last update: ' + ts.substring(0, 19) + '</span>';
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// B-19: Execution Pipeline Viewer — read-only, display only
+// Shows 9-stage pipeline status from ops-safety-summary
+// No execution. No mutation. No new endpoint.
+// ---------------------------------------------------------------------------
+function renderB19Pipeline(d) {
+  const el = document.getElementById('b19-stages');
+  if (!el) return;
+  if (!d) {
+    el.innerHTML = '<div class="b19-unavailable">Pipeline data unavailable</div>';
+    return;
+  }
+  const stages = [
+    { id: 'signal', lbl: 'Signal', val: d.check_grade || '-', ok: d.check_grade === 'OK', desc: 'I-03 Check grade' },
+    { id: 'preflight', lbl: 'Preflight', val: d.preflight_decision || '-', ok: d.preflight_decision === 'READY', desc: 'I-04 Recovery Preflight' },
+    { id: 'gate', lbl: 'Gate', val: d.gate_decision || '-', ok: d.gate_decision === 'OPEN', desc: 'I-05 Execution Gate' },
+    { id: 'approval', lbl: 'Approval', val: d.approval_decision || '-', ok: d.approval_decision === 'APPROVED', desc: 'I-06 Operator Approval' },
+    { id: 'policy', lbl: 'Policy', val: d.policy_decision || '-', ok: d.policy_decision === 'MATCH', desc: 'I-07 Execution Policy' },
+    { id: 'risk', lbl: 'Risk', val: d.ops_score != null ? d.ops_score.toFixed(2) + '/0.7' : '-', ok: d.ops_score != null && d.ops_score >= 0.7, desc: 'Ops Score threshold' },
+    { id: 'auth', lbl: 'Auth', val: d.trading_authorized === true ? 'Authorized' : d.trading_authorized === false ? 'Denied' : '-', ok: d.trading_authorized === true, desc: 'Trading authorization' },
+    { id: 'scope', lbl: 'Scope', val: d.lockdown_state || '-', ok: d.lockdown_state && d.lockdown_state !== 'LOCKDOWN' && d.lockdown_state !== 'QUARANTINE', desc: 'Lockdown / scope check' },
+    { id: 'evidence', lbl: 'Evidence', val: d.preflight_evidence_id ? 'Present' : 'Missing', ok: d.preflight_evidence_id && !String(d.preflight_evidence_id).startsWith('fallback-'), desc: 'Evidence chain completeness' },
+  ];
+
+  const passCount = stages.filter(s => s.ok).length;
+  const firstBlocked = stages.find(s => !s.ok);
+
+  let html = '<div class="b19-summary">'
+    + '<span class="b19-progress">' + passCount + '/9 stages passed</span>'
+    + (firstBlocked ? '<span class="b19-blocked-at">Blocked at: <b>' + firstBlocked.lbl + '</b></span>' : '<span class="b19-all-clear">All stages clear</span>')
+    + '</div>';
+
+  html += '<div class="b19-flow">';
+  stages.forEach((s, i) => {
+    const cls = s.ok ? 'b19-stage-ok' : 'b19-stage-blocked';
+    html += '<div class="b19-stage ' + cls + '">'
+      + '<div class="b19-stage-num">' + (i + 1) + '</div>'
+      + '<div class="b19-stage-lbl">' + s.lbl + '</div>'
+      + '<div class="b19-stage-val">' + s.val + '</div>'
+      + '<div class="b19-stage-desc">' + s.desc + '</div>'
+      + '</div>';
+    if (i < stages.length - 1) {
+      html += '<div class="b19-arrow ' + (s.ok ? 'b19-arrow-ok' : 'b19-arrow-blocked') + '">&rarr;</div>';
+    }
+  });
+  html += '</div>';
+
+  el.innerHTML = html;
 }
 
 // Phase 7: Wire recovery/simulation/preview buttons
