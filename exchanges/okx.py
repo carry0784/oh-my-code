@@ -16,6 +16,7 @@ class OKXExchange(BaseExchange):
             "secret": self.api_secret,
             "password": settings.okx_passphrase,
             "enableRateLimit": True,
+            "session": self.create_session(),
             "options": {
                 "defaultType": "swap",
             },

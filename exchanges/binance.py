@@ -15,6 +15,7 @@ class BinanceExchange(BaseExchange):
             "apiKey": self.api_key,
             "secret": self.api_secret,
             "enableRateLimit": True,
+            "session": self.create_session(),
             "options": {
                 "defaultType": "future",
             },
