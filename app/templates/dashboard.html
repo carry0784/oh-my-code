@@ -864,6 +864,11 @@
           <div class="t3sc-c04-ev-row"><span class="t3sc-lbl">Receipt</span><span class="t3sc-val" id="t3sc-c04-ev-receipt">unavailable</span></div>
           <div class="t3sc-c04-ev-row"><span class="t3sc-lbl">Audit</span><span class="t3sc-val" id="t3sc-c04-ev-audit">unavailable</span></div>
           <div class="t3sc-c04-ev-row"><span class="t3sc-lbl">Evidence</span><span class="t3sc-val" id="t3sc-c04-ev-chain">unavailable</span></div>
+          <!-- Session receipt/audit history (read-only, no persistence) -->
+          <div class="t3sc-c04-ev-title" style="margin-top:4px;">Session History</div>
+          <div class="t3sc-c04-ev-history" id="t3sc-c04-ev-history">
+            <div class="t3sc-c04-ev-empty">No actions in this session</div>
+          </div>
         </div>
         <!-- Phase 7: Recovery / Simulation / Preview (manual, sync, chain-gated) -->
         <div class="t3sc-c04-p7" id="t3sc-c04-p7">
@@ -4598,6 +4603,7 @@ async function _renderC09() {
         }
         // Update evidence visibility section from response
         _updateC04Evidence(data);
+        _pushC04History(data);
       } catch(e) {
         if (resultEl) resultEl.innerHTML = '<div class="t3sc-c04-result-row"><span class="t3sc-val t3sc-blocked">Execution failed: ' + e.message + '</span></div>';
       }
@@ -4612,6 +4618,36 @@ async function _renderC09() {
     });
   });
 })();
+
+// Session-local receipt/audit history (no persistence, no new endpoint)
+const _c04SessionHistory = [];
+
+function _pushC04History(data) {
+  if (!data || !data.receipt_id) return;
+  _c04SessionHistory.unshift({
+    time: (data.timestamp || new Date().toISOString()).substring(11, 19),
+    decision: data.decision || 'UNKNOWN',
+    receipt: data.receipt_id || 'missing',
+    audit: data.audit_id || 'missing',
+  });
+  if (_c04SessionHistory.length > 10) _c04SessionHistory.pop();
+  const el = document.getElementById('t3sc-c04-ev-history');
+  if (!el) return;
+  if (_c04SessionHistory.length === 0) {
+    el.innerHTML = '<div class="t3sc-c04-ev-empty">No actions in this session</div>';
+    return;
+  }
+  el.innerHTML = _c04SessionHistory.map(h => {
+    const cls = h.decision === 'EXECUTED' ? 't3sc-c04-badge-executed'
+      : h.decision === 'SIMULATED' ? 't3sc-c04-badge-simulated'
+      : 't3sc-c04-badge-rejected';
+    return '<div class="t3sc-c04-ev-hist-row">'
+      + '<span class="t3sc-c04-ev-hist-time">' + h.time + '</span>'
+      + '<span class="' + cls + '">' + h.decision + '</span>'
+      + '<span class="t3sc-c04-ev-hist-id">' + h.receipt.substring(0, 12) + '</span>'
+      + '</div>';
+  }).join('');
+}
 
 // Guard-bound evidence visibility update (read-only, existing payload only)
 function _updateC04Evidence(data) {
@@ -4926,6 +4962,7 @@ function renderB19Pipeline(d) {
         } catch(e) {
           if (resultEl) resultEl.innerHTML = '<div class="t3sc-c04-result-row"><span class="t3sc-val t3sc-blocked">Error: ' + e.message + '</span></div>';
         }
+        _pushC04History(data);
         btn.textContent = act.id.includes('rollback') ? 'Rollback' : act.id.includes('retry') ? 'Retry' : act.id.includes('simulate') ? 'Simulate' : 'Preview';
         renderTab3SafeCards(); // refresh chain state
       });

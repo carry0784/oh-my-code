@@ -1637,6 +1637,12 @@ body {
 .t3sc-c04-ev-present { color: var(--accent-green); }
 .t3sc-c04-ev-missing { color: var(--accent-red); font-style: italic; }
 .t3sc-c04-ev-unavailable { color: var(--text-muted); font-style: italic; }
+/* Receipt/Audit session history */
+.t3sc-c04-ev-history { max-height: 80px; overflow-y: auto; }
+.t3sc-c04-ev-empty { font-size: 7px; color: var(--text-muted); font-style: italic; padding: 2px 0; }
+.t3sc-c04-ev-hist-row { display: flex; gap: 4px; align-items: center; padding: 1px 0; font-size: 7px; }
+.t3sc-c04-ev-hist-time { color: var(--text-muted); min-width: 50px; }
+.t3sc-c04-ev-hist-id { color: var(--text-secondary); font-family: monospace; font-size: 6px; }
 .t3sc-c04-confirm-no {
   padding: 6px 16px; font-size: 9px; border-radius: 3px;
   background: transparent; color: var(--text-muted); border: 1px solid var(--border-color, #444); cursor: pointer;

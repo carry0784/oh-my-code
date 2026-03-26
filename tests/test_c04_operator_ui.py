@@ -207,3 +207,51 @@ class TestC04GenesisRegressionGate:
 
     def test_sealed_badge_still_exists(self):
         assert 'id="t3sc-c04-badge"' in _html()
+
+
+# ===========================================================================
+# UI-8: Receipt/Audit session history
+# ===========================================================================
+class TestC04ReceiptAuditHistory:
+
+    def test_history_container_exists(self):
+        assert 'id="t3sc-c04-ev-history"' in _html()
+
+    def test_session_history_array_exists(self):
+        assert '_c04SessionHistory' in _html()
+
+    def test_push_history_function_exists(self):
+        assert '_pushC04History' in _html()
+
+    def test_history_empty_default(self):
+        assert 'No actions in this session' in _html()
+
+    def test_history_has_no_persistence(self):
+        """History is session-local only, no fetch/POST for persistence."""
+        html = _html()
+        start = html.find("function _pushC04History")
+        end = html.find("\nfunction ", start + 30) if start != -1 else -1
+        body = html[start:end].lower() if start != -1 and end != -1 else ""
+        assert "fetch(" not in body
+        assert "post" not in body
+
+    def test_history_shows_decision_badge(self):
+        """History rows use distinct decision badge classes."""
+        html = _html()
+        start = html.find("function _pushC04History")
+        body = html[start:start + 1000] if start != -1 else ""
+        assert "t3sc-c04-badge-executed" in body
+        assert "t3sc-c04-badge-simulated" in body
+        assert "t3sc-c04-badge-rejected" in body
+
+    def test_execute_calls_push_history(self):
+        """Execute result handler pushes to history."""
+        html = _html()
+        assert "_pushC04History(data)" in html
+
+    def test_history_max_entries(self):
+        """History is limited to prevent unbounded growth."""
+        html = _html()
+        start = html.find("function _pushC04History")
+        body = html[start:start + 500] if start != -1 else ""
+        assert "_c04SessionHistory.length > 10" in body or "length > " in body
