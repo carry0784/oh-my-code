@@ -930,6 +930,8 @@
             <span class="t3sc-c04-p9-label-noauto">NO AUTO</span>
             <span class="t3sc-c04-p9-label-readonly">READ-ONLY</span>
           </div>
+          <!-- Re-close indicator (read-only state transition display) -->
+          <div class="t3sc-c04-reclose" id="t3sc-c04-reclose" style="display:none;"></div>
           <!-- P9/P10: Phase explanation (boundary-hardened) -->
           <div class="t3sc-c04-p9-explain" id="t3sc-c04-p9-explain">This card has NO execution authority. Display only. All controls are informational. Operator action here does NOT authorize or trigger any trade, order, or system state change.</div>
         </div>
@@ -4330,6 +4332,26 @@ function _renderC04(d) {
     // A-5: Operator guidance (read-only, fixed-mapping, no action trigger)
     const guideEl = document.getElementById('t3sc-c04-guidance');
     if (guideEl) guideEl.innerHTML = _c04GuidanceHtml(blockCode);
+
+    // Re-close detection (read-only state transition display)
+    const recloseEl = document.getElementById('t3sc-c04-reclose');
+    if (recloseEl) {
+      const chainOkNow = metCount === 9;
+      if (typeof window._c04PrevChainOk !== 'undefined') {
+        if (window._c04PrevChainOk === true && !chainOkNow) {
+          // Transition: OPEN → BLOCKED (re-close detected)
+          recloseEl.style.display = 'block';
+          recloseEl.innerHTML = '<span class="t3sc-c04-reclose-badge">RE-CLOSED</span>'
+            + '<span class="t3sc-c04-reclose-text">Chain regressed from 9/9 to ' + metCount + '/9. Execute disabled. Block: ' + blockCode + '</span>';
+        } else if (!window._c04PrevChainOk && chainOkNow) {
+          // Transition: BLOCKED → OPEN (re-open)
+          recloseEl.style.display = 'block';
+          recloseEl.innerHTML = '<span class="t3sc-c04-reopen-badge">OPENED</span>'
+            + '<span class="t3sc-c04-reclose-text">Chain restored to 9/9. Execute eligible.</span>';
+        }
+      }
+      window._c04PrevChainOk = chainOkNow;
+    }
 
     // Phase 5: Execute button state (chain-gated, fail-closed)
     const execBtn = document.getElementById('t3sc-c04-exec-btn');

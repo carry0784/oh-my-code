@@ -291,3 +291,48 @@ class TestC04OperatorIdentityBinding:
         end = route.find("\ndef ", start + 20) if start != -1 else -1
         body = route[start:end] if start != -1 and end != -1 else ""
         assert '"operator"' in body  # fail-closed default
+
+
+# ===========================================================================
+# UI-10: Re-close state transition display
+# ===========================================================================
+class TestC04RecloseUI:
+
+    def test_reclose_container_exists(self):
+        assert 'id="t3sc-c04-reclose"' in _html()
+
+    def test_reclose_hidden_by_default(self):
+        html = _html()
+        idx = html.find('id="t3sc-c04-reclose"')
+        area = html[idx:idx + 100] if idx != -1 else ""
+        assert 'display:none' in area
+
+    def test_reclose_badge_css_exists(self):
+        assert 't3sc-c04-reclose-badge' in _css()
+
+    def test_reopen_badge_css_exists(self):
+        assert 't3sc-c04-reopen-badge' in _css()
+
+    def test_reclose_detection_in_renderer(self):
+        html = _html()
+        assert '_c04PrevChainOk' in html
+        assert 'RE-CLOSED' in html
+
+    def test_reopen_detection_in_renderer(self):
+        html = _html()
+        assert 'OPENED' in html
+
+    def test_reclose_shows_block_code(self):
+        html = _html()
+        start = html.find('RE-CLOSED')
+        area = html[start:start + 200] if start != -1 else ""
+        assert 'blockCode' in area or 'Block:' in area
+
+    def test_reclose_no_execution_logic(self):
+        """Re-close detection must not contain execution logic."""
+        html = _html()
+        start = html.find("Re-close detection")
+        end = html.find("// Phase 5:", start) if start != -1 else -1
+        body = html[start:end].lower() if start != -1 and end != -1 else ""
+        assert "fetch(" not in body
+        assert "post" not in body
