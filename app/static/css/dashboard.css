@@ -1624,6 +1624,19 @@ body {
   font-size: 7px; color: var(--accent-yellow, #b8860b); font-style: italic;
   margin-top: 1px;
 }
+/* Guard-bound decision badges */
+.t3sc-c04-badge-executed { color: var(--accent-green); font-weight: bold; }
+.t3sc-c04-badge-rejected { color: var(--accent-red); font-weight: bold; font-size: 10px; }
+.t3sc-c04-badge-failed { color: var(--accent-red); font-weight: bold; }
+.t3sc-c04-badge-simulated { color: var(--accent-yellow, #b8860b); font-weight: bold; }
+.t3sc-c04-blocked-prominent { background: rgba(200,50,50,0.1); border-left: 3px solid var(--accent-red); padding-left: 6px; }
+/* Evidence visibility */
+.t3sc-c04-evidence-vis { border-top: 1px solid var(--bg-row-alt); margin-top: 4px; padding: 4px 10px; }
+.t3sc-c04-ev-title { font-size: 8px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px; }
+.t3sc-c04-ev-row { display: flex; justify-content: space-between; padding: 1px 0; font-size: 8px; }
+.t3sc-c04-ev-present { color: var(--accent-green); }
+.t3sc-c04-ev-missing { color: var(--accent-red); font-style: italic; }
+.t3sc-c04-ev-unavailable { color: var(--text-muted); font-style: italic; }
 .t3sc-c04-confirm-no {
   padding: 6px 16px; font-size: 9px; border-radius: 3px;
   background: transparent; color: var(--text-muted); border: 1px solid var(--border-color, #444); cursor: pointer;

@@ -858,6 +858,13 @@
           <button class="t3sc-c04-exec-btn" id="t3sc-c04-exec-btn" disabled aria-disabled="true">Execute Manual Action</button>
           <div class="t3sc-c04-exec-result" id="t3sc-c04-exec-result"></div>
         </div>
+        <!-- Guard-bound Evidence Visibility (read-only, from existing payload only) -->
+        <div class="t3sc-c04-evidence-vis" id="t3sc-c04-evidence-vis">
+          <div class="t3sc-c04-ev-title">Evidence Chain</div>
+          <div class="t3sc-c04-ev-row"><span class="t3sc-lbl">Receipt</span><span class="t3sc-val" id="t3sc-c04-ev-receipt">unavailable</span></div>
+          <div class="t3sc-c04-ev-row"><span class="t3sc-lbl">Audit</span><span class="t3sc-val" id="t3sc-c04-ev-audit">unavailable</span></div>
+          <div class="t3sc-c04-ev-row"><span class="t3sc-lbl">Evidence</span><span class="t3sc-val" id="t3sc-c04-ev-chain">unavailable</span></div>
+        </div>
         <!-- Phase 7: Recovery / Simulation / Preview (manual, sync, chain-gated) -->
         <div class="t3sc-c04-p7" id="t3sc-c04-p7">
           <div class="t3sc-c04-p7-row">
@@ -4569,16 +4576,28 @@ async function _renderC09() {
         const data = await r.json();
         if (resultEl) {
           const decision = data.decision || 'UNKNOWN';
-          const cls = decision === 'EXECUTED' ? 't3sc-ok'
-            : decision === 'REJECTED' ? 't3sc-blocked'
-            : 't3sc-blocked';
-          resultEl.innerHTML = '<div class="t3sc-c04-result-row">'
-            + '<span class="t3sc-lbl">Result</span><span class="t3sc-val ' + cls + '">' + decision + '</span></div>'
-            + '<div class="t3sc-c04-result-row">'
-            + '<span class="t3sc-lbl">Receipt</span><span class="t3sc-val">' + (data.receipt_id || '-') + '</span></div>'
-            + (data.block_code ? '<div class="t3sc-c04-result-row"><span class="t3sc-lbl">Block</span><span class="t3sc-val t3sc-blocked">' + data.block_code + '</span></div>' : '')
-            + (data.reason ? '<div class="t3sc-c04-result-row"><span class="t3sc-lbl">Reason</span><span class="t3sc-val">' + data.reason + '</span></div>' : '');
+          const badgeCls = decision === 'EXECUTED' ? 't3sc-c04-badge-executed'
+            : decision === 'REJECTED' ? 't3sc-c04-badge-rejected'
+            : 't3sc-c04-badge-failed';
+          // Blocked reason first (most prominent)
+          let html = '';
+          if (data.block_code) {
+            html += '<div class="t3sc-c04-result-row t3sc-c04-blocked-prominent">'
+              + '<span class="t3sc-lbl">BLOCKED</span><span class="t3sc-val t3sc-blocked">' + data.block_code + '</span></div>';
+          }
+          if (data.reason) {
+            html += '<div class="t3sc-c04-result-row"><span class="t3sc-lbl">Reason</span><span class="t3sc-val">' + data.reason + '</span></div>';
+          }
+          // Decision badge
+          html += '<div class="t3sc-c04-result-row">'
+            + '<span class="t3sc-lbl">Decision</span><span class="t3sc-val ' + badgeCls + '">' + decision + '</span></div>';
+          // Receipt
+          html += '<div class="t3sc-c04-result-row">'
+            + '<span class="t3sc-lbl">Receipt</span><span class="t3sc-val">' + (data.receipt_id || 'missing') + '</span></div>';
+          resultEl.innerHTML = html;
         }
+        // Update evidence visibility section from response
+        _updateC04Evidence(data);
       } catch(e) {
         if (resultEl) resultEl.innerHTML = '<div class="t3sc-c04-result-row"><span class="t3sc-val t3sc-blocked">Execution failed: ' + e.message + '</span></div>';
       }
@@ -4593,6 +4612,39 @@ async function _renderC09() {
     });
   });
 })();
+
+// Guard-bound evidence visibility update (read-only, existing payload only)
+function _updateC04Evidence(data) {
+  const _ev = (id, val) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (val && val !== '' && !String(val).startsWith('fallback-')) {
+      el.textContent = String(val).substring(0, 16);
+      el.className = 't3sc-val t3sc-c04-ev-present';
+    } else if (val === null || val === undefined || val === '') {
+      el.textContent = 'missing';
+      el.className = 't3sc-val t3sc-c04-ev-missing';
+    } else {
+      el.textContent = 'unavailable';
+      el.className = 't3sc-val t3sc-c04-ev-unavailable';
+    }
+  };
+  if (!data) {
+    _ev('t3sc-c04-ev-receipt', null);
+    _ev('t3sc-c04-ev-audit', null);
+    _ev('t3sc-c04-ev-chain', null);
+    return;
+  }
+  _ev('t3sc-c04-ev-receipt', data.receipt_id);
+  _ev('t3sc-c04-ev-audit', data.audit_id);
+  const chain = data.evidence_ids;
+  if (chain && typeof chain === 'object') {
+    const ids = Object.values(chain).filter(v => v && v !== '');
+    _ev('t3sc-c04-ev-chain', ids.length > 0 ? ids.length + ' linked' : null);
+  } else {
+    _ev('t3sc-c04-ev-chain', null);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // C-04 Phase 7 — Recovery / Simulation / Preview (manual, sync, chain-gated)
