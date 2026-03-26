@@ -13,9 +13,13 @@ Resolves:
 from __future__ import annotations
 
 import hashlib
+import os
+import threading
 import traceback
+import uuid
+from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 from kdexter.audit.evidence_store import EvidenceBundle, EvidenceStore
 from kdexter.ledger.forbidden_ledger import ForbiddenAction, ForbiddenLedger
@@ -110,7 +114,17 @@ class GovernanceGate:
       1. ForbiddenLedger is checked before any LLM agent call (D-009)
       2. EvidenceBundle is produced for every execution (D-002)
       3. VALIDATING 10-check state classification is recorded
+
+    Singleton: only ONE instance may exist per process.
+    - Second creation raises RuntimeError (split-brain prevention).
+    - _creation_lock protects check+create atomically (race-free).
+    - gate_id / gate_created_at / gate_generation enable audit tracing.
     """
+
+    # ── Singleton enforcement ────────────────────────────────────────── #
+    _instance: ClassVar[Optional[GovernanceGate]] = None
+    _creation_lock: ClassVar[threading.Lock] = threading.Lock()
+    _generation_count: ClassVar[int] = 0
 
     def __init__(
         self,
@@ -118,6 +132,22 @@ class GovernanceGate:
         evidence_store: EvidenceStore,
         security_ctx: SecurityStateContext,
     ) -> None:
+        # Singleton guard — atomic check+assign under lock
+        with GovernanceGate._creation_lock:
+            GovernanceGate._generation_count += 1
+            if GovernanceGate._instance is not None:
+                raise RuntimeError(
+                    f"GovernanceGate singleton already exists "
+                    f"(gate_id={GovernanceGate._instance.gate_id}, "
+                    f"generation={GovernanceGate._generation_count}). "
+                    f"Duplicate creation is forbidden."
+                )
+            # Gate identity — immutable after creation
+            self.gate_id: str = str(uuid.uuid4())
+            self.gate_created_at: datetime = datetime.now(timezone.utc)
+            self.gate_generation: int = GovernanceGate._generation_count
+            GovernanceGate._instance = self
+
         self.forbidden_ledger = forbidden_ledger
         self.evidence_store = evidence_store
         self.security_ctx = security_ctx
@@ -125,6 +155,27 @@ class GovernanceGate:
         # Register agent-scope forbidden actions (idempotent — register() overwrites by action_id)
         for fa in _AGENT_FORBIDDEN_ACTIONS:
             self.forbidden_ledger.register(fa)
+
+        logger.info(
+            "governance_gate_created",
+            gate_id=self.gate_id,
+            gate_created_at=self.gate_created_at.isoformat(),
+            gate_generation=self.gate_generation,
+        )
+
+    # ── Test-only reset ──────────────────────────────────────────────── #
+
+    @classmethod
+    def _reset_for_testing(cls) -> None:
+        """Reset singleton state. Forbidden in production."""
+        env = os.environ.get("APP_ENV", "").lower()
+        if env in ("production", "prod"):
+            raise RuntimeError(
+                "_reset_for_testing() is forbidden in production (APP_ENV=%s)" % env
+            )
+        with cls._creation_lock:
+            cls._instance = None
+            cls._generation_count = 0
 
     # ── Pre-check ──────────────────────────────────────────────────────── #
 
@@ -283,6 +334,9 @@ class GovernanceGate:
                 "task_type": getattr(task, "task_type", "unknown"),
                 "check_matrix": check_matrix,
                 "coverage_meta": coverage_meta,
+                "gate_id": self.gate_id,
+                "gate_generation": self.gate_generation,
+                "gate_created_at": self.gate_created_at.isoformat(),
             }],
         )
         evidence_id = self.evidence_store.store(bundle)
@@ -292,6 +346,7 @@ class GovernanceGate:
             log_method = logger.error
         log_method(
             "governance_pre_check",
+            gate_id=self.gate_id,
             decision=decision_code.value,
             reason=reason_code.value,
             evidence_id=evidence_id,
@@ -339,12 +394,16 @@ class GovernanceGate:
                 "confidence": result.get("confidence", 0.0),
                 "approved": approved,
                 "reasoning_hash": prompt_hash,
+                "gate_id": self.gate_id,
+                "gate_generation": self.gate_generation,
+                "gate_created_at": self.gate_created_at.isoformat(),
             }],
         )
         evidence_id = self.evidence_store.store(bundle)
 
         logger.info(
             "governance_post_record",
+            gate_id=self.gate_id,
             decision=decision_code.value,
             evidence_id=evidence_id,
             pre_evidence_id=pre_evidence_id,
@@ -394,12 +453,16 @@ class GovernanceGate:
                     "traceback_hash": hashlib.sha256(
                         traceback.format_exc().encode()
                     ).hexdigest()[:16],
+                    "gate_id": self.gate_id,
+                    "gate_generation": self.gate_generation,
+                    "gate_created_at": self.gate_created_at.isoformat(),
                 }],
             )
             evidence_id = self.evidence_store.store(bundle)
 
             logger.error(
                 "governance_post_record_error",
+                gate_id=self.gate_id,
                 decision=DecisionCode.FAILED.value,
                 reason=ReasonCode.POST_EXCEPTION.value,
                 error_severity="CRITICAL",
@@ -414,6 +477,7 @@ class GovernanceGate:
             # Fallback: even if evidence storage fails, audit log must survive
             logger.critical(
                 "governance_post_record_error_FALLBACK",
+                gate_id=self.gate_id,
                 original_exception=str(exception),
                 fallback_exception=str(fallback_exc),
                 pre_evidence_id=pre_evidence_id,

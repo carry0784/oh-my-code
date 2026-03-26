@@ -8,16 +8,35 @@ EvidenceBundle: immutable record of a single action/transition.
 EvidenceStore:  facade delegating to a pluggable backend.
   - backend=None → InMemoryBackend (default, backward-compatible)
   - backend=SQLiteBackend("path") → persistent SQLite storage
+
+Append-only contract:
+  - store() appends new bundles. Duplicate bundle_id raises DuplicateEvidenceError.
+  - No update/delete/upsert API exists.
+  - clear() is test-only and blocked in production.
 """
 from __future__ import annotations
 
+import os
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from kdexter.audit.backends import EvidenceBackend
+
+
+# ─────────────────────────────────────────────────────────────────────────── #
+# Exceptions
+# ─────────────────────────────────────────────────────────────────────────── #
+
+class DuplicateEvidenceError(ValueError):
+    """Raised when attempting to store a bundle with an existing bundle_id.
+
+    Append-only contract: duplicate writes are forbidden.
+    Callers must handle this explicitly — silent swallowing is not permitted.
+    """
+    pass
 
 
 # ─────────────────────────────────────────────────────────────────────────── #
@@ -31,7 +50,7 @@ class EvidenceBundle:
     Must be attached to every state transition (M-07).
     """
     bundle_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     trigger: Optional[str] = None       # what caused this action
     actor: Optional[str] = None         # who performed the action
     action: Optional[str] = None        # what was done
@@ -96,5 +115,11 @@ class EvidenceStore:
         return self._backend.list_all()
 
     def clear(self) -> None:
-        """Clear all stored bundles. For testing only."""
+        """Clear all stored bundles. Test-only — blocked in production."""
+        env = os.environ.get("APP_ENV", "").lower()
+        if env in ("production", "prod"):
+            raise RuntimeError(
+                "EvidenceStore.clear() is forbidden in production (APP_ENV=%s). "
+                "Evidence is append-only and must not be erased." % env
+            )
         self._backend.clear()

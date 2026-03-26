@@ -5,7 +5,7 @@ from alembic import context
 
 from app.core.config import settings
 from app.core.database import Base
-from app.models import Order, Signal, Position, Trade
+from app.models import Order, Signal, Position, Trade, AssetSnapshot
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url_sync)

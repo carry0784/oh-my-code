@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from kdexter.audit.evidence_store import EvidenceBundle, EvidenceStore
@@ -30,7 +30,7 @@ class ForbiddenAction:
     severity: str               # "LOCKDOWN" | "BLOCKED"
     pattern: str                # action name pattern to match
     registered_by: str          # author layer (e.g. "B1", "L3")
-    registered_at: datetime = field(default_factory=datetime.utcnow)
+    registered_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 @dataclass
@@ -41,7 +41,7 @@ class ForbiddenViolation:
     action_pattern: str = ""
     detected_action: str = ""           # what the system tried to do
     severity: str = ""
-    detected_at: datetime = field(default_factory=datetime.utcnow)
+    detected_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     context: dict = field(default_factory=dict)
     evidence_bundle_id: Optional[str] = None
 
@@ -80,7 +80,11 @@ class ForbiddenLedger:
     # ── Registration ──────────────────────────────────────────────────── #
 
     def register(self, action: ForbiddenAction) -> None:
-        """Register a forbidden action."""
+        """Register a forbidden action.
+
+        Idempotent by key overwrite: repeated registration with the same
+        action_id converges to one final mapping. Safe to call multiple times.
+        """
         self._actions[action.action_id] = action
 
     def unregister(self, action_id: str) -> None:

@@ -7,9 +7,6 @@ Run: python -X utf8 tests/test_final_layers.py
 from __future__ import annotations
 
 import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from kdexter.engines.human_decision import (
     HumanDecisionInterface, DecisionType, DecisionStatus,

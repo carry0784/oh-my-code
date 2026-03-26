@@ -3,6 +3,10 @@ SQLite Evidence Backend — K-Dexter AOS v4
 
 Persistent evidence storage using stdlib sqlite3.
 WAL mode for concurrent read/write performance.
+
+Append-only: INSERT only, no REPLACE/UPDATE/UPSERT.
+Duplicate bundle_id raises DuplicateEvidenceError.
+DURABLE: evidence survives process restart.
 """
 from __future__ import annotations
 
@@ -12,7 +16,7 @@ from datetime import datetime
 from typing import Optional
 
 from kdexter.audit.backends import EvidenceBackend
-from kdexter.audit.evidence_store import EvidenceBundle
+from kdexter.audit.evidence_store import DuplicateEvidenceError, EvidenceBundle
 
 
 _CREATE_TABLE = """
@@ -49,24 +53,30 @@ class SQLiteBackend(EvidenceBackend):
         self._conn.commit()
 
     def store(self, bundle: EvidenceBundle) -> str:
-        self._conn.execute(
-            """INSERT OR REPLACE INTO evidence_bundles
-               (bundle_id, created_at, trigger_, actor, action,
-                before_state, after_state, artifacts, cycle_id)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                bundle.bundle_id,
-                bundle.created_at.isoformat(),
-                bundle.trigger,
-                bundle.actor,
-                bundle.action,
-                _serialize(bundle.before_state),
-                _serialize(bundle.after_state),
-                json.dumps(bundle.artifacts),
-                bundle.cycle_id,
-            ),
-        )
-        self._conn.commit()
+        try:
+            self._conn.execute(
+                """INSERT INTO evidence_bundles
+                   (bundle_id, created_at, trigger_, actor, action,
+                    before_state, after_state, artifacts, cycle_id)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    bundle.bundle_id,
+                    bundle.created_at.isoformat(),
+                    bundle.trigger,
+                    bundle.actor,
+                    bundle.action,
+                    _serialize(bundle.before_state),
+                    _serialize(bundle.after_state),
+                    json.dumps(bundle.artifacts),
+                    bundle.cycle_id,
+                ),
+            )
+            self._conn.commit()
+        except sqlite3.IntegrityError:
+            raise DuplicateEvidenceError(
+                f"Append-only violation: bundle_id={bundle.bundle_id} already exists. "
+                f"Evidence records are immutable."
+            )
         return bundle.bundle_id
 
     def get(self, bundle_id: str) -> Optional[EvidenceBundle]:

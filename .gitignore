@@ -106,9 +106,10 @@ dmypy.json
 # Pyre
 .pyre/
 
-# IDE
+# IDE & Tool-specific
 .idea/
 .vscode/
+.claude/
 *.swp
 *.swo
 *~
@@ -125,3 +126,6 @@ logs/
 *.sqlite
 *.sqlite3
 audit_evidence/
+celerybeat-schedule*
+celerybeat-schedule-shm
+celerybeat-schedule-wal

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Optional, TYPE_CHECKING
 
@@ -112,7 +112,7 @@ class CommandTranscript:
     command_type: Optional[CommandType] = None
     exchange: str = ""
     mode: ExecutionMode = ExecutionMode.DRY_RUN
-    command_timestamp: datetime = field(default_factory=datetime.utcnow)
+    command_timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     idempotency_key: str = field(default_factory=lambda: str(uuid.uuid4()))
     raw_response: Optional[dict] = None
     parsed_response: Optional[dict] = None
@@ -146,13 +146,13 @@ class CommandTranscript:
         self.parsed_response = parsed
         self.exchange_order_id = order_id
         self.order_ack = True
-        self.completed_at = datetime.utcnow()
+        self.completed_at = datetime.now(timezone.utc)
 
     def fail(self, error: str) -> None:
         """Mark as failed."""
         self.error = error
         self.order_ack = False
-        self.completed_at = datetime.utcnow()
+        self.completed_at = datetime.now(timezone.utc)
 
     @property
     def succeeded(self) -> bool:
@@ -193,7 +193,11 @@ class TCLDispatcher:
         self._live_authorized: bool = False
 
     def register(self, exchange: str, adapter: "ExchangeAdapter") -> None:
-        """Register exchange adapter. exchange key is lowercased."""
+        """Register exchange adapter. exchange key is lowercased.
+
+        Idempotent by key overwrite: repeated registration with the same
+        exchange key converges to one final mapping. Safe to call multiple times.
+        """
         self._adapters[exchange.lower()] = adapter
 
     def authorize_live(self) -> None:

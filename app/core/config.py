@@ -29,6 +29,28 @@ class Settings(BaseSettings):
     okx_passphrase: str = ""
     okx_sandbox: bool = True
 
+    upbit_api_key: str = ""
+    upbit_api_secret: str = ""
+
+    bitget_api_key: str = ""
+    bitget_api_secret: str = ""
+    bitget_passphrase: str = ""
+    bitget_sandbox: bool = True
+
+    # KIS (한국투자증권)
+    kis_app_key: str = ""
+    kis_app_secret: str = ""
+    kis_account_no: str = ""
+    kis_account_suffix: str = "01"
+    kis_demo: bool = True
+
+    # Kiwoom (키움증권)
+    kiwoom_app_key: str = ""
+    kiwoom_app_secret: str = ""
+    kiwoom_account_no: str = ""
+    kiwoom_account_suffix: str = "01"
+    kiwoom_demo: bool = True
+
     # LLM
     openai_api_key: str = ""
     anthropic_api_key: str = ""
@@ -36,6 +58,29 @@ class Settings(BaseSettings):
     # Governance
     # Default True — must be explicitly disabled. Production requires True.
     governance_enabled: bool = True
+
+    # Evidence persistence
+    # Empty = InMemoryBackend (NOT_DURABLE). Path = SQLiteBackend (DURABLE).
+    evidence_db_path: str = ""
+
+    # C-19: Receipt file persistence
+    # Empty = in-memory only (lost on restart). Path = JSONL file backend (DURABLE).
+    receipt_file_path: str = ""
+
+    # C-20: External notifier webhook
+    # Empty = disabled. URL = send incident snapshots to webhook endpoint.
+    notifier_webhook_url: str = ""
+
+    # C-27: Multi-notifier channels
+    # Empty = disabled. Path = append incident JSONL to file.
+    notifier_file_path: str = ""
+    # Empty = disabled. URL = send to Slack webhook.
+    notifier_slack_url: str = ""
+
+    # Logging
+    # Empty = STREAM_ONLY (stdout). Path = FILE_PERSISTED (stdout + rotating file).
+    log_file_path: str = ""
+    log_level: str = "INFO"
 
     # Trading
     default_exchange: str = "binance"

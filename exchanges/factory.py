@@ -1,6 +1,10 @@
 from exchanges.base import BaseExchange
 from exchanges.binance import BinanceExchange
 from exchanges.okx import OKXExchange
+from exchanges.upbit import UpBitExchange
+from exchanges.bitget import BitgetExchange
+from exchanges.kis import KISExchange
+from exchanges.kiwoom import KiwoomExchange
 
 
 class ExchangeFactory:
@@ -8,6 +12,11 @@ class ExchangeFactory:
 
     @classmethod
     def create(cls, exchange_name: str) -> BaseExchange:
+        """Create or return cached exchange instance.
+
+        Idempotent: returns cached singleton for the same exchange key.
+        Safe to call multiple times — only the first call creates an instance.
+        """
         if exchange_name in cls._instances:
             return cls._instances[exchange_name]
 
@@ -15,6 +24,14 @@ class ExchangeFactory:
             instance = BinanceExchange()
         elif exchange_name == "okx":
             instance = OKXExchange()
+        elif exchange_name == "upbit":
+            instance = UpBitExchange()
+        elif exchange_name == "bitget":
+            instance = BitgetExchange()
+        elif exchange_name == "kis":
+            instance = KISExchange()
+        elif exchange_name == "kiwoom":
+            instance = KiwoomExchange()
         else:
             raise ValueError(f"Unknown exchange: {exchange_name}")
 

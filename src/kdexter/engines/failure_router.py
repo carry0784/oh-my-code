@@ -18,7 +18,7 @@ Governance: B2 (L17 Failure Pattern Memory)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Optional
 
@@ -68,7 +68,7 @@ PATTERN_WINDOW_COUNT: int = 2
 class FailureRecord:
     """A single recorded failure occurrence."""
     failure_type_id: str
-    occurred_at: datetime = field(default_factory=datetime.utcnow)
+    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class FailurePatternMemory:
@@ -83,7 +83,7 @@ class FailurePatternMemory:
     def record(self, failure_type_id: str, occurred_at: Optional[datetime] = None) -> None:
         self._records.append(FailureRecord(
             failure_type_id=failure_type_id,
-            occurred_at=occurred_at or datetime.utcnow(),
+            occurred_at=occurred_at or datetime.now(timezone.utc),
         ))
 
     def classify_recurrence(self, failure_type_id: str) -> Recurrence:
@@ -101,7 +101,7 @@ class FailurePatternMemory:
         if total >= PATTERN_COUNT_THRESHOLD:
             return Recurrence.PATTERN
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         window_start = now - timedelta(days=PATTERN_WINDOW_DAYS)
         recent = sum(1 for r in matching if r.occurred_at >= window_start)
         if recent >= PATTERN_WINDOW_COUNT:

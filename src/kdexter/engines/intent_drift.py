@@ -17,7 +17,7 @@ Gate: G-19 Drift Gate (criteria now defined via DRIFT_HIGH_THRESHOLD)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -36,7 +36,7 @@ class DriftCheckResult:
     level: DriftLevel
     blocked: bool
     dimensions: dict[str, float]   # per-dimension breakdown
-    checked_at: datetime = field(default_factory=datetime.utcnow)
+    checked_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     reason: Optional[str] = None
 
 
@@ -47,7 +47,7 @@ class IntentSnapshot:
     Used as the reference point for all subsequent drift measurements.
     """
     intent_id: str
-    captured_at: datetime = field(default_factory=datetime.utcnow)
+    captured_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     intent_text: str = ""
     goal_scope: list[str] = field(default_factory=list)     # e.g. ["spot_trading", "KRW_pairs"]
     risk_budget: float = 0.02                                # e.g. max 2% loss per trade

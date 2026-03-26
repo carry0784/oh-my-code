@@ -9,10 +9,7 @@ Run: python tests/test_failure_router.py
 from __future__ import annotations
 
 import sys
-import os
-from datetime import datetime, timedelta
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from datetime import datetime, timedelta, timezone
 
 from kdexter.engines.failure_router import (
     FailurePatternMemory,
@@ -37,16 +34,16 @@ def test_memory_first():
 def test_memory_repeat():
     mem = FailurePatternMemory()
     # Record 1 occurrence far in the past
-    mem.record("F-I-001", datetime(2020, 1, 1))
+    mem.record("F-I-001", datetime(2020, 1, 1, tzinfo=timezone.utc))
     assert mem.classify_recurrence("F-I-001") == Recurrence.REPEAT
     print("  [2] Pattern memory REPEAT  OK")
 
 
 def test_memory_pattern_by_count():
     mem = FailurePatternMemory()
-    mem.record("F-I-001", datetime(2020, 1, 1))
-    mem.record("F-I-001", datetime(2020, 6, 1))
-    mem.record("F-I-001", datetime(2021, 1, 1))
+    mem.record("F-I-001", datetime(2020, 1, 1, tzinfo=timezone.utc))
+    mem.record("F-I-001", datetime(2020, 6, 1, tzinfo=timezone.utc))
+    mem.record("F-I-001", datetime(2021, 1, 1, tzinfo=timezone.utc))
     # 3 prior occurrences → PATTERN
     assert mem.classify_recurrence("F-I-001") == Recurrence.PATTERN
     print("  [3] Pattern memory PATTERN by count (3+)  OK")
@@ -55,8 +52,8 @@ def test_memory_pattern_by_count():
 def test_memory_pattern_by_window():
     mem = FailurePatternMemory()
     # 2 within last 7 days
-    mem.record("F-S-001", datetime.utcnow() - timedelta(days=3))
-    mem.record("F-S-001", datetime.utcnow() - timedelta(days=1))
+    mem.record("F-S-001", datetime.now(timezone.utc) - timedelta(days=3))
+    mem.record("F-S-001", datetime.now(timezone.utc) - timedelta(days=1))
     assert mem.classify_recurrence("F-S-001") == Recurrence.PATTERN
     print("  [4] Pattern memory PATTERN by window (2 in 7d)  OK")
 

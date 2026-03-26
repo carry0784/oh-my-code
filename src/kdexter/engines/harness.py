@@ -11,7 +11,7 @@ B2 Orchestration layer.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -54,7 +54,7 @@ class HarnessEngine:
         if run is None or run.status != HarnessStatus.CREATED:
             return False
         run.status = HarnessStatus.RUNNING
-        run.started_at = datetime.utcnow()
+        run.started_at = datetime.now(timezone.utc)
         return True
 
     def complete(self, run_id: str, result: Optional[dict] = None) -> bool:
@@ -62,7 +62,7 @@ class HarnessEngine:
         if run is None or run.status != HarnessStatus.RUNNING:
             return False
         run.status = HarnessStatus.COMPLETED
-        run.completed_at = datetime.utcnow()
+        run.completed_at = datetime.now(timezone.utc)
         run.result = result or {}
         return True
 
@@ -71,7 +71,7 @@ class HarnessEngine:
         if run is None or run.status != HarnessStatus.RUNNING:
             return False
         run.status = HarnessStatus.FAILED
-        run.completed_at = datetime.utcnow()
+        run.completed_at = datetime.now(timezone.utc)
         run.error = error
         return True
 

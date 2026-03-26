@@ -58,6 +58,14 @@ from app.agents.orchestrator import AgentOrchestrator
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────── #
 
+@pytest.fixture(autouse=True)
+def _reset_singleton():
+    """Reset GovernanceGate singleton before and after every test."""
+    GovernanceGate._reset_for_testing()
+    yield
+    GovernanceGate._reset_for_testing()
+
+
 @pytest.fixture
 def governance_components():
     """Create fresh governance components for each test."""
@@ -515,3 +523,106 @@ class TestRecordConsistency:
         }
         orphan_count = len(pre_ids - linked_pre_ids)
         assert orphan_count == 0
+
+
+# ═══════════════════════════════════════════════════════════════════════════ #
+# AXIS 4: SINGLETON SAFETY (B-06) — 5 tests
+# ═══════════════════════════════════════════════════════════════════════════ #
+
+class TestSingletonSafety:
+    """B-06: GovernanceGate singleton enforcement and operational safety."""
+
+    def test_singleton_enforced(self, governance_components):
+        """Second GovernanceGate creation raises RuntimeError."""
+        ledger, store, security_ctx = governance_components
+        # First creation succeeds
+        gate1 = GovernanceGate(
+            forbidden_ledger=ledger,
+            evidence_store=store,
+            security_ctx=security_ctx,
+        )
+        assert gate1.gate_id is not None
+
+        # Second creation must fail
+        ledger2 = ForbiddenLedger()
+        store2 = EvidenceStore()
+        ctx2 = SecurityStateContext()
+        with pytest.raises(RuntimeError, match="singleton already exists"):
+            GovernanceGate(
+                forbidden_ledger=ledger2,
+                evidence_store=store2,
+                security_ctx=ctx2,
+            )
+
+    def test_duplicate_lifespan_blocked(self, governance_components):
+        """_create_governance_gate() blocks when GovernanceGate._instance exists."""
+        ledger, store, security_ctx = governance_components
+        # Create first gate
+        GovernanceGate(
+            forbidden_ledger=ledger,
+            evidence_store=store,
+            security_ctx=security_ctx,
+        )
+        # Simulate duplicate lifespan call
+        with patch("app.main.settings") as mock_settings:
+            mock_settings.governance_enabled = True
+            from app.main import _create_governance_gate
+            with pytest.raises(RuntimeError, match="duplicate lifespan"):
+                _create_governance_gate()
+
+    def test_security_state_thread_safe(self):
+        """Concurrent escalate calls from 10 threads converge to LOCKDOWN."""
+        import threading
+
+        ctx = SecurityStateContext()
+        barrier = threading.Barrier(10)
+
+        def escalate_to_lockdown():
+            barrier.wait()
+            ctx.escalate(SecurityStateEnum.LOCKDOWN, "thread-test")
+
+        threads = [threading.Thread(target=escalate_to_lockdown) for _ in range(10)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert ctx.current == SecurityStateEnum.LOCKDOWN
+        assert ctx.previous is not None
+
+    def test_gate_id_in_evidence(self, gate, valid_task):
+        """gate_id is propagated to PRE and POST evidence artifacts."""
+        passed, decision, reason, eid = gate.pre_check(valid_task)
+        assert passed is True
+
+        # Check PRE evidence
+        pre_bundle = gate.evidence_store.get(eid)
+        assert pre_bundle is not None
+        pre_art = pre_bundle.artifacts[0]
+        assert pre_art["gate_id"] == gate.gate_id
+        assert pre_art["gate_generation"] == gate.gate_generation
+        assert "gate_created_at" in pre_art
+
+        # Record POST evidence
+        post_eid = gate.post_record(
+            valid_task,
+            {"approved": True, "confidence": 0.9, "reasoning": "ok"},
+            eid,
+        )
+        post_bundle = gate.evidence_store.get(post_eid)
+        assert post_bundle is not None
+        post_art = post_bundle.artifacts[0]
+        assert post_art["gate_id"] == gate.gate_id
+        assert post_art["gate_generation"] == gate.gate_generation
+
+    def test_reset_for_testing_production_blocked(self, governance_components):
+        """_reset_for_testing() raises RuntimeError when APP_ENV=production."""
+        ledger, store, security_ctx = governance_components
+        GovernanceGate(
+            forbidden_ledger=ledger,
+            evidence_store=store,
+            security_ctx=security_ctx,
+        )
+        with patch.dict("os.environ", {"APP_ENV": "production"}):
+            with pytest.raises(RuntimeError, match="forbidden in production"):
+                GovernanceGate._reset_for_testing()

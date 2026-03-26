@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field, asdict
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from kdexter.loops.concurrency import LoopPriority, RuleLedgerLock
@@ -32,7 +32,7 @@ class RuleProvenance:
     """
     source_incident: str        # incident ID that caused this rule
     author_layer: str           # "L5", "L13", "RecoveryLoop", etc.
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     rationale: str = ""         # why this rule was created/changed
 
 
@@ -46,8 +46,8 @@ class Rule:
     priority: int = 0
     enabled: bool = True
     provenance: Optional[RuleProvenance] = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     version: int = 1
 
     def to_snapshot(self) -> dict:
@@ -70,7 +70,7 @@ class RuleChangeRecord:
     rule_id: str = ""
     change_type: str = ""       # "CREATE" | "UPDATE" | "DELETE"
     provenance: Optional[RuleProvenance] = None
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     before_snapshot: Optional[dict] = None
     after_snapshot: Optional[dict] = None
 
@@ -197,7 +197,7 @@ class RuleLedger:
                     setattr(rule, key, value)
 
             rule.provenance = provenance
-            rule.updated_at = datetime.utcnow()
+            rule.updated_at = datetime.now(timezone.utc)
             rule.version += 1
 
             self._record_change(
@@ -231,7 +231,7 @@ class RuleLedger:
 
             before = rule.to_snapshot()
             rule.enabled = False
-            rule.updated_at = datetime.utcnow()
+            rule.updated_at = datetime.now(timezone.utc)
             rule.version += 1
 
             self._record_change(

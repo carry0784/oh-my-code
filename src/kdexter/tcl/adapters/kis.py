@@ -25,7 +25,7 @@ import json
 import logging
 import urllib.request
 import urllib.error
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from kdexter.tcl.adapters import ExchangeAdapter
@@ -96,7 +96,7 @@ class KISAdapter(ExchangeAdapter):
         """Check if access token is still valid."""
         if self._access_token is None or self._token_expires is None:
             return False
-        return datetime.utcnow() < self._token_expires
+        return datetime.now(timezone.utc) < self._token_expires
 
     async def _ensure_token(self) -> str:
         """
@@ -119,7 +119,7 @@ class KISAdapter(ExchangeAdapter):
         )
         self._access_token = raw.get("access_token", "")
         expires_in = raw.get("expires_in", 86400)
-        self._token_expires = datetime.utcnow() + timedelta(seconds=expires_in - 1800)
+        self._token_expires = datetime.now(timezone.utc) + timedelta(seconds=expires_in - 1800)
         return self._access_token
 
     def _http_post(self, url: str, body: bytes, headers: Optional[dict] = None) -> dict:
@@ -197,7 +197,7 @@ class KISAdapter(ExchangeAdapter):
                     "output": {
                         "KRX_FWDG_ORD_ORGNO": "",
                         "ODNO": sim_order_id,
-                        "ORD_TMD": datetime.utcnow().strftime("%H%M%S"),
+                        "ORD_TMD": datetime.now(timezone.utc).strftime("%H%M%S"),
                     },
                 }
                 parsed = {
@@ -394,8 +394,8 @@ class KISAdapter(ExchangeAdapter):
         headers = self._build_headers(tr_id)
         params = (
             f"CANO={self._account_prefix}&ACNT_PRDT_CD={self._account_suffix}"
-            f"&INQR_STRT_DT={datetime.utcnow().strftime('%Y%m%d')}"
-            f"&INQR_END_DT={datetime.utcnow().strftime('%Y%m%d')}"
+            f"&INQR_STRT_DT={datetime.now(timezone.utc).strftime('%Y%m%d')}"
+            f"&INQR_END_DT={datetime.now(timezone.utc).strftime('%Y%m%d')}"
             f"&SLL_BUY_DVSN_CD=00&INQR_DVSN=00&PDNO=&CCLD_DVSN=00"
             f"&ORD_GNO_BRNO=&ODNO={command.exchange_order_id or ''}"
             f"&INQR_DVSN_3=00&INQR_DVSN_1=&CTX_AREA_FK100=&CTX_AREA_NK100="

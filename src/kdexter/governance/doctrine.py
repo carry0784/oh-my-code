@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -73,7 +73,7 @@ class DoctrineArticle:
     severity: DoctrineSeverity
     constraint: str                           # machine-checkable expression
     ratified_by: str = "L1"                   # who ratified (always L1/Human)
-    ratified_at: datetime = field(default_factory=datetime.utcnow)
+    ratified_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     status: DoctrineStatus = DoctrineStatus.RATIFIED
     related_mandatory: list[str] = field(default_factory=list)  # M-xx refs
 
@@ -86,7 +86,7 @@ class DoctrineViolation:
     violated_by: str = ""           # layer or actor that violated
     severity: DoctrineSeverity = DoctrineSeverity.ADVISORY
     description: str = ""
-    detected_at: datetime = field(default_factory=datetime.utcnow)
+    detected_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     context: dict = field(default_factory=dict)
 
 

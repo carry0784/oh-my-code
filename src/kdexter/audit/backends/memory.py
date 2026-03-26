@@ -3,22 +3,30 @@ In-Memory Evidence Backend — K-Dexter AOS v4
 
 Default backend. Stores bundles in a dict. No persistence across restarts.
 Used by all tests and as the default when no backend is specified.
+
+Append-only: duplicate bundle_id raises DuplicateEvidenceError.
+NOT_DURABLE: evidence is lost on process restart.
 """
 from __future__ import annotations
 
 from typing import Optional
 
 from kdexter.audit.backends import EvidenceBackend
-from kdexter.audit.evidence_store import EvidenceBundle
+from kdexter.audit.evidence_store import DuplicateEvidenceError, EvidenceBundle
 
 
 class InMemoryBackend(EvidenceBackend):
-    """Dict-based in-memory evidence storage."""
+    """Dict-based in-memory evidence storage. NOT_DURABLE."""
 
     def __init__(self) -> None:
         self._bundles: dict[str, EvidenceBundle] = {}
 
     def store(self, bundle: EvidenceBundle) -> str:
+        if bundle.bundle_id in self._bundles:
+            raise DuplicateEvidenceError(
+                f"Append-only violation: bundle_id={bundle.bundle_id} already exists. "
+                f"Evidence records are immutable."
+            )
         self._bundles[bundle.bundle_id] = bundle
         return bundle.bundle_id
 

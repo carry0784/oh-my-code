@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from sqlalchemy import String, Float, DateTime
@@ -21,4 +21,4 @@ class Trade(Base):
     fee: Mapped[float] = mapped_column(Float, default=0.0)
     fee_currency: Mapped[str] = mapped_column(String(10), default="USDT")
     executed_at: Mapped[datetime] = mapped_column(DateTime)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
