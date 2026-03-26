@@ -2631,20 +2631,31 @@ async def _compute_integrity_panel(
 ) -> IntegrityPanel:
     """제8조: 무결성 패널 계산. 표시용 계산만, 자동 점검 엔진 아님."""
     try:
-        # Snapshot age: newest position update
+        # Snapshot age: newest position update (primary)
         latest_pos = await db.execute(
             select(Position.updated_at)
             .order_by(Position.updated_at.desc())
             .limit(1)
         )
         latest_ts = latest_pos.scalar()
+
+        # Fallback: newest AssetSnapshot.snapshot_at (when no positions exist)
+        if latest_ts is None:
+            from app.models.asset_snapshot import AssetSnapshot
+            latest_snap = await db.execute(
+                select(AssetSnapshot.snapshot_at)
+                .order_by(AssetSnapshot.snapshot_at.desc())
+                .limit(1)
+            )
+            latest_ts = latest_snap.scalar()
+
         snapshot_age = (
             int((now - latest_ts.replace(tzinfo=timezone.utc)).total_seconds())
             if latest_ts
             else None
         )
 
-        # Stale data: > 5 minutes since last position update
+        # Stale data: > 5 minutes since last update
         stale_data = snapshot_age is not None and snapshot_age > 300
 
         return IntegrityPanel(
