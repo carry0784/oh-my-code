@@ -2499,24 +2499,35 @@ async def _build_ops_safety_summary() -> dict:
     try:
         from app.core.recovery_preflight import run_recovery_preflight
         from app.core.execution_gate import evaluate_execution_gate
-        from app.core.operator_approval import build_operator_approval
+        from app.core.operator_approval import issue_approval
+        from app.core.execution_policy import evaluate_execution_policy
         pf = run_recovery_preflight()
         gate = evaluate_execution_gate()
-        apr = build_operator_approval()
+        apr = issue_approval()
+        pol = evaluate_execution_policy()
+
+        # Extract trading_authorized from gate conditions
+        trading_auth = None
+        if gate:
+            for c in gate.conditions:
+                if c.name == "trading_authorized":
+                    trading_auth = c.observed == "true"
+
         return {
             "pipeline_state": "ALL_CLEAR" if (gate and gate.conditions_met == 4) else "BLOCKED",
             "preflight_decision": pf.decision.value if pf else "NOT_READY",
             "gate_decision": gate.decision.value if gate else "CLOSED",
             "approval_decision": apr.decision.value if apr else "REJECTED",
-            "policy_decision": getattr(apr, "policy_decision", "UNKNOWN") if apr else "UNKNOWN",
+            "policy_decision": pol.decision.value if pol else "UNKNOWN",
             "ops_score": gate.ops_score_average if gate else None,
-            "trading_authorized": getattr(gate, "trading_authorized", None) if gate else None,
+            "trading_authorized": trading_auth,
             "lockdown_state": "NORMAL",
             "preflight_evidence_id": pf.evidence_id if pf else "",
             "gate_evidence_id": gate.evidence_id if (gate and hasattr(gate, "evidence_id")) else "",
             "approval_id": apr.approval_id if (apr and hasattr(apr, "approval_id")) else "",
         }
-    except Exception:
+    except Exception as e:
+        logger.error("_build_ops_safety_summary_failed", error=str(e))
         return {}  # Fail-closed: empty data → all stages MISSING
 
 
