@@ -2458,6 +2458,22 @@ async def alert_summary_detail():
 # No background / queue / worker / command bus.
 # Receipt + audit on every attempt.
 # ---------------------------------------------------------------------------
+def _get_operator_id(request: Request) -> str:
+    """Extract operator identity for receipt/audit quality. Display only, not auth gate."""
+    try:
+        # Try X-Operator-Id header (set by operator tools)
+        op = request.headers.get("x-operator-id", "").strip()
+        if op:
+            return op[:64]
+        # Try client IP as identifier
+        client = getattr(request, "client", None)
+        if client and client.host:
+            return f"op@{client.host}"
+    except Exception:
+        pass
+    return "operator"  # fail-closed default
+
+
 @router.post("/api/manual-action/execute", include_in_schema=False)
 async def manual_action_execute(request: Request):
     """C-04: Execute manual action after 9-stage chain validation.
@@ -2473,7 +2489,7 @@ async def manual_action_execute(request: Request):
         safety_data = await _build_ops_safety_summary()
         receipt = validate_and_execute(
             safety_data=safety_data,
-            operator_id="operator",  # TODO: real operator ID from auth
+            operator_id=_get_operator_id(request),
         )
         return receipt.model_dump()
     except Exception as e:
@@ -2484,7 +2500,7 @@ async def manual_action_execute(request: Request):
         return ManualActionReceipt(
             receipt_id=f"RCP-{uuid.uuid4().hex[:12]}",
             action_id=f"MA-ERR-{uuid.uuid4().hex[:8]}",
-            operator_id="operator",
+            operator_id=_get_operator_id(request),
             timestamp=datetime.now(tz.utc).isoformat(),
             decision=ManualActionDecision.FAILED,
             block_code="EXECUTION_FAILED",
@@ -2542,7 +2558,8 @@ async def manual_action_rollback(request: Request):
         from app.core.manual_recovery_handler import manual_rollback
         body = await request.json() if request.headers.get("content-type") == "application/json" else {}
         safety_data = await _build_ops_safety_summary()
-        receipt = manual_rollback(safety_data, original_receipt_id=body.get("original_receipt_id", ""))
+        op = _get_operator_id(request)
+        receipt = manual_rollback(safety_data, original_receipt_id=body.get("original_receipt_id", ""), operator_id=op)
         return receipt.model_dump()
     except Exception as e:
         logger.error("manual_rollback_failed", error=str(e))
@@ -2556,7 +2573,8 @@ async def manual_action_retry(request: Request):
         from app.core.manual_recovery_handler import manual_retry
         body = await request.json() if request.headers.get("content-type") == "application/json" else {}
         safety_data = await _build_ops_safety_summary()
-        receipt = manual_retry(safety_data, original_receipt_id=body.get("original_receipt_id", ""))
+        op = _get_operator_id(request)
+        receipt = manual_retry(safety_data, original_receipt_id=body.get("original_receipt_id", ""), operator_id=op)
         return receipt.model_dump()
     except Exception as e:
         logger.error("manual_retry_failed", error=str(e))
@@ -2569,7 +2587,8 @@ async def manual_action_simulate(request: Request):
     try:
         from app.core.manual_recovery_handler import simulate_action
         safety_data = await _build_ops_safety_summary()
-        receipt = simulate_action(safety_data)
+        op = _get_operator_id(request)
+        receipt = simulate_action(safety_data, operator_id=op)
         return receipt.model_dump()
     except Exception as e:
         logger.error("manual_simulate_failed", error=str(e))
@@ -2582,7 +2601,8 @@ async def manual_action_preview(request: Request):
     try:
         from app.core.manual_recovery_handler import preview_action
         safety_data = await _build_ops_safety_summary()
-        result = preview_action(safety_data)
+        op = _get_operator_id(request)
+        result = preview_action(safety_data, operator_id=op)
         return result.model_dump()
     except Exception as e:
         logger.error("manual_preview_failed", error=str(e))

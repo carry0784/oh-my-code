@@ -255,3 +255,39 @@ class TestC04ReceiptAuditHistory:
         start = html.find("function _pushC04History")
         body = html[start:start + 500] if start != -1 else ""
         assert "_c04SessionHistory.length > 10" in body or "length > " in body
+
+
+# ===========================================================================
+# UI-9: Operator identity binding
+# ===========================================================================
+class TestC04OperatorIdentityBinding:
+
+    def test_operator_field_in_evidence(self):
+        assert 'id="t3sc-c04-ev-operator"' in _html()
+
+    def test_operator_default_unavailable(self):
+        html = _html()
+        idx = html.find('id="t3sc-c04-ev-operator"')
+        if idx != -1:
+            area = html[idx:idx + 100]
+            assert 'unavailable' in area
+
+    def test_get_operator_id_in_routes(self):
+        route = ROUTE_PATH.read_text(encoding="utf-8")
+        assert "_get_operator_id" in route
+
+    def test_operator_id_not_auth_gate(self):
+        """Operator identity must not be used as auth/execute gate."""
+        route = ROUTE_PATH.read_text(encoding="utf-8")
+        start = route.find("def _get_operator_id")
+        body = route[start:start + 500] if start != -1 else ""
+        assert "authorize" not in body.lower()
+        assert "permission" not in body.lower()
+        assert "allow" not in body.lower()
+
+    def test_operator_id_has_failclosed_default(self):
+        route = ROUTE_PATH.read_text(encoding="utf-8")
+        start = route.find("def _get_operator_id")
+        end = route.find("\ndef ", start + 20) if start != -1 else -1
+        body = route[start:end] if start != -1 and end != -1 else ""
+        assert '"operator"' in body  # fail-closed default
