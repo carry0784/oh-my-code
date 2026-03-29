@@ -12,6 +12,7 @@ celery_app = Celery(
         "workers.tasks.market_tasks",
         "workers.tasks.snapshot_tasks",
         "workers.tasks.check_tasks",  # S-02: operational check tasks
+        "workers.tasks.governance_monitor_tasks",  # G-MON: governance monitor
     ],
 )
 
@@ -54,5 +55,14 @@ celery_app.conf.beat_schedule = {
     "ops-hourly-check": {
         "task": "workers.tasks.check_tasks.run_hourly_ops_check",
         "schedule": 3600.0,  # 1h
+    },
+    # G-MON: governance monitor (6 indicators, notification on WARN/FAIL)
+    "governance-monitor-daily": {
+        "task": "workers.tasks.governance_monitor_tasks.run_daily_governance_report",
+        "schedule": 86400.0,  # 24h
+    },
+    "governance-monitor-weekly": {
+        "task": "workers.tasks.governance_monitor_tasks.run_weekly_governance_summary",
+        "schedule": 604800.0,  # 7d
     },
 }

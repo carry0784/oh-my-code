@@ -98,13 +98,51 @@
 
 ---
 
+## 자동 운영 감시 체계 (G-MON)
+
+| 구분 | 주기 | 내용 |
+|------|------|------|
+| Daily Report | 24h | 6-indicator OK/WARN/FAIL + WARN/FAIL 시 Discord 알림 |
+| Weekly Summary | 7d | 7일 추세 분석 (성공률/비용/패턴 변화) |
+| On-demand | API | `GET /agents/governance/monitor` |
+
+**알림 채널**: Discord webhook (`NOTIFIER_WEBHOOK_URL`), File JSONL (`NOTIFIER_FILE_PATH`)
+
+**Celery Beat 스케줄**:
+- `governance-monitor-daily`: 24h
+- `governance-monitor-weekly`: 7d
+
+**리포트 저장**: `data/governance_reports.jsonl` (JSONL append)
+
+---
+
 ## 검증 기준선 스냅샷
 
 ```
 Date: 2026-03-29
-test_agent_governance.py: 29 PASS (6 axes)
-test_market_feed.py:      16 PASS
-verify_constitution.py:   PASS (26 docs, 2073 lines, 0 blockers)
-OKX code references:      0
-Deferred checks:          0/10
+test_agent_governance.py:    29 PASS (6 axes)
+test_governance_monitor.py:  11 PASS (6 classes)
+test_market_feed.py:         16 PASS
+verify_constitution.py:      PASS (26 docs, 2073 lines, 0 blockers)
+OKX code references:         0
+Deferred checks:             0/10
+```
+
+---
+
+## 최종 선언
+
+```
+K-Dexter AI Governance System
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Status:       OPERATIONAL (LOCKED)
+Core:         COMPLETE
+Work Queue:   EMPTY
+Governance:   ENFORCED
+Monitoring:   AUTOMATED (G-MON)
+Expansion:    CONDITION-BASED ONLY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Mode:         Controlled Operation
+Next Action:  Monitor Only
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
