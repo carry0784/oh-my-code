@@ -626,3 +626,193 @@ class TestSingletonSafety:
         with patch.dict("os.environ", {"APP_ENV": "production"}):
             with pytest.raises(RuntimeError, match="forbidden in production"):
                 GovernanceGate._reset_for_testing()
+
+
+# ═════════════════��══════════════════��══════════════════════════════════════ #
+# AXIS 5: BUDGET CONTROL (M-08 / G-22) — 4 tests
+# ═══��═══════════════════════════════════���═══════════════════════════════���═══ #
+
+class TestBudgetControl:
+    """M-08/G-22: CostController integration with GovernanceGate."""
+
+    def test_budget_check_passed_when_under_limit(self, governance_components, valid_task):
+        """BUDGET_CHECK = passed when resource_usage_ratio <= 1.0."""
+        from kdexter.engines.cost_controller import CostController
+
+        ledger, store, security_ctx = governance_components
+        cc = CostController()
+        cc.set_budget("API_CALLS", limit=100)
+        cc.set_budget("LLM_TOKENS", limit=10000)
+        cc.record_usage("API_CALLS", 10)
+        cc.record_usage("LLM_TOKENS", 500)
+
+        gate = GovernanceGate(
+            forbidden_ledger=ledger,
+            evidence_store=store,
+            security_ctx=security_ctx,
+            cost_controller=cc,
+        )
+
+        passed, decision, reason, eid = gate.pre_check(valid_task)
+        assert passed is True
+
+        # Verify BUDGET_CHECK is now "passed", not "deferred"
+        bundle = gate.evidence_store.get(eid)
+        check_matrix = bundle.artifacts[0]["check_matrix"]
+        assert check_matrix["BUDGET_CHECK"]["status"] == CheckStatus.PASSED.value
+
+    def test_budget_check_blocks_when_exceeded(self, governance_components, valid_task):
+        """BUDGET_CHECK = failed when resource_usage_ratio > 1.0."""
+        from kdexter.engines.cost_controller import CostController
+
+        ledger, store, security_ctx = governance_components
+        cc = CostController()
+        cc.set_budget("API_CALLS", limit=10)
+        cc.record_usage("API_CALLS", 15)  # 150% = exceeded
+
+        gate = GovernanceGate(
+            forbidden_ledger=ledger,
+            evidence_store=store,
+            security_ctx=security_ctx,
+            cost_controller=cc,
+        )
+
+        passed, decision, reason, eid = gate.pre_check(valid_task)
+        assert passed is False
+        assert decision == DecisionCode.BLOCKED.value
+        assert reason == ReasonCode.BUDGET_EXCEEDED.value
+
+        bundle = gate.evidence_store.get(eid)
+        check_matrix = bundle.artifacts[0]["check_matrix"]
+        assert check_matrix["BUDGET_CHECK"]["status"] == CheckStatus.FAILED.value
+
+    def test_budget_deferred_when_no_controller(self, gate, valid_task):
+        """BUDGET_CHECK = deferred when CostController is not connected."""
+        assert gate.cost_controller is None
+        passed, decision, reason, eid = gate.pre_check(valid_task)
+        assert passed is True
+
+        bundle = gate.evidence_store.get(eid)
+        check_matrix = bundle.artifacts[0]["check_matrix"]
+        assert check_matrix["BUDGET_CHECK"]["status"] == CheckStatus.DEFERRED.value
+
+    @pytest.mark.asyncio
+    async def test_post_record_records_token_usage(self, governance_components, valid_task, mock_db):
+        """post_record records LLM token usage to CostController."""
+        from kdexter.engines.cost_controller import CostController
+
+        ledger, store, security_ctx = governance_components
+        cc = CostController()
+        cc.set_budget("API_CALLS", limit=1000)
+        cc.set_budget("LLM_TOKENS", limit=500000)
+
+        gate = GovernanceGate(
+            forbidden_ledger=ledger,
+            evidence_store=store,
+            security_ctx=security_ctx,
+            cost_controller=cc,
+        )
+
+        orchestrator = _make_orchestrator(mock_db, gate)
+
+        with patch(
+            "app.agents.signal_validator.SignalValidatorAgent.execute",
+            new_callable=AsyncMock,
+            return_value=_mock_llm_result(),
+        ):
+            # Simulate last_usage being set by BaseAgent
+            orchestrator.signal_validator.last_usage = {
+                "input_tokens": 100,
+                "output_tokens": 200,
+            }
+            await orchestrator.analyze(valid_task)
+
+        # Verify CostController recorded the usage
+        api_budget = cc.get_budget("API_CALLS")
+        token_budget = cc.get_budget("LLM_TOKENS")
+        assert api_budget.current == 1  # 1 API call
+        assert token_budget.current == 300  # 100 + 200 tokens
+
+
+# ═══════════════════════════════════════════════════════════════════════════ #
+# AXIS 6: FAILURE PATTERN MEMORY (M-13 / G-21) — 3 tests
+# ═══════════════════════════════════════════════════════════════════════════ #
+
+class TestFailurePatternMemory:
+    """M-13/G-21: FailurePatternMemory integration with GovernanceGate."""
+
+    def test_pattern_check_passed_when_no_history(self, governance_components, valid_task):
+        """PATTERN_CHECK = passed when no failure history."""
+        from kdexter.engines.failure_router import FailurePatternMemory
+
+        ledger, store, security_ctx = governance_components
+        pm = FailurePatternMemory()
+
+        gate = GovernanceGate(
+            forbidden_ledger=ledger,
+            evidence_store=store,
+            security_ctx=security_ctx,
+            pattern_memory=pm,
+        )
+
+        passed, decision, reason, eid = gate.pre_check(valid_task)
+        assert passed is True
+
+        bundle = gate.evidence_store.get(eid)
+        check_matrix = bundle.artifacts[0]["check_matrix"]
+        assert check_matrix["PATTERN_CHECK"]["status"] == CheckStatus.PASSED.value
+
+    def test_pattern_check_blocks_recurring_failure(self, governance_components, valid_task):
+        """PATTERN_CHECK = failed when recurring failure pattern detected."""
+        from kdexter.engines.failure_router import FailurePatternMemory
+
+        ledger, store, security_ctx = governance_components
+        pm = FailurePatternMemory()
+
+        # Record 3 prior failures for this task type → PATTERN recurrence
+        pm.record("AGENT_VALIDATE_SIGNAL")
+        pm.record("AGENT_VALIDATE_SIGNAL")
+        pm.record("AGENT_VALIDATE_SIGNAL")
+
+        gate = GovernanceGate(
+            forbidden_ledger=ledger,
+            evidence_store=store,
+            security_ctx=security_ctx,
+            pattern_memory=pm,
+        )
+
+        passed, decision, reason, eid = gate.pre_check(valid_task)
+        assert passed is False
+        assert decision == DecisionCode.BLOCKED.value
+        assert reason == ReasonCode.PATTERN_DETECTED.value
+
+        bundle = gate.evidence_store.get(eid)
+        check_matrix = bundle.artifacts[0]["check_matrix"]
+        assert check_matrix["PATTERN_CHECK"]["status"] == CheckStatus.FAILED.value
+
+    @pytest.mark.asyncio
+    async def test_error_records_failure_to_pattern_memory(self, governance_components, valid_task, mock_db):
+        """LLM exception records failure to FailurePatternMemory."""
+        from kdexter.engines.failure_router import FailurePatternMemory
+
+        ledger, store, security_ctx = governance_components
+        pm = FailurePatternMemory()
+
+        gate = GovernanceGate(
+            forbidden_ledger=ledger,
+            evidence_store=store,
+            security_ctx=security_ctx,
+            pattern_memory=pm,
+        )
+
+        orchestrator = _make_orchestrator(mock_db, gate)
+
+        with patch(
+            "app.agents.signal_validator.SignalValidatorAgent.execute",
+            new_callable=AsyncMock,
+            side_effect=RuntimeError("LLM connection failed"),
+        ):
+            await orchestrator.analyze(valid_task)
+
+        # Verify failure was recorded
+        assert pm.count("AGENT_VALIDATE_SIGNAL") == 1

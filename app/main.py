@@ -27,6 +27,8 @@ def _create_governance_gate():
 
     from kdexter.ledger.forbidden_ledger import ForbiddenLedger
     from kdexter.audit.evidence_store import EvidenceStore
+    from kdexter.engines.cost_controller import CostController
+    from kdexter.engines.failure_router import FailurePatternMemory
     from kdexter.state_machine.security_state import SecurityStateContext
     from app.agents.governance_gate import GovernanceGate
 
@@ -51,6 +53,14 @@ def _create_governance_gate():
     store = EvidenceStore(backend=backend)
     security_ctx = SecurityStateContext()
 
+    # L29 Cost Controller — budget limits for agent LLM calls
+    cost_ctrl = CostController()
+    cost_ctrl.set_budget("API_CALLS", limit=1000)     # max 1000 LLM calls per cycle
+    cost_ctrl.set_budget("LLM_TOKENS", limit=500000)  # max 500k tokens per cycle
+
+    # L17 Failure Pattern Memory — tracks agent execution failures
+    pattern_mem = FailurePatternMemory()
+
     logger.info(
         "evidence_store_initialized",
         evidence_mode=evidence_mode,
@@ -62,6 +72,8 @@ def _create_governance_gate():
         forbidden_ledger=ledger,
         evidence_store=store,
         security_ctx=security_ctx,
+        cost_controller=cost_ctrl,
+        pattern_memory=pattern_mem,
     )
 
 

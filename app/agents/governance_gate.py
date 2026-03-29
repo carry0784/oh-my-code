@@ -22,6 +22,8 @@ from enum import Enum
 from typing import Any, ClassVar, Optional
 
 from kdexter.audit.evidence_store import EvidenceBundle, EvidenceStore
+from kdexter.engines.cost_controller import CostController
+from kdexter.engines.failure_router import FailurePatternMemory, Recurrence
 from kdexter.ledger.forbidden_ledger import ForbiddenAction, ForbiddenLedger
 from kdexter.state_machine.security_state import SecurityStateContext
 
@@ -49,6 +51,8 @@ class ReasonCode(str, Enum):
     MISSING_EXCHANGE = "GOV-MISSING-EXCHANGE"
     COMPLIANCE_D002 = "GOV-COMPLIANCE-D002"
     COMPLIANCE_D009 = "GOV-COMPLIANCE-D009"
+    BUDGET_EXCEEDED = "GOV-BUDGET-EXCEEDED"
+    PATTERN_DETECTED = "GOV-PATTERN-DETECTED"
     POST_EXCEPTION = "GOV-POST-EXCEPTION"
 
 
@@ -131,6 +135,8 @@ class GovernanceGate:
         forbidden_ledger: ForbiddenLedger,
         evidence_store: EvidenceStore,
         security_ctx: SecurityStateContext,
+        cost_controller: Optional[CostController] = None,
+        pattern_memory: Optional[FailurePatternMemory] = None,
     ) -> None:
         # Singleton guard — atomic check+assign under lock
         with GovernanceGate._creation_lock:
@@ -151,6 +157,8 @@ class GovernanceGate:
         self.forbidden_ledger = forbidden_ledger
         self.evidence_store = evidence_store
         self.security_ctx = security_ctx
+        self.cost_controller = cost_controller
+        self.pattern_memory = pattern_memory
 
         # Register agent-scope forbidden actions (idempotent — register() overwrites by action_id)
         for fa in _AGENT_FORBIDDEN_ACTIONS:
@@ -281,14 +289,53 @@ class GovernanceGate:
             "status": CheckStatus.NOT_APPLICABLE.value,
             "detail": "Agent calls do not modify rules — RuleLedger/L16 scope",
         }
-        check_matrix["PATTERN_CHECK"] = {
-            "status": CheckStatus.DEFERRED.value,
-            "detail": "Failure pattern memory (L17) — deferred to priority 5+",
-        }
-        check_matrix["BUDGET_CHECK"] = {
-            "status": CheckStatus.DEFERRED.value,
-            "detail": "Cost control (L29) — deferred to priority 3 (M-08/G-22)",
-        }
+        # ── Check 6: PATTERN_CHECK (M-13 / G-21) ──
+        if self.pattern_memory is not None:
+            task_type = getattr(task, "task_type", "unknown")
+            recurrence = self.pattern_memory.classify_recurrence(f"AGENT_{task_type.upper()}")
+            if recurrence == Recurrence.PATTERN:
+                check_matrix["PATTERN_CHECK"] = {
+                    "status": CheckStatus.FAILED.value,
+                    "detail": f"Recurring failure pattern detected for AGENT_{task_type.upper()}",
+                }
+                return self._finalize_pre(
+                    task, False, DecisionCode.BLOCKED, ReasonCode.PATTERN_DETECTED,
+                    check_matrix, f"Failure pattern detected: AGENT_{task_type.upper()}",
+                )
+            check_matrix["PATTERN_CHECK"] = {
+                "status": CheckStatus.PASSED.value,
+                "detail": f"recurrence={recurrence.value} for AGENT_{task_type.upper()}",
+            }
+        else:
+            check_matrix["PATTERN_CHECK"] = {
+                "status": CheckStatus.DEFERRED.value,
+                "detail": "FailurePatternMemory not connected — deferred",
+            }
+        # ── Check 7: BUDGET_CHECK (M-08 / G-22) ──
+        if self.cost_controller is not None:
+            cost_result = self.cost_controller.check()
+            if cost_result.passed_gate:
+                check_matrix["BUDGET_CHECK"] = {
+                    "status": CheckStatus.PASSED.value,
+                    "detail": f"resource_usage_ratio={cost_result.resource_usage_ratio:.4f} <= 1.0",
+                }
+            else:
+                check_matrix["BUDGET_CHECK"] = {
+                    "status": CheckStatus.FAILED.value,
+                    "detail": (
+                        f"resource_usage_ratio={cost_result.resource_usage_ratio:.4f} > 1.0, "
+                        f"exceeded={cost_result.exceeded}"
+                    ),
+                }
+                return self._finalize_pre(
+                    task, False, DecisionCode.BLOCKED, ReasonCode.BUDGET_EXCEEDED,
+                    check_matrix, f"Budget exceeded: {cost_result.exceeded}",
+                )
+        else:
+            check_matrix["BUDGET_CHECK"] = {
+                "status": CheckStatus.DEFERRED.value,
+                "detail": "CostController not connected — deferred",
+            }
         check_matrix["TRUST_CHECK"] = {
             "status": CheckStatus.NOT_APPLICABLE.value,
             "detail": "Agent calls are not trust decay targets — TrustState/L19 scope",
@@ -375,6 +422,16 @@ class GovernanceGate:
             str(result.get("reasoning", "")).encode()
         ).hexdigest()[:16]
 
+        # Record LLM token usage to CostController (M-08/G-22)
+        llm_usage = result.get("_llm_usage", {})
+        total_tokens = llm_usage.get("input_tokens", 0) + llm_usage.get("output_tokens", 0)
+        if self.cost_controller is not None and total_tokens > 0:
+            try:
+                self.cost_controller.record_usage("API_CALLS", 1)
+                self.cost_controller.record_usage("LLM_TOKENS", total_tokens)
+            except KeyError:
+                pass  # budget not set for this resource type — non-fatal
+
         # Determine decision_code from result — approved=False means BLOCKED (F-04 semantic integrity)
         approved = result.get("approved", result.get("success", False))
         decision_code = DecisionCode.ALLOWED if approved else DecisionCode.BLOCKED
@@ -394,6 +451,7 @@ class GovernanceGate:
                 "confidence": result.get("confidence", 0.0),
                 "approved": approved,
                 "reasoning_hash": prompt_hash,
+                "llm_tokens": total_tokens,
                 "gate_id": self.gate_id,
                 "gate_generation": self.gate_generation,
                 "gate_created_at": self.gate_created_at.isoformat(),
@@ -433,6 +491,11 @@ class GovernanceGate:
                 exception_type=type(exception).__name__,
             )
             raise ValueError("post_record_error requires pre_evidence_id — post without pre is forbidden")
+
+        # Record failure to FailurePatternMemory (L17/M-13)
+        if self.pattern_memory is not None:
+            task_type = getattr(task, "task_type", "unknown")
+            self.pattern_memory.record(f"AGENT_{task_type.upper()}")
 
         try:
             bundle = EvidenceBundle(

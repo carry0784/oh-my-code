@@ -106,8 +106,10 @@ class AgentOrchestrator:
 
             if task.task_type == "validate_signal":
                 result = await self.signal_validator.execute(context)
+                result["_llm_usage"] = getattr(self.signal_validator, "last_usage", {})
             elif task.task_type == "risk_assessment":
                 result = await self.risk_manager.execute(context)
+                result["_llm_usage"] = getattr(self.risk_manager, "last_usage", {})
             else:
                 result = {"error": f"Unknown task type: {task.task_type}"}
 
@@ -156,6 +158,7 @@ class AgentOrchestrator:
                 signal = await signal_service.get_signal(task.signal_id)
                 if signal:
                     validation = await self.signal_validator.validate(signal)
+                    validation["_llm_usage"] = getattr(self.signal_validator, "last_usage", {})
                     if not validation.get("approved"):
                         post_eid = self._governance_post_record(task, validation)
                         return AgentResponse(
@@ -170,6 +173,7 @@ class AgentOrchestrator:
 
             # Step 2: Risk assessment
             risk_result = await self.risk_manager.execute(context)
+            risk_result["_llm_usage"] = getattr(self.risk_manager, "last_usage", {})
             if not risk_result.get("approved"):
                 post_eid = self._governance_post_record(task, risk_result)
                 return AgentResponse(
