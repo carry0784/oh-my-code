@@ -993,14 +993,13 @@
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-const EXCHANGES = ['binance','okx','upbit','bitget','kis','kiwoom'];
+const EXCHANGES = ['binance','upbit','bitget','kis','kiwoom'];
 const FRESHNESS_THRESHOLD_DEGRADED_S = 120;
 const FRESHNESS_THRESHOLD_STALE_S = 300;
 
 // Exchange metadata for display
 const EX_META = {
   binance: {name:'Binance',type:'FUTURES',quote:'USDT'},
-  okx:     {name:'OKX',type:'SWAP',quote:'USDT'},
   upbit:   {name:'UpBit',type:'SPOT',quote:'KRW'},
   bitget:  {name:'Bitget',type:'FUTURES',quote:'USDT'},
   kis:     {name:'KIS',type:'KR-STOCK',quote:'KRW'},
@@ -1217,7 +1216,6 @@ function markAllStale() {
   const failLabel = 'API UNAVAILABLE';
   const failCls = 'val-disconnected';
   for (const ex of EXCHANGES) {
-    if (ex === 'okx') continue;
     const connEl = document.getElementById(ex + '-conn');
     if (connEl) {
       connEl.innerHTML = '<span class="conn-indicator conn-disconnected"></span> ' + failLabel;
@@ -1300,7 +1298,7 @@ function renderAll(data) {
 
 // B-16: Exchange Summary Bar — 전 venue 합산
 function renderExchangeSummaryBar(data, venueStates) {
-  const venues = EXCHANGES.filter(ex => ex !== 'okx'); // stats 제외, okx 패널 없음
+  const venues = EXCHANGES;
   let venueCount = venues.length;
   let connectedCount = 0;
   let totalPositions = 0;
@@ -1500,7 +1498,6 @@ function renderQuoteFields(exchange, positions, quoteData) {
 // ---------------------------------------------------------------------------
 function renderVenueCards(data, venueStates) {
   for (const ex of EXCHANGES) {
-    if (ex === 'okx') continue; // OKX has no dedicated panel in current layout
     const exData = data[ex] || {};
     const freshness = data.venue_freshness?.[ex];
     const openOrders = data.open_orders?.[ex] || [];
@@ -1916,7 +1913,7 @@ function renderExchangeEnvironment(data, venueStates) {
   const barEl = document.getElementById('exenv-summary-bar');
   if (!gridEl) return;
 
-  const venues = EXCHANGES.filter(ex => ex !== 'okx');
+  const venues = EXCHANGES;
   const typeCounts = {};
   const quoteCounts = {};
   let bidAskSupported = 0;

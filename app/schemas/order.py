@@ -5,7 +5,7 @@ from app.models.order import OrderSide, OrderType, OrderStatus
 
 
 class OrderCreate(BaseModel):
-    exchange: str = Field(..., description="Exchange identifier (binance, okx)")
+    exchange: str = Field(..., description="Exchange identifier (binance, upbit, bitget)")
     symbol: str = Field(..., description="Trading pair (e.g., BTC/USDT)")
     side: OrderSide
     order_type: OrderType

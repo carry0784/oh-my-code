@@ -25,7 +25,7 @@ class PositionService:
         return result.scalar_one_or_none()
 
     async def sync_from_exchange(self, exchange: str | None = None) -> None:
-        exchanges_to_sync = [exchange] if exchange else ["binance", "okx"]
+        exchanges_to_sync = [exchange] if exchange else ["binance"]
 
         for exch_name in exchanges_to_sync:
             try:

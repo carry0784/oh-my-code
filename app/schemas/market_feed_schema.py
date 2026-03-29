@@ -1,7 +1,7 @@
 """
 B-09: Market Feed Schema — read-only best bid/ask/spread 정규화
 
-4개 거래소 (Binance, OKX, UpBit, Bitget) best bid/ask/spread/trust/staleness.
+3개 거래소 (Binance, UpBit, Bitget) best bid/ask/spread/trust/staleness.
 KIS/Kiwoom 제외 (bid/ask 미지원). full orderbook/execution/strategy 범위 밖.
 """
 
@@ -45,7 +45,7 @@ class MarketFeedSummary(BaseModel):
     """AI Assist 친화적 market feed 요약."""
 
     venues_connected: int = Field(default=0)
-    venues_total: int = Field(default=4, description="bid/ask 지원 거래소 수")
+    venues_total: int = Field(default=3, description="bid/ask 지원 거래소 수")
     total_live: int = 0
     total_stale: int = 0
     worst_trust: str = "UNKNOWN"

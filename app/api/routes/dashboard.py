@@ -64,7 +64,7 @@ logger = get_logger(__name__)
 # ---------------------------------------------------------------------------
 # Exchange registry — canonical names used across all dashboard endpoints
 # ---------------------------------------------------------------------------
-_EXCHANGES = ["binance", "okx", "upbit", "bitget", "kis", "kiwoom"]
+_EXCHANGES = ["binance", "upbit", "bitget", "kis", "kiwoom"]
 
 router = APIRouter()
 
@@ -492,14 +492,13 @@ async def dashboard_data(db: AsyncSession = Depends(get_db)):
     No exchange API calls here — uses synced DB data.
     """
     binance_data = await _get_exchange_panel_data(db, "binance")
-    okx_data = await _get_exchange_panel_data(db, "okx")
     upbit_data = await _get_exchange_panel_data(db, "upbit")
     bitget_data = await _get_exchange_panel_data(db, "bitget")
     kis_data = await _get_exchange_panel_data(db, "kis")
     kiwoom_data = await _get_exchange_panel_data(db, "kiwoom")
 
     # Aggregate stats from all connected exchanges
-    all_exchange_data = [binance_data, okx_data, upbit_data, bitget_data, kis_data, kiwoom_data]
+    all_exchange_data = [binance_data, upbit_data, bitget_data, kis_data, kiwoom_data]
     all_positions = []
     any_connected = False
     for exd in all_exchange_data:

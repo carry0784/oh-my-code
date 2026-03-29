@@ -2,7 +2,7 @@
 B-09: Market Feed Service — read-only best bid/ask/spread
 
 기존 `_get_quote_data()` 기능을 독립 서비스 계층으로 제공한다.
-4개 거래소 (Binance, OKX, UpBit, Bitget). KIS/Kiwoom 제외.
+3개 거래소 (Binance, UpBit, Bitget). KIS/Kiwoom 제외.
 full orderbook/execution/strategy 범위 밖.
 """
 
@@ -20,7 +20,7 @@ from app.schemas.market_feed_schema import (
 
 logger = get_logger(__name__)
 
-_SUPPORTED_EXCHANGES = ["binance", "okx", "upbit", "bitget"]
+_SUPPORTED_EXCHANGES = ["binance", "upbit", "bitget"]
 _BID_ASK_NOT_SUPPORTED = {"kis", "kiwoom"}
 _STALE_THRESHOLD_S = 120
 

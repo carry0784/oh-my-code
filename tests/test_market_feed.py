@@ -15,7 +15,7 @@ class TestMarketFeedSchema:
     def test_default_response(self):
         from app.schemas.market_feed_schema import MarketFeedResponse
         r = MarketFeedResponse()
-        assert r.summary.venues_total == 4
+        assert r.summary.venues_total == 3
         assert r.summary.stale_threshold_seconds == 120
         assert "Read-only" in r.feed_note
 
@@ -68,7 +68,7 @@ class TestMarketFeedService:
     def test_stale_detection(self):
         from app.core.market_feed_service import build_market_feed_from_quote_data
         mock_data = {
-            "okx": {
+            "upbit": {
                 "_venue_summary": {"trust_state": "STALE", "live_count": 0, "stale_count": 1},
                 "symbols": {
                     "ETHUSDT": {
@@ -85,14 +85,14 @@ class TestMarketFeedService:
     def test_empty_market_feed(self):
         from app.core.market_feed_service import build_empty_market_feed
         r = build_empty_market_feed()
-        assert len(r.venues) == 4
+        assert len(r.venues) == 3
         assert all(v.trust_state == "NOT_QUERIED" for v in r.venues)
 
     def test_worst_trust_aggregation(self):
         from app.core.market_feed_service import build_market_feed_from_quote_data
         mock = {
             "binance": {"_venue_summary": {"trust_state": "LIVE", "live_count": 1, "stale_count": 0}, "symbols": {}},
-            "okx": {"_venue_summary": {"trust_state": "DISCONNECTED", "live_count": 0, "stale_count": 0}, "symbols": {}},
+            "upbit": {"_venue_summary": {"trust_state": "DISCONNECTED", "live_count": 0, "stale_count": 0}, "symbols": {}},
         }
         r = build_market_feed_from_quote_data(mock)
         assert r.summary.worst_trust == "DISCONNECTED"
@@ -122,7 +122,7 @@ class TestExcludedScope:
 
     def test_supported_exchanges_only_4(self):
         from app.core.market_feed_service import _SUPPORTED_EXCHANGES
-        assert len(_SUPPORTED_EXCHANGES) == 4
+        assert len(_SUPPORTED_EXCHANGES) == 3
         assert "kis" not in _SUPPORTED_EXCHANGES
         assert "kiwoom" not in _SUPPORTED_EXCHANGES
 

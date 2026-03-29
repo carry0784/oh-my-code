@@ -1,6 +1,5 @@
 from exchanges.base import BaseExchange
 from exchanges.binance import BinanceExchange
-from exchanges.okx import OKXExchange
 from exchanges.upbit import UpBitExchange
 from exchanges.bitget import BitgetExchange
 from exchanges.kis import KISExchange
@@ -17,8 +16,6 @@ class ExchangeFactory:
 
         if exchange_name == "binance":
             instance = BinanceExchange()
-        elif exchange_name == "okx":
-            instance = OKXExchange()
         elif exchange_name == "upbit":
             instance = UpBitExchange()
         elif exchange_name == "bitget":

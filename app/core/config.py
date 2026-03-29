@@ -24,11 +24,6 @@ class Settings(BaseSettings):
     binance_api_secret: str = ""
     binance_testnet: bool = True
 
-    okx_api_key: str = ""
-    okx_api_secret: str = ""
-    okx_passphrase: str = ""
-    okx_sandbox: bool = True
-
     upbit_api_key: str = ""
     upbit_api_secret: str = ""
 
