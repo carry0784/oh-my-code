@@ -150,4 +150,4 @@ class TestBeatSchedule:
     def test_total_beat_entries_is_6(self):
         from workers.celery_app import celery_app
         schedule = celery_app.conf.beat_schedule
-        assert len(schedule) == 6  # 4 original + 2 ops
+        assert len(schedule) == 8  # 4 original + 2 ops + 2 G-MON
