@@ -18,7 +18,6 @@
 | **DEBUG** | `False` |
 | **GOVERNANCE_ENABLED** | `True` |
 | **BINANCE_TESTNET** | `False` |
-| **OKX_SANDBOX** | `False` |
 | **BITGET_SANDBOX** | `False` |
 | **KIS_DEMO** | `False` |
 | **KIWOOM_DEMO** | `False` |

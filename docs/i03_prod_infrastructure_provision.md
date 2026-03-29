@@ -22,7 +22,7 @@
 | Prod config applied | `.env.production` → `.env` |
 | `APP_ENV=production` verified | Settings reload: `is_production=True` |
 | `GOVERNANCE_ENABLED=true` | Confirmed |
-| Testnet flags disabled | `BINANCE_TESTNET=false`, `OKX_SANDBOX=false` |
+| Testnet flags disabled | `BINANCE_TESTNET=false` |
 | DB accessible | `alembic upgrade head` clean |
 | Redis accessible | Running on 6379 |
 | Data directory | `data/` exists |

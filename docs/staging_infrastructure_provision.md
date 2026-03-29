@@ -53,7 +53,6 @@ This document does not implement infrastructure. It specifies what must exist be
 | `DEBUG` | true | **false** |
 | `GOVERNANCE_ENABLED` | true | **true** (mandatory) |
 | `BINANCE_TESTNET` | true | **true** (mandatory in staging) |
-| `OKX_SANDBOX` | true | **true** (mandatory in staging) |
 | `BITGET_SANDBOX` | true | **true** (mandatory in staging) |
 | `KIS_DEMO` | true | **true** (mandatory in staging) |
 | `KIWOOM_DEMO` | true | **true** (mandatory in staging) |

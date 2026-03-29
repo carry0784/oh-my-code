@@ -36,11 +36,6 @@ BINANCE_API_KEY=<staging-testnet-key>
 BINANCE_API_SECRET=<staging-testnet-secret>
 BINANCE_TESTNET=true
 
-OKX_API_KEY=<staging-sandbox-key>
-OKX_API_SECRET=<staging-sandbox-secret>
-OKX_PASSPHRASE=<staging-sandbox-passphrase>
-OKX_SANDBOX=true
-
 BITGET_API_KEY=<staging-sandbox-key>
 BITGET_API_SECRET=<staging-sandbox-secret>
 BITGET_PASSPHRASE=<staging-sandbox-passphrase>
@@ -112,7 +107,6 @@ RISK_LIMIT_PERCENT=1.0
 |---------|---------|------------|:---------------:|
 | `APP_ENV` | staging | production | Yes |
 | `BINANCE_TESTNET` | true | **false** | Yes |
-| `OKX_SANDBOX` | true | **false** | Yes |
 | `BITGET_SANDBOX` | true | **false** | Yes |
 | `KIS_DEMO` | true | **false** | Yes |
 | `KIWOOM_DEMO` | true | **false** | Yes |

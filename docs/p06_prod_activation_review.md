@@ -14,7 +14,7 @@
 | Governance intact | G-01 | 67 enforcement tests pass in prod context | **COMPLETE** |
 | Prod infra provisioned | I-03 | DB/Redis/dirs/persistence all verified | **COMPLETE** |
 | Prod config applied | I-03 | `APP_ENV=production`, `is_production=True` | **COMPLETE** |
-| Testnet disabled | I-03 | `BINANCE_TESTNET=false`, `OKX_SANDBOX=false` | **COMPLETE** |
+| Testnet disabled | I-03 | `BINANCE_TESTNET=false` | **COMPLETE** |
 | Migration executed | I-03 | `alembic upgrade head` clean | **COMPLETE** |
 | Audit in prod context | I-03 | 67 passed | **COMPLETE** |
 | Regression in prod context | I-03 | 1673 passed, 0 failed | **COMPLETE** |

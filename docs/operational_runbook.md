@@ -210,7 +210,6 @@ Action:
 | `LOG_FILE_PATH` | (empty) | Log file path |
 | `LOG_LEVEL` | INFO | Log level |
 | `BINANCE_TESTNET` | true | Binance testnet mode |
-| `OKX_SANDBOX` | true | OKX sandbox mode |
 | `BITGET_SANDBOX` | true | Bitget sandbox mode |
 | `KIS_DEMO` | true | KIS demo mode |
 | `KIWOOM_DEMO` | true | Kiwoom demo mode |

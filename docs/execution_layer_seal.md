@@ -29,7 +29,7 @@ The execution layer exists to **translate validated trading decisions into excha
 | Signal Service | `app/services/signal_service.py` | Signal CRUD and status tracking |
 | Position Service | `app/services/position_service.py` | Position state management |
 | Exchange Factory | `exchanges/factory.py` | Singleton exchange client creation |
-| Exchange Adapters | `exchanges/{binance,okx,upbit,bitget,kis,kiwoom}.py` | CCXT exchange wrappers |
+| Exchange Adapters | `exchanges/{binance,upbit,bitget,kis,kiwoom}.py` | CCXT exchange wrappers |
 | Order Model | `app/models/order.py` | Order ORM |
 | Trade Model | `app/models/trade.py` | Trade ORM |
 | Position Model | `app/models/position.py` | Position ORM |

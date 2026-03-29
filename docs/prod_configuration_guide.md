@@ -61,11 +61,6 @@ BINANCE_API_KEY=<production-key>
 BINANCE_API_SECRET=<production-secret>
 BINANCE_TESTNET=false          # ⚠️ REAL TRADING
 
-OKX_API_KEY=<production-key>
-OKX_API_SECRET=<production-secret>
-OKX_PASSPHRASE=<production-passphrase>
-OKX_SANDBOX=false              # ⚠️ REAL TRADING
-
 # (repeat for each exchange in use)
 
 # ── Governance ───────────────────────────────────────
