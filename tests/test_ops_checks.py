@@ -10,7 +10,39 @@ Tests:
   - existing beat entries unchanged
 """
 
+import sys
+import importlib
+from unittest.mock import MagicMock
+
 import pytest
+
+# -- Defence against celery stub pollution ---------------------------------- #
+# Other test files stub "celery" as MagicMock for isolation. If that happens
+# before this file runs, ops_checks tests fail because they need the real
+# Celery module. Detect and restore real celery before importing workers.
+
+def _ensure_real_module(name):
+    """If module is a MagicMock stub, remove it so real import can proceed."""
+    mod = sys.modules.get(name)
+    if mod is not None and isinstance(mod, MagicMock):
+        del sys.modules[name]
+
+_POLLUTED_MODULES = [
+    "celery", "celery.app", "celery.app.task", "celery.schedules",
+    "celery.utils", "celery.utils.log",
+    "workers", "workers.celery_app",
+    "workers.tasks", "workers.tasks.check_tasks",
+    "workers.tasks.market_tasks", "workers.tasks.order_tasks",
+]
+for _m in _POLLUTED_MODULES:
+    _ensure_real_module(_m)
+
+# Force reimport of workers chain with real celery
+import celery  # noqa: E402 — ensure real celery loaded
+if "workers.celery_app" in sys.modules:
+    importlib.reload(sys.modules["workers.celery_app"])
+if "workers.tasks.check_tasks" in sys.modules:
+    importlib.reload(sys.modules["workers.tasks.check_tasks"])
 
 
 class TestCheckTaskRegistration:

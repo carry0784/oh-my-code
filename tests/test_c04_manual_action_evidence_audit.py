@@ -29,7 +29,6 @@ _STUB_MODULES = [
     "app.exchanges.factory",
     "app.exchanges.base",
     "app.exchanges.binance",
-    "app.exchanges.okx",
     "app.services",
     "app.services.order_service",
     "app.services.position_service",

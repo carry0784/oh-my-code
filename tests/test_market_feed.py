@@ -120,11 +120,51 @@ class TestExcludedScope:
         assert "orderbook" not in MarketFeedResponse.model_fields
         assert "depth" not in QuoteEntry.model_fields
 
-    def test_supported_exchanges_only_4(self):
+    def test_supported_exchanges_crypto_only(self):
         from app.core.market_feed_service import _SUPPORTED_EXCHANGES
         assert len(_SUPPORTED_EXCHANGES) == 3
+        assert set(_SUPPORTED_EXCHANGES) == {"binance", "upbit", "bitget"}
         assert "kis" not in _SUPPORTED_EXCHANGES
         assert "kiwoom" not in _SUPPORTED_EXCHANGES
+        assert "okx" not in _SUPPORTED_EXCHANGES
+
+
+class TestSupportedExchangesSSOT:
+    """SSOT: app.core.config defines the whitelist, all other modules reference it."""
+
+    def test_ssot_crypto_list(self):
+        from app.core.config import SUPPORTED_EXCHANGES_CRYPTO
+        assert set(SUPPORTED_EXCHANGES_CRYPTO) == {"binance", "upbit", "bitget"}
+
+    def test_ssot_stock_list(self):
+        from app.core.config import SUPPORTED_EXCHANGES_STOCK
+        assert set(SUPPORTED_EXCHANGES_STOCK) == {"kis", "kiwoom"}
+
+    def test_ssot_all_list(self):
+        from app.core.config import SUPPORTED_EXCHANGES_ALL
+        assert set(SUPPORTED_EXCHANGES_ALL) == {"binance", "upbit", "bitget", "kis", "kiwoom"}
+
+    def test_okx_not_in_any_list(self):
+        from app.core.config import SUPPORTED_EXCHANGES_ALL
+        assert "okx" not in SUPPORTED_EXCHANGES_ALL
+
+    def test_factory_source_has_no_okx(self):
+        """Factory source code must not contain okx as a supported exchange."""
+        from pathlib import Path
+        factory_path = Path(__file__).resolve().parent.parent / "exchanges" / "factory.py"
+        content = factory_path.read_text(encoding="utf-8")
+        assert "okx" not in content.lower(), "factory.py must not reference OKX"
+        assert "binance" in content
+        assert "upbit" in content
+        assert "bitget" in content
+
+    def test_factory_registry_no_okx(self):
+        """Factory _FACTORY_REGISTRY must not contain okx."""
+        from pathlib import Path
+        factory_path = Path(__file__).resolve().parent.parent / "exchanges" / "factory.py"
+        content = factory_path.read_text(encoding="utf-8")
+        assert "okx" not in content.lower()
+        assert "Unsupported exchange" in content
 
 
 class TestV2Integration:

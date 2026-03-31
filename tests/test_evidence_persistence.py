@@ -119,7 +119,9 @@ class TestEvidencePersistence:
             def count_by_actor(self, a): return 0
             def list_by_trigger(self, t): return []
             def list_by_actor(self, a): return []
+            def list_by_actor_recent(self, a, limit=20): return []
             def list_all(self): return []
+            def count_orphan_pre(self): return 0
             def clear(self): pass
 
         store = EvidenceStore(backend=FailingBackend())

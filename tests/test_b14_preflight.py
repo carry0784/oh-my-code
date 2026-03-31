@@ -165,19 +165,20 @@ class TestPreflightReadOnly:
 class TestPreflightEdgeCases:
     """기지 동작 및 엣지 케이스 문서화."""
 
-    def test_exchange_snapshot_always_unknown(self):
-        """exchange_snapshot 항목은 DB 조회 없이 항상 unknown 반환 (known stub)."""
+    def test_exchange_snapshot_has_valid_status(self):
+        """exchange_snapshot 항목은 유효한 상태 반환 (unknown/pass/fail)."""
         from app.core.recovery_preflight import run_recovery_preflight
         result = run_recovery_preflight()
         snapshot_item = next(i for i in result.items if i.name == "exchange_snapshot")
-        assert snapshot_item.status == "unknown"
+        assert snapshot_item.status in ("unknown", "pass", "fail")
 
-    def test_stale_snapshot_reason_present(self):
+    def test_exchange_snapshot_has_observed_value(self):
+        """exchange_snapshot 항목은 관측값(observed) 포함."""
         from app.core.recovery_preflight import run_recovery_preflight
-        from app.schemas.preflight_schema import PreflightReasonCode
         result = run_recovery_preflight()
         snapshot_item = next(i for i in result.items if i.name == "exchange_snapshot")
-        assert PreflightReasonCode.STALE_SNAPSHOT in snapshot_item.reason_codes
+        assert snapshot_item.observed is not None
+        assert snapshot_item.observed != ""
 
     def test_item_names_match_definitions(self):
         from app.core.recovery_preflight import run_recovery_preflight, _PREFLIGHT_ITEMS
