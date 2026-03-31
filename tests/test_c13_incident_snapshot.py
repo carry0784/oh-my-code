@@ -11,34 +11,10 @@ Card C-13: Alert / Receipt / Export-Friendly Incident Snapshot — Tests
 Sealed layers 미접촉. 기존 테스트 파일 미수정.
 """
 
-import sys
 import re
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
-
-_STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance", "app.exchanges.okx",
-    "app.services", "app.services.order_service",
-    "app.services.position_service", "app.services.signal_service",
-    "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
-]
-for mod_name in _STUB_MODULES:
-    if mod_name not in sys.modules:
-        sys.modules[mod_name] = MagicMock()
-
-sys.modules["app.models.position"].Position = MagicMock()
-sys.modules["app.models.position"].PositionSide = MagicMock()
-sys.modules["app.models.order"].Order = MagicMock()
-sys.modules["app.models.order"].OrderStatus = MagicMock()
-sys.modules["app.models.trade"].Trade = MagicMock()
-sys.modules["app.models.signal"].Signal = MagicMock()
-sys.modules["app.core.database"].Base = MagicMock()
-sys.modules["app.core.database"].get_db = MagicMock()
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DASHBOARD_ROUTE_PATH = PROJECT_ROOT / "app" / "api" / "routes" / "dashboard.py"
@@ -47,7 +23,7 @@ DASHBOARD_ROUTE_PATH = PROJECT_ROOT / "app" / "api" / "routes" / "dashboard.py"
 def _get_snapshot_fn_body():
     content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
     fn_match = re.search(
-        r'def _build_incident_snapshot.*?(?=\ndef |\Z)',
+        r'def _build_incident_snapshot.*?(?=\ndef |\nasync def |\nclass |\Z)',
         content, re.DOTALL
     )
     assert fn_match, "_build_incident_snapshot not found"

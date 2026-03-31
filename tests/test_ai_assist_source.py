@@ -34,7 +34,7 @@ class TestAIAssistSchema:
     def test_ops_summary_shape(self):
         from app.schemas.ai_assist_schema import OpsSummary
         o = OpsSummary()
-        fields = set(o.model_fields.keys())
+        fields = set(OpsSummary.model_fields.keys())
         expected = {
             "status_word", "system_healthy", "trading_authorized",
             "ops_score_average", "latest_check_grade", "preflight_decision",

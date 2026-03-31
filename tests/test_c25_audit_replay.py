@@ -23,7 +23,7 @@ _STUB_MODULES = [
     "app.core.database", "app.models", "app.models.order",
     "app.models.position", "app.models.signal", "app.models.trade",
     "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance", "app.exchanges.okx",
+    "app.exchanges.base", "app.exchanges.binance",
     "app.services", "app.services.order_service",
     "app.services.position_service", "app.services.signal_service",
     "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
