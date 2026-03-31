@@ -162,22 +162,8 @@ def _collect_evidence_summary() -> EvidenceSummary:
             total = store.count()
             has_recent = total > 0
 
-            # Orphan count (same pattern as governance_info)
-            if hasattr(store, "_bundles"):
-                bundles = store._bundles
-                pre_ids = set()
-                linked = set()
-                for b in bundles.values():
-                    artifacts = b.artifacts if hasattr(b, "artifacts") else []
-                    for art in artifacts:
-                        phase = art.get("phase", "") if isinstance(art, dict) else getattr(art, "phase", "")
-                        if phase == "PRE":
-                            pre_ids.add(b.bundle_id if hasattr(b, "bundle_id") else "")
-                        elif phase in ("POST", "ERROR"):
-                            lid = art.get("pre_evidence_id", "") if isinstance(art, dict) else getattr(art, "pre_evidence_id", "")
-                            if lid:
-                                linked.add(lid)
-                orphan = len(pre_ids - linked)
+            # CR-028: Orphan count via backend facade (no _bundles direct access)
+            orphan = store.count_orphan_pre()
 
         return EvidenceSummary(
             total_bundles=total,

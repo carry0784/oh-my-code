@@ -37,6 +37,8 @@ _CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_cycle_id ON evidence_bundles(cycle_id)",
     "CREATE INDEX IF NOT EXISTS idx_actor ON evidence_bundles(actor)",
     "CREATE INDEX IF NOT EXISTS idx_trigger ON evidence_bundles(trigger_)",
+    # CR-027: Composite index for bounded recent queries — eliminates TEMP B-TREE sort.
+    "CREATE INDEX IF NOT EXISTS idx_actor_created ON evidence_bundles(actor, created_at)",
 ]
 
 
@@ -117,11 +119,47 @@ class SQLiteBackend(EvidenceBackend):
         ).fetchall()
         return [_row_to_bundle(r) for r in rows]
 
+    def list_by_actor_recent(self, actor: str, limit: int = 20) -> list[EvidenceBundle]:
+        """List most recent bundles by actor, bounded by limit. CR-027."""
+        rows = self._conn.execute(
+            "SELECT * FROM evidence_bundles WHERE actor = ? ORDER BY created_at DESC LIMIT ?",
+            (actor, limit),
+        ).fetchall()
+        return [_row_to_bundle(r) for r in reversed(rows)]
+
     def list_all(self) -> list[EvidenceBundle]:
         rows = self._conn.execute(
             "SELECT * FROM evidence_bundles ORDER BY created_at"
         ).fetchall()
         return [_row_to_bundle(r) for r in rows]
+
+    def count_orphan_pre(self) -> int:
+        """Count PRE-phase bundles not linked by POST/ERROR. CR-028.
+
+        Uses JSON extraction on artifacts column. Bounded by actual PRE/POST
+        population which is typically small relative to total evidence.
+        """
+        rows = self._conn.execute(
+            "SELECT bundle_id, artifacts FROM evidence_bundles WHERE artifacts IS NOT NULL AND artifacts != '[]'"
+        ).fetchall()
+        pre_ids: set[str] = set()
+        linked: set[str] = set()
+        for bundle_id, artifacts_json in rows:
+            try:
+                artifacts = json.loads(artifacts_json) if artifacts_json else []
+            except (json.JSONDecodeError, TypeError):
+                continue
+            for art in artifacts:
+                if not isinstance(art, dict):
+                    continue
+                phase = art.get("phase", "")
+                if phase == "PRE":
+                    pre_ids.add(bundle_id)
+                elif phase in ("POST", "ERROR"):
+                    lid = art.get("pre_evidence_id", "")
+                    if lid:
+                        linked.add(lid)
+        return len(pre_ids - linked)
 
     def clear(self) -> None:
         self._conn.execute("DELETE FROM evidence_bundles")

@@ -41,10 +41,19 @@ def build_ops_aggregate() -> OpsAggregateResponse:
     now = datetime.now(timezone.utc)
     sources: list[SourceEntry] = []
 
-    sources.append(_check_ops_summary())
-    sources.append(_check_signal_pipeline())
-    sources.append(_check_position_overview())
-    sources.append(_check_evidence_summary())
+    # CR-027: Collect AI assist sources once, not 4x.
+    # Each call runs preflight + gate + daily_check internally.
+    _cached_src = None
+    try:
+        from app.core.ai_assist_source import collect_ai_assist_sources
+        _cached_src = collect_ai_assist_sources()
+    except Exception:
+        pass
+
+    sources.append(_check_ops_summary(_cached_src))
+    sources.append(_check_signal_pipeline(_cached_src))
+    sources.append(_check_position_overview(_cached_src))
+    sources.append(_check_evidence_summary(_cached_src))
     sources.append(_check_market_feed())
     sources.append(_check_runtime_status())
 
@@ -97,10 +106,11 @@ def build_ops_health() -> OpsHealth:
 # Source checkers (read-only, fail-closed)
 # ---------------------------------------------------------------------------
 
-def _check_ops_summary() -> SourceEntry:
+def _check_ops_summary(src=None) -> SourceEntry:
     try:
-        from app.core.ai_assist_source import collect_ai_assist_sources
-        src = collect_ai_assist_sources()
+        if src is None:
+            from app.core.ai_assist_source import collect_ai_assist_sources
+            src = collect_ai_assist_sources()
         status = SourceStatus.OK if src.ops_summary.status_word != "UNKNOWN" else SourceStatus.STALE
         return SourceEntry(
             name="ops_summary", status=status,
@@ -110,10 +120,11 @@ def _check_ops_summary() -> SourceEntry:
         return SourceEntry(name="ops_summary", status=SourceStatus.UNAVAILABLE, summary="collection failed")
 
 
-def _check_signal_pipeline() -> SourceEntry:
+def _check_signal_pipeline(src=None) -> SourceEntry:
     try:
-        from app.core.ai_assist_source import collect_ai_assist_sources
-        src = collect_ai_assist_sources()
+        if src is None:
+            from app.core.ai_assist_source import collect_ai_assist_sources
+            src = collect_ai_assist_sources()
         # Signal pipeline is populated in async context only
         if src.signal_pipeline.total_24h > 0:
             return SourceEntry(
@@ -128,10 +139,11 @@ def _check_signal_pipeline() -> SourceEntry:
         return SourceEntry(name="signal_pipeline", status=SourceStatus.UNAVAILABLE, summary="collection failed")
 
 
-def _check_position_overview() -> SourceEntry:
+def _check_position_overview(src=None) -> SourceEntry:
     try:
-        from app.core.ai_assist_source import collect_ai_assist_sources
-        src = collect_ai_assist_sources()
+        if src is None:
+            from app.core.ai_assist_source import collect_ai_assist_sources
+            src = collect_ai_assist_sources()
         return SourceEntry(
             name="position_overview", status=SourceStatus.OK,
             summary=f"positions={src.position_overview.total_positions}",
@@ -140,10 +152,11 @@ def _check_position_overview() -> SourceEntry:
         return SourceEntry(name="position_overview", status=SourceStatus.UNAVAILABLE, summary="collection failed")
 
 
-def _check_evidence_summary() -> SourceEntry:
+def _check_evidence_summary(src=None) -> SourceEntry:
     try:
-        from app.core.ai_assist_source import collect_ai_assist_sources
-        src = collect_ai_assist_sources()
+        if src is None:
+            from app.core.ai_assist_source import collect_ai_assist_sources
+            src = collect_ai_assist_sources()
         if src.evidence_summary.governance_active:
             return SourceEntry(
                 name="evidence_summary", status=SourceStatus.OK,

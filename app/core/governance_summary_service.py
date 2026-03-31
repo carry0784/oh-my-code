@@ -137,21 +137,8 @@ def _collect_governance_info() -> tuple[str, bool, bool, bool, int]:
             evidence_total = store.count()
             evidence_exists = evidence_total > 0
 
-            # Orphan detection (same pattern as dashboard _get_governance_info)
-            if hasattr(store, "_bundles"):
-                pre_ids = set()
-                linked = set()
-                for b in store._bundles.values():
-                    artifacts = b.artifacts if hasattr(b, "artifacts") else []
-                    for art in artifacts:
-                        phase = art.get("phase", "") if isinstance(art, dict) else getattr(art, "phase", "")
-                        if phase == "PRE":
-                            pre_ids.add(b.bundle_id if hasattr(b, "bundle_id") else "")
-                        elif phase in ("POST", "ERROR"):
-                            lid = art.get("pre_evidence_id", "") if isinstance(art, dict) else getattr(art, "pre_evidence_id", "")
-                            if lid:
-                                linked.add(lid)
-                orphan_detected = len(pre_ids - linked) > 0
+            # CR-028: Orphan detection via backend facade (no _bundles direct access)
+            orphan_detected = store.count_orphan_pre() > 0
 
     except Exception as e:
         logger.warning("governance_summary_collect_failed", error=str(e))

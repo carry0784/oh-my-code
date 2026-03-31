@@ -110,9 +110,17 @@ class EvidenceStore:
         """List bundles produced by a specific actor."""
         return self._backend.list_by_actor(actor)
 
+    def list_by_actor_recent(self, actor: str, limit: int = 20) -> list[EvidenceBundle]:
+        """List most recent bundles by actor, bounded. CR-027."""
+        return self._backend.list_by_actor_recent(actor, limit)
+
     def list_all(self) -> list[EvidenceBundle]:
         """Return all stored bundles, ordered by created_at."""
         return self._backend.list_all()
+
+    def count_orphan_pre(self) -> int:
+        """Count PRE-phase bundles not linked by POST/ERROR. CR-028."""
+        return self._backend.count_orphan_pre()
 
     def clear(self) -> None:
         """Clear all stored bundles. Test-only — blocked in production."""

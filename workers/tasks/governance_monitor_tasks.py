@@ -31,14 +31,20 @@ def run_daily_governance_report():
         text = format_report_text(report)
         logger.info("governance_monitor_daily", overall=report.overall.value, summary=report.summary)
 
+        # Attach latest evaluation report if available
+        eval_snapshot = _load_evaluation_snapshot()
+
         # Persist to file (append JSONL)
-        _append_report_file(report)
+        _append_report_file(report, eval_snapshot)
 
         # Send notification if not all OK
         if report.overall != IndicatorStatus.OK:
             _send_notification(report)
 
-        return report.to_dict()
+        result = report.to_dict()
+        if eval_snapshot:
+            result["evaluation_snapshot"] = eval_snapshot
+        return result
 
     except Exception as e:
         logger.error("governance_monitor_daily_failed", error=str(e))
@@ -151,15 +157,42 @@ def run_weekly_governance_summary():
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _append_report_file(report):
+def _load_evaluation_snapshot() -> dict | None:
+    """Load latest evaluation report for G-MON daily embedding. Fail-silent."""
+    try:
+        import json
+        from pathlib import Path
+        eval_path = Path("data/evaluation_report.json")
+        if not eval_path.exists():
+            return None
+        data = json.loads(eval_path.read_text(encoding="utf-8"))
+        # Return compact snapshot only
+        return {
+            "final_grade": data.get("final_grade"),
+            "risk_score": data.get("risk_score"),
+            "scope": data.get("scope"),
+            "tests_passed": data.get("test_summary", {}).get("passed"),
+            "tests_failed": data.get("test_summary", {}).get("failed"),
+            "validation_status": data.get("validation_summary", {}).get("status"),
+            "governance_status": data.get("governance_summary", {}).get("status"),
+            "timestamp": data.get("evaluation_timestamp"),
+        }
+    except Exception:
+        return None
+
+
+def _append_report_file(report, eval_snapshot: dict | None = None):
     """Append report to JSONL file. Fail-silent."""
     try:
         import json
         from pathlib import Path
         path = Path("data/governance_reports.jsonl")
         path.parent.mkdir(parents=True, exist_ok=True)
+        entry = report.to_dict()
+        if eval_snapshot:
+            entry["evaluation_snapshot"] = eval_snapshot
         with open(path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(report.to_dict(), ensure_ascii=False, default=str) + "\n")
+            f.write(json.dumps(entry, ensure_ascii=False, default=str) + "\n")
     except Exception as e:
         logger.warning("governance_report_file_append_failed", error=str(e))
 

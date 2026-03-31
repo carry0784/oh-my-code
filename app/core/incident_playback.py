@@ -83,10 +83,17 @@ def build_incident_playback() -> IncidentPlaybackResult:
                 ))
 
         # Source 3: Evidence store → check results
+        # CR-027: Bounded query — only recent N bundles, not full 84K+ scan.
         gate = getattr(app_inst.state, "governance_gate", None)
         if gate and hasattr(gate, "evidence_store"):
+            _store = gate.evidence_store
             for actor_prefix in ("i03_", "i04_"):
-                for b in gate.evidence_store.list_by_actor(f"{actor_prefix}daily_check"):
+                _actor = f"{actor_prefix}daily_check"
+                if hasattr(_store, "list_by_actor_recent"):
+                    _check_bundles = _store.list_by_actor_recent(_actor, 20)
+                else:
+                    _check_bundles = _store.list_by_actor(_actor)[-20:]
+                for b in _check_bundles:
                     bid = b.bundle_id if hasattr(b, "bundle_id") else str(uuid.uuid4())
                     evidence_ids.append(bid)
                     check_refs.append(f"check:{bid[:8]}")
