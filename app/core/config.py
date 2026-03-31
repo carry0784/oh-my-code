@@ -93,3 +93,15 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
+
+
+# ── Supported Exchanges (SSOT) ─────────────────────────────────────────── #
+# Single Source of Truth for all exchange whitelists.
+# Any exchange not in this list is UNSUPPORTED and must raise ValueError.
+# Categories:
+#   CRYPTO: cryptocurrency exchanges (bid/ask market feed supported)
+#   STOCK:  Korean stock brokerages (bid/ask market feed NOT supported)
+
+SUPPORTED_EXCHANGES_CRYPTO = ("binance", "upbit", "bitget")
+SUPPORTED_EXCHANGES_STOCK = ("kis", "kiwoom")
+SUPPORTED_EXCHANGES_ALL = SUPPORTED_EXCHANGES_CRYPTO + SUPPORTED_EXCHANGES_STOCK

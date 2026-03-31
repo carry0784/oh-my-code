@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from app.core.config import SUPPORTED_EXCHANGES_CRYPTO, SUPPORTED_EXCHANGES_STOCK
 from app.core.logging import get_logger
 from app.schemas.market_feed_schema import (
     MarketFeedResponse,
@@ -20,8 +21,8 @@ from app.schemas.market_feed_schema import (
 
 logger = get_logger(__name__)
 
-_SUPPORTED_EXCHANGES = ["binance", "upbit", "bitget"]
-_BID_ASK_NOT_SUPPORTED = {"kis", "kiwoom"}
+_SUPPORTED_EXCHANGES = list(SUPPORTED_EXCHANGES_CRYPTO)
+_BID_ASK_NOT_SUPPORTED = set(SUPPORTED_EXCHANGES_STOCK)
 _STALE_THRESHOLD_S = 120
 
 # Trust state priority (worst wins)

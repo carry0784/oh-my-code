@@ -16,3 +16,4 @@ class AgentResponse(BaseModel):
     reasoning: str | None = None
     confidence: float = Field(0.0, ge=0.0, le=1.0)
     governance_evidence_id: str | None = None
+    action_proposal_id: str | None = None

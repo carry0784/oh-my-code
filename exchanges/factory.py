@@ -5,6 +5,15 @@ from exchanges.bitget import BitgetExchange
 from exchanges.kis import KISExchange
 from exchanges.kiwoom import KiwoomExchange
 
+# Supported exchanges (must match app.core.config SSOT)
+_FACTORY_REGISTRY: dict[str, type] = {
+    "binance": BinanceExchange,
+    "upbit": UpBitExchange,
+    "bitget": BitgetExchange,
+    "kis": KISExchange,
+    "kiwoom": KiwoomExchange,
+}
+
 
 class ExchangeFactory:
     _instances: dict[str, BaseExchange] = {}
@@ -15,23 +24,20 @@ class ExchangeFactory:
 
         Idempotent: returns cached singleton for the same exchange key.
         Safe to call multiple times — only the first call creates an instance.
+        Raises ValueError for unsupported exchanges (fail-closed).
         """
         if exchange_name in cls._instances:
             return cls._instances[exchange_name]
 
-        if exchange_name == "binance":
-            instance = BinanceExchange()
-        elif exchange_name == "upbit":
-            instance = UpBitExchange()
-        elif exchange_name == "bitget":
-            instance = BitgetExchange()
-        elif exchange_name == "kis":
-            instance = KISExchange()
-        elif exchange_name == "kiwoom":
-            instance = KiwoomExchange()
-        else:
-            raise ValueError(f"Unknown exchange: {exchange_name}")
+        exchange_cls = _FACTORY_REGISTRY.get(exchange_name)
+        if exchange_cls is None:
+            raise ValueError(
+                f"Unsupported exchange: '{exchange_name}'. "
+                f"Supported: {sorted(_FACTORY_REGISTRY.keys())}. "
+                f"If this exchange was previously supported, it has been removed."
+            )
 
+        instance = exchange_cls()
         cls._instances[exchange_name] = instance
         return instance
 
