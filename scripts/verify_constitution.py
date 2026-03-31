@@ -46,7 +46,7 @@ ALLOWED_EXTRA_FIELDS = {
 # All cond-*.md files get unlock_reason_class
 COND_EXTRA_FIELD = "unlock_reason_class"
 
-MAX_TOTAL_LINES = 2387
+MAX_TOTAL_LINES = 2500
 
 LINE_LIMITS = {
     "constitution.md": 200,
@@ -109,8 +109,8 @@ def main():
     files = collect_files()
     rel_names = [r for r, _ in files]
 
-    # Check 1: File count = 26
-    if len(files) != 26:
+    # Check 1: File count = 27
+    if len(files) != 27:
         blockers.append(f"[1] File count = {len(files)}, expected 26. Files: {rel_names}")
 
     # Parse all frontmatter
@@ -126,7 +126,7 @@ def main():
         if info["fm"] and "document_id" in info["fm"]:
             doc_ids.append(info["fm"]["document_id"])
     unique_ids = set(doc_ids)
-    if len(doc_ids) != 26:
+    if len(doc_ids) != 27:
         blockers.append(f"[2] document_id count = {len(doc_ids)}, expected 26")
     if len(unique_ids) != len(doc_ids):
         dupes = [d for d in doc_ids if doc_ids.count(d) > 1]

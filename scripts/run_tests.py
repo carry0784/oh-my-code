@@ -48,6 +48,71 @@ SCOPES = {
     "all": ["tests/"],
 }
 
+# ── Changed-files → scope mapping ────────────────────────────────────────── #
+# Maps file path prefixes to test scopes for auto-detection.
+
+_PATH_TO_SCOPE: list[tuple[str, str]] = [
+    ("app/agents/governance_gate", "governance"),
+    ("app/agents/", "agents"),
+    ("app/core/governance_monitor", "monitor"),
+    ("app/core/market_feed", "dashboard"),
+    ("app/core/constitution_check", "monitor"),
+    ("app/api/routes/dashboard", "dashboard"),
+    ("app/templates/dashboard", "dashboard"),
+    ("app/schemas/market_feed", "dashboard"),
+    ("workers/tasks/governance_monitor", "monitor"),
+    ("workers/celery_app", "monitor"),
+    ("docs/aos-constitution/", "constitution"),
+    ("scripts/verify_constitution", "constitution"),
+    ("tests/test_agent_governance", "governance"),
+    ("tests/test_governance_monitor", "governance"),
+    ("tests/test_dashboard", "dashboard"),
+    ("tests/test_market_feed", "dashboard"),
+    ("tests/test_ops_checks", "monitor"),
+]
+
+
+def detect_scope_from_changed_files() -> str | None:
+    """Detect test scope from git changed files. Returns highest-priority scope."""
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--name-only", "HEAD"],
+            capture_output=True, text=True, timeout=10,
+        )
+        changed = [f.strip() for f in result.stdout.splitlines() if f.strip()]
+
+        # Also check staged
+        result2 = subprocess.run(
+            ["git", "diff", "--name-only", "--cached"],
+            capture_output=True, text=True, timeout=10,
+        )
+        changed.extend(f.strip() for f in result2.stdout.splitlines() if f.strip())
+
+        if not changed:
+            return None
+
+        # Priority: governance > monitor > dashboard > constitution > agents
+        scope_priority = ["governance", "monitor", "dashboard", "constitution", "agents"]
+        detected: set[str] = set()
+
+        for f in changed:
+            f_norm = f.replace("\\", "/")
+            for prefix, scope in _PATH_TO_SCOPE:
+                if f_norm.startswith(prefix):
+                    detected.add(scope)
+                    break
+
+        if not detected:
+            return None
+
+        for s in scope_priority:
+            if s in detected:
+                return s
+        return None
+
+    except Exception:
+        return None
+
 
 def run_tests(scope: str, verbose: bool = False) -> dict:
     """Run pytest for given scope and return structured result."""
@@ -143,14 +208,24 @@ def run_tests(scope: str, verbose: bool = False) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description="K-Dexter Test Runner")
-    parser.add_argument("--scope", default="all", choices=list(SCOPES.keys()),
-                        help="Test scope to run")
+    parser.add_argument("--scope", default=None, choices=list(SCOPES.keys()),
+                        help="Test scope to run (default: auto-detect from changed files)")
     parser.add_argument("--verbose", "-v", action="store_true")
     parser.add_argument("--output", "-o", default=None,
                         help="Output JSON file path")
     args = parser.parse_args()
 
-    result = run_tests(args.scope, args.verbose)
+    # Auto-detect scope from changed files if not specified
+    scope = args.scope
+    if scope is None:
+        scope = detect_scope_from_changed_files()
+        if scope:
+            print(f"[AUTO] Detected scope from changed files: {scope}")
+        else:
+            scope = "all"
+            print(f"[AUTO] No scope detected, running all tests")
+
+    result = run_tests(scope, args.verbose)
 
     # Always print summary to stdout
     icon = {"PASS": "[OK]", "FAIL": "[XX]", "SKIP": "[--]"}[result["status"]]

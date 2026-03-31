@@ -59,7 +59,7 @@ ruff check --fix .
   - `agents/` - LLM agent implementations
 - `workers/` - Celery background tasks
   - `tasks/` - Task definitions (order submission, signal validation, market sync)
-- `exchanges/` - CCXT exchange wrappers (Binance)
+- `exchanges/` - CCXT exchange wrappers (Binance, UpBit, Bitget, KIS, Kiwoom)
 - `strategies/` - Trading strategy implementations
 - `tests/` - pytest test suite
 
