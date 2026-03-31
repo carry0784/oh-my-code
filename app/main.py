@@ -141,6 +141,11 @@ async def lifespan(app: FastAPI):
 
     yield
     logger.info("Shutting down trading system")
+    # CR-035: Dispose async DB pool to release PostgreSQL connections on shutdown
+    from app.core.database import engine as _db_engine
+
+    await _db_engine.dispose()
+    logger.info("database_pool_disposed")
 
 
 app = FastAPI(

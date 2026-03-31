@@ -155,16 +155,19 @@ def _check_ops_score(threshold: float) -> tuple[float, bool, str]:
             from app.core.config import settings as _cfg
             from app.models.position import Position
             engine = create_engine(_cfg.database_url_sync)
-            with Session(engine) as sess:
-                latest = sess.query(Position.updated_at).order_by(Position.updated_at.desc()).first()
-                ts = latest[0] if latest else None
-                if ts is None:
-                    from app.models.asset_snapshot import AssetSnapshot
-                    snap = sess.query(AssetSnapshot.snapshot_at).order_by(AssetSnapshot.snapshot_at.desc()).first()
-                    ts = snap[0] if snap else None
-                if ts:
-                    now = datetime.now(timezone.utc)
-                    snapshot_age = int((now - ts.replace(tzinfo=timezone.utc)).total_seconds())
+            try:
+                with Session(engine) as sess:
+                    latest = sess.query(Position.updated_at).order_by(Position.updated_at.desc()).first()
+                    ts = latest[0] if latest else None
+                    if ts is None:
+                        from app.models.asset_snapshot import AssetSnapshot
+                        snap = sess.query(AssetSnapshot.snapshot_at).order_by(AssetSnapshot.snapshot_at.desc()).first()
+                        ts = snap[0] if snap else None
+                    if ts:
+                        now = datetime.now(timezone.utc)
+                        snapshot_age = int((now - ts.replace(tzinfo=timezone.utc)).total_seconds())
+            finally:
+                engine.dispose()  # CR-035: prevent connection leak
         except Exception:
             snapshot_age = None
 

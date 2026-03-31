@@ -107,7 +107,8 @@ def _assess_item(defn: dict) -> PreflightCheckItem:
             return _make_pf_item(name, "pass", observed, expected)
 
         if name == "exchange_snapshot":
-            # Query real snapshot freshness from DB (sync)
+            # CR-026: Mode 1 awareness — cold-start (no positions, no snapshots)
+            # is normal operational state, not STALE_SNAPSHOT.
             try:
                 from sqlalchemy import create_engine
                 from sqlalchemy.orm import Session as SyncSession
@@ -115,22 +116,36 @@ def _assess_item(defn: dict) -> PreflightCheckItem:
                 from app.models.position import Position
                 from datetime import datetime as _dt, timezone as _tz
                 _engine = create_engine(_cfg.database_url_sync)
-                with SyncSession(_engine) as _sess:
-                    _latest = _sess.query(Position.updated_at).order_by(Position.updated_at.desc()).first()
-                    _ts = _latest[0] if _latest else None
-                    if _ts is None:
-                        from app.models.asset_snapshot import AssetSnapshot
-                        _snap = _sess.query(AssetSnapshot.snapshot_at).order_by(AssetSnapshot.snapshot_at.desc()).first()
-                        _ts = _snap[0] if _snap else None
-                if _ts is not None:
-                    _age = int((_dt.now(_tz.utc) - _ts.replace(tzinfo=_tz.utc)).total_seconds())
-                    if _age <= 300:
-                        return _make_pf_item(name, "pass", f"age={_age}s", expected,
-                                             message=f"Snapshot fresh ({_age}s)")
+                try:
+                    with SyncSession(_engine) as _sess:
+                        _latest = _sess.query(Position.updated_at).order_by(Position.updated_at.desc()).first()
+                        _ts = _latest[0] if _latest else None
+                        if _ts is None:
+                            from app.models.asset_snapshot import AssetSnapshot
+                            _snap = _sess.query(AssetSnapshot.snapshot_at).order_by(AssetSnapshot.snapshot_at.desc()).first()
+                            _ts = _snap[0] if _snap else None
+                    if _ts is not None:
+                        _age = int((_dt.now(_tz.utc) - _ts.replace(tzinfo=_tz.utc)).total_seconds())
+                        if _age <= 300:
+                            return _make_pf_item(name, "pass", f"age={_age}s", expected,
+                                                 message=f"Snapshot fresh ({_age}s)")
+                        else:
+                            return _make_pf_item(name, "fail", f"age={_age}s", expected,
+                                                 reason_codes=[PreflightReasonCode.STALE_SNAPSHOT],
+                                                 message=f"Snapshot stale ({_age}s > 300s)")
                     else:
-                        return _make_pf_item(name, "fail", f"age={_age}s", expected,
-                                             reason_codes=[PreflightReasonCode.STALE_SNAPSHOT],
-                                             message=f"Snapshot stale ({_age}s > 300s)")
+                        # CR-026: No snapshot data = cold-start. In Mode 1 (testnet),
+                        # this is normal — no proposals flow, so no position/snapshot updates.
+                        _is_testnet = getattr(_cfg, "binance_testnet", True)
+                        if _is_testnet:
+                            return _make_pf_item(name, "pass", "cold_start", expected,
+                                                 message="Cold-start (Mode 1 testnet, no snapshot data yet)")
+                        else:
+                            return _make_pf_item(name, "fail", "no_data", expected,
+                                                 reason_codes=[PreflightReasonCode.STALE_SNAPSHOT],
+                                                 message="No snapshot data (production mode)")
+                finally:
+                    _engine.dispose()  # CR-035: prevent connection leak
             except Exception:
                 pass
             observed = "unknown"
@@ -184,7 +199,12 @@ def _assess_item(defn: dict) -> PreflightCheckItem:
 
         if name == "recent_checks_green":
             if gate and hasattr(gate, "evidence_store"):
-                checks = gate.evidence_store.list_by_actor("i03_daily_check")
+                # CR-027: Bounded query — only need latest 1, not all 84K.
+                _store = gate.evidence_store
+                if hasattr(_store, "list_by_actor_recent"):
+                    checks = _store.list_by_actor_recent("i03_daily_check", 1)
+                else:
+                    checks = _store.list_by_actor("i03_daily_check")[-1:]
                 if checks:
                     latest = checks[-1]
                     after = latest.after_state if hasattr(latest, "after_state") else {}

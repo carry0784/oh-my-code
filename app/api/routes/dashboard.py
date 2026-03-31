@@ -207,6 +207,21 @@ async def dashboard_data_v2(db: AsyncSession = Depends(get_db)):
     # C-09: Source provenance metadata
     result["provenance"] = _get_provenance_metadata(result)
 
+    # 4-Tier Seal Chain Board (lightweight embed)
+    try:
+        import app.main as main_module
+        from app.services.four_tier_board_service import build_four_tier_board
+        app_inst = main_module.app
+        board = build_four_tier_board(
+            action_ledger=getattr(app_inst.state, "action_ledger", None),
+            execution_ledger=getattr(app_inst.state, "execution_ledger", None),
+            submit_ledger=getattr(app_inst.state, "submit_ledger", None),
+            order_executor=getattr(app_inst.state, "order_executor", None),
+        )
+        result["four_tier_board"] = board.model_dump()
+    except Exception:
+        result["four_tier_board"] = None
+
     return result
 
 
@@ -624,7 +639,8 @@ async def _get_time_window_stats(db: AsyncSession) -> list[dict]:
     Returns list of dicts with label, total_value, trade_count, balance, pnl.
     Missing/insufficient data shown as None (rendered as "-" or "미집계").
     """
-    now = datetime.now(timezone.utc)
+    # BL-TZ02: naive UTC for DB binding boundary (CR-034)
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
     results = []
 
     for label, delta, min_samples in _TIME_WINDOWS:
@@ -640,7 +656,7 @@ async def _get_time_window_stats(db: AsyncSession) -> list[dict]:
             })
             continue
 
-        cutoff = now - delta
+        cutoff = now_naive - delta
         try:
             # Count snapshots in window
             count_result = await db.execute(
@@ -754,24 +770,30 @@ def _get_governance_info() -> dict:
         evidence_total = None
         if hasattr(gate, "evidence_store"):
             store = gate.evidence_store
-            if hasattr(store, "_bundles"):
-                bundles = store._bundles
-                evidence_total = len(bundles)
-                # Count orphans: PRE bundles with no linked POST/ERROR
+            # CR-027: Use count() (indexed O(1)) instead of full scan.
+            evidence_total = store.count()
+            # CR-027: Orphan calculation on 500K+ records caused timeout.
+            # Use bounded recent window instead of full scan.
+            try:
+                if hasattr(store, "list_by_actor_recent"):
+                    recent = store.list_by_actor_recent("i04_preflight", 50)
+                else:
+                    recent = store.list_by_actor("i04_preflight")[-50:]
                 pre_ids = set()
                 linked_pre_ids = set()
-                for b in bundles.values():
+                for b in recent:
                     artifacts = b.artifacts if hasattr(b, "artifacts") else []
                     for art in artifacts:
                         phase = art.get("phase", "") if isinstance(art, dict) else getattr(art, "phase", "")
                         if phase == "PRE":
-                            bid = b.bundle_id if hasattr(b, "bundle_id") else str(b)
-                            pre_ids.add(bid)
+                            pre_ids.add(b.bundle_id)
                         elif phase in ("POST", "ERROR"):
                             linked = art.get("pre_evidence_id", "") if isinstance(art, dict) else getattr(art, "pre_evidence_id", "")
                             if linked:
                                 linked_pre_ids.add(linked)
                 orphan_count = len(pre_ids - linked_pre_ids)
+            except Exception:
+                orphan_count = None
 
         return {
             "security_state": security_state,
@@ -805,7 +827,8 @@ async def _get_recent_events(db: AsyncSession, limit: int = 5) -> list[dict]:
     No agent_analysis / blocked-fields / reasoning exposure.
     """
     events: list[dict] = []
-    now = datetime.now(timezone.utc)
+    # BL-TZ02: naive UTC for DB binding boundary (CR-034)
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
 
     try:
         # Recent trades
@@ -825,7 +848,7 @@ async def _get_recent_events(db: AsyncSession, limit: int = 5) -> list[dict]:
 
     try:
         # Recent signals — NO agent_analysis
-        cutoff_24h = now - timedelta(hours=24)
+        cutoff_24h = now_naive - timedelta(hours=24)
         sig_result = await db.execute(
             select(Signal)
             .where(Signal.created_at >= cutoff_24h)
@@ -910,8 +933,9 @@ async def _get_signal_summary(db: AsyncSession) -> dict:
     Signal counts for last 24h + recent 5.
     No agent_analysis (N-08) exposure.
     """
-    now = datetime.now(timezone.utc)
-    cutoff = now - timedelta(hours=24)
+    # BL-TZ02: DB columns are TIMESTAMP WITHOUT TIME ZONE (naive).
+    # Strip tzinfo at binding boundary to prevent asyncpg DataError. (CR-034)
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=24)
     summary: dict = {
         "total_24h": 0,
         "validated": 0,
@@ -960,7 +984,8 @@ async def _get_venue_freshness(db: AsyncSession) -> dict:
 
     Returns: {exchange: {freshness_source, last_updated_at, age_seconds, error?}}
     """
-    now = datetime.now(timezone.utc)
+    # BL-TZ02: naive UTC for DB result comparison (CR-034)
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
     result = {}
     for ex in _EXCHANGES:
         try:
@@ -970,7 +995,7 @@ async def _get_venue_freshness(db: AsyncSession) -> dict:
             )
             last_updated = max_result.scalar()
             if last_updated is not None:
-                age = (now - last_updated).total_seconds()
+                age = (now_naive - last_updated).total_seconds()
                 result[ex] = {
                     "freshness_source": "position_proxy",
                     "last_updated_at": last_updated.isoformat(),
@@ -1879,9 +1904,17 @@ async def ops_checks(limit: int = 20):
             gate = getattr(main_module.app.state, "governance_gate", None)
             if gate is not None and hasattr(gate, "evidence_store"):
                 store = gate.evidence_store
-                check_bundles = store.list_by_actor("i03_daily_check")
-                check_bundles += store.list_by_actor("i03_hourly_check")
-                check_bundles += store.list_by_actor("i03_event_check")
+                # CR-027: Bounded query — only recent N bundles per actor.
+                # list_by_actor on 84K+ rows caused 196s timeout.
+                _recent_limit = limit  # use the endpoint's limit param
+                if hasattr(store, "list_by_actor_recent"):
+                    check_bundles = store.list_by_actor_recent("i03_daily_check", _recent_limit)
+                    check_bundles += store.list_by_actor_recent("i03_hourly_check", _recent_limit)
+                    check_bundles += store.list_by_actor_recent("i03_event_check", _recent_limit)
+                else:
+                    check_bundles = store.list_by_actor("i03_daily_check")[-_recent_limit:]
+                    check_bundles += store.list_by_actor("i03_hourly_check")[-_recent_limit:]
+                    check_bundles += store.list_by_actor("i03_event_check")[-_recent_limit:]
 
                 # Convert evidence bundles to check results (lightweight)
                 for b in sorted(
@@ -2452,6 +2485,321 @@ async def alert_summary_detail():
 
 
 # ---------------------------------------------------------------------------
+# 4-Tier Seal Chain Board — read-only unified view
+# ---------------------------------------------------------------------------
+
+@router.get("/api/four-tier-board", include_in_schema=False)
+async def four_tier_board():
+    """
+    Read-only 4-tier seal chain board.
+    Aggregates Agent → Execution → Submit → Orders into a single view.
+    Data source: in-memory ledgers + OrderExecutor (via app.state).
+    No mutations, no side-effects.
+    """
+    try:
+        import app.main as main_module
+        from app.services.four_tier_board_service import build_four_tier_board
+
+        app_instance = main_module.app
+
+        action_ledger = getattr(app_instance.state, "action_ledger", None)
+        execution_ledger = getattr(app_instance.state, "execution_ledger", None)
+        submit_ledger = getattr(app_instance.state, "submit_ledger", None)
+        order_executor = getattr(app_instance.state, "order_executor", None)
+
+        board = build_four_tier_board(
+            action_ledger=action_ledger,
+            execution_ledger=execution_ledger,
+            submit_ledger=submit_ledger,
+            order_executor=order_executor,
+        )
+        return board.model_dump()
+    except Exception as e:
+        logger.warning("four_tier_board_failed", error=str(e))
+        return {
+            "agent_tier": {"tier_name": "Agent", "tier_number": 1, "connected": False},
+            "execution_tier": {"tier_name": "Execution", "tier_number": 2, "connected": False},
+            "submit_tier": {"tier_name": "Submit", "tier_number": 3, "connected": False},
+            "order_tier": {"tier_name": "Orders", "tier_number": 4, "connected": False},
+            "error": str(e)[:200],
+        }
+
+
+# ---------------------------------------------------------------------------
+# AutoFix / Evaluation Status — read-only (Skill Loop integration)
+# ---------------------------------------------------------------------------
+
+@router.get("/api/evaluation-status", include_in_schema=False)
+async def evaluation_status():
+    """Read-only: latest evaluation report + autofix loop status + self-healing card."""
+    from pathlib import Path
+    import json as _json
+    from datetime import datetime, timezone
+    from collections import Counter
+
+    # ------------------------------------------------------------------
+    # Raw data loading
+    # ------------------------------------------------------------------
+    evaluation = None
+    autofix_loop = None
+    patterns_list: list = []
+
+    eval_path = Path("data/evaluation_report.json")
+    if eval_path.exists():
+        try:
+            evaluation = _json.loads(eval_path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    loop_path = Path("data/autofix_loop_report.json")
+    if loop_path.exists():
+        try:
+            autofix_loop = _json.loads(loop_path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    patterns_path = Path("data/failure_patterns.json")
+    if patterns_path.exists():
+        try:
+            raw = _json.loads(patterns_path.read_text(encoding="utf-8"))
+            if isinstance(raw, list):
+                patterns_list = raw
+        except Exception:
+            pass
+
+    # Load grade history
+    grade_history = []
+    history_path = Path("data/grade_history.json")
+    if history_path.exists():
+        try:
+            grade_history = _json.loads(history_path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    # Load evolution history
+    evolution_history = []
+    evo_path = Path("data/evolution_history.json")
+    if evo_path.exists():
+        try:
+            evolution_history = _json.loads(evo_path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------
+    # Self-Healing Status Card — derived, read-only
+    # ------------------------------------------------------------------
+
+    def _compute_grade_trend(recent: list) -> str:
+        if len(recent) < 2:
+            return "STABLE"
+        grade_rank = {"GREEN": 0, "YELLOW": 1, "RED": 2}
+        grades = [grade_rank.get(e.get("grade", "RED"), 2) for e in recent[-3:]]
+        if all(grades[i] >= grades[i + 1] for i in range(len(grades) - 1)) and grades[0] > grades[-1]:
+            return "IMPROVING"
+        if all(grades[i] <= grades[i + 1] for i in range(len(grades) - 1)) and grades[0] < grades[-1]:
+            return "DECLINING"
+        return "STABLE"
+
+    # Grade / risk from evaluation
+    grade = "UNKNOWN"
+    risk_score = None
+    eval_ts = None
+    if isinstance(evaluation, dict):
+        grade = evaluation.get("grade") or evaluation.get("final_grade") or "UNKNOWN"
+        risk_score = evaluation.get("risk_score") or evaluation.get("score")
+        eval_ts = (
+            evaluation.get("timestamp")
+            or evaluation.get("evaluated_at")
+            or evaluation.get("created_at")
+        )
+
+    # Loop metadata
+    last_loop_status = None
+    last_loop_iterations = None
+    last_loop_duration_seconds = None
+    last_blocked_reason = None
+    if isinstance(autofix_loop, dict):
+        loop_final_grade = autofix_loop.get("final_grade")
+        loop_exit_reason = autofix_loop.get("exit_reason")
+        if loop_final_grade or loop_exit_reason:
+            last_loop_status = {
+                "final_grade": loop_final_grade,
+                "exit_reason": loop_exit_reason,
+            }
+        last_loop_iterations = autofix_loop.get("iterations_run") or autofix_loop.get("iterations")
+        last_loop_duration_seconds = (
+            autofix_loop.get("duration_seconds")
+            or autofix_loop.get("elapsed_seconds")
+            or autofix_loop.get("duration")
+        )
+        if loop_exit_reason == "governance_block":
+            last_blocked_reason = (
+                autofix_loop.get("blocked_reason")
+                or autofix_loop.get("block_reason")
+                or autofix_loop.get("governance_block_reason")
+                or "governance_block"
+            )
+
+    # Pattern statistics
+    recurrence_distribution: dict = {}
+    top_failure_types: list = []
+    if patterns_list:
+        recurrence_counter: Counter = Counter()
+        failure_type_counter: Counter = Counter()
+        for p in patterns_list:
+            if not isinstance(p, dict):
+                continue
+            recurrence = p.get("recurrence") or p.get("recurrence_type") or p.get("type")
+            if recurrence:
+                recurrence_counter[str(recurrence)] += 1
+            failure_type = p.get("failure_type") or p.get("error_type") or p.get("category")
+            if failure_type:
+                failure_type_counter[str(failure_type)] += 1
+        recurrence_distribution = dict(recurrence_counter)
+        top_failure_types = [
+            {"failure_type": ft, "count": cnt}
+            for ft, cnt in failure_type_counter.most_common(5)
+        ]
+
+    # Green / Red timestamps — prefer history, fall back to current evaluation
+    last_green_at = None
+    last_red_at = None
+    for entry in reversed(grade_history):
+        if not isinstance(entry, dict):
+            continue
+        if last_green_at is None and entry.get("grade", "").upper() == "GREEN":
+            last_green_at = entry.get("timestamp")
+        if last_red_at is None and entry.get("grade", "").upper() != "GREEN":
+            last_red_at = entry.get("timestamp")
+        if last_green_at and last_red_at:
+            break
+    # Fall back to current evaluation when history is empty
+    if eval_ts and last_green_at is None and last_red_at is None:
+        if isinstance(grade, str) and grade.upper() == "GREEN":
+            last_green_at = eval_ts
+        else:
+            last_red_at = eval_ts
+
+    # Governance blocked state
+    governance_blocked = False
+    blocked_at = None
+    gov_summary = evaluation.get("governance_summary", {}) if isinstance(evaluation, dict) else {}
+    if gov_summary.get("status") == "BLOCK" or (isinstance(evaluation, dict) and evaluation.get("blocked")):
+        governance_blocked = True
+        # blocked_at: find most recent history entry where governance_status == "BLOCK"
+        for entry in reversed(grade_history):
+            if not isinstance(entry, dict):
+                continue
+            if entry.get("governance_status") == "BLOCK":
+                blocked_at = entry.get("timestamp")
+                break
+        # Fall back to current evaluation timestamp when no history entry has BLOCK
+        if blocked_at is None and eval_ts:
+            blocked_at = eval_ts
+
+    # Status priority: most critical of current grade vs governance block
+    _priority_rank = {"BLOCK": 0, "RED": 1, "YELLOW": 2, "GREEN": 3, "UNKNOWN": 4}
+    current_grade_upper = grade.upper() if isinstance(grade, str) else "UNKNOWN"
+    candidate_statuses = [current_grade_upper]
+    if governance_blocked:
+        candidate_statuses.append("BLOCK")
+    status_priority = min(candidate_statuses, key=lambda s: _priority_rank.get(s, 4))
+
+    # Recent grades (last 7) and trend
+    recent_grades = [
+        {"timestamp": e.get("timestamp"), "grade": e.get("grade"), "risk_score": e.get("risk_score")}
+        for e in grade_history[-7:]
+        if isinstance(e, dict)
+    ]
+    grade_trend = _compute_grade_trend(grade_history)
+
+    self_healing_card = {
+        "current_grade": grade,
+        "risk_score": risk_score,
+        "last_loop_status": last_loop_status,
+        "last_loop_iterations": last_loop_iterations,
+        "last_loop_duration_seconds": last_loop_duration_seconds,
+        "last_blocked_reason": last_blocked_reason,
+        "pattern_count": len(patterns_list),
+        "recurrence_distribution": recurrence_distribution,
+        "top_failure_types": top_failure_types,
+        "last_green_at": last_green_at,
+        "last_red_at": last_red_at,
+        "recent_grades": recent_grades,
+        "grade_trend": grade_trend,
+        "governance_blocked": governance_blocked,
+        "blocked_at": blocked_at,
+        "status_priority": status_priority,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    # ------------------------------------------------------------------
+    # Evolution Card
+    # ------------------------------------------------------------------
+    evo_proposals = [e.get("proposal") for e in evolution_history if e.get("proposal")]
+    pending = [p for p in evo_proposals if p.get("status") == "PROPOSED"]
+    approved = [p for p in evo_proposals if p.get("status") == "APPROVED"]
+    rejected = [p for p in evo_proposals if p.get("status") == "REJECTED"]
+    applied = [p for p in evo_proposals if p.get("status") == "APPLIED"]
+
+    latest_proposal = evo_proposals[-1] if evo_proposals else None
+    latest_analysis = evolution_history[-1].get("analysis_summary", {}) if evolution_history else {}
+
+    evolution_card = {
+        "latest_proposal_id": latest_proposal.get("proposal_id") if latest_proposal else None,
+        "latest_diagnosis": latest_proposal.get("category") if latest_proposal else None,
+        "latest_severity": latest_proposal.get("severity") if latest_proposal else None,
+        "latest_score": latest_proposal.get("score") if latest_proposal else None,
+        "latest_status": latest_proposal.get("status") if latest_proposal else None,
+        "pending_count": len(pending),
+        "approved_count": len(approved),
+        "rejected_count": len(rejected),
+        "applied_count": len(applied),
+        "total_proposals": len(evo_proposals),
+        "health_trend": latest_analysis.get("health_trend"),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    # ------------------------------------------------------------------
+    # Compose final result
+    # ------------------------------------------------------------------
+    result = {
+        "self_healing_card": self_healing_card,
+        "evaluation": evaluation,
+        "autofix_loop": autofix_loop,
+        "failure_patterns": {
+            "total": len(patterns_list),
+            "patterns": patterns_list[-10:],  # last 10
+        },
+        "grade_history": grade_history[-20:],  # last 20 entries
+    }
+    result["evolution_card"] = evolution_card
+    result["evolution_board"] = {
+        "pending": [_proposal_summary(p) for p in pending],
+        "approved": [_proposal_summary(p) for p in approved],
+        "rejected": [_proposal_summary(p) for p in rejected],
+        "applied": [_proposal_summary(p) for p in applied],
+    }
+    result["evolution_history"] = evolution_history[-10:]  # last 10
+    return result
+
+
+def _proposal_summary(p: dict) -> dict:
+    """Compact proposal summary for board display."""
+    return {
+        "proposal_id": p.get("proposal_id"),
+        "category": p.get("category"),
+        "severity": p.get("severity"),
+        "score": p.get("score"),
+        "action": p.get("action", "")[:80],
+        "status": p.get("status"),
+        "created_at": p.get("created_at"),
+        "approved_at": p.get("approved_at"),
+        "rejected_at": p.get("rejected_at"),
+    }
+
+
+# ---------------------------------------------------------------------------
 # C-04 Manual Action — Phase 5 Bounded Execution
 # 9-stage chain gated. Fail-closed. Synchronous only.
 # No background / queue / worker / command bus.
@@ -2660,6 +3008,10 @@ async def _compute_integrity_panel(
     db: AsyncSession, now: datetime
 ) -> IntegrityPanel:
     """제8조: 무결성 패널 계산. 표시용 계산만, 자동 점검 엔진 아님."""
+    # CR-026: Mode 1 awareness — distinguish "no trades yet" from "data stale".
+    from app.core.config import settings as _cfg
+    is_testnet = getattr(_cfg, "binance_testnet", True)
+
     try:
         # Snapshot age: newest position update (primary)
         latest_pos = await db.execute(
@@ -2685,8 +3037,15 @@ async def _compute_integrity_panel(
             else None
         )
 
-        # Stale data: > 5 minutes since last update
-        stale_data = snapshot_age is not None and snapshot_age > 300
+        # CR-026: Stale data判定 — Mode 1 cold-start (no positions, no snapshots)
+        # is NOT the same as "stale". Stale = data EXISTS but is old.
+        if snapshot_age is None:
+            # No data at all — cold-start, not stale
+            stale_data = False
+        elif snapshot_age > 300:
+            stale_data = True
+        else:
+            stale_data = False
 
         return IntegrityPanel(
             exchange_db_consistency="unknown",  # full check requires exchange API
@@ -2704,16 +3063,25 @@ async def _compute_integrity_panel(
             position_mismatch=False,
             open_orders_mismatch=False,
             balance_mismatch=False,
-            stale_data=True,  # fail-closed: unknown = stale
+            stale_data=False,  # CR-026: fail-closed changed to fail-neutral for cold-start
         )
 
 
 async def _compute_trading_safety_panel(db: AsyncSession) -> TradingSafetyPanel:
     """제9조: 거래 안전 패널 계산. 표시 전용, 거래 승인/해제 로직 없음."""
+    # CR-026: Fail-soft per field. One query failure must not collapse entire panel.
+    # CR-026: Mode 1 steady-state awareness — testnet observation is the default mode.
+    from app.core.config import settings as _cfg
+    is_testnet = getattr(_cfg, "binance_testnet", True)
+
+    # --- Order metrics (fail-soft: isolated try/except) ---
+    total_orders = 0
+    reject_count = 0
+    success_rate = None
+    cancel_count = 0
+    order_query_ok = True
     try:
-        # Order success rate and reject count from recent orders
         # BL-TZ01: Order.created_at is DateTime (naive, TIMESTAMP WITHOUT TIME ZONE).
-        # Use naive UTC cutoff to match DB column type and avoid aware/naive mismatch.
         recent_cutoff = datetime.utcnow() - timedelta(hours=24)
         total_orders_result = await db.execute(
             select(func.count(Order.id)).where(Order.created_at >= recent_cutoff)
@@ -2734,7 +3102,6 @@ async def _compute_trading_safety_panel(db: AsyncSession) -> TradingSafetyPanel:
             else None
         )
 
-        # Cancel residual: orders in CANCELLED state still in recent window
         cancelled_result = await db.execute(
             select(func.count(Order.id)).where(
                 Order.created_at >= recent_cutoff,
@@ -2742,54 +3109,61 @@ async def _compute_trading_safety_panel(db: AsyncSession) -> TradingSafetyPanel:
             )
         )
         cancel_count = cancelled_result.scalar() or 0
-
-        # Kill switch from security context
-        kill_switch = False
-        enforcement = "NORMAL"
-        try:
-            import app.main as main_module
-            gate = getattr(main_module.app.state, "governance_gate", None)
-            if gate is not None and hasattr(gate, "security_ctx"):
-                ctx = gate.security_ctx
-                state_val = (
-                    ctx.current.value
-                    if hasattr(ctx.current, "value")
-                    else str(ctx.current)
-                )
-                enforcement = state_val
-                kill_switch = state_val in ("LOCKDOWN", "QUARANTINED")
-        except Exception:
-            pass
-
-        # Trading block reason
-        block_reason = None
-        if kill_switch:
-            block_reason = f"Security state: {enforcement}"
-        elif reject_count > 0 and total_orders > 0 and reject_count / total_orders > 0.5:
-            block_reason = f"High reject rate: {reject_count}/{total_orders}"
-
-        return TradingSafetyPanel(
-            allowed_capital_ratio=None,  # requires risk manager (future)
-            order_success_rate=success_rate,
-            reject_count=reject_count,
-            cancel_residual=cancel_count > 0,
-            latency_status="unknown",  # requires latency monitor (future)
-            kill_switch_active=kill_switch,
-            current_trading_mode="observation" if kill_switch else "active",
-            trading_block_reason=block_reason,
-        )
     except Exception as e:
-        logger.warning("ops_trading_safety_failed", error=str(e))
-        return TradingSafetyPanel(
-            allowed_capital_ratio=None,
-            order_success_rate=None,
-            reject_count=0,
-            cancel_residual=False,
-            latency_status="unknown",
-            kill_switch_active=False,
-            current_trading_mode="unknown",
-            trading_block_reason="Safety panel computation failed",
-        )
+        logger.warning("ops_trading_safety_order_query_failed", error=str(e))
+        order_query_ok = False
+
+    # --- Security context (fail-soft: isolated try/except) ---
+    kill_switch = False
+    enforcement = "NORMAL"
+    try:
+        import app.main as main_module
+        gate = getattr(main_module.app.state, "governance_gate", None)
+        if gate is not None and hasattr(gate, "security_ctx"):
+            ctx = gate.security_ctx
+            state_val = (
+                ctx.current.value
+                if hasattr(ctx.current, "value")
+                else str(ctx.current)
+            )
+            enforcement = state_val
+            kill_switch = state_val in ("LOCKDOWN", "QUARANTINED")
+    except Exception:
+        pass
+
+    # --- Trading block reason ---
+    block_reason = None
+    if kill_switch:
+        block_reason = f"Security state: {enforcement}"
+    elif reject_count > 0 and total_orders > 0 and reject_count / total_orders > 0.5:
+        block_reason = f"High reject rate: {reject_count}/{total_orders}"
+    elif not order_query_ok:
+        block_reason = "Order metrics unavailable (DB query failed)"
+
+    # CR-026: trading_mode reflects operational reality.
+    # Mode 1 (testnet=true) → "observation" always.
+    # Mode 2 would be "active" (when kill_switch is not engaged).
+    if kill_switch:
+        trading_mode = "observation"
+    elif is_testnet:
+        trading_mode = "observation"
+    else:
+        trading_mode = "active"
+
+    # CR-026: latency_status — "not_measured" is not a warning.
+    # Measurement requires active order flow (Mode 2+).
+    latency = "not_measured"
+
+    return TradingSafetyPanel(
+        allowed_capital_ratio=None,  # requires risk manager (future)
+        order_success_rate=success_rate,
+        reject_count=reject_count,
+        cancel_residual=cancel_count > 0,
+        latency_status=latency,
+        kill_switch_active=kill_switch,
+        current_trading_mode=trading_mode,
+        trading_block_reason=block_reason,
+    )
 
 
 def _compute_incident_panel() -> IncidentEvidencePanel:
@@ -2949,9 +3323,20 @@ def _compute_ops_score(
         integrity_score -= 0.1
 
     # Connectivity axis
+    # CR-026: snapshot_age=None means cold-start (no data yet), not disconnected.
+    # Check worker health as secondary signal before collapsing to 0.
     connectivity_score = 1.0
     if integrity.snapshot_age_seconds is None:
-        connectivity_score = 0.0
+        # CR-026: Cold-start — no snapshot data. Check if workers are alive.
+        try:
+            import app.main as main_module
+            gate = getattr(main_module.app.state, "governance_gate", None)
+            if gate is not None:
+                connectivity_score = 0.6  # workers up, no snapshot yet
+            else:
+                connectivity_score = 0.3  # no gate, uncertain
+        except Exception:
+            connectivity_score = 0.3  # uncertain, not zero
     elif integrity.snapshot_age_seconds > 600:
         connectivity_score = 0.2
     elif integrity.snapshot_age_seconds > 300:

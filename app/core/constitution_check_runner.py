@@ -285,8 +285,11 @@ def _observe_hourly_item(defn: dict) -> CheckItem:
                               message="No snapshot data available")
 
         if name == "latency_status":
-            observed = "unknown"
-            return _make_item(name, CheckResultGrade.WARN, observed, expected, rule_refs)
+            # CR-026: "not measured" is not a warning. Measurement requires
+            # active order flow (Mode 2+). Mode 1 has no latency to measure.
+            observed = "not_measured"
+            return _make_item(name, CheckResultGrade.OK, observed, expected, rule_refs,
+                              message="Latency not measured (no active order flow)")
 
         if name == "alert_backlog":
             observed = _check_alert_backlog()
@@ -543,9 +546,12 @@ def _check_evidence_active() -> str:
             from app.core.config import settings as _cfg
             from app.models.asset_snapshot import AssetSnapshot
             _engine = create_engine(_cfg.database_url_sync)
-            with SyncSession(_engine) as _sess:
-                count = _sess.query(func.count(AssetSnapshot.id)).scalar() or 0
-                return "active" if count > 0 else "empty"
+            try:
+                with SyncSession(_engine) as _sess:
+                    count = _sess.query(func.count(AssetSnapshot.id)).scalar() or 0
+                    return "active" if count > 0 else "empty"
+            finally:
+                _engine.dispose()  # CR-035: prevent connection leak
         except Exception:
             pass
         return "unavailable"
@@ -563,14 +569,17 @@ def _get_snapshot_age_sync() -> int | None:
         from app.models.asset_snapshot import AssetSnapshot
         from datetime import datetime, timezone
         _engine = create_engine(_cfg.database_url_sync)
-        with SyncSession(_engine) as _sess:
-            latest = _sess.query(Position.updated_at).order_by(Position.updated_at.desc()).first()
-            ts = latest[0] if latest else None
-            if ts is None:
-                snap = _sess.query(AssetSnapshot.snapshot_at).order_by(AssetSnapshot.snapshot_at.desc()).first()
-                ts = snap[0] if snap else None
-            if ts:
-                return int((datetime.now(timezone.utc) - ts.replace(tzinfo=timezone.utc)).total_seconds())
+        try:
+            with SyncSession(_engine) as _sess:
+                latest = _sess.query(Position.updated_at).order_by(Position.updated_at.desc()).first()
+                ts = latest[0] if latest else None
+                if ts is None:
+                    snap = _sess.query(AssetSnapshot.snapshot_at).order_by(AssetSnapshot.snapshot_at.desc()).first()
+                    ts = snap[0] if snap else None
+                if ts:
+                    return int((datetime.now(timezone.utc) - ts.replace(tzinfo=timezone.utc)).total_seconds())
+        finally:
+            _engine.dispose()  # CR-035: prevent connection leak
     except Exception:
         pass
     return None

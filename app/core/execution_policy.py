@@ -213,7 +213,12 @@ def _get_latest_approval() -> OperatorApprovalReceipt | None:
         import app.main as main_module
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate and hasattr(gate, "evidence_store"):
-            bundles = gate.evidence_store.list_by_actor("i06_operator_approval")
+            # CR-027: Bounded query — only need latest few, not all 42K.
+            _store = gate.evidence_store
+            if hasattr(_store, "list_by_actor_recent"):
+                bundles = _store.list_by_actor_recent("i06_operator_approval", 10)
+            else:
+                bundles = _store.list_by_actor("i06_operator_approval")[-10:]
             for b in reversed(bundles):
                 after = b.after_state if hasattr(b, "after_state") else {}
                 if isinstance(after, dict) and after.get("decision") == "APPROVED":
@@ -267,15 +272,18 @@ def _recheck_ops_score(threshold: float) -> tuple[bool, str]:
             from app.models.position import Position
             from datetime import datetime, timezone
             _engine = create_engine(_cfg.database_url_sync)
-            with SyncSession(_engine) as _sess:
-                latest = _sess.query(Position.updated_at).order_by(Position.updated_at.desc()).first()
-                ts = latest[0] if latest else None
-                if ts is None:
-                    from app.models.asset_snapshot import AssetSnapshot
-                    snap = _sess.query(AssetSnapshot.snapshot_at).order_by(AssetSnapshot.snapshot_at.desc()).first()
-                    ts = snap[0] if snap else None
-                if ts:
-                    snapshot_age = int((datetime.now(timezone.utc) - ts.replace(tzinfo=timezone.utc)).total_seconds())
+            try:
+                with SyncSession(_engine) as _sess:
+                    latest = _sess.query(Position.updated_at).order_by(Position.updated_at.desc()).first()
+                    ts = latest[0] if latest else None
+                    if ts is None:
+                        from app.models.asset_snapshot import AssetSnapshot
+                        snap = _sess.query(AssetSnapshot.snapshot_at).order_by(AssetSnapshot.snapshot_at.desc()).first()
+                        ts = snap[0] if snap else None
+                    if ts:
+                        snapshot_age = int((datetime.now(timezone.utc) - ts.replace(tzinfo=timezone.utc)).total_seconds())
+            finally:
+                _engine.dispose()  # CR-035: prevent connection leak
         except Exception:
             snapshot_age = None
 
