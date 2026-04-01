@@ -28,9 +28,9 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 # DATA COLLECTION
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 
 def collect_6month_ohlcv(
     symbol: str = "BTC/USDT",
@@ -43,7 +43,7 @@ def collect_6month_ohlcv(
         exchange = ccxt.binance({"enableRateLimit": True})
 
         all_ohlcv = []
-        # 6 months ≈ 180 days × 24 hours = 4320 bars (hourly)
+        # 6 months ~ 180 days x 24 hours = 4320 bars (hourly)
         target_bars = months * 30 * 24
         since = exchange.milliseconds() - target_bars * 3600 * 1000
         batch_size = 1000
@@ -85,9 +85,9 @@ def _synthetic_6month(n: int = 4320) -> list[list]:
     return data
 
 
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 # INDICATOR IMPLEMENTATIONS
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 
 def sma(data: np.ndarray, period: int) -> np.ndarray:
     """Simple Moving Average."""
@@ -146,9 +146,9 @@ def linreg(data: np.ndarray, period: int) -> np.ndarray:
     return out
 
 
-# ─────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------
 # 1. SUPERTREND
-# ─────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------
 
 def calc_supertrend(
     highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
@@ -187,9 +187,9 @@ def calc_supertrend(
     return trend, signals
 
 
-# ─────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------
 # 2. SQUEEZE MOMENTUM [LazyBear]
-# ─────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------
 
 def calc_squeeze_momentum(
     highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
@@ -247,10 +247,10 @@ def calc_squeeze_momentum(
     signals = np.zeros(n, dtype=int)
     for i in range(1, n):
         if not np.isnan(val[i]):
-            # Squeeze just released and momentum positive → BUY
+            # Squeeze just released and momentum positive -> BUY
             if sqz_on[i - 1] and not sqz_on[i] and val[i] > 0:
                 signals[i] = 1
-            # Squeeze just released and momentum negative → SELL
+            # Squeeze just released and momentum negative -> SELL
             elif sqz_on[i - 1] and not sqz_on[i] and val[i] < 0:
                 signals[i] = -1
             # Momentum cross zero
@@ -262,9 +262,9 @@ def calc_squeeze_momentum(
     return val, sqz_on, signals
 
 
-# ─────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------
 # 3. MACD Ultimate MTF [ChrisMoody]
-# ─────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------
 
 def calc_macd(
     closes: np.ndarray,
@@ -292,9 +292,9 @@ def calc_macd(
     return macd_line, signal_line, histogram, signals
 
 
-# ─────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------
 # 4. WILLIAMS VIX FIX [ChrisMoody]
-# ─────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------
 
 def calc_williams_vix_fix(
     closes: np.ndarray, lows: np.ndarray,
@@ -337,9 +337,9 @@ def calc_williams_vix_fix(
     return wvf, signals
 
 
-# ─────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------
 # 5. WAVETREND [LazyBear]
-# ─────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------
 
 def calc_wavetrend(
     highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
@@ -384,9 +384,9 @@ def calc_wavetrend(
     return wt1, wt2, signals
 
 
-# ─────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------
 # 6. SMART MONEY CONCEPTS (simplified: BOS/CHoCH + trend)
-# ─────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------
 
 def calc_smc(
     highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
@@ -450,9 +450,70 @@ def calc_smc(
     return trend, signals
 
 
-# ═══════════════════════════════════════════════════════════════════
+def calc_smc_pure_causal(
+    highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
+    swing_length: int = 50, internal_length: int = 5,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Pure-causal Smart Money Concepts (Version B).
+    Swing detection uses ONLY past/current data -- no future bars.
+
+    At bar i, checks if bar (i - internal_length) was a swing high/low
+    by examining the window [i - 2*L .. i] (all past/current).
+    No delay compensation needed because no future data is accessed.
+
+    Returns (smc_trend, signals).
+    """
+    n = len(closes)
+    L = internal_length
+    trend = np.zeros(n, dtype=int)
+    signals = np.zeros(n, dtype=int)
+
+    last_swing_high = np.nan
+    last_swing_low = np.nan
+    current_trend = 0
+
+    for i in range(2 * L, n):
+        # Check if bar (i - L) is a swing high using only bars <= i
+        candidate_idx = i - L
+        window_start = max(0, candidate_idx - L)
+        window_end = i + 1  # up to current bar (inclusive)
+
+        # Swing high: candidate bar has highest high in window
+        window_h = highs[window_start:window_end]
+        if highs[candidate_idx] == np.max(window_h):
+            last_swing_high = highs[candidate_idx]
+
+        # Swing low: candidate bar has lowest low in window
+        window_l = lows[window_start:window_end]
+        if lows[candidate_idx] == np.min(window_l):
+            last_swing_low = lows[candidate_idx]
+
+        # BOS/CHoCH detection (identical logic, no delay offset needed)
+        if not np.isnan(last_swing_high) and closes[i] > last_swing_high:
+            if current_trend == -1:
+                signals[i] = 1  # CHoCH (bullish)
+            elif current_trend == 1:
+                signals[i] = 1  # BOS (bullish continuation)
+            current_trend = 1
+            last_swing_high = np.nan  # consumed
+
+        if not np.isnan(last_swing_low) and closes[i] < last_swing_low:
+            if current_trend == 1:
+                signals[i] = -1  # CHoCH (bearish)
+            elif current_trend == -1:
+                signals[i] = -1  # BOS (bearish continuation)
+            current_trend = -1
+            last_swing_low = np.nan  # consumed
+
+        trend[i] = current_trend
+
+    return trend, signals
+
+
+# ===================================================================
 # BACKTESTING ENGINE
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 
 @dataclass
 class Trade:
@@ -579,9 +640,9 @@ def backtest_signals(
     return result
 
 
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 # COMPOSITE STRATEGY
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 
 def build_composite_strategy(
     closes: np.ndarray,
@@ -591,7 +652,7 @@ def build_composite_strategy(
 ) -> np.ndarray:
     """
     Build composite signal from multiple indicators.
-    Weighted voting: sum of (signal × weight). Buy if >= threshold, sell if <= -threshold.
+    Weighted voting: sum of (signal x weight). Buy if >= threshold, sell if <= -threshold.
     """
     n = len(closes)
     composite = np.zeros(n)
@@ -610,9 +671,9 @@ def build_composite_strategy(
     return final_signals
 
 
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 # MAIN
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 
 def main():
     print("=" * 70)
@@ -633,9 +694,9 @@ def main():
     end_date = datetime.fromtimestamp(timestamps[-1] / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
     buy_hold_return = (closes[-1] / closes[0] - 1) * 100
 
-    print(f"\n  Period: {start_date} → {end_date}")
+    print(f"\n  Period: {start_date} -> {end_date}")
     print(f"  Bars: {n} (1H)")
-    print(f"  Price: {closes[0]:.0f} → {closes[-1]:.0f}")
+    print(f"  Price: {closes[0]:.0f} -> {closes[-1]:.0f}")
     print(f"  Buy & Hold: {buy_hold_return:+.2f}%")
 
     # 2. Calculate all indicators
@@ -662,14 +723,27 @@ def main():
     wt1, wt2, wt_signals = calc_wavetrend(highs, lows, closes)
     all_signals["WaveTrend"] = wt_signals
 
-    # Smart Money Concepts
-    smc_trend, smc_signals = calc_smc(highs, lows, closes)
-    all_signals["SMC"] = smc_signals
+    # Smart Money Concepts -- Version A (delay-compensated, reference only)
+    smc_trend_a, smc_signals_a = calc_smc(highs, lows, closes)
+
+    # Smart Money Concepts -- Version B (pure-causal, authoritative)
+    smc_trend_b, smc_signals_b = calc_smc_pure_causal(highs, lows, closes)
+    all_signals["SMC"] = smc_signals_b  # Phase 2 uses pure-causal
+
+    # SMC Version A vs B comparison
+    smc_divergence = np.sum(smc_signals_a != smc_signals_b)
+    smc_a_count = np.sum(smc_signals_a != 0)
+    smc_b_count = np.sum(smc_signals_b != 0)
+    print(f"\n  [SMC Version Comparison]")
+    print(f"    Version A (delay-compensated) signals: {smc_a_count}")
+    print(f"    Version B (pure-causal) signals: {smc_b_count}")
+    print(f"    Signal divergence: {smc_divergence} bars differ")
+    print(f"    NOTE: All composite strategies use Version B (pure-causal)")
 
     # 3. Backtest each indicator individually
-    print("\n" + "─" * 70)
+    print("\n" + "-" * 70)
     print("  INDIVIDUAL INDICATOR RESULTS")
-    print("─" * 70)
+    print("-" * 70)
 
     results = {}
     for name, sigs in all_signals.items():
@@ -685,25 +759,25 @@ def main():
         print(f"    Profit Factor: {res.profit_factor:.2f}")
 
     # 4. Rank indicators
-    print("\n" + "─" * 70)
+    print("\n" + "-" * 70)
     print("  INDICATOR RANKING")
-    print("─" * 70)
+    print("-" * 70)
     ranking = sorted(results.items(), key=lambda x: x[1].sharpe_ratio, reverse=True)
     print(f"\n  {'Rank':<5} {'Indicator':<14} {'Sharpe':>8} {'Return':>10} {'Win%':>7} {'PF':>7} {'MaxDD':>8}")
-    print(f"  {'─'*4:<5} {'─'*13:<14} {'─'*7:>8} {'─'*9:>10} {'─'*6:>7} {'─'*6:>7} {'─'*7:>8}")
+    print(f"  {'-'*4:<5} {'-'*13:<14} {'-'*7:>8} {'-'*9:>10} {'-'*6:>7} {'-'*6:>7} {'-'*7:>8}")
     for i, (name, res) in enumerate(ranking, 1):
         print(f"  {i:<5} {name:<14} {res.sharpe_ratio:>8.2f} {res.total_return_pct:>+9.2f}% {res.win_rate:>6.1f}% {res.profit_factor:>7.2f} {res.max_drawdown_pct:>7.2f}%")
 
     # 5. Build composite strategies
-    print("\n" + "─" * 70)
+    print("\n" + "-" * 70)
     print("  COMPOSITE STRATEGY RESULTS")
-    print("─" * 70)
+    print("-" * 70)
 
     # Strategy A: Equal weight, 2-indicator consensus
     weights_equal = {name: 1.0 for name in all_signals}
     composite_a = build_composite_strategy(closes, all_signals, weights_equal, threshold=2.0)
     res_a = backtest_signals(closes, composite_a, "Composite_EqualWeight_2of6")
-    print(f"\n  [Strategy A: Equal Weight — 2/6 consensus]")
+    print(f"\n  [Strategy A: Equal Weight -2/6 consensus]")
     print(f"    Trades: {res_a.total_trades}, Win Rate: {res_a.win_rate:.1f}%")
     print(f"    Return: {res_a.total_return_pct:+.2f}%, MaxDD: {res_a.max_drawdown_pct:.2f}%")
     print(f"    Sharpe: {res_a.sharpe_ratio:.2f}, PF: {res_a.profit_factor:.2f}")
@@ -711,7 +785,7 @@ def main():
     # Strategy B: Equal weight, 3-indicator consensus (stricter)
     composite_b = build_composite_strategy(closes, all_signals, weights_equal, threshold=3.0)
     res_b = backtest_signals(closes, composite_b, "Composite_EqualWeight_3of6")
-    print(f"\n  [Strategy B: Equal Weight — 3/6 consensus]")
+    print(f"\n  [Strategy B: Equal Weight -3/6 consensus]")
     print(f"    Trades: {res_b.total_trades}, Win Rate: {res_b.win_rate:.1f}%")
     print(f"    Return: {res_b.total_return_pct:+.2f}%, MaxDD: {res_b.max_drawdown_pct:.2f}%")
     print(f"    Sharpe: {res_b.sharpe_ratio:.2f}, PF: {res_b.profit_factor:.2f}")
@@ -725,7 +799,7 @@ def main():
     sharpe_weights = {k: v / total_w * len(sharpe_weights) for k, v in sharpe_weights.items()}
     composite_c = build_composite_strategy(closes, all_signals, sharpe_weights, threshold=2.0)
     res_c = backtest_signals(closes, composite_c, "Composite_SharpeWeighted")
-    print(f"\n  [Strategy C: Sharpe-Weighted — adaptive threshold]")
+    print(f"\n  [Strategy C: Sharpe-Weighted -adaptive threshold]")
     print(f"    Weights: {', '.join(f'{k}={v:.2f}' for k, v in sorted(sharpe_weights.items(), key=lambda x: -x[1]))}")
     print(f"    Trades: {res_c.total_trades}, Win Rate: {res_c.win_rate:.1f}%")
     print(f"    Return: {res_c.total_return_pct:+.2f}%, MaxDD: {res_c.max_drawdown_pct:.2f}%")
@@ -737,15 +811,15 @@ def main():
     top3_weights = {name: 1.0 for name in top3_names}
     composite_d = build_composite_strategy(closes, top3_signals, top3_weights, threshold=2.0)
     res_d = backtest_signals(closes, composite_d, f"Composite_Top3")
-    print(f"\n  [Strategy D: Top 3 Only ({', '.join(top3_names)}) — 2/3 consensus]")
+    print(f"\n  [Strategy D: Top 3 Only ({', '.join(top3_names)}) -2/3 consensus]")
     print(f"    Trades: {res_d.total_trades}, Win Rate: {res_d.win_rate:.1f}%")
     print(f"    Return: {res_d.total_return_pct:+.2f}%, MaxDD: {res_d.max_drawdown_pct:.2f}%")
     print(f"    Sharpe: {res_d.sharpe_ratio:.2f}, PF: {res_d.profit_factor:.2f}")
 
     # 6. Final comparison
-    print("\n" + "═" * 70)
+    print("\n" + "=" * 70)
     print("  FINAL COMPARISON")
-    print("═" * 70)
+    print("=" * 70)
 
     all_results = {
         "Buy & Hold": BacktestResult(
@@ -764,14 +838,14 @@ def main():
     }
 
     print(f"\n  {'Strategy':<22} {'Return':>10} {'MaxDD':>8} {'Sharpe':>8} {'WinR':>7} {'Trades':>7} {'PF':>7}")
-    print(f"  {'─'*21:<22} {'─'*9:>10} {'─'*7:>8} {'─'*7:>8} {'─'*6:>7} {'─'*6:>7} {'─'*6:>7}")
+    print(f"  {'-'*21:<22} {'-'*9:>10} {'-'*7:>8} {'-'*7:>8} {'-'*6:>7} {'-'*6:>7} {'-'*6:>7}")
     for name, res in all_results.items():
         print(f"  {name:<22} {res.total_return_pct:>+9.2f}% {res.max_drawdown_pct:>7.2f}% {res.sharpe_ratio:>7.2f} {res.win_rate:>6.1f}% {res.total_trades:>6} {res.profit_factor:>7.2f}")
 
     # 7. Best strategy recommendation
     composite_results = {"A": res_a, "B": res_b, "C": res_c, "D": res_d}
     best = max(composite_results.items(), key=lambda x: x[1].sharpe_ratio)
-    print(f"\n  ★ RECOMMENDED: Strategy {best[0]} (Sharpe={best[1].sharpe_ratio:.2f}, Return={best[1].total_return_pct:+.2f}%)")
+    print(f"\n  * RECOMMENDED: Strategy {best[0]} (Sharpe={best[1].sharpe_ratio:.2f}, Return={best[1].total_return_pct:+.2f}%)")
 
     # 8. Save results
     output = {
@@ -810,7 +884,7 @@ def main():
         json.dump(output, f, indent=2)
     print(f"\n  Results saved to {out_path}")
 
-    print("\n" + "═" * 70)
+    print("\n" + "=" * 70)
     return 0
 
 

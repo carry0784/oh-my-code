@@ -5,52 +5,52 @@
     "bars": 4320,
     "timeframe": "1H"
   },
-  "buy_and_hold_return_pct": -43.11,
+  "buy_and_hold_return_pct": -42.71,
   "individual_results": {
     "Supertrend": {
       "trades": 112,
-      "win_rate": 28.57,
-      "return_pct": -23.73,
+      "win_rate": 29.46,
+      "return_pct": -23.36,
       "max_dd_pct": 42.46,
-      "sharpe": -1.25,
+      "sharpe": -1.22,
       "profit_factor": 0.83,
-      "avg_trade_pct": -0.207
+      "avg_trade_pct": -0.203
     },
     "SqueezeMom": {
       "trades": 239,
-      "win_rate": 33.47,
-      "return_pct": -40.59,
+      "win_rate": 33.89,
+      "return_pct": -40.31,
       "max_dd_pct": 56.71,
-      "sharpe": -1.54,
+      "sharpe": -1.52,
       "profit_factor": 0.78,
-      "avg_trade_pct": -0.197
+      "avg_trade_pct": -0.195
     },
     "MACD": {
       "trades": 364,
       "win_rate": 33.24,
-      "return_pct": -47.15,
+      "return_pct": -47.42,
       "max_dd_pct": 49.42,
-      "sharpe": -1.53,
+      "sharpe": -1.54,
       "profit_factor": 0.77,
-      "avg_trade_pct": -0.161
+      "avg_trade_pct": -0.163
     },
     "WilliamsVF": {
       "trades": 89,
       "win_rate": 28.09,
-      "return_pct": -49.12,
-      "max_dd_pct": 55.64,
-      "sharpe": -3.61,
+      "return_pct": -48.01,
+      "max_dd_pct": 54.89,
+      "sharpe": -3.49,
       "profit_factor": 0.63,
-      "avg_trade_pct": -0.708
+      "avg_trade_pct": -0.685
     },
     "WaveTrend": {
       "trades": 630,
-      "win_rate": 31.43,
-      "return_pct": -38.33,
+      "win_rate": 31.59,
+      "return_pct": -38.03,
       "max_dd_pct": 48.45,
-      "sharpe": -0.87,
+      "sharpe": -0.86,
       "profit_factor": 0.86,
-      "avg_trade_pct": -0.069
+      "avg_trade_pct": -0.068
     },
     "SMC": {
       "trades": 119,
@@ -66,18 +66,18 @@
     "Strategy_A": {
       "trades": 162,
       "win_rate": 32.72,
-      "return_pct": -40.3,
+      "return_pct": -40.02,
       "max_dd_pct": 49.8,
-      "sharpe": -1.94,
+      "sharpe": -1.92,
       "profit_factor": 0.74
     },
     "Strategy_B": {
       "trades": 36,
       "win_rate": 52.78,
-      "return_pct": 36.88,
+      "return_pct": 37.53,
       "max_dd_pct": 16.58,
-      "sharpe": 4.44,
-      "profit_factor": 1.82
+      "sharpe": 4.5,
+      "profit_factor": 1.83
     },
     "Strategy_C": {
       "trades": 119,
@@ -100,8 +100,8 @@
     "SMC",
     "WaveTrend",
     "Supertrend",
-    "MACD",
     "SqueezeMom",
+    "MACD",
     "WilliamsVF"
   ],
   "recommended_strategy": "D",
