@@ -27,7 +27,8 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-def collect_ohlcv(symbol: str = "BTC/USDT", timeframe: str = "5m", limit: int = 500):
+def collect_ohlcv(symbol: str = "BTC/USDT", timeframe: str = "1h", limit: int = 500):
+    # CR-047: 5m -> 1h (CG-2B re-verification with 1H timeframe)
     """Collect real OHLCV data from Binance via CCXT."""
     try:
         import ccxt
@@ -40,9 +41,9 @@ def collect_ohlcv(symbol: str = "BTC/USDT", timeframe: str = "5m", limit: int = 
         print("[DATA] Falling back to synthetic data for shadow cycle")
         # Synthetic fallback — still valid for shadow infrastructure testing
         import time
-        base_ts = int(time.time() * 1000) - limit * 300000
+        base_ts = int(time.time() * 1000) - limit * 3600000  # CR-047: 1h bars
         return [
-            [base_ts + i * 300000, 65000 + i * 10, 65100 + i * 10,
+            [base_ts + i * 3600000, 65000 + i * 10, 65100 + i * 10,
              64900 + i * 10, 65050 + i * 10, 100 + i]
             for i in range(limit)
         ]
@@ -72,9 +73,10 @@ def run_shadow_cycle(day: int, ohlcv: list[list]) -> dict:
             "islands": 5,
             "pop": 10,
             "gen": 10,
+            "timeframe": "1h",  # CR-047: 5m -> 1h
             "strategy_types": ["SMA", "RSI"],
-            "baseline_commit": "6beb906",
-            "cr": "CR-045",
+            "baseline_commit": "c2a3242",
+            "cr": "CR-047",
         },
     }
 
@@ -129,6 +131,12 @@ def run_shadow_cycle(day: int, ohlcv: list[list]) -> dict:
         metrics["candidate_generation_by_strategy"] = {k: v["count"] for k, v in strategy_breakdown.items()}
         metrics["fitness_by_strategy"] = {k: v["best_fitness"] for k, v in strategy_breakdown.items()}
         metrics["registry_entries_by_strategy"] = {k: v["registry"] for k, v in strategy_breakdown.items()}
+
+        # CR-047: CG-2B-1/2 split judgment
+        metrics["cg2b_1_candidate_generation"] = (
+            "proven" if evo_result.registry_size >= 1 else "not_proven"
+        )
+        metrics["candidate_generation_rate_1h"] = evo_result.registry_size
     except Exception as e:
         metrics["evolution"] = {"status": f"ERROR: {e}"}
         evolved_ids = []
@@ -210,6 +218,12 @@ def run_shadow_cycle(day: int, ohlcv: list[list]) -> dict:
         pending = sum(1 for d in cycle_result.governance_decisions if d.decision == "PENDING_OPERATOR")
         block_ratio = (pending / total_decisions * 100) if total_decisions > 0 else 0.0
         metrics["governance_block_ratio_pct"] = round(block_ratio, 1)
+
+        # CR-047: CG-2B-2 governance exercisability
+        metrics["cg2b_2_governance_exercisability"] = (
+            "proven" if total_decisions >= 1 else "not_proven"
+        )
+        metrics["governance_exercisability_rate_1h"] = total_decisions
 
     except Exception as e:
         metrics["orchestrator"] = {"status": f"ERROR: {e}"}
