@@ -25,6 +25,7 @@ from app.services.strategy_genome import GenomeFactory, StrategyGenome
 from app.services.strategy_runner import RunnerConfig, RunnerResult, StrategyRunner
 from app.services.validation_pipeline import ValidationThresholds
 from strategies.example_strategy import SimpleMAStrategy
+from strategies.rsi_strategy import RSICrossStrategy
 
 
 def _make_oscillating_ohlcv(n: int = 150, period: int = 20) -> list[list]:
@@ -123,3 +124,86 @@ def test_runner_evolution_validation_runs():
     # Validation pipeline must have been called and returned a result
     assert result.validation_result is not None
     assert result.validation_result.total_stages == 5
+
+
+# ── CR-045: RSI strategy branch tests ──
+
+def test_runner_genome_to_strategy_sma_default():
+    """CR-045: strategy_type=0 returns SimpleMAStrategy."""
+    runner = StrategyRunner(_fast_config())
+    factory = GenomeFactory(seed=0)
+    genome = factory.create_default()
+    genome.indicator_genes["strategy_type"].value = 0.0
+    strategy = runner._genome_to_strategy(genome)
+    assert isinstance(strategy, SimpleMAStrategy)
+
+
+def test_runner_genome_to_strategy_rsi_branch():
+    """CR-045: strategy_type=1 returns RSICrossStrategy."""
+    runner = StrategyRunner(_fast_config())
+    factory = GenomeFactory(seed=0)
+    genome = factory.create_default()
+    genome.indicator_genes["strategy_type"].value = 1.0
+    strategy = runner._genome_to_strategy(genome)
+    assert isinstance(strategy, RSICrossStrategy)
+    assert strategy.rsi_period == 14
+    assert strategy.rsi_overbought == 70.0
+    assert strategy.rsi_oversold == 30.0
+
+
+def test_runner_genome_to_strategy_rsi_custom_params():
+    """CR-045: RSI strategy picks up genome RSI params."""
+    runner = StrategyRunner(_fast_config())
+    factory = GenomeFactory(seed=0)
+    genome = factory.create_default()
+    genome.indicator_genes["strategy_type"].value = 1.0
+    genome.indicator_genes["rsi_period"].value = 21.0
+    genome.indicator_genes["rsi_overbought"].value = 80.0
+    genome.indicator_genes["rsi_oversold"].value = 20.0
+    strategy = runner._genome_to_strategy(genome)
+    assert isinstance(strategy, RSICrossStrategy)
+    assert strategy.rsi_period == 21
+    assert strategy.rsi_overbought == 80.0
+    assert strategy.rsi_oversold == 20.0
+
+
+def test_runner_genome_to_strategy_rsi_overbought_lte_oversold():
+    """CR-045: overbought <= oversold is corrected."""
+    runner = StrategyRunner(_fast_config())
+    factory = GenomeFactory(seed=0)
+    genome = factory.create_default()
+    genome.indicator_genes["strategy_type"].value = 1.0
+    genome.indicator_genes["rsi_overbought"].value = 25.0
+    genome.indicator_genes["rsi_oversold"].value = 30.0
+    strategy = runner._genome_to_strategy(genome)
+    assert isinstance(strategy, RSICrossStrategy)
+    assert strategy.rsi_overbought > strategy.rsi_oversold
+
+
+def test_rsi_strategy_analyze_returns_signal():
+    """CR-045: RSICrossStrategy produces signals on oscillating data."""
+    # Create data that oscillates enough to trigger RSI crossovers
+    data = []
+    for i in range(200):
+        # Alternate between up and down moves to create RSI oscillation
+        if (i // 10) % 2 == 0:
+            base = 100.0 + (i % 10) * 2
+        else:
+            base = 120.0 - (i % 10) * 2
+        data.append([i * 300000, base - 1, base + 1, base - 2, base, 1000.0])
+
+    strategy = RSICrossStrategy("BTC/USDT", rsi_period=7, rsi_overbought=65, rsi_oversold=35)
+    signals = []
+    for end in range(20, len(data)):
+        result = strategy.analyze(data[:end])
+        if result is not None:
+            signals.append(result)
+
+    # RSI strategy should generate at least some signals on oscillating data
+    assert len(signals) > 0, "RSI strategy should generate signals on oscillating data"
+
+
+def test_rsi_strategy_name_format():
+    """CR-045: RSI strategy name contains period and thresholds."""
+    strategy = RSICrossStrategy("BTC/USDT", rsi_period=14, rsi_overbought=70, rsi_oversold=30)
+    assert strategy.name == "RSI_14_70_30"

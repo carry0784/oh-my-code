@@ -154,3 +154,47 @@ def test_factory_create_population_size():
     ids = [g.id for g in pop]
     # All IDs should be unique
     assert len(set(ids)) == 8
+
+
+# ── CR-045: strategy_type gene tests ──
+
+def test_genome_has_strategy_type_gene():
+    """CR-045: strategy_type gene must exist in indicator_genes."""
+    factory = GenomeFactory(seed=0)
+    genome = factory.create_default()
+    assert "strategy_type" in genome.indicator_genes
+    gene = genome.indicator_genes["strategy_type"]
+    assert gene.min_val == 0
+    assert gene.max_val == 1
+    assert gene.is_integer is True
+
+
+def test_genome_strategy_type_in_params():
+    """CR-045: strategy_type appears in flat params as ind.strategy_type."""
+    factory = GenomeFactory(seed=0)
+    genome = factory.create_default()
+    params = genome.to_params()
+    assert "ind.strategy_type" in params
+    assert params["ind.strategy_type"] in (0.0, 1.0)
+
+
+def test_genome_strategy_type_mutation_stays_binary():
+    """CR-045: strategy_type gene stays 0 or 1 after mutation."""
+    factory = GenomeFactory(seed=10)
+    genome = factory.create_default()
+    for _ in range(50):
+        mutated = factory.mutate(genome)
+        val = mutated.indicator_genes["strategy_type"].value
+        assert val in (0.0, 1.0), f"strategy_type must be 0 or 1, got {val}"
+
+
+def test_genome_crossover_preserves_strategy_type():
+    """CR-045: crossover preserves strategy_type gene."""
+    factory = GenomeFactory(seed=20)
+    parent_a = factory.create_default()
+    parent_b = factory.create_default()
+    parent_a.indicator_genes["strategy_type"].value = 0.0
+    parent_b.indicator_genes["strategy_type"].value = 1.0
+    child = factory.crossover(parent_a, parent_b)
+    val = child.indicator_genes["strategy_type"].value
+    assert val in (0.0, 1.0)

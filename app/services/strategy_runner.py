@@ -20,6 +20,7 @@ from app.services.strategy_tournament import StrategyTournament, TournamentResul
 from app.services.validation_pipeline import ValidationPipeline, ValidationResult, ValidationThresholds
 from strategies.base import BaseStrategy
 from strategies.example_strategy import SimpleMAStrategy
+from strategies.rsi_strategy import RSICrossStrategy
 
 logger = get_logger(__name__)
 
@@ -151,17 +152,41 @@ class StrategyRunner:
         return result
 
     def _genome_to_strategy(self, genome: StrategyGenome) -> BaseStrategy:
-        """Convert a genome to an executable strategy."""
+        """Convert a genome to an executable strategy.
+
+        CR-045: Routes to SMA or RSI strategy based on strategy_type gene.
+        strategy_type=0 → SimpleMAStrategy, strategy_type=1 → RSICrossStrategy.
+        """
         params = genome.to_params()
-        fast = int(params.get("ind.fast_period", 10))
-        slow = int(params.get("ind.slow_period", 20))
+        strategy_type = int(params.get("ind.strategy_type", 0))
 
-        # Ensure fast < slow
-        if fast >= slow:
-            slow = fast + 5
+        if strategy_type == 1:
+            # RSI Cross Strategy
+            rsi_period = int(params.get("ind.rsi_period", 14))
+            rsi_overbought = float(params.get("ind.rsi_overbought", 70))
+            rsi_oversold = float(params.get("ind.rsi_oversold", 30))
 
-        return SimpleMAStrategy(
-            "BTC/USDT",
-            fast_period=fast,
-            slow_period=slow,
-        )
+            # Ensure overbought > oversold
+            if rsi_overbought <= rsi_oversold:
+                rsi_overbought = rsi_oversold + 20
+
+            return RSICrossStrategy(
+                "BTC/USDT",
+                rsi_period=rsi_period,
+                rsi_overbought=rsi_overbought,
+                rsi_oversold=rsi_oversold,
+            )
+        else:
+            # SMA Crossover Strategy (default)
+            fast = int(params.get("ind.fast_period", 10))
+            slow = int(params.get("ind.slow_period", 20))
+
+            # Ensure fast < slow
+            if fast >= slow:
+                slow = fast + 5
+
+            return SimpleMAStrategy(
+                "BTC/USDT",
+                fast_period=fast,
+                slow_period=slow,
+            )

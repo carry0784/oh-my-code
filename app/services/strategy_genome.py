@@ -106,6 +106,7 @@ class GenomeFactory:
         """Create a genome with default SMA crossover parameters."""
         return StrategyGenome(
             indicator_genes={
+                "strategy_type": Gene("strategy_type", 0, 0, 1, is_integer=True),  # CR-045: 0=SMA, 1=RSI
                 "fast_period": Gene("fast_period", 10, 3, 50, is_integer=True),
                 "slow_period": Gene("slow_period", 20, 10, 200, is_integer=True),
                 "rsi_period": Gene("rsi_period", 14, 5, 30, is_integer=True),

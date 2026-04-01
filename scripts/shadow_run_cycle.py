@@ -27,7 +27,7 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-def collect_ohlcv(symbol: str = "BTC/USDT", timeframe: str = "5m", limit: int = 200):
+def collect_ohlcv(symbol: str = "BTC/USDT", timeframe: str = "5m", limit: int = 500):
     """Collect real OHLCV data from Binance via CCXT."""
     try:
         import ccxt
@@ -70,9 +70,9 @@ def run_shadow_cycle(day: int, ohlcv: list[list]) -> dict:
     # ── 1. Evolution ──
     try:
         evo_config = AdvancedRunnerConfig(
-            n_islands=3,
-            population_per_island=6,
-            max_generations=3,
+            n_islands=5,                    # CR-045: 3→5 (기본값 복원)
+            population_per_island=10,       # CR-045: 6→10 (기본값 복원)
+            max_generations=10,             # CR-045: 3→10 (수렴 기회 확대)
             migration_interval=2,
             seed=42 + day,
             backtest_config=BacktestConfig(),
@@ -80,7 +80,7 @@ def run_shadow_cycle(day: int, ohlcv: list[list]) -> dict:
             persist_state=True,
         )
         runner = AdvancedStrategyRunner(evo_config)
-        evo_result = runner.run_evolution(ohlcv, lookback=50)
+        evo_result = runner.run_evolution(ohlcv, lookback=30)  # CR-045: 50→30 (빠른 첫 신호)
 
         metrics["evolution"] = {
             "generations": evo_result.generations_run,
