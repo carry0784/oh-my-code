@@ -1,0 +1,45 @@
+{
+  "day": 5,
+  "timestamp": "2026-04-01T03:09:32.556207+00:00",
+  "data_bars": 200,
+  "data_source": "ccxt_binance",
+  "dry_run": true,
+  "evolution": {
+    "generations": 3,
+    "best_fitness": 0.0,
+    "islands": 3,
+    "migrations": 3,
+    "registry_size": 0,
+    "mutation_rate": 0.1,
+    "status": "OK"
+  },
+  "portfolio": {
+    "status": "SKIP (registry < 2)"
+  },
+  "orchestrator": {
+    "cycle": 1,
+    "candidates": 0,
+    "validations": 0,
+    "transitions": [],
+    "governance_decisions": 0,
+    "pending_operator": 0,
+    "auto_approved": 0,
+    "is_healthy": false,
+    "warnings": [
+      "Registry size 0 below minimum 3"
+    ],
+    "status": "OK"
+  },
+  "governance_block_ratio_pct": 0.0,
+  "reconciliation": {
+    "lifecycle_states_valid": true,
+    "registry_lifecycle_aligned": true,
+    "transitions_have_governance": true,
+    "health_monitor_responsive": true
+  },
+  "reconciliation_pass": true,
+  "day_assessment": "WATCH",
+  "errors": [
+    "health_unhealthy"
+  ]
+}
