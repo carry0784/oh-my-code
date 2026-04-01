@@ -1,0 +1,240 @@
+{
+  "temporal_oos": {
+    "train_bars": 2880,
+    "test_bars": 1440,
+    "top3_selected": [
+      "SMC",
+      "Supertrend",
+      "WaveTrend"
+    ],
+    "oos_sharpe": 8.34,
+    "oos_return_pct": 30.79,
+    "oos_win_rate": 62.5,
+    "oos_pf": 3.08,
+    "oos_mdd": 2.89,
+    "oos_trades": 16,
+    "pass_sharpe": "True",
+    "pass_return": "True"
+  },
+  "walk_forward": {
+    "windows": [
+      {
+        "window": 1,
+        "train_range": "0-2160",
+        "test_range": "2160-2880",
+        "top3": [
+          "SMC",
+          "WaveTrend",
+          "MACD"
+        ],
+        "oos_sharpe": -1.17,
+        "oos_return_pct": -3.27,
+        "oos_trades": 18
+      },
+      {
+        "window": 2,
+        "train_range": "720-2880",
+        "test_range": "2880-3600",
+        "top3": [
+          "SMC",
+          "MACD",
+          "WaveTrend"
+        ],
+        "oos_sharpe": -0.95,
+        "oos_return_pct": -2.87,
+        "oos_trades": 13
+      },
+      {
+        "window": 3,
+        "train_range": "1440-3600",
+        "test_range": "3600-4320",
+        "top3": [
+          "SMC",
+          "WaveTrend",
+          "MACD"
+        ],
+        "oos_sharpe": 1.38,
+        "oos_return_pct": 3.46,
+        "oos_trades": 18
+      }
+    ],
+    "mean_oos_sharpe": -0.25,
+    "pass": false
+  },
+  "purged_cv": {
+    "folds": [
+      {
+        "fold": 1,
+        "test_range": "0-864",
+        "top3": [
+          "SMC",
+          "WaveTrend",
+          "MACD"
+        ],
+        "full_ranking": [
+          "SMC",
+          "WaveTrend",
+          "MACD",
+          "SqueezeMom",
+          "Supertrend",
+          "WilliamsVF"
+        ],
+        "oos_sharpe": 5.05,
+        "oos_return_pct": 13.92,
+        "oos_trades": 15
+      },
+      {
+        "fold": 2,
+        "test_range": "864-1728",
+        "top3": [
+          "SMC",
+          "WaveTrend",
+          "SqueezeMom"
+        ],
+        "full_ranking": [
+          "SMC",
+          "WaveTrend",
+          "SqueezeMom",
+          "MACD",
+          "Supertrend",
+          "WilliamsVF"
+        ],
+        "oos_sharpe": 2.65,
+        "oos_return_pct": 5.72,
+        "oos_trades": 12
+      },
+      {
+        "fold": 3,
+        "test_range": "1728-2592",
+        "top3": [
+          "SMC",
+          "Supertrend",
+          "WaveTrend"
+        ],
+        "full_ranking": [
+          "SMC",
+          "Supertrend",
+          "WaveTrend",
+          "SqueezeMom",
+          "MACD",
+          "WilliamsVF"
+        ],
+        "oos_sharpe": -1.43,
+        "oos_return_pct": -3.13,
+        "oos_trades": 11
+      },
+      {
+        "fold": 4,
+        "test_range": "2592-3456",
+        "top3": [
+          "SMC",
+          "Supertrend",
+          "WaveTrend"
+        ],
+        "full_ranking": [
+          "SMC",
+          "Supertrend",
+          "WaveTrend",
+          "MACD",
+          "WilliamsVF",
+          "SqueezeMom"
+        ],
+        "oos_sharpe": 4.74,
+        "oos_return_pct": 12.99,
+        "oos_trades": 15
+      },
+      {
+        "fold": 5,
+        "test_range": "3456-4320",
+        "top3": [
+          "SMC",
+          "WaveTrend",
+          "MACD"
+        ],
+        "full_ranking": [
+          "SMC",
+          "WaveTrend",
+          "MACD",
+          "Supertrend",
+          "SqueezeMom",
+          "WilliamsVF"
+        ],
+        "oos_sharpe": 3.05,
+        "oos_return_pct": 11.66,
+        "oos_trades": 22
+      }
+    ],
+    "mean_cv_sharpe": 2.81,
+    "std_cv_sharpe": 2.32,
+    "pass": true
+  },
+  "selection_stability": {
+    "canonical_top3": [
+      "SMC",
+      "Supertrend",
+      "WaveTrend"
+    ],
+    "stable_folds": 2,
+    "total_folds": 5,
+    "pass": false,
+    "fold_selections": [
+      {
+        "fold": 1,
+        "top3": [
+          "SMC",
+          "WaveTrend",
+          "MACD"
+        ],
+        "match": false
+      },
+      {
+        "fold": 2,
+        "top3": [
+          "SMC",
+          "WaveTrend",
+          "SqueezeMom"
+        ],
+        "match": false
+      },
+      {
+        "fold": 3,
+        "top3": [
+          "SMC",
+          "Supertrend",
+          "WaveTrend"
+        ],
+        "match": true
+      },
+      {
+        "fold": 4,
+        "top3": [
+          "SMC",
+          "Supertrend",
+          "WaveTrend"
+        ],
+        "match": true
+      },
+      {
+        "fold": 5,
+        "top3": [
+          "SMC",
+          "WaveTrend",
+          "MACD"
+        ],
+        "match": false
+      }
+    ]
+  },
+  "judgments": {
+    "research_validity": {
+      "oos_sharpe_pass": "True",
+      "oos_return_pass": "True",
+      "wf_mean_sharpe_pass": false,
+      "cv_mean_sharpe_pass": true,
+      "selection_stable": false
+    },
+    "execution_realism": "Phase 4 (pending)",
+    "operational_fit": "CG-2B PROVEN (CR-047)"
+  },
+  "phase2_verdict": "FAIL"
+}
