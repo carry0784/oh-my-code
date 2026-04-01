@@ -111,10 +111,11 @@ BUILD COMPLETE ─── GOVERNANCE COMPLETE ─── CG-1: KILL-SWITCH PROVEN
 ```
 [X] BUILD COMPLETE
 [X] GOVERNANCE COMPLETE
-[X] CG-1: KILL-SWITCH PROVEN    ← WE ARE HERE
-[ ] CG-2: SHADOW PROVEN
+[X] CG-1: KILL-SWITCH PROVEN
+[~] CG-2: SHADOW PROVEN         ← CG-2A Proven / CG-2B Not Proven → EXTEND
 [ ] OPERATOR AUTHORIZED
 [ ] LIVE ELIGIBLE
 ```
 
-**Next action**: Begin 7-day Shadow Run with real CCXT data.
+**Status**: 7-day Shadow Run completed (2026-04-01). CG-2A (operational safety) PROVEN. CG-2B (strategy production/governance flow) NOT YET PROVEN due to Inactive Market Regime. Recommended: EXTEND via Option B (CR + redesign).
+See: `shadow_7day_final_verdict.md`
