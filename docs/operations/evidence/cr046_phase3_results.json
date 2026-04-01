@@ -1,0 +1,221 @@
+{
+  "BTC/USDT": {
+    "symbol": "BTC/USDT",
+    "bars": 4320,
+    "buy_hold_pct": -42.41,
+    "price_range": "119640 -> 68901",
+    "core_pair": {
+      "sharpe": 4.16,
+      "return_pct": 32.77,
+      "win_rate": 48.6,
+      "pf": 1.76,
+      "mdd": 10.76,
+      "trades": 35
+    },
+    "trio_supertrend": {
+      "sharpe": 4.71,
+      "return_pct": 64.32,
+      "trades": 56,
+      "incremental_sharpe": 0.55
+    },
+    "trio_macd": {
+      "sharpe": 1.3,
+      "return_pct": 19.25,
+      "trades": 96,
+      "incremental_sharpe": -2.86
+    },
+    "ranking": [
+      [
+        "SMC",
+        1.7223827750163683
+      ],
+      [
+        "WaveTrend",
+        -0.8477565486897478
+      ],
+      [
+        "Supertrend",
+        -1.1955109213797706
+      ],
+      [
+        "SqueezeMom",
+        -1.5024480271115401
+      ],
+      [
+        "MACD",
+        -1.5293714914539407
+      ],
+      [
+        "WilliamsVF",
+        -3.4553375995907
+      ]
+    ],
+    "top2": [
+      "SMC",
+      "WaveTrend"
+    ],
+    "core_pair_survival": true
+  },
+  "ETH/USDT": {
+    "symbol": "ETH/USDT",
+    "bars": 4320,
+    "buy_hold_pct": -51.9,
+    "price_range": "4462 -> 2146",
+    "core_pair": {
+      "sharpe": -3.88,
+      "return_pct": -25.06,
+      "win_rate": 27.3,
+      "pf": 0.6,
+      "mdd": 33.81,
+      "trades": 33
+    },
+    "trio_supertrend": {
+      "sharpe": -1.24,
+      "return_pct": -19.64,
+      "trades": 67,
+      "incremental_sharpe": 2.64
+    },
+    "trio_macd": {
+      "sharpe": 1.51,
+      "return_pct": 31.63,
+      "trades": 107,
+      "incremental_sharpe": 5.39
+    },
+    "ranking": [
+      [
+        "SMC",
+        0.8452046041728641
+      ],
+      [
+        "MACD",
+        -0.7046718101948153
+      ],
+      [
+        "WaveTrend",
+        -0.8579495819122667
+      ],
+      [
+        "Supertrend",
+        -0.9385895472487411
+      ],
+      [
+        "SqueezeMom",
+        -1.2206435173407557
+      ],
+      [
+        "WilliamsVF",
+        -3.3663084841067183
+      ]
+    ],
+    "top2": [
+      "SMC",
+      "MACD"
+    ],
+    "core_pair_survival": false
+  },
+  "SOL/USDT": {
+    "symbol": "SOL/USDT",
+    "bars": 4320,
+    "buy_hold_pct": -63.18,
+    "price_range": "229 -> 84",
+    "core_pair": {
+      "sharpe": 0.85,
+      "return_pct": 5.19,
+      "win_rate": 35.9,
+      "pf": 1.13,
+      "mdd": 20.49,
+      "trades": 39
+    },
+    "trio_supertrend": {
+      "sharpe": -0.88,
+      "return_pct": -15.5,
+      "trades": 68,
+      "incremental_sharpe": -1.72
+    },
+    "trio_macd": {
+      "sharpe": -0.3,
+      "return_pct": -11.2,
+      "trades": 111,
+      "incremental_sharpe": -1.14
+    },
+    "ranking": [
+      [
+        "SMC",
+        -0.42999029411934114
+      ],
+      [
+        "WaveTrend",
+        -1.0986957461195832
+      ],
+      [
+        "MACD",
+        -1.2403936740771335
+      ],
+      [
+        "Supertrend",
+        -1.3695169153204534
+      ],
+      [
+        "SqueezeMom",
+        -1.3998184594514949
+      ],
+      [
+        "WilliamsVF",
+        -2.72653983967773
+      ]
+    ],
+    "top2": [
+      "SMC",
+      "WaveTrend"
+    ],
+    "core_pair_survival": true
+  },
+  "regime_analysis": [
+    {
+      "quarter": 1,
+      "regime": "bear",
+      "buy_hold_pct": -20.36,
+      "core_sharpe": 8.46,
+      "core_return_pct": 15.23,
+      "core_trades": 9,
+      "core_mdd": 6.03,
+      "beats_bh": "True"
+    },
+    {
+      "quarter": 2,
+      "regime": "sideways",
+      "buy_hold_pct": -8.36,
+      "core_sharpe": -8.13,
+      "core_return_pct": -8.66,
+      "core_trades": 7,
+      "core_mdd": 8.66,
+      "beats_bh": "False"
+    },
+    {
+      "quarter": 3,
+      "regime": "bear",
+      "buy_hold_pct": -19.66,
+      "core_sharpe": 7.95,
+      "core_return_pct": 14.12,
+      "core_trades": 9,
+      "core_mdd": 4.79,
+      "beats_bh": "True"
+    },
+    {
+      "quarter": 4,
+      "regime": "sideways",
+      "buy_hold_pct": -2.65,
+      "core_sharpe": 6.31,
+      "core_return_pct": 13.14,
+      "core_trades": 9,
+      "core_mdd": 5.15,
+      "beats_bh": "True"
+    }
+  ],
+  "summary": {
+    "core_pair_survival_rate": "2/3",
+    "research_validity": "See per-asset results",
+    "execution_realism": "Phase 4 (pending)",
+    "operational_fit": "CG-2B PROVEN (CR-047)"
+  }
+}
