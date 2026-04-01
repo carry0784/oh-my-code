@@ -1,36 +1,48 @@
-# CR-046: Canonical Core Definition
+# CR-046: Canonical Core Definition (v2)
 
-Date: 2026-04-01
+Date: 2026-04-01 (revised after Phase 3)
 Authority: A (Decision Authority)
-Status: **APPROVED**
+Status: **APPROVED v2**
 
 ---
 
-## 1. Canonical Core
+## 1. Three-Layer Architecture
 
-| Role | Indicator | Stability | Evidence |
-|------|-----------|-----------|----------|
-| **Core #1** | **SMC** (Version B, pure-causal) | 5/5 folds Top 2 | Phase 2 purged CV |
-| **Core #2** | **WaveTrend** | 5/5 folds Top 2 | Phase 2 purged CV |
+| Layer | Role | Content |
+|-------|------|---------|
+| **Anchor** | Universal foundation (#1 on 3/3 assets) | **SMC (Version B, pure-causal)** |
+| **Asset Adapter** | Asset-specific 2nd leg | BTC/SOL: **WaveTrend** / ETH: **MACD (research)** |
+| **Overlay** | Optional challenger, never canonical | Supertrend, others |
 
-**Consensus**: 2/2 agreement = signal.
-**Threshold**: Both SMC and WaveTrend must agree (weighted_score >= 2 or <= -2).
+## 2. Asset-Specific Compositions
+
+| Asset | Composition | Status | Evidence |
+|-------|-------------|--------|----------|
+| **BTC/USDT** | SMC + WaveTrend | **Canonical** | Phase 2 OOS PASS, Phase 3 Sharpe 4.16 |
+| **SOL/USDT** | SMC + WaveTrend | **Canonical** | Phase 3 Sharpe 0.85, PF 1.13 |
+| **ETH/USDT** | SMC + MACD | **Research** | Phase 3 core pair FAIL, MACD incremental +5.39 |
+
+**Consensus**: 2/2 agreement = signal per asset composition.
+
+## 3. Regime Caveat
+
+Strategy is regime-conditional: bear market strong, sideways weak.
+Regime filter research required before universal deployment.
 
 ---
 
-## 2. Challenger Slot (3rd Indicator -- Research Only)
+## 4. Overlay Layer (Challenger Management)
 
-| Challenger | Fold Appearances | Role |
-|------------|-----------------|------|
-| MACD | 3/5 | Overlay candidate |
-| Supertrend | 2/5 | Overlay candidate |
-| SqueezeMom | 1/5 | Low priority |
-| WilliamsVF | 0/5 | Excluded |
+| Challenger | Role | Evidence |
+|------------|------|----------|
+| Supertrend | Overlay candidate (BTC only, incremental +0.55) | Phase 3 |
+| MACD | ETH adapter candidate / BTC overlay negative | Phase 3 |
+| SqueezeMom | Low priority | Phase 2 |
+| WilliamsVF | Excluded | Phase 2, Phase 3 |
 
 **Policy**:
-- Challengers are **overlay candidates**, not core members
-- Challengers may NOT be used for operational judgment
-- Challenger evaluation is a separate research track (Track B)
+- Overlays are **never canonical members**
+- Overlays may NOT be used for operational judgment
 - Adaptive 3rd indicator operationalization is **FORBIDDEN**
 
 ---
