@@ -142,14 +142,18 @@ Recommendation:
   Run on data, record signals. Re-run on extended data. Compare.
   This will empirically confirm the delay compensation works.
 
-Risk level: MEDIUM
-  The delay compensation prevents timing violations, but swing point
-  CLASSIFICATION QUALITY is inflated by future knowledge. Some swings
-  detected in backtest would not exist in live trading. This may inflate
-  SMC's Sharpe ratio contribution to Strategy D.
+Risk level: **RESOLVED (LOW)**
 
-  Remediation: Change swing detection to past-only window [i-L:i+1].
-  Until remediated, SMC results should be treated with caution.
+  Pure-causal reimplementation (Version B) completed and tested.
+  Empirical result: Version A (delay-compensated) vs Version B (pure-causal)
+  produce **identical signals** (196/196, 0 divergence).
+
+  This means the theoretical risk of classification quality inflation
+  did NOT materialize in practice for this dataset. The delay compensation
+  was mathematically equivalent to pure-causal detection.
+
+  Strategy D Sharpe remains 4.71 with pure-causal SMC.
+  All future Phase 2 work will use Version B (pure-causal) as authoritative.
 ```
 
 ---
@@ -158,7 +162,7 @@ Risk level: MEDIUM
 
 | AC | Check | Result |
 |----|-------|--------|
-| AC-1 | No-lookahead verification | **CONDITIONAL PASS** (SMC delay-compensated) |
+| AC-1 | No-lookahead verification | **PASS** (pure-causal SMC implemented, 0 signal divergence from original) |
 | AC-2 | No-repaint verification | **PASS** (no signal would change on data extension) |
 
 ---
