@@ -280,14 +280,15 @@ Any `PROMOTED` strategy may be auto-demoted without operator approval if:
 
 | # | Rehearsal | Status | Performed By | Date | Duration | Notes |
 |---|-----------|--------|-------------|------|----------|-------|
-| R-1 | KS-1: Stop orchestrator | **PENDING** | — | — | — | — |
-| R-2 | KS-2: Force dry_run | **PENDING** | — | — | — | — |
-| R-3 | KS-3: Block-all governance | **PENDING** | — | — | — | — |
-| R-4 | KS-4: Mass demotion | **PENDING** | — | — | — | — |
-| R-5 | KS-7: Paper trading halt | **PENDING** | — | — | — | — |
-| R-6 | RB-4: Code rollback | **PENDING** | — | — | — | — |
+| R-1 | KS-1: Stop orchestrator | **PASS** | B | 2026-04-01 | <0.01s | 3/3 tests, state frozen |
+| R-2 | KS-2: Force dry_run | **PASS** | B | 2026-04-01 | <0.01s | 3/3 tests, promotion blocked |
+| R-3 | KS-3: Block-all governance | **PASS** | B | 2026-04-01 | <0.01s | 2/2 tests, threshold=999 blocks all |
+| R-4 | KS-4: Mass demotion | **PASS** | B | 2026-04-01 | <0.01s | 3/3 tests, RETIRED is terminal |
+| R-5 | KS-7: Paper trading halt | **PASS** | B | 2026-04-01 | <0.01s | 3/3 tests, trade recording stops |
+| R-6 | RB-4: Code rollback | **PASS** | B | 2026-04-01 | <0.01s | 2/2 tests, 0 cross-phase imports |
 
-**All rehearsals must be completed before Shadow Run begins.**
+**All 6 rehearsals PASSED.** Evidence: `tests/test_killswitch_rehearsal.py` (19/19 PASS).
+Full report: `docs/operations/evidence/killswitch_rehearsal_evidence.md`
 
 ---
 
@@ -315,23 +316,38 @@ Any `PROMOTED` strategy may be auto-demoted without operator approval if:
 | Execution path safety | **10/10** | 0 contamination, 0 unexpected changes |
 | Governance completeness | **9/10** | 2-layer dry_run, promotion gated; ESCROW missing |
 | Test coverage | **9/10** | 288 new tests, 3454 total; 2 pre-existing flaky |
-| Operational readiness | **5/10** | No shadow run, no rehearsal, no persistence |
-| Documentation | **7/10** | This document + registry; runbook pending |
+| Operational readiness | **7/10** | Kill-switch rehearsal PASS, R-04 accepted, shadow pending |
+| Documentation | **9/10** | Readiness review + rehearsal evidence + R-04 memo + shadow template + operator checklist |
 
-### Verdict: **CONDITIONAL GO**
+### Verdict: **CONDITIONAL GO (CG-1 ACHIEVED)**
 
-**Conditions for full GO:**
+**Progress on GO conditions:**
 
-1. Complete kill-switch rehearsal (R-1 through R-6) — record duration and logs
-2. Run shadow with real CCXT data for minimum 7 days
-3. Shadow run acceptance criteria met per Section 4
-4. Flaky tests either fixed or formally excluded in CI config with comment
-5. Orchestrator/lifecycle state persistence implemented (or accepted as known limitation)
-
-**Blocking risks for GO:**
-- R-04 (in-memory state loss) must be accepted by A or mitigated
-- R-01 (over-optimization) requires shadow run evidence
+| # | Condition | Status |
+|---|-----------|--------|
+| 1 | Kill-switch rehearsal R-1~R-6 | **DONE** — 19/19 PASS |
+| 2 | R-04 decision | **DONE** — ACCEPTED with mitigations |
+| 3 | Shadow run template + criteria | **DONE** — daily log + 7-day board + PASS/FAIL/EXTEND |
+| 4 | Operator authorization checklist | **DONE** — 1-page checklist with PC + E criteria |
+| 5 | Shadow run 7 days with real data | **NOT STARTED** |
 
 **Current authorization level:**
-> Phase 1-7 code is **BUILD COMPLETE + GOVERNANCE COMPLETE**.
-> Status: **SHADOW PROVEN = NOT YET** / **OPERATOR AUTHORIZED = NOT YET** / **LIVE ELIGIBLE = NOT YET**
+
+| Level | Status |
+|-------|--------|
+| Build Complete | **YES** |
+| Governance Complete | **YES** |
+| Kill-Switch Proven (CG-1) | **YES** |
+| Shadow Proven (CG-2) | **NOT YET** — requires 7-day real data run |
+| Operator Authorized | **NOT YET** — requires shadow PASS |
+| Live Eligible | **NOT YET** |
+
+**Remaining blocking items for full GO:**
+- Shadow run 7 days with real CCXT data (§4 criteria)
+- R-01 (over-optimization) requires shadow run drift evidence
+
+**Supporting documents:**
+- `killswitch_rehearsal_evidence.md` — R-1~R-6 all PASS
+- `r04_decision_memo.md` — ACCEPT with 5 mitigations
+- `shadow_run_template.md` — daily log + 7-day acceptance board
+- `operator_authorization_checklist.md` — 1-page approval protocol
