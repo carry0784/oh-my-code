@@ -1,17 +1,54 @@
 {
   "day": 4,
-  "timestamp": "2026-04-01T03:04:07.377361+00:00",
-  "data_bars": 200,
+  "timestamp": "2026-04-01T05:41:48.658424+00:00",
+  "data_bars": 500,
   "data_source": "ccxt_binance",
   "dry_run": true,
+  "config_fingerprint": {
+    "bars": 500,
+    "lookback": 30,
+    "islands": 5,
+    "pop": 10,
+    "gen": 10,
+    "strategy_types": [
+      "SMA",
+      "RSI"
+    ],
+    "baseline_commit": "6beb906",
+    "cr": "CR-045"
+  },
   "evolution": {
-    "generations": 3,
+    "generations": 10,
     "best_fitness": 0.0,
-    "islands": 3,
-    "migrations": 3,
+    "islands": 5,
+    "migrations": 25,
     "registry_size": 0,
-    "mutation_rate": 0.1,
+    "mutation_rate": 0.5,
     "status": "OK"
+  },
+  "strategy_breakdown": {
+    "SMA": {
+      "count": 36,
+      "best_fitness": 0.0,
+      "registry": 0
+    },
+    "RSI": {
+      "count": 39,
+      "best_fitness": 0.0,
+      "registry": 0
+    }
+  },
+  "candidate_generation_by_strategy": {
+    "SMA": 36,
+    "RSI": 39
+  },
+  "fitness_by_strategy": {
+    "SMA": 0.0,
+    "RSI": 0.0
+  },
+  "registry_entries_by_strategy": {
+    "SMA": 0,
+    "RSI": 0
   },
   "portfolio": {
     "status": "SKIP (registry < 2)"
