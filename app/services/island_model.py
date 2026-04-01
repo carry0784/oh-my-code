@@ -194,11 +194,11 @@ class IslandModel:
                 island.regime_tag = regime_tags[i % len(regime_tags)]
 
     def _genome_to_strategy(self, genome: StrategyGenome):
-        """Convert genome to executable strategy."""
-        from strategies.example_strategy import SimpleMAStrategy
-        params = genome.to_params()
-        fast = int(params.get("ind.fast_period", 10))
-        slow = int(params.get("ind.slow_period", 20))
-        if fast >= slow:
-            slow = fast + 5
-        return SimpleMAStrategy("BTC/USDT", fast_period=fast, slow_period=slow)
+        """Convert genome to executable strategy.
+
+        CR-045: Delegates to StrategyRunner._genome_to_strategy for
+        consistent SMA/RSI branching based on strategy_type gene.
+        """
+        from app.services.strategy_runner import StrategyRunner, RunnerConfig
+        runner = StrategyRunner(RunnerConfig())
+        return runner._genome_to_strategy(genome)

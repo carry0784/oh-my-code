@@ -65,6 +65,17 @@ def run_shadow_cycle(day: int, ohlcv: list[list]) -> dict:
         "data_bars": len(ohlcv),
         "data_source": "ccxt_binance" if len(ohlcv) > 0 else "none",
         "dry_run": DRY_RUN,
+        # CR-045: config fingerprint for fast result interpretation
+        "config_fingerprint": {
+            "bars": 500,
+            "lookback": 30,
+            "islands": 5,
+            "pop": 10,
+            "gen": 10,
+            "strategy_types": ["SMA", "RSI"],
+            "baseline_commit": "6beb906",
+            "cr": "CR-045",
+        },
     }
 
     # ── 1. Evolution ──
@@ -94,6 +105,30 @@ def run_shadow_cycle(day: int, ohlcv: list[list]) -> dict:
         evolved_ids = [
             e.genome.id for e in runner.registry.get_top_n(5)
         ]
+
+        # CR-045: per-strategy metrics (A 지시 — 전략별 4개 필드)
+        strategy_breakdown = {"SMA": {"count": 0, "best_fitness": 0.0, "registry": 0},
+                              "RSI": {"count": 0, "best_fitness": 0.0, "registry": 0}}
+        # Count genomes by strategy_type across all islands
+        for island in runner.island_model.islands:
+            for genome in island.population:
+                st_gene = genome.indicator_genes.get("strategy_type")
+                st = int(st_gene.value) if st_gene else 0
+                label = "RSI" if st == 1 else "SMA"
+                strategy_breakdown[label]["count"] += 1
+                if genome.fitness > strategy_breakdown[label]["best_fitness"]:
+                    strategy_breakdown[label]["best_fitness"] = round(genome.fitness, 4)
+        # Count registry entries by strategy_type
+        for entry in runner.registry.get_top_n(50):
+            g = entry.genome
+            st_gene = g.indicator_genes.get("strategy_type")
+            st = int(st_gene.value) if st_gene else 0
+            label = "RSI" if st == 1 else "SMA"
+            strategy_breakdown[label]["registry"] += 1
+        metrics["strategy_breakdown"] = strategy_breakdown
+        metrics["candidate_generation_by_strategy"] = {k: v["count"] for k, v in strategy_breakdown.items()}
+        metrics["fitness_by_strategy"] = {k: v["best_fitness"] for k, v in strategy_breakdown.items()}
+        metrics["registry_entries_by_strategy"] = {k: v["registry"] for k, v in strategy_breakdown.items()}
     except Exception as e:
         metrics["evolution"] = {"status": f"ERROR: {e}"}
         evolved_ids = []
