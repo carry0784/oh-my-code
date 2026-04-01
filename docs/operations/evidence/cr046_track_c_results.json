@@ -1,0 +1,245 @@
+{
+  "BTC/USDT_regime_accuracy": {
+    "Q1": {
+      "regime": "bear",
+      "expected": "trending",
+      "composite_accuracy": 86.2,
+      "adx_mean": 36.12,
+      "bb_pctile_mean": 46.7,
+      "atr_ratio_mean": 1.013
+    },
+    "Q2": {
+      "regime": "sideways",
+      "expected": "sideways",
+      "composite_accuracy": 9.3,
+      "adx_mean": 34.44,
+      "bb_pctile_mean": 50.1,
+      "atr_ratio_mean": 1.001
+    },
+    "Q3": {
+      "regime": "bear",
+      "expected": "trending",
+      "composite_accuracy": 89.8,
+      "adx_mean": 37.31,
+      "bb_pctile_mean": 50.1,
+      "atr_ratio_mean": 1.012
+    },
+    "Q4": {
+      "regime": "sideways",
+      "expected": "sideways",
+      "composite_accuracy": 13.0,
+      "adx_mean": 34.26,
+      "bb_pctile_mean": 48.0,
+      "atr_ratio_mean": 1.011
+    },
+    "overall_accuracy": 49.6
+  },
+  "BTC/USDT_filter": {
+    "baseline": {
+      "sharpe": 1.4,
+      "return_pct": 24.81,
+      "pf": 1.71,
+      "mdd": 8.83,
+      "trades": 32,
+      "win_rate": 46.9
+    },
+    "filtered_suppress": {
+      "sharpe": 1.13,
+      "return_pct": 17.18,
+      "pf": 1.59,
+      "mdd": 8.83,
+      "trades": 28,
+      "win_rate": 46.4
+    },
+    "quarters": [
+      {
+        "quarter": 1,
+        "regime_label": "bear",
+        "buy_hold_pct": -20.36,
+        "trending_bars_pct": 86.2,
+        "sideways_bars_pct": 13.8,
+        "unfiltered_sharpe": 1.26,
+        "unfiltered_return": 10.54,
+        "unfiltered_trades": 8,
+        "filtered_sharpe": 1.43,
+        "filtered_return": 11.72,
+        "filtered_trades": 7,
+        "sharpe_improvement": 0.17
+      },
+      {
+        "quarter": 2,
+        "regime_label": "sideways",
+        "buy_hold_pct": -8.36,
+        "trending_bars_pct": 90.7,
+        "sideways_bars_pct": 9.3,
+        "unfiltered_sharpe": -1.29,
+        "unfiltered_return": -8.76,
+        "unfiltered_trades": 7,
+        "filtered_sharpe": -1.29,
+        "filtered_return": -8.76,
+        "filtered_trades": 7,
+        "sharpe_improvement": 0.0
+      },
+      {
+        "quarter": 3,
+        "regime_label": "bear",
+        "buy_hold_pct": -19.66,
+        "trending_bars_pct": 89.8,
+        "sideways_bars_pct": 10.2,
+        "unfiltered_sharpe": 1.19,
+        "unfiltered_return": 9.81,
+        "unfiltered_trades": 8,
+        "filtered_sharpe": 1.19,
+        "filtered_return": 9.81,
+        "filtered_trades": 8,
+        "sharpe_improvement": 0.0
+      },
+      {
+        "quarter": 4,
+        "regime_label": "sideways",
+        "buy_hold_pct": -2.51,
+        "trending_bars_pct": 87.0,
+        "sideways_bars_pct": 13.0,
+        "unfiltered_sharpe": 1.21,
+        "unfiltered_return": 12.7,
+        "unfiltered_trades": 9,
+        "filtered_sharpe": 0.64,
+        "filtered_return": 4.68,
+        "filtered_trades": 6,
+        "sharpe_improvement": -0.57
+      }
+    ],
+    "regime_stats": {
+      "trending_pct": 89.5,
+      "sideways_pct": 11.7
+    },
+    "improvement": {
+      "sharpe_delta": -0.27,
+      "return_delta_pp": -7.64,
+      "trades_reduced": 4,
+      "filter_effective": "False"
+    }
+  },
+  "SOL/USDT_regime_accuracy": {
+    "Q1": {
+      "regime": "bear",
+      "expected": "trending",
+      "composite_accuracy": 85.6,
+      "adx_mean": 35.2,
+      "bb_pctile_mean": 45.2,
+      "atr_ratio_mean": 1.004
+    },
+    "Q2": {
+      "regime": "bear",
+      "expected": "trending",
+      "composite_accuracy": 89.4,
+      "adx_mean": 33.28,
+      "bb_pctile_mean": 51.4,
+      "atr_ratio_mean": 0.997
+    },
+    "Q3": {
+      "regime": "bear",
+      "expected": "trending",
+      "composite_accuracy": 88.3,
+      "adx_mean": 36.09,
+      "bb_pctile_mean": 51.6,
+      "atr_ratio_mean": 1.001
+    },
+    "Q4": {
+      "regime": "sideways",
+      "expected": "sideways",
+      "composite_accuracy": 9.0,
+      "adx_mean": 34.73,
+      "bb_pctile_mean": 49.0,
+      "atr_ratio_mean": 1.006
+    },
+    "overall_accuracy": 68.1
+  },
+  "SOL/USDT_filter": {
+    "baseline": {
+      "sharpe": 0.84,
+      "return_pct": 14.57,
+      "pf": 1.37,
+      "mdd": 13.45,
+      "trades": 35,
+      "win_rate": 40.0
+    },
+    "filtered_suppress": {
+      "sharpe": 0.62,
+      "return_pct": 8.52,
+      "pf": 1.28,
+      "mdd": 10.81,
+      "trades": 31,
+      "win_rate": 38.7
+    },
+    "quarters": [
+      {
+        "quarter": 1,
+        "regime_label": "bear",
+        "buy_hold_pct": -38.37,
+        "trending_bars_pct": 85.6,
+        "sideways_bars_pct": 14.4,
+        "unfiltered_sharpe": -0.05,
+        "unfiltered_return": -1.53,
+        "unfiltered_trades": 7,
+        "filtered_sharpe": 0.25,
+        "filtered_return": 1.47,
+        "filtered_trades": 6,
+        "sharpe_improvement": 0.3
+      },
+      {
+        "quarter": 2,
+        "regime_label": "bear",
+        "buy_hold_pct": -11.63,
+        "trending_bars_pct": 89.4,
+        "sideways_bars_pct": 10.6,
+        "unfiltered_sharpe": -0.09,
+        "unfiltered_return": -2.7,
+        "unfiltered_trades": 11,
+        "filtered_sharpe": -0.09,
+        "filtered_return": -2.7,
+        "filtered_trades": 11,
+        "sharpe_improvement": 0.0
+      },
+      {
+        "quarter": 3,
+        "regime_label": "bear",
+        "buy_hold_pct": -27.88,
+        "trending_bars_pct": 88.3,
+        "sideways_bars_pct": 11.7,
+        "unfiltered_sharpe": 1.05,
+        "unfiltered_return": 10.58,
+        "unfiltered_trades": 9,
+        "filtered_sharpe": 1.39,
+        "filtered_return": 13.63,
+        "filtered_trades": 8,
+        "sharpe_improvement": 0.34
+      },
+      {
+        "quarter": 4,
+        "regime_label": "sideways",
+        "buy_hold_pct": -7.02,
+        "trending_bars_pct": 91.0,
+        "sideways_bars_pct": 9.0,
+        "unfiltered_sharpe": 0.89,
+        "unfiltered_return": 8.15,
+        "unfiltered_trades": 8,
+        "filtered_sharpe": -0.45,
+        "filtered_return": -3.27,
+        "filtered_trades": 6,
+        "sharpe_improvement": -1.34
+      }
+    ],
+    "regime_stats": {
+      "trending_pct": 89.6,
+      "sideways_pct": 11.5
+    },
+    "improvement": {
+      "sharpe_delta": -0.22,
+      "return_delta_pp": -6.06,
+      "trades_reduced": 4,
+      "filter_effective": "False"
+    }
+  },
+  "track_c_verdict": "CONDITIONAL"
+}

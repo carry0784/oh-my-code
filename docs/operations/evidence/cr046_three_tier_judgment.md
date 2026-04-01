@@ -92,11 +92,21 @@ Authority: A (Decision Authority)
 
 ## Open Research Tracks
 
-| Track | Description | Status | Priority |
-|-------|-------------|--------|----------|
-| **Track A** | Canonical execution realism (Phase 4) | **COMPLETE** | -- |
-| **Track B** | ETH SMC+MACD branch research | **PLANNED** | HIGH |
-| **Track C** | Regime filter research | **PLANNED** | MEDIUM |
+| Track | Description | Status | Priority | Finding |
+|-------|-------------|--------|----------|---------|
+| **Track A** | Canonical execution realism (Phase 4) | **COMPLETE (PASS)** | -- | 8/8 PASS |
+| **Track B** | ETH SMC+MACD branch research | **PENDING** | HIGH | Next session |
+| **Track C** | Regime filter research | **COMPLETE (FAIL)** | -- | Crypto ADX structurally high; traditional filters ineffective |
+
+---
+
+## Post-Track-C Updated Deployment KPIs
+
+| KPI | Description |
+|-----|-------------|
+| `deployment_readiness_sol` | SOL rolling 30d Sharpe (target > 0.5) |
+| `deployment_readiness_btc` | BTC rolling 30d Sharpe (target > 0.5, alert < 0.0) |
+| `regime_filter_effect` | Research-only metric (filter not deployed) |
 
 ---
 
@@ -104,7 +114,7 @@ Authority: A (Decision Authority)
 
 1. **Walk-forward validation**: Re-test with longer training windows (>= 6 months) on expanded data
 2. **BTC latency mitigation**: Implement limit order execution or sub-bar entry timing
-3. **Regime filter**: Track C research to address sideways weakness
+3. ~~**Regime filter**: Track C research to address sideways weakness~~ -> **CLOSED (FAIL)**: accept strategy as regime-conditional (pending A's decision)
 4. **ETH composition**: Track B research to find viable ETH canonical composition
 
 ---
