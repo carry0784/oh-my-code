@@ -73,18 +73,25 @@ Signal generation: At bar j, reads swing_highs[j - 5]
                    So swing at bar i is consumed at bar i + 5
                    By bar i + 5, the 5 future bars ARE available
 
-Net effect: The swing at bar i requires data up to bar i+5
-            The swing at bar i is consumed at bar j = i+5
-            At bar j = i+5, data up to bar i+5 IS available
-            -> NO net lookahead. The delay compensates exactly.
+Net timing: The delay prevents acting too early.
+BUT: the classification of WHETHER bar i is a swing at all
+     is informed by bars i+1..i+5. In live trading, bar i
+     might NOT be classified as a swing because the future
+     bars haven't arrived yet.
+     -> Swing point QUALITY is inflated by future knowledge.
 ```
 
-**Verdict: CONDITIONAL PASS**
+**Verdict: CONDITIONAL PASS (borderline FAIL)**
 
-The implementation is functionally correct (no net lookahead), but the pattern is fragile:
+Two levels of concern:
+1. **Timing**: The delay compensation ensures signals don't fire before confirmation data exists. **OK.**
+2. **Classification quality**: Whether a point IS a swing depends on future bars. In live trading, some swings detected in backtest would not be detected (or different points would be detected instead). This **inflates backtest accuracy**.
+
+The pattern is also structurally fragile:
 - The correctness depends on `internal_length` being identical in both the detection window and the delay offset
 - If either is changed independently, lookahead would be introduced
-- A cleaner implementation would detect swings using only past data
+
+**Required remediation for full PASS**: Change swing detection to use only past window `[i-L:i+1]` (standard real-time pivot convention). This would make the delay offset redundant.
 
 ---
 
@@ -135,10 +142,14 @@ Recommendation:
   Run on data, record signals. Re-run on extended data. Compare.
   This will empirically confirm the delay compensation works.
 
-Risk level: LOW
-  The delay compensation is mathematically sound (L_detect = L_delay = 5).
-  Real-world impact: swing points identified 5 bars late, which reduces
-  signal precision but does NOT create false signals.
+Risk level: MEDIUM
+  The delay compensation prevents timing violations, but swing point
+  CLASSIFICATION QUALITY is inflated by future knowledge. Some swings
+  detected in backtest would not exist in live trading. This may inflate
+  SMC's Sharpe ratio contribution to Strategy D.
+
+  Remediation: Change swing detection to past-only window [i-L:i+1].
+  Until remediated, SMC results should be treated with caution.
 ```
 
 ---
