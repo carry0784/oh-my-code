@@ -3,7 +3,7 @@
 Date: 2026-04-01
 Canonical Core: **SMC (pure-causal) + WaveTrend**
 Authority: A (Decision Authority)
-Status: **DRAFT -- awaiting A's Track C decision and Phase 5 approval**
+Status: **APPROVED by A (2026-04-01)**
 
 ---
 
@@ -107,7 +107,7 @@ Phase 5c: Controlled Scaling (if 5a+5b pass)
 | 9 | Position sizing rules | DEFINED | No |
 | 10 | Daily loss limits | DEFINED | No |
 | 11 | Monitoring/alerting | READY (shadow infra) | No |
-| 12 | A's Phase 5 approval | **PENDING** | **YES** |
+| 12 | A's Phase 5 approval | **APPROVED (2026-04-01)** | No |
 
 ---
 
@@ -137,27 +137,37 @@ Phase 5c: Controlled Scaling (if 5a+5b pass)
 
 ---
 
-## 7. A Decision Required
+## 7. A Decisions (Recorded 2026-04-01)
 
 ### Decision 1: Track C Outcome
 
-Track C regime filter research returned FAIL. Options:
-- (a) Accept strategy as regime-conditional (recommended by B)
-- (b) Research alternative crypto-specific regime indicators
-- (c) Postpone deployment until regime filter works
+> **A Decision: (a) Accept strategy as regime-conditional + (b) Research alternatives in parallel.**
+> **(c) Postpone deployment is REJECTED.**
+
+Current strategy is accepted as regime-conditional; no production filter is adopted from Track C v1.
+
+ADX/BB Width/ATR ratio based filter is NOT placed in deployment path. Alternative indicators (realized vol percentile, range compression, choppiness/directional efficiency) are maintained as follow-up research.
 
 ### Decision 2: Phase 5 Approval
 
-Approve Phase 5a (paper trading) for:
-- SOL/USDT: immediate
-- BTC/USDT: conditional on latency guard
+> **A Decision: Phase 5 APPROVED.**
+
+- SOL/USDT: paper trading immediate GO
+- BTC/USDT: guarded paper trading GO (latency guard required)
 
 ### Decision 3: Deployment Priority
 
-Confirm:
-- SOL as primary deployment candidate
-- BTC as secondary (latency-guarded)
-- ETH excluded until Track B completes
+> **A Decision: SOL 1st / BTC 2nd (guarded) / ETH excluded. CONFIRMED.**
+
+---
+
+## 8. Regime-Conditional Acceptance Statement
+
+> **Current strategy is accepted as regime-conditional; no production filter is adopted from Track C v1.**
+>
+> Bear market: strong performance expected.
+> Sideways market: weak performance expected and accepted.
+> Risk management: position sizing and daily loss limits, not signal filtering.
 
 ---
 
@@ -165,9 +175,11 @@ Confirm:
 
 ```
 CR-046 Phase 5: Deployment Readiness Assessment
-SOL/USDT: conditionally ready (primary)
-BTC/USDT: conditionally hold (latency guard required)
-ETH/USDT: research only
+Status: APPROVED by A (2026-04-01)
+SOL/USDT: conditionally ready for paper rollout (primary)
+BTC/USDT: guarded paper rollout only (latency guard required)
+ETH/USDT: research only (excluded)
 Prepared by: B (Implementer)
+Approved by: A (Decision Authority)
 Date: 2026-04-01
 ```

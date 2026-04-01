@@ -194,6 +194,18 @@ Recommendation:
 
 ---
 
+## 8. A's Decision (2026-04-01)
+
+> **A Decision: (a) Accept + (b) Research alternatives in parallel. (c) Rejected.**
+
+> **Current strategy is accepted as regime-conditional; no production filter is adopted from Track C v1.**
+
+- ADX/BB Width/ATR ratio based filter: NOT placed in deployment path
+- Alternative indicators (Track C-v2): maintained as follow-up research
+- Phase 5 paper rollout: NOT blocked by Track C FAIL
+
+---
+
 ## Signature
 
 ```
