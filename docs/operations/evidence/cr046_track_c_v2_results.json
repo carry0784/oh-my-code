@@ -1,0 +1,242 @@
+{
+  "track": "C-v2",
+  "strategy_baseline": "SMC+WaveTrend",
+  "assets": [
+    "BTC/USDT",
+    "SOL/USDT"
+  ],
+  "generated_at": "2026-04-01T09:40:49.612843+00:00",
+  "phases": {
+    "C2-1": {
+      "phase": "C2-1",
+      "description": "Individual indicator tests",
+      "indicators": {
+        "realized_vol_percentile": {
+          "BTC": {
+            "accuracy": 0.3895,
+            "sideways_accuracy": 0.2565,
+            "trend_accuracy": 0.5955,
+            "n_valid": 2136,
+            "n_sideways": 1298,
+            "n_trend": 838
+          },
+          "SOL": {
+            "accuracy": 0.5047,
+            "sideways_accuracy": 0.2282,
+            "trend_accuracy": 0.7228,
+            "n_valid": 2136,
+            "n_sideways": 942,
+            "n_trend": 1194
+          },
+          "both_assets_pass": false
+        },
+        "range_compression": {
+          "BTC": {
+            "accuracy": 0.4886,
+            "sideways_accuracy": 0.3832,
+            "trend_accuracy": 0.6803,
+            "n_valid": 4273,
+            "n_sideways": 2756,
+            "n_trend": 1517
+          },
+          "SOL": {
+            "accuracy": 0.5228,
+            "sideways_accuracy": 0.1024,
+            "trend_accuracy": 0.8865,
+            "n_valid": 4273,
+            "n_sideways": 1982,
+            "n_trend": 2291
+          },
+          "both_assets_pass": false
+        },
+        "choppiness_index": {
+          "BTC": {
+            "accuracy": 0.3556,
+            "sideways_accuracy": 0.0709,
+            "trend_accuracy": 0.873,
+            "n_valid": 4283,
+            "n_sideways": 2763,
+            "n_trend": 1520
+          },
+          "SOL": {
+            "accuracy": 0.5232,
+            "sideways_accuracy": 0.0931,
+            "trend_accuracy": 0.8955,
+            "n_valid": 4283,
+            "n_sideways": 1987,
+            "n_trend": 2296
+          },
+          "both_assets_pass": false
+        },
+        "directional_efficiency": {
+          "BTC": {
+            "accuracy": 0.5564,
+            "sideways_accuracy": 0.7176,
+            "trend_accuracy": 0.2637,
+            "n_valid": 4272,
+            "n_sideways": 2755,
+            "n_trend": 1517
+          },
+          "SOL": {
+            "accuracy": 0.4803,
+            "sideways_accuracy": 0.7124,
+            "trend_accuracy": 0.2795,
+            "n_valid": 4272,
+            "n_sideways": 1982,
+            "n_trend": 2290
+          },
+          "both_assets_pass": true
+        },
+        "hurst_exponent": {
+          "BTC": {
+            "accuracy": 0.3601,
+            "sideways_accuracy": 0.0048,
+            "trend_accuracy": 0.9987,
+            "n_valid": 4196,
+            "n_sideways": 2696,
+            "n_trend": 1500
+          },
+          "SOL": {
+            "accuracy": 0.5348,
+            "sideways_accuracy": 0.0021,
+            "trend_accuracy": 0.9933,
+            "n_valid": 4196,
+            "n_sideways": 1941,
+            "n_trend": 2255
+          },
+          "both_assets_pass": false
+        }
+      },
+      "best_candidate": "directional_efficiency",
+      "best_avg_sideways_accuracy": 0.715,
+      "status": "PASS"
+    },
+    "C2-2": {
+      "phase": "C2-2",
+      "candidate": "directional_efficiency",
+      "assets": {
+        "BTC": {
+          "unfiltered": {
+            "indicator": "SMC+WT_unfiltered_BTC",
+            "total_trades": 35,
+            "winning_trades": 17,
+            "losing_trades": 18,
+            "win_rate": 48.57,
+            "total_return_pct": 32.77,
+            "max_drawdown_pct": 10.76,
+            "avg_trade_pct": 0.8673,
+            "sharpe_ratio": 4.1593,
+            "profit_factor": 1.7558
+          },
+          "filtered": {
+            "indicator": "SMC+WT+directional_efficiency_BTC",
+            "total_trades": 15,
+            "winning_trades": 5,
+            "losing_trades": 10,
+            "win_rate": 33.33,
+            "total_return_pct": -3.47,
+            "max_drawdown_pct": 16.02,
+            "avg_trade_pct": -0.1849,
+            "sharpe_ratio": -0.9223,
+            "profit_factor": 0.8858
+          },
+          "sharpe_improvement": 0,
+          "sharpe_delta": -5.0816
+        },
+        "SOL": {
+          "unfiltered": {
+            "indicator": "SMC+WT_unfiltered_SOL",
+            "total_trades": 39,
+            "winning_trades": 14,
+            "losing_trades": 25,
+            "win_rate": 35.9,
+            "total_return_pct": 5.19,
+            "max_drawdown_pct": 20.49,
+            "avg_trade_pct": 0.1961,
+            "sharpe_ratio": 0.8469,
+            "profit_factor": 1.126
+          },
+          "filtered": {
+            "indicator": "SMC+WT+directional_efficiency_SOL",
+            "total_trades": 19,
+            "winning_trades": 8,
+            "losing_trades": 11,
+            "win_rate": 42.11,
+            "total_return_pct": 6.96,
+            "max_drawdown_pct": 14.59,
+            "avg_trade_pct": 0.4216,
+            "sharpe_ratio": 1.8219,
+            "profit_factor": 1.2719
+          },
+          "sharpe_improvement": 1,
+          "sharpe_delta": 0.9751
+        }
+      },
+      "both_assets_improve": false,
+      "status": "FAIL"
+    },
+    "C2-3": {
+      "phase": "C2-3",
+      "candidate": "directional_efficiency",
+      "cross_asset": {
+        "train_BTC_test_SOL": {
+          "unfiltered": {
+            "indicator": "unfiltered_SOL",
+            "total_trades": 39,
+            "winning_trades": 14,
+            "losing_trades": 25,
+            "win_rate": 35.9,
+            "total_return_pct": 5.19,
+            "max_drawdown_pct": 20.49,
+            "avg_trade_pct": 0.1961,
+            "sharpe_ratio": 0.8469,
+            "profit_factor": 1.126
+          },
+          "filtered": {
+            "indicator": "cross_BTC_to_SOL",
+            "total_trades": 19,
+            "winning_trades": 8,
+            "losing_trades": 11,
+            "win_rate": 42.11,
+            "total_return_pct": 6.96,
+            "max_drawdown_pct": 14.59,
+            "avg_trade_pct": 0.4216,
+            "sharpe_ratio": 1.8219,
+            "profit_factor": 1.2719
+          },
+          "sharpe_improvement": 1
+        },
+        "train_SOL_test_BTC": {
+          "unfiltered": {
+            "indicator": "unfiltered_BTC",
+            "total_trades": 35,
+            "winning_trades": 17,
+            "losing_trades": 18,
+            "win_rate": 48.57,
+            "total_return_pct": 32.77,
+            "max_drawdown_pct": 10.76,
+            "avg_trade_pct": 0.8673,
+            "sharpe_ratio": 4.1593,
+            "profit_factor": 1.7558
+          },
+          "filtered": {
+            "indicator": "cross_SOL_to_BTC",
+            "total_trades": 15,
+            "winning_trades": 5,
+            "losing_trades": 10,
+            "win_rate": 33.33,
+            "total_return_pct": -3.47,
+            "max_drawdown_pct": 16.02,
+            "avg_trade_pct": -0.1849,
+            "sharpe_ratio": -0.9223,
+            "profit_factor": 0.8858
+          },
+          "sharpe_improvement": 0
+        }
+      },
+      "cross_asset_consistent": false,
+      "status": "FAIL"
+    }
+  },
+  "overall_verdict": "NO-GO"
+}
