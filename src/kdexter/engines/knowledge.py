@@ -9,7 +9,7 @@ Governance: B2 (governance_layer_map.md -- L24)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 
@@ -23,7 +23,7 @@ class KnowledgeEntry:
     key: str
     value: object
     source: str              # identifier of the component that stored this
-    stored_at: datetime = field(default_factory=datetime.utcnow)
+    stored_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     access_count: int = 0
 
 

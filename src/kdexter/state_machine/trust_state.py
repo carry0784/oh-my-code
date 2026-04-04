@@ -16,7 +16,7 @@ from __future__ import annotations
 from enum import Enum
 from dataclasses import dataclass, field
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from kdexter.config.thresholds import (
     TRUST_DECAY_BACKGROUND_RATE,
@@ -63,8 +63,8 @@ class TrustStateContext:
     component_id: str
     current: TrustStateEnum = TrustStateEnum.TRUSTED
     score: float = 1.0          # 0.0 ~ 1.0
-    last_refreshed: datetime = field(default_factory=datetime.utcnow)
-    last_transition: datetime = field(default_factory=datetime.utcnow)
+    last_refreshed: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    last_transition: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def on_failure(self, severity: str) -> None:
         """
@@ -73,19 +73,19 @@ class TrustStateContext:
         """
         step = _FAILURE_STEP_DOWN.get(severity.upper(), 0.0)
         self.score = round(max(0.0, self.score - step), 6)
-        self.last_refreshed = datetime.utcnow()
+        self.last_refreshed = datetime.now(timezone.utc)
         self._update_state_from_score()
 
     def on_success(self) -> None:
         """Apply step-up on successful execution."""
         self.score = round(min(1.0, self.score + TRUST_RECOVERY_ON_SUCCESS), 6)
-        self.last_refreshed = datetime.utcnow()
+        self.last_refreshed = datetime.now(timezone.utc)
         self._update_state_from_score()
 
     def on_recovery_complete(self) -> None:
         """Apply larger step-up after Recovery Loop completes for this component."""
         self.score = round(min(1.0, self.score + TRUST_RECOVERY_ON_RECOVERY_COMPLETE), 6)
-        self.last_refreshed = datetime.utcnow()
+        self.last_refreshed = datetime.now(timezone.utc)
         self._update_state_from_score()
 
     def apply_background_decay(self, elapsed_hours: float) -> None:
@@ -100,7 +100,7 @@ class TrustStateContext:
     def enter_recovery(self) -> None:
         """Mark component as entering trust recovery process."""
         self.current = TrustStateEnum.RECOVERY
-        self.last_transition = datetime.utcnow()
+        self.last_transition = datetime.now(timezone.utc)
 
     def _update_state_from_score(self) -> None:
         previous = self.current
@@ -122,4 +122,4 @@ class TrustStateContext:
 
         if new_state != previous:
             self.current = new_state
-            self.last_transition = datetime.utcnow()
+            self.last_transition = datetime.now(timezone.utc)

@@ -11,7 +11,7 @@ B2 Orchestration layer.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -30,7 +30,7 @@ class SpecTwin:
     objectives: list[str] = field(default_factory=list)
     constraints: list[str] = field(default_factory=list)
     status: SpecStatus = SpecStatus.DRAFT
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     clarified_at: Optional[datetime] = None
 
 
@@ -65,7 +65,7 @@ class ClarifySpecEngine:
         if spec is None or spec.status != SpecStatus.DRAFT:
             return False
         spec.status = SpecStatus.CLARIFIED
-        spec.clarified_at = datetime.utcnow()
+        spec.clarified_at = datetime.now(timezone.utc)
         return True
 
     def approve(self, spec_id: str) -> bool:

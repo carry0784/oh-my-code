@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -111,12 +111,12 @@ class ChangeRequest:
 
     def approve(self) -> None:
         self.status = ApprovalStatus.APPROVED
-        self.reviewed_at = datetime.utcnow()
+        self.reviewed_at = datetime.now(timezone.utc)
 
     def deny(self, reason: str) -> None:
         self.status = ApprovalStatus.DENIED
         self.denial_reason = reason
-        self.reviewed_at = datetime.utcnow()
+        self.reviewed_at = datetime.now(timezone.utc)
 
 
 # ─────────────────────────────────────────────────────────────────────────── #

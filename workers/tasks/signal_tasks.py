@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from workers.celery_app import celery_app
 from workers.tasks.order_tasks import get_sync_session
@@ -49,7 +49,7 @@ def expire_signals():
     """Mark expired signals."""
     session = get_sync_session()
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         expired = session.query(Signal).filter(
             Signal.status == SignalStatus.PENDING,
             Signal.expires_at < now,

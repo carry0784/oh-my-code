@@ -8,6 +8,7 @@ class PositionResponse(BaseModel):
     id: str
     exchange: str
     symbol: str
+    symbol_name: str | None = None
     side: PositionSide
     quantity: float
     entry_price: float

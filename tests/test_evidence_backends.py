@@ -11,9 +11,7 @@ import sys
 import tempfile
 from datetime import datetime, timedelta
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
-from kdexter.audit.evidence_store import EvidenceBundle, EvidenceStore
+from kdexter.audit.evidence_store import DuplicateEvidenceError, EvidenceBundle, EvidenceStore
 from kdexter.audit.backends.memory import InMemoryBackend
 from kdexter.audit.backends.sqlite import SQLiteBackend
 
@@ -175,21 +173,26 @@ def _run_backend_tests(backend, label, start_num):
         print(f"  [{n}] FAILED: {label} clear: {e}")
     n += 1
 
-    # [n] idempotent store (same bundle_id)
+    # [n] duplicate store rejected (append-only contract)
     try:
         backend.clear()
         b = _make_bundle(bundle_id="SAME-ID", action="v1")
         backend.store(b)
         b2 = _make_bundle(bundle_id="SAME-ID", action="v2")
-        backend.store(b2)
+        rejected = False
+        try:
+            backend.store(b2)
+        except DuplicateEvidenceError:
+            rejected = True
+        assert rejected, "Duplicate bundle_id must raise DuplicateEvidenceError"
         assert backend.count() == 1
         got = backend.get("SAME-ID")
-        assert got.action == "v2"
-        print(f"  [{n}] {label} idempotent store  OK")
+        assert got.action == "v1", "Original bundle must be preserved (append-only)"
+        print(f"  [{n}] {label} duplicate store rejected  OK")
         passed += 1
     except Exception as e:
-        failed.append((f"{label} idempotent store", str(e)))
-        print(f"  [{n}] FAILED: {label} idempotent store: {e}")
+        failed.append((f"{label} duplicate store rejected", str(e)))
+        print(f"  [{n}] FAILED: {label} duplicate store rejected: {e}")
     n += 1
 
     # [n] complex state serialization

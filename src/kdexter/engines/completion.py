@@ -13,7 +13,7 @@ Mandatory: M-16 (completion criteria must be met before promotion)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 
@@ -44,7 +44,7 @@ class CompletionCheckResult:
     unsatisfied: list[str]     # IDs of unsatisfied criteria
     passed_gate: bool          # score >= threshold
     threshold: float
-    checked_at: datetime = field(default_factory=datetime.utcnow)
+    checked_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ------------------------------------------------------------------ #

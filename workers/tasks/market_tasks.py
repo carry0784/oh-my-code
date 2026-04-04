@@ -14,7 +14,7 @@ def sync_all_positions():
     """Sync positions from all exchanges."""
     session = get_sync_session()
     try:
-        for exchange_name in ["binance", "okx"]:
+        for exchange_name in ["binance"]:
             try:
                 exchange = ExchangeFactory.create(exchange_name)
 

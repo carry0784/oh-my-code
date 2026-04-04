@@ -3,6 +3,10 @@ SQLite Evidence Backend — K-Dexter AOS v4
 
 Persistent evidence storage using stdlib sqlite3.
 WAL mode for concurrent read/write performance.
+
+Append-only: INSERT only, no REPLACE/UPDATE/UPSERT.
+Duplicate bundle_id raises DuplicateEvidenceError.
+DURABLE: evidence survives process restart.
 """
 from __future__ import annotations
 
@@ -12,7 +16,7 @@ from datetime import datetime
 from typing import Optional
 
 from kdexter.audit.backends import EvidenceBackend
-from kdexter.audit.evidence_store import EvidenceBundle
+from kdexter.audit.evidence_store import DuplicateEvidenceError, EvidenceBundle
 
 
 _CREATE_TABLE = """
@@ -33,6 +37,8 @@ _CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_cycle_id ON evidence_bundles(cycle_id)",
     "CREATE INDEX IF NOT EXISTS idx_actor ON evidence_bundles(actor)",
     "CREATE INDEX IF NOT EXISTS idx_trigger ON evidence_bundles(trigger_)",
+    # CR-027: Composite index for bounded recent queries — eliminates TEMP B-TREE sort.
+    "CREATE INDEX IF NOT EXISTS idx_actor_created ON evidence_bundles(actor, created_at)",
 ]
 
 
@@ -49,24 +55,30 @@ class SQLiteBackend(EvidenceBackend):
         self._conn.commit()
 
     def store(self, bundle: EvidenceBundle) -> str:
-        self._conn.execute(
-            """INSERT OR REPLACE INTO evidence_bundles
-               (bundle_id, created_at, trigger_, actor, action,
-                before_state, after_state, artifacts, cycle_id)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                bundle.bundle_id,
-                bundle.created_at.isoformat(),
-                bundle.trigger,
-                bundle.actor,
-                bundle.action,
-                _serialize(bundle.before_state),
-                _serialize(bundle.after_state),
-                json.dumps(bundle.artifacts),
-                bundle.cycle_id,
-            ),
-        )
-        self._conn.commit()
+        try:
+            self._conn.execute(
+                """INSERT INTO evidence_bundles
+                   (bundle_id, created_at, trigger_, actor, action,
+                    before_state, after_state, artifacts, cycle_id)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    bundle.bundle_id,
+                    bundle.created_at.isoformat(),
+                    bundle.trigger,
+                    bundle.actor,
+                    bundle.action,
+                    _serialize(bundle.before_state),
+                    _serialize(bundle.after_state),
+                    json.dumps(bundle.artifacts),
+                    bundle.cycle_id,
+                ),
+            )
+            self._conn.commit()
+        except sqlite3.IntegrityError:
+            raise DuplicateEvidenceError(
+                f"Append-only violation: bundle_id={bundle.bundle_id} already exists. "
+                f"Evidence records are immutable."
+            )
         return bundle.bundle_id
 
     def get(self, bundle_id: str) -> Optional[EvidenceBundle]:
@@ -107,11 +119,47 @@ class SQLiteBackend(EvidenceBackend):
         ).fetchall()
         return [_row_to_bundle(r) for r in rows]
 
+    def list_by_actor_recent(self, actor: str, limit: int = 20) -> list[EvidenceBundle]:
+        """List most recent bundles by actor, bounded by limit. CR-027."""
+        rows = self._conn.execute(
+            "SELECT * FROM evidence_bundles WHERE actor = ? ORDER BY created_at DESC LIMIT ?",
+            (actor, limit),
+        ).fetchall()
+        return [_row_to_bundle(r) for r in reversed(rows)]
+
     def list_all(self) -> list[EvidenceBundle]:
         rows = self._conn.execute(
             "SELECT * FROM evidence_bundles ORDER BY created_at"
         ).fetchall()
         return [_row_to_bundle(r) for r in rows]
+
+    def count_orphan_pre(self) -> int:
+        """Count PRE-phase bundles not linked by POST/ERROR. CR-028.
+
+        Uses JSON extraction on artifacts column. Bounded by actual PRE/POST
+        population which is typically small relative to total evidence.
+        """
+        rows = self._conn.execute(
+            "SELECT bundle_id, artifacts FROM evidence_bundles WHERE artifacts IS NOT NULL AND artifacts != '[]'"
+        ).fetchall()
+        pre_ids: set[str] = set()
+        linked: set[str] = set()
+        for bundle_id, artifacts_json in rows:
+            try:
+                artifacts = json.loads(artifacts_json) if artifacts_json else []
+            except (json.JSONDecodeError, TypeError):
+                continue
+            for art in artifacts:
+                if not isinstance(art, dict):
+                    continue
+                phase = art.get("phase", "")
+                if phase == "PRE":
+                    pre_ids.add(bundle_id)
+                elif phase in ("POST", "ERROR"):
+                    lid = art.get("pre_evidence_id", "")
+                    if lid:
+                        linked.add(lid)
+        return len(pre_ids - linked)
 
     def clear(self) -> None:
         self._conn.execute("DELETE FROM evidence_bundles")

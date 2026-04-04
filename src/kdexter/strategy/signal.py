@@ -10,7 +10,7 @@ Pipeline flow:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -70,23 +70,23 @@ class Signal:
     rejection_reason: Optional[str] = None
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     processed_at: Optional[datetime] = None
     ttl_seconds: int = 300                 # signal expires after 5 min
 
     @property
     def is_expired(self) -> bool:
-        elapsed = (datetime.utcnow() - self.created_at).total_seconds()
+        elapsed = (datetime.now(timezone.utc) - self.created_at).total_seconds()
         return elapsed > self.ttl_seconds
 
     def approve_risk(self) -> None:
         self.status = SignalStatus.RISK_APPROVED
-        self.processed_at = datetime.utcnow()
+        self.processed_at = datetime.now(timezone.utc)
 
     def reject(self, reason: str) -> None:
         self.status = SignalStatus.RISK_REJECTED
         self.rejection_reason = reason
-        self.processed_at = datetime.utcnow()
+        self.processed_at = datetime.now(timezone.utc)
 
     def set_size(self, quantity: float) -> None:
         self.quantity = quantity

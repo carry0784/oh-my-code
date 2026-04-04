@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional, Any, Protocol
 
@@ -76,7 +76,7 @@ class LayerDescriptor:
     status: LayerStatus = LayerStatus.REGISTERED
     health: HealthStatus = HealthStatus.UNKNOWN
     instance: Optional[Any] = None              # actual layer object
-    registered_at: datetime = field(default_factory=datetime.utcnow)
+    registered_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     started_at: Optional[datetime] = None
     stopped_at: Optional[datetime] = None
     last_health_check: Optional[datetime] = None
@@ -243,7 +243,7 @@ class LayerRegistry:
             if start_fn and callable(start_fn):
                 await start_fn()
             desc.status = LayerStatus.RUNNING
-            desc.started_at = datetime.utcnow()
+            desc.started_at = datetime.now(timezone.utc)
             desc.health = HealthStatus.HEALTHY
         except Exception as exc:
             desc.status = LayerStatus.ERROR
@@ -262,7 +262,7 @@ class LayerRegistry:
             if stop_fn and callable(stop_fn):
                 await stop_fn()
             desc.status = LayerStatus.STOPPED
-            desc.stopped_at = datetime.utcnow()
+            desc.stopped_at = datetime.now(timezone.utc)
             desc.health = HealthStatus.UNKNOWN
         except Exception as exc:
             desc.status = LayerStatus.ERROR
@@ -288,7 +288,7 @@ class LayerRegistry:
         else:
             desc.health = HealthStatus.UNKNOWN
 
-        desc.last_health_check = datetime.utcnow()
+        desc.last_health_check = datetime.now(timezone.utc)
         return desc.health
 
     async def check_all_health(self) -> dict[str, HealthStatus]:

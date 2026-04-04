@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -46,7 +46,7 @@ class OverrideRequest:
     override_type: OverrideType
     reason:        str
     status:        OverrideStatus = OverrideStatus.PENDING
-    created_at:    datetime = field(default_factory=datetime.utcnow)
+    created_at:    datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Set when the request is resolved
     resolved_by:     Optional[str] = field(default=None, repr=False)
@@ -120,7 +120,7 @@ class OverrideController:
             )
         req.status      = OverrideStatus.APPROVED
         req.resolved_by = approver
-        req.resolved_at = datetime.utcnow()
+        req.resolved_at = datetime.now(timezone.utc)
         return req
 
     def deny(self, request_id: str, approver: str, reason: str) -> OverrideRequest:
@@ -138,7 +138,7 @@ class OverrideController:
             )
         req.status        = OverrideStatus.DENIED
         req.resolved_by   = approver
-        req.resolved_at   = datetime.utcnow()
+        req.resolved_at   = datetime.now(timezone.utc)
         req.denial_reason = reason
         return req
 
@@ -156,7 +156,7 @@ class OverrideController:
                 f"Cannot expire request {request_id}: status is {req.status.value}"
             )
         req.status      = OverrideStatus.EXPIRED
-        req.resolved_at = datetime.utcnow()
+        req.resolved_at = datetime.now(timezone.utc)
         return req
 
     # ------------------------------------------------------------------ #

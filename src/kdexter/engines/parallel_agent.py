@@ -10,7 +10,7 @@ A (Runtime Execution) layer, B2-approved.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -61,7 +61,7 @@ class ParallelAgentManager:
         if agent is None or agent.status not in (AgentStatus.IDLE, AgentStatus.PAUSED):
             return False
         agent.status = AgentStatus.RUNNING
-        agent.started_at = datetime.utcnow()
+        agent.started_at = datetime.now(timezone.utc)
         return True
 
     def pause(self, agent_id: str) -> bool:

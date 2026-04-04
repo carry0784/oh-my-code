@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from uuid import uuid4
 
@@ -19,6 +19,7 @@ class Position(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     exchange: Mapped[str] = mapped_column(String(50))
     symbol: Mapped[str] = mapped_column(String(20))
+    symbol_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     side: Mapped[PositionSide] = mapped_column(SQLEnum(PositionSide))
     quantity: Mapped[float] = mapped_column(Float)
     entry_price: Mapped[float] = mapped_column(Float)
@@ -27,5 +28,5 @@ class Position(Base):
     realized_pnl: Mapped[float] = mapped_column(Float, default=0.0)
     leverage: Mapped[float] = mapped_column(Float, default=1.0)
     liquidation_price: Mapped[float | None] = mapped_column(Float, nullable=True)
-    opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    opened_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

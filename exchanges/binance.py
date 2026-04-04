@@ -15,8 +15,9 @@ class BinanceExchange(BaseExchange):
             "apiKey": self.api_key,
             "secret": self.api_secret,
             "enableRateLimit": True,
+            "session": self.create_session(),
             "options": {
-                "defaultType": "future",
+                "defaultType": "spot",
             },
         })
         if settings.binance_testnet:
@@ -33,9 +34,9 @@ class BinanceExchange(BaseExchange):
         try:
             params = {}
             if order_type == "market":
-                order = await self.client.create_market_order(symbol, side, quantity, params)
+                order = await self.client.create_market_order(symbol, side, quantity, params=params)
             else:
-                order = await self.client.create_limit_order(symbol, side, quantity, price, params)
+                order = await self.client.create_limit_order(symbol, side, quantity, price, params=params)
             logger.info("Binance order created", order_id=order["id"], symbol=symbol)
             return order
         except Exception as e:

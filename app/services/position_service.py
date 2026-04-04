@@ -25,7 +25,7 @@ class PositionService:
         return result.scalar_one_or_none()
 
     async def sync_from_exchange(self, exchange: str | None = None) -> None:
-        exchanges_to_sync = [exchange] if exchange else ["binance", "okx"]
+        exchanges_to_sync = [exchange] if exchange else ["binance"]
 
         for exch_name in exchanges_to_sync:
             try:
@@ -44,14 +44,20 @@ class PositionService:
                     )
                     position = existing.scalar_one_or_none()
 
+                    # symbol_name: preserve existing if new value is empty/None
+                    new_symbol_name = pos_data.get("symbol_name") or None
+
                     if position:
                         position.quantity = abs(pos_data.get("contracts", 0))
                         position.current_price = pos_data.get("markPrice", 0)
                         position.unrealized_pnl = pos_data.get("unrealizedPnl", 0)
+                        if new_symbol_name:
+                            position.symbol_name = new_symbol_name
                     else:
                         position = Position(
                             exchange=exch_name,
                             symbol=pos_data["symbol"],
+                            symbol_name=new_symbol_name,
                             side=PositionSide.LONG if pos_data.get("side") == "long" else PositionSide.SHORT,
                             quantity=abs(pos_data.get("contracts", 0)),
                             entry_price=pos_data.get("entryPrice", 0),

@@ -9,9 +9,6 @@ from __future__ import annotations
 
 import asyncio
 import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from kdexter.tcl.adapters.rate_limiter import AsyncRateLimiter
 
@@ -123,15 +120,15 @@ def test_ccxt_upbit_no_ccxt():
 
 def test_kis_token_validity():
     from kdexter.tcl.adapters.kis import KISAdapter
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     adapter = KISAdapter(appkey="test", appsecret="test")
     assert adapter._is_token_valid() is False
     # Simulate valid token
     adapter._access_token = "FAKE"
-    adapter._token_expires = datetime.utcnow() + timedelta(hours=1)
+    adapter._token_expires = datetime.now(timezone.utc) + timedelta(hours=1)
     assert adapter._is_token_valid() is True
     # Simulate expired
-    adapter._token_expires = datetime.utcnow() - timedelta(hours=1)
+    adapter._token_expires = datetime.now(timezone.utc) - timedelta(hours=1)
     assert adapter._is_token_valid() is False
     print("  [8] KIS token validity  OK")
 

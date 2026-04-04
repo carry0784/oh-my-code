@@ -1,0 +1,92 @@
+{
+  "day": 2,
+  "timestamp": "2026-04-01T06:16:30.895702+00:00",
+  "data_bars": 500,
+  "data_source": "ccxt_binance",
+  "dry_run": true,
+  "config_fingerprint": {
+    "bars": 500,
+    "lookback": 30,
+    "islands": 5,
+    "pop": 10,
+    "gen": 10,
+    "timeframe": "1h",
+    "strategy_types": [
+      "SMA",
+      "RSI"
+    ],
+    "baseline_commit": "c2a3242",
+    "cr": "CR-047"
+  },
+  "evolution": {
+    "generations": 10,
+    "best_fitness": 0.423,
+    "islands": 5,
+    "migrations": 25,
+    "registry_size": 10,
+    "mutation_rate": 0.0768,
+    "status": "OK"
+  },
+  "strategy_breakdown": {
+    "SMA": {
+      "count": 33,
+      "best_fitness": 0.423,
+      "registry": 2
+    },
+    "RSI": {
+      "count": 42,
+      "best_fitness": 0.42,
+      "registry": 8
+    }
+  },
+  "candidate_generation_by_strategy": {
+    "SMA": 33,
+    "RSI": 42
+  },
+  "fitness_by_strategy": {
+    "SMA": 0.423,
+    "RSI": 0.42
+  },
+  "registry_entries_by_strategy": {
+    "SMA": 2,
+    "RSI": 8
+  },
+  "cg2b_1_candidate_generation": "proven",
+  "candidate_generation_rate_1h": 10,
+  "portfolio": {
+    "strategies": 5,
+    "method": "risk_parity",
+    "sharpe": 353.7223,
+    "max_dd": 0.0,
+    "status": "OK"
+  },
+  "orchestrator": {
+    "cycle": 1,
+    "candidates": 5,
+    "validations": 2,
+    "transitions": [
+      "4e194fd4: candidate\u2192validated",
+      "4e194fd4: validated\u2192paper_trading",
+      "c442f1c3: candidate\u2192validated",
+      "c442f1c3: validated\u2192paper_trading"
+    ],
+    "governance_decisions": 4,
+    "pending_operator": 0,
+    "auto_approved": 4,
+    "is_healthy": true,
+    "warnings": [],
+    "status": "OK"
+  },
+  "governance_block_ratio_pct": 0.0,
+  "cg2b_2_governance_exercisability": "proven",
+  "governance_exercisability_rate_1h": 4,
+  "reconciliation": {
+    "lifecycle_states_valid": true,
+    "registry_lifecycle_aligned": true,
+    "transitions_have_governance": true,
+    "health_monitor_responsive": true
+  },
+  "reconciliation_pass": true,
+  "day_assessment": "PASS",
+  "errors": []
+}

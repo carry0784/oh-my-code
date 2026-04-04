@@ -12,7 +12,7 @@ Gate: G-24 LOOP_CHECK at VALIDATING[9]
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -55,7 +55,7 @@ class LoopMonitorResult:
     loop_statuses: dict[str, LoopStatus] = field(default_factory=dict)
     overall_health: LoopHealthStatus = LoopHealthStatus.HEALTHY
     any_exceeded: bool = False
-    checked_at: datetime = field(default_factory=datetime.utcnow)
+    checked_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ------------------------------------------------------------------ #

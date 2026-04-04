@@ -1,0 +1,87 @@
+{
+  "BTC/USDT": {
+    "baseline": {
+      "sharpe": 1.4,
+      "return_pct": 24.81,
+      "pf": 1.71,
+      "mdd": 8.83,
+      "trades": 32
+    },
+    "slippage": {
+      "sharpe": 1.32,
+      "return_pct": 20.9,
+      "pf": 1.65,
+      "pass": "True"
+    },
+    "funding": {
+      "sharpe": 1.4,
+      "return_pct": 24.8,
+      "return_reduction_pct": 0.1,
+      "pass": "True"
+    },
+    "latency": {
+      "sharpe": 0.12,
+      "return_pct": -1.97,
+      "pf": 1.04,
+      "pass": "True"
+    },
+    "realistic_fee": {
+      "sharpe": 1.36,
+      "return_pct": 22.84,
+      "pf": 1.68,
+      "pass": "True"
+    },
+    "worst_case": {
+      "sharpe": -0.02,
+      "return_pct": -6.72,
+      "pf": 0.99,
+      "mdd": 16.36,
+      "trades": 33
+    }
+  },
+  "SOL/USDT": {
+    "baseline": {
+      "sharpe": 0.84,
+      "return_pct": 14.57,
+      "pf": 1.37,
+      "mdd": 13.45,
+      "trades": 35
+    },
+    "slippage": {
+      "sharpe": 0.76,
+      "return_pct": 10.64,
+      "pf": 1.33,
+      "pass": "True"
+    },
+    "funding": {
+      "sharpe": 0.84,
+      "return_pct": 14.55,
+      "return_reduction_pct": 0.2,
+      "pass": "True"
+    },
+    "latency": {
+      "sharpe": 1.24,
+      "return_pct": 26.75,
+      "pf": 1.59,
+      "pass": "True"
+    },
+    "realistic_fee": {
+      "sharpe": 0.8,
+      "return_pct": 12.59,
+      "pf": 1.35,
+      "pass": "True"
+    },
+    "worst_case": {
+      "sharpe": 1.13,
+      "return_pct": 20.25,
+      "pf": 1.52,
+      "mdd": 13.27,
+      "trades": 35
+    }
+  },
+  "judgment": {
+    "research_validity": "Phase 2 CONDITIONAL, Phase 3 CONDITIONAL",
+    "execution_realism": "See per-asset results",
+    "operational_fit": "CG-2B PROVEN (CR-047)"
+  }
+}

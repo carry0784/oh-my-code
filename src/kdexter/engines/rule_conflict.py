@@ -12,7 +12,7 @@ Gate: G-20 CONFLICT_CHECK at VALIDATING[5]
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from kdexter.ledger.rule_ledger import Rule
@@ -28,7 +28,7 @@ class ConflictPair:
     rule_a_id: str
     rule_b_id: str
     reason: str
-    detected_at: datetime = field(default_factory=datetime.utcnow)
+    detected_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 @dataclass
@@ -36,7 +36,7 @@ class ConflictCheckResult:
     """Result of a conflict scan."""
     conflict_count: int
     conflicts: list[ConflictPair] = field(default_factory=list)
-    checked_at: datetime = field(default_factory=datetime.utcnow)
+    checked_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     rules_scanned: int = 0
 
 

@@ -23,7 +23,7 @@ Guard failure raises GuardViolationError with the specific unmet condition.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Callable, Optional
 
@@ -120,7 +120,7 @@ class ValidationResult:
     check: ValidatingCheck
     passed: bool
     reason: Optional[str] = None
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 @dataclass
@@ -135,7 +135,7 @@ class WorkStateContext:
     # Core state
     current: WorkStateEnum = WorkStateEnum.DRAFT
     previous: Optional[WorkStateEnum] = None
-    last_transition: datetime = field(default_factory=datetime.utcnow)
+    last_transition: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     # CLARIFYING guard fields
     intent: Optional[str] = None                # M-01: must be non-empty
@@ -210,7 +210,7 @@ class WorkStateContext:
 
         self.previous = self.current
         self.current = new_state
-        self.last_transition = datetime.utcnow()
+        self.last_transition = datetime.now(timezone.utc)
 
         if new_state == WorkStateEnum.BLOCKED:
             self.blocked_reason = reason

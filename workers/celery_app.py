@@ -10,6 +10,10 @@ celery_app = Celery(
         "workers.tasks.order_tasks",
         "workers.tasks.signal_tasks",
         "workers.tasks.market_tasks",
+        "workers.tasks.snapshot_tasks",
+        "workers.tasks.check_tasks",  # S-02: operational check tasks
+        "workers.tasks.governance_monitor_tasks",  # G-MON: governance monitor
+        "workers.tasks.data_collection_tasks",  # CR-038: market data + sentiment
     ],
 )
 
@@ -39,5 +43,37 @@ celery_app.conf.beat_schedule = {
     "expire-old-signals": {
         "task": "workers.tasks.signal_tasks.expire_signals",
         "schedule": 300.0,
+    },
+    "record-asset-snapshot-every-5m": {
+        "task": "workers.tasks.snapshot_tasks.record_asset_snapshot",
+        "schedule": 300.0,
+    },
+    # S-02: read-only operational checks (Check, Don't Repair)
+    "ops-daily-check": {
+        "task": "workers.tasks.check_tasks.run_daily_ops_check",
+        "schedule": 86400.0,  # 24h
+    },
+    "ops-hourly-check": {
+        "task": "workers.tasks.check_tasks.run_hourly_ops_check",
+        "schedule": 3600.0,  # 1h
+    },
+    # G-MON: governance monitor (6 indicators, notification on WARN/FAIL)
+    "governance-monitor-daily": {
+        "task": "workers.tasks.governance_monitor_tasks.run_daily_governance_report",
+        "schedule": 86400.0,  # 24h
+    },
+    "governance-monitor-weekly": {
+        "task": "workers.tasks.governance_monitor_tasks.run_weekly_governance_summary",
+        "schedule": 604800.0,  # 7d
+    },
+    # CR-038: market state collection (price + indicators + sentiment)
+    "collect-market-state-every-5m": {
+        "task": "workers.tasks.data_collection_tasks.collect_market_state",
+        "schedule": 300.0,  # 5min
+        "kwargs": {"symbol": "BTC/USDT", "exchange_name": "binance"},
+    },
+    "collect-sentiment-hourly": {
+        "task": "workers.tasks.data_collection_tasks.collect_sentiment_only",
+        "schedule": 3600.0,  # 1h
     },
 }

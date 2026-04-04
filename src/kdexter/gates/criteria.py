@@ -10,7 +10,7 @@ Data models for quantitative gate evaluation:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from kdexter.audit.evidence_store import EvidenceBundle
@@ -69,7 +69,7 @@ class GateVerdict:
     criteria: PassCriteria
     evidence: EvidenceBundle
     reason: str = ""
-    evaluated_at: datetime = field(default_factory=datetime.utcnow)
+    evaluated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 @dataclass
