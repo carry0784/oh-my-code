@@ -68,3 +68,6 @@ uvicorn app.main:app --reload --port 8000
 
 ## License
 Proprietary — All rights reserved.
+
+<!-- ruleset-verify-marker: DELETE AFTER VERIFY (PR-B Phase 1 test) -->
+
