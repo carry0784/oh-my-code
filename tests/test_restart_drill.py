@@ -22,8 +22,18 @@ from httpx import AsyncClient, ASGITransport
 
 # Read expected operational_mode from ops_state.json (source of truth)
 _OPS_STATE_PATH = os.path.join(os.path.dirname(__file__), "..", "ops_state.json")
-with open(_OPS_STATE_PATH, encoding="utf-8") as _f:
-    _EXPECTED_OP_MODE = json.load(_f).get("operational_mode", "BASELINE_HOLD")
+if os.path.exists(_OPS_STATE_PATH):
+    with open(_OPS_STATE_PATH, encoding="utf-8") as _f:
+        _EXPECTED_OP_MODE = json.load(_f).get("operational_mode", "BASELINE_HOLD")
+    _OPS_STATE_AVAILABLE = True
+else:
+    _EXPECTED_OP_MODE = "BASELINE_HOLD"
+    _OPS_STATE_AVAILABLE = False
+
+pytestmark = pytest.mark.skipif(
+    not _OPS_STATE_AVAILABLE,
+    reason="ops_state.json not present (gitignored, runtime-only file)",
+)
 
 
 @pytest.fixture
