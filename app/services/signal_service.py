@@ -23,7 +23,7 @@ class SignalService:
             stop_loss=signal_data.stop_loss,
             take_profit=signal_data.take_profit,
             confidence=signal_data.confidence,
-            signal_metadata=signal_data.signal_metadata,
+            metadata=signal_data.metadata,
         )
         self.db.add(signal)
         await self.db.flush()

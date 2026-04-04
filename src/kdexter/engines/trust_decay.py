@@ -13,7 +13,7 @@ Thresholds: config/thresholds.py (OQ-5 resolved)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 
 from kdexter.config.thresholds import (
@@ -35,7 +35,7 @@ class TrustCheckResult:
     trust_state: TrustStateEnum
     passed_gate: bool          # score >= TRUST_BOUNDARY_DEGRADED (0.60)
     decay_applied: float       # background decay applied this check
-    checked_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    checked_at: datetime = field(default_factory=datetime.utcnow)
 
 
 # ------------------------------------------------------------------ #
@@ -61,13 +61,9 @@ class TrustDecayEngine:
         self._last_check_time: dict[str, datetime] = {}
 
     def register(self, component_id: str, ctx: TrustStateContext) -> None:
-        """Register a component for trust tracking.
-
-        Idempotent by key overwrite: repeated registration with the same
-        component_id converges to one final mapping. Safe to call multiple times.
-        """
+        """Register a component for trust tracking."""
         self._components[component_id] = ctx
-        self._last_check_time[component_id] = datetime.now(timezone.utc)
+        self._last_check_time[component_id] = datetime.utcnow()
 
     def unregister(self, component_id: str) -> None:
         """Remove a component from tracking."""
@@ -92,7 +88,7 @@ class TrustDecayEngine:
             KeyError: if component_id not registered
         """
         ctx = self._components[component_id]
-        now = datetime.now(timezone.utc)
+        now = datetime.utcnow()
         last = self._last_check_time.get(component_id, now)
 
         elapsed_hours = (now - last).total_seconds() / 3600.0

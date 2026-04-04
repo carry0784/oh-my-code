@@ -10,7 +10,7 @@ A (Runtime Execution) layer, B2-approved.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 
 
@@ -30,7 +30,7 @@ class EvaluationResult:
     metrics: list[EvaluationMetric] = field(default_factory=list)
     overall_score: float = 0.0
     passed: bool = True
-    evaluated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    evaluated_at: datetime = field(default_factory=datetime.utcnow)
 
 
 class EvaluationEngine:

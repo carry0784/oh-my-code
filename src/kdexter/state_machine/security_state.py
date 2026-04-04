@@ -11,11 +11,10 @@ Transitions are triggered by Failure Severity (from failure_taxonomy.md).
 LOCKDOWN can only be released by Human (L27 Override Controller).
 """
 from __future__ import annotations
-import threading
 from enum import Enum
 from dataclasses import dataclass, field
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import datetime
 
 
 class SecurityStateEnum(Enum):
@@ -40,8 +39,7 @@ class SecurityStateContext:
     previous: Optional[SecurityStateEnum] = None
     trigger_failure_id: Optional[str] = None
     locked_at: Optional[datetime] = None
-    last_transition: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    _lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
+    last_transition: datetime = field(default_factory=datetime.utcnow)
 
     def escalate(self, target: SecurityStateEnum, trigger_failure_id: Optional[str] = None) -> None:
         """Escalate to a more restrictive security state."""
@@ -61,13 +59,12 @@ class SecurityStateContext:
         self._do_transition(target, authorized_by)
 
     def _do_transition(self, target: SecurityStateEnum, context: Optional[str]) -> None:
-        with self._lock:
-            self.previous = self.current
-            self.current = target
-            self.last_transition = datetime.now(timezone.utc)
-            self.trigger_failure_id = context
-            if target == SecurityStateEnum.LOCKDOWN:
-                self.locked_at = datetime.now(timezone.utc)
+        self.previous = self.current
+        self.current = target
+        self.last_transition = datetime.utcnow()
+        self.trigger_failure_id = context
+        if target == SecurityStateEnum.LOCKDOWN:
+            self.locked_at = datetime.utcnow()
 
     def allows_execution(self) -> bool:
         return self.current == SecurityStateEnum.NORMAL

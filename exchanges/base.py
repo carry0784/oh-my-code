@@ -1,19 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-import aiohttp
-
 
 class BaseExchange(ABC):
     def __init__(self, api_key: str, api_secret: str, **kwargs):
         self.api_key = api_key
         self.api_secret = api_secret
-
-    @staticmethod
-    def create_session() -> aiohttp.ClientSession:
-        """Create aiohttp session with ThreadedResolver to avoid aiodns DNS failures."""
-        connector = aiohttp.TCPConnector(resolver=aiohttp.resolver.ThreadedResolver())
-        return aiohttp.ClientSession(connector=connector)
 
     @abstractmethod
     async def create_order(

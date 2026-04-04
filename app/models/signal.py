@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 from uuid import uuid4
 
@@ -35,7 +35,7 @@ class Signal(Base):
     take_profit: Mapped[float | None] = mapped_column(Float, nullable=True)
     confidence: Mapped[float] = mapped_column(Float, default=0.0)
     status: Mapped[SignalStatus] = mapped_column(SQLEnum(SignalStatus), default=SignalStatus.PENDING)
-    signal_metadata: Mapped[dict] = mapped_column(JSON, default=dict, name="metadata")
+    metadata: Mapped[dict] = mapped_column(JSON, default=dict)
     agent_analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

@@ -9,7 +9,7 @@ Governance: B2 (governance_layer_map.md -- L30)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 
 
@@ -22,7 +22,7 @@ class MetricRecord:
     """Internal record for a single tracked metric."""
     name: str
     value: float
-    recorded_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    recorded_at: datetime = field(default_factory=datetime.utcnow)
     update_count: int = 0
 
 
@@ -64,7 +64,7 @@ class ProgressEngine:
         existing = self._metrics.get(metric_name)
         if existing is not None:
             existing.value = value
-            existing.recorded_at = datetime.now(timezone.utc)
+            existing.recorded_at = datetime.utcnow()
             existing.update_count += 1
         else:
             self._metrics[metric_name] = MetricRecord(

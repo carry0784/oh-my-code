@@ -7,6 +7,9 @@ Run: python -X utf8 tests/test_remaining_layers.py
 from __future__ import annotations
 
 import sys
+import os
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from kdexter.engines.spec_lock import SpecLockEngine, SpecLockResult, BlockedMutation
 from kdexter.engines.override_controller import (

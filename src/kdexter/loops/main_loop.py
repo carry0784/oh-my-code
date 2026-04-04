@@ -27,7 +27,7 @@ import asyncio
 import logging
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 from typing import Callable, Optional, Awaitable
 
@@ -76,7 +76,7 @@ class CycleResult:
     final_state: WorkStateEnum
     evidence_bundles: list[EvidenceBundle] = field(default_factory=list)
     error: Optional[str] = None
-    started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    started_at: datetime = field(default_factory=datetime.utcnow)
     completed_at: Optional[datetime] = None
 
     def finish(self, outcome: "CycleOutcome", state: WorkStateEnum,
@@ -84,7 +84,7 @@ class CycleResult:
         self.outcome = outcome
         self.final_state = state
         self.error = error
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.utcnow()
 
 
 class CycleOutcome(Enum):

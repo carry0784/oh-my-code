@@ -15,7 +15,7 @@ Checks:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 
 from kdexter.strategy.signal import Signal, SignalStatus
@@ -55,7 +55,7 @@ class RiskCheckResult:
     checks_run: int
     checks_passed: int
     rejection_reason: Optional[str] = None
-    checked_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    checked_at: datetime = field(default_factory=datetime.utcnow)
 
 
 # ------------------------------------------------------------------ #

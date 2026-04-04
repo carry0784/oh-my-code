@@ -27,7 +27,7 @@ from __future__ import annotations
 import asyncio
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 from typing import Optional, Callable, Awaitable
 
@@ -64,7 +64,7 @@ class SIPhase(Enum):
 class PerformanceSample:
     """A snapshot of recent trading performance metrics."""
     sample_id: str = field(default_factory=lambda: f"PS-{uuid.uuid4().hex[:8].upper()}")
-    sampled_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    sampled_at: datetime = field(default_factory=datetime.utcnow)
     win_rate: float = 0.0           # 0.0 ~ 1.0
     avg_return: float = 0.0         # per-trade average return
     max_drawdown: float = 0.0       # maximum drawdown observed
@@ -83,7 +83,7 @@ class ImprovementProposal:
     rationale: str = ""             # why this change
     backtest_score: Optional[float] = None   # backtest result (None = not yet tested)
     accepted: bool = False
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=datetime.utcnow)
 
 
 @dataclass
@@ -96,13 +96,13 @@ class SIResult:
     proposals_accepted: int = 0
     rules_created: int = 0
     error: Optional[str] = None
-    started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    started_at: datetime = field(default_factory=datetime.utcnow)
     completed_at: Optional[datetime] = None
 
     def finish(self, phase: SIPhase, error: Optional[str] = None) -> None:
         self.phase_reached = phase
         self.error = error
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.utcnow()
 
 
 # ─────────────────────────────────────────────────────────────────────────── #

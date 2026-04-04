@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 from typing import Optional
 
@@ -49,7 +49,7 @@ class FailureEvent:
     severity: str               # CRITICAL / HIGH / MEDIUM / LOW
     recurrence: str             # FIRST / REPEAT / PATTERN
     description: str
-    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    occurred_at: datetime = field(default_factory=datetime.utcnow)
     context: dict = field(default_factory=dict)
 
 
@@ -61,7 +61,7 @@ class RecoveryScope:
     """
     scope_id: str
     failures: list[FailureEvent] = field(default_factory=list)
-    opened_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    opened_at: datetime = field(default_factory=datetime.utcnow)
     rollback_anchor: Optional[str] = None   # OQ-8: last VERIFIED state id (placeholder)
     repair_notes: list[str] = field(default_factory=list)
 
@@ -127,7 +127,7 @@ class RecoveryLoop:
                 "scope_id": self._scope.scope_id,
             })
         else:
-            scope_id = f"REC-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
+            scope_id = f"REC-{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}"
             self._scope = RecoveryScope(
                 scope_id=scope_id,
                 failures=[event],
@@ -331,7 +331,7 @@ class RecoveryLoop:
         OQ-8: rollback anchor = last VERIFIED state (placeholder).
         TODO: query actual state snapshot store for last VERIFIED state id.
         """
-        return f"ANCHOR-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        return f"ANCHOR-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
 
     def _emit_evidence(self, action: str, artifacts: dict) -> None:
         """M-07: emit EvidenceBundle for every phase transition."""

@@ -14,7 +14,7 @@ Mandatory: M-17 (spec lock check must run at VALIDATING[10])
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 
 
@@ -28,7 +28,7 @@ class BlockedMutation:
     field_name: str
     old_value: Any
     new_value: Any
-    attempted_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    attempted_at: datetime = field(default_factory=datetime.utcnow)
 
 
 @dataclass

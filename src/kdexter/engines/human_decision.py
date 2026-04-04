@@ -11,7 +11,7 @@ Machine code MUST NOT modify decisions stored here.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 from typing import Optional
 
@@ -36,7 +36,7 @@ class HumanDecision:
     description: str
     operator: str
     status: DecisionStatus = DecisionStatus.PENDING
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=datetime.utcnow)
     applied_at: Optional[datetime] = None
 
 
@@ -72,7 +72,7 @@ class HumanDecisionInterface:
         if d is None or d.status != DecisionStatus.PENDING:
             return False
         d.status = DecisionStatus.APPLIED
-        d.applied_at = datetime.now(timezone.utc)
+        d.applied_at = datetime.utcnow()
         return True
 
     def get(self, decision_id: str) -> Optional[HumanDecision]:

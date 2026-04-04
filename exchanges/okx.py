@@ -1,13 +1,3 @@
-"""
-Bitget Exchange Adapter — Futures (선물 전용)
-I-03: Bitget 어댑터 추가
-
-Bitget은 선물(swap) 거래소이므로:
-  - fetch_positions()로 선물 포지션 직접 조회
-  - liquidation_price, leverage 제공
-  - Binance 패턴과 동일한 position 구조
-"""
-
 import ccxt.async_support as ccxt
 from typing import Any
 
@@ -18,19 +8,19 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 
 
-class BitgetExchange(BaseExchange):
+class OKXExchange(BaseExchange):
     def __init__(self):
-        super().__init__(settings.bitget_api_key, settings.bitget_api_secret)
-        self.client = ccxt.bitget({
+        super().__init__(settings.okx_api_key, settings.okx_api_secret)
+        self.client = ccxt.okx({
             "apiKey": self.api_key,
             "secret": self.api_secret,
-            "password": settings.bitget_passphrase,
+            "password": settings.okx_passphrase,
             "enableRateLimit": True,
             "options": {
                 "defaultType": "swap",
             },
         })
-        if settings.bitget_sandbox:
+        if settings.okx_sandbox:
             self.client.set_sandbox_mode(True)
 
     async def create_order(
@@ -42,15 +32,15 @@ class BitgetExchange(BaseExchange):
         price: float | None = None,
     ) -> dict[str, Any]:
         try:
-            params = {}
+            params = {"tdMode": "cross"}
             if order_type == "market":
                 order = await self.client.create_market_order(symbol, side, quantity, params)
             else:
                 order = await self.client.create_limit_order(symbol, side, quantity, price, params)
-            logger.info("Bitget order created", order_id=order["id"], symbol=symbol)
+            logger.info("OKX order created", order_id=order["id"], symbol=symbol)
             return order
         except Exception as e:
-            logger.error("Bitget order failed", symbol=symbol, error=str(e))
+            logger.error("OKX order failed", symbol=symbol, error=str(e))
             raise
 
     async def cancel_order(self, order_id: str, symbol: str) -> dict[str, Any]:

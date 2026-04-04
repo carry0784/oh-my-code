@@ -13,17 +13,11 @@ Resolves:
 from __future__ import annotations
 
 import hashlib
-import os
-import threading
 import traceback
-import uuid
-from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, ClassVar, Optional
+from typing import Any, Optional
 
 from kdexter.audit.evidence_store import EvidenceBundle, EvidenceStore
-from kdexter.engines.cost_controller import CostController
-from kdexter.engines.failure_router import FailurePatternMemory, Recurrence
 from kdexter.ledger.forbidden_ledger import ForbiddenAction, ForbiddenLedger
 from kdexter.state_machine.security_state import SecurityStateContext
 
@@ -51,8 +45,6 @@ class ReasonCode(str, Enum):
     MISSING_EXCHANGE = "GOV-MISSING-EXCHANGE"
     COMPLIANCE_D002 = "GOV-COMPLIANCE-D002"
     COMPLIANCE_D009 = "GOV-COMPLIANCE-D009"
-    BUDGET_EXCEEDED = "GOV-BUDGET-EXCEEDED"
-    PATTERN_DETECTED = "GOV-PATTERN-DETECTED"
     POST_EXCEPTION = "GOV-POST-EXCEPTION"
 
 
@@ -118,72 +110,21 @@ class GovernanceGate:
       1. ForbiddenLedger is checked before any LLM agent call (D-009)
       2. EvidenceBundle is produced for every execution (D-002)
       3. VALIDATING 10-check state classification is recorded
-
-    Singleton: only ONE instance may exist per process.
-    - Second creation raises RuntimeError (split-brain prevention).
-    - _creation_lock protects check+create atomically (race-free).
-    - gate_id / gate_created_at / gate_generation enable audit tracing.
     """
-
-    # ── Singleton enforcement ────────────────────────────────────────── #
-    _instance: ClassVar[Optional[GovernanceGate]] = None
-    _creation_lock: ClassVar[threading.Lock] = threading.Lock()
-    _generation_count: ClassVar[int] = 0
 
     def __init__(
         self,
         forbidden_ledger: ForbiddenLedger,
         evidence_store: EvidenceStore,
         security_ctx: SecurityStateContext,
-        cost_controller: Optional[CostController] = None,
-        pattern_memory: Optional[FailurePatternMemory] = None,
     ) -> None:
-        # Singleton guard — atomic check+assign under lock
-        with GovernanceGate._creation_lock:
-            GovernanceGate._generation_count += 1
-            if GovernanceGate._instance is not None:
-                raise RuntimeError(
-                    f"GovernanceGate singleton already exists "
-                    f"(gate_id={GovernanceGate._instance.gate_id}, "
-                    f"generation={GovernanceGate._generation_count}). "
-                    f"Duplicate creation is forbidden."
-                )
-            # Gate identity — immutable after creation
-            self.gate_id: str = str(uuid.uuid4())
-            self.gate_created_at: datetime = datetime.now(timezone.utc)
-            self.gate_generation: int = GovernanceGate._generation_count
-            GovernanceGate._instance = self
-
         self.forbidden_ledger = forbidden_ledger
         self.evidence_store = evidence_store
         self.security_ctx = security_ctx
-        self.cost_controller = cost_controller
-        self.pattern_memory = pattern_memory
 
         # Register agent-scope forbidden actions (idempotent — register() overwrites by action_id)
         for fa in _AGENT_FORBIDDEN_ACTIONS:
             self.forbidden_ledger.register(fa)
-
-        logger.info(
-            "governance_gate_created",
-            gate_id=self.gate_id,
-            gate_created_at=self.gate_created_at.isoformat(),
-            gate_generation=self.gate_generation,
-        )
-
-    # ── Test-only reset ──────────────────────────────────────────────── #
-
-    @classmethod
-    def _reset_for_testing(cls) -> None:
-        """Reset singleton state. Forbidden in production."""
-        env = os.environ.get("APP_ENV", "").lower()
-        if env in ("production", "prod"):
-            raise RuntimeError(
-                "_reset_for_testing() is forbidden in production (APP_ENV=%s)" % env
-            )
-        with cls._creation_lock:
-            cls._instance = None
-            cls._generation_count = 0
 
     # ── Pre-check ──────────────────────────────────────────────────────── #
 
@@ -289,53 +230,14 @@ class GovernanceGate:
             "status": CheckStatus.NOT_APPLICABLE.value,
             "detail": "Agent calls do not modify rules — RuleLedger/L16 scope",
         }
-        # ── Check 6: PATTERN_CHECK (M-13 / G-21) ──
-        if self.pattern_memory is not None:
-            task_type = getattr(task, "task_type", "unknown")
-            recurrence = self.pattern_memory.classify_recurrence(f"AGENT_{task_type.upper()}")
-            if recurrence == Recurrence.PATTERN:
-                check_matrix["PATTERN_CHECK"] = {
-                    "status": CheckStatus.FAILED.value,
-                    "detail": f"Recurring failure pattern detected for AGENT_{task_type.upper()}",
-                }
-                return self._finalize_pre(
-                    task, False, DecisionCode.BLOCKED, ReasonCode.PATTERN_DETECTED,
-                    check_matrix, f"Failure pattern detected: AGENT_{task_type.upper()}",
-                )
-            check_matrix["PATTERN_CHECK"] = {
-                "status": CheckStatus.PASSED.value,
-                "detail": f"recurrence={recurrence.value} for AGENT_{task_type.upper()}",
-            }
-        else:
-            check_matrix["PATTERN_CHECK"] = {
-                "status": CheckStatus.DEFERRED.value,
-                "detail": "FailurePatternMemory not connected — deferred",
-            }
-        # ── Check 7: BUDGET_CHECK (M-08 / G-22) ──
-        if self.cost_controller is not None:
-            cost_result = self.cost_controller.check()
-            if cost_result.passed_gate:
-                check_matrix["BUDGET_CHECK"] = {
-                    "status": CheckStatus.PASSED.value,
-                    "detail": f"resource_usage_ratio={cost_result.resource_usage_ratio:.4f} <= 1.0",
-                }
-            else:
-                check_matrix["BUDGET_CHECK"] = {
-                    "status": CheckStatus.FAILED.value,
-                    "detail": (
-                        f"resource_usage_ratio={cost_result.resource_usage_ratio:.4f} > 1.0, "
-                        f"exceeded={cost_result.exceeded}"
-                    ),
-                }
-                return self._finalize_pre(
-                    task, False, DecisionCode.BLOCKED, ReasonCode.BUDGET_EXCEEDED,
-                    check_matrix, f"Budget exceeded: {cost_result.exceeded}",
-                )
-        else:
-            check_matrix["BUDGET_CHECK"] = {
-                "status": CheckStatus.DEFERRED.value,
-                "detail": "CostController not connected — deferred",
-            }
+        check_matrix["PATTERN_CHECK"] = {
+            "status": CheckStatus.DEFERRED.value,
+            "detail": "Failure pattern memory (L17) — deferred to priority 5+",
+        }
+        check_matrix["BUDGET_CHECK"] = {
+            "status": CheckStatus.DEFERRED.value,
+            "detail": "Cost control (L29) — deferred to priority 3 (M-08/G-22)",
+        }
         check_matrix["TRUST_CHECK"] = {
             "status": CheckStatus.NOT_APPLICABLE.value,
             "detail": "Agent calls are not trust decay targets — TrustState/L19 scope",
@@ -381,9 +283,6 @@ class GovernanceGate:
                 "task_type": getattr(task, "task_type", "unknown"),
                 "check_matrix": check_matrix,
                 "coverage_meta": coverage_meta,
-                "gate_id": self.gate_id,
-                "gate_generation": self.gate_generation,
-                "gate_created_at": self.gate_created_at.isoformat(),
             }],
         )
         evidence_id = self.evidence_store.store(bundle)
@@ -393,7 +292,6 @@ class GovernanceGate:
             log_method = logger.error
         log_method(
             "governance_pre_check",
-            gate_id=self.gate_id,
             decision=decision_code.value,
             reason=reason_code.value,
             evidence_id=evidence_id,
@@ -422,47 +320,28 @@ class GovernanceGate:
             str(result.get("reasoning", "")).encode()
         ).hexdigest()[:16]
 
-        # Record LLM token usage to CostController (M-08/G-22)
-        llm_usage = result.get("_llm_usage", {})
-        total_tokens = llm_usage.get("input_tokens", 0) + llm_usage.get("output_tokens", 0)
-        if self.cost_controller is not None and total_tokens > 0:
-            try:
-                self.cost_controller.record_usage("API_CALLS", 1)
-                self.cost_controller.record_usage("LLM_TOKENS", total_tokens)
-            except KeyError:
-                pass  # budget not set for this resource type — non-fatal
-
-        # Determine decision_code from result — approved=False means BLOCKED (F-04 semantic integrity)
-        approved = result.get("approved", result.get("success", False))
-        decision_code = DecisionCode.ALLOWED if approved else DecisionCode.BLOCKED
-
         bundle = EvidenceBundle(
             trigger="GovernanceGate.post_record",
             actor="GovernanceGate",
-            action=f"POST_RECORD:{decision_code.value}",
+            action=f"POST_RECORD:{DecisionCode.ALLOWED.value}",
             before_state=self.security_ctx.current.value,
             after_state=self.security_ctx.current.value,
             artifacts=[{
                 "phase": PhaseCode.POST.value,
-                "decision_code": decision_code.value,
+                "decision_code": DecisionCode.ALLOWED.value,
                 "pre_evidence_id": pre_evidence_id,
                 "task_type": getattr(task, "task_type", "unknown"),
                 "prompt_hash": prompt_hash,
                 "confidence": result.get("confidence", 0.0),
-                "approved": approved,
+                "approved": result.get("approved", result.get("success", False)),
                 "reasoning_hash": prompt_hash,
-                "llm_tokens": total_tokens,
-                "gate_id": self.gate_id,
-                "gate_generation": self.gate_generation,
-                "gate_created_at": self.gate_created_at.isoformat(),
             }],
         )
         evidence_id = self.evidence_store.store(bundle)
 
         logger.info(
             "governance_post_record",
-            gate_id=self.gate_id,
-            decision=decision_code.value,
+            decision=DecisionCode.ALLOWED.value,
             evidence_id=evidence_id,
             pre_evidence_id=pre_evidence_id,
         )
@@ -492,11 +371,6 @@ class GovernanceGate:
             )
             raise ValueError("post_record_error requires pre_evidence_id — post without pre is forbidden")
 
-        # Record failure to FailurePatternMemory (L17/M-13)
-        if self.pattern_memory is not None:
-            task_type = getattr(task, "task_type", "unknown")
-            self.pattern_memory.record(f"AGENT_{task_type.upper()}")
-
         try:
             bundle = EvidenceBundle(
                 trigger="GovernanceGate.post_record_error",
@@ -516,16 +390,12 @@ class GovernanceGate:
                     "traceback_hash": hashlib.sha256(
                         traceback.format_exc().encode()
                     ).hexdigest()[:16],
-                    "gate_id": self.gate_id,
-                    "gate_generation": self.gate_generation,
-                    "gate_created_at": self.gate_created_at.isoformat(),
                 }],
             )
             evidence_id = self.evidence_store.store(bundle)
 
             logger.error(
                 "governance_post_record_error",
-                gate_id=self.gate_id,
                 decision=DecisionCode.FAILED.value,
                 reason=ReasonCode.POST_EXCEPTION.value,
                 error_severity="CRITICAL",
@@ -540,7 +410,6 @@ class GovernanceGate:
             # Fallback: even if evidence storage fails, audit log must survive
             logger.critical(
                 "governance_post_record_error_FALLBACK",
-                gate_id=self.gate_id,
                 original_exception=str(exception),
                 fallback_exception=str(fallback_exc),
                 pre_evidence_id=pre_evidence_id,

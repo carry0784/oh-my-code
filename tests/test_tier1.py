@@ -14,6 +14,9 @@ from __future__ import annotations
 
 import asyncio
 import sys
+import os
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from kdexter.audit.evidence_store import EvidenceBundle, EvidenceStore
 from kdexter.ledger.mandatory_ledger import MandatoryLedger, MandatoryItem, LoopType
@@ -345,10 +348,10 @@ def test_rule_change_count_since():
     asyncio.run(ledger.create(rule, LoopPriority.MAIN))
 
     # All changes since epoch
-    from datetime import datetime, timezone
-    assert ledger.rule_change_count(since=datetime(2000, 1, 1, tzinfo=timezone.utc)) == 1
+    from datetime import datetime
+    assert ledger.rule_change_count(since=datetime(2000, 1, 1)) == 1
     # No changes in the future
-    assert ledger.rule_change_count(since=datetime(2099, 1, 1, tzinfo=timezone.utc)) == 0
+    assert ledger.rule_change_count(since=datetime(2099, 1, 1)) == 0
     print("  [20] RuleLedger change_count since  OK")
 
 

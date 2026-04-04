@@ -24,27 +24,10 @@ class Settings(BaseSettings):
     binance_api_secret: str = ""
     binance_testnet: bool = True
 
-    upbit_api_key: str = ""
-    upbit_api_secret: str = ""
-
-    bitget_api_key: str = ""
-    bitget_api_secret: str = ""
-    bitget_passphrase: str = ""
-    bitget_sandbox: bool = True
-
-    # KIS (한국투자증권)
-    kis_app_key: str = ""
-    kis_app_secret: str = ""
-    kis_account_no: str = ""
-    kis_account_suffix: str = "01"
-    kis_demo: bool = True
-
-    # Kiwoom (키움증권)
-    kiwoom_app_key: str = ""
-    kiwoom_app_secret: str = ""
-    kiwoom_account_no: str = ""
-    kiwoom_account_suffix: str = "01"
-    kiwoom_demo: bool = True
+    okx_api_key: str = ""
+    okx_api_secret: str = ""
+    okx_passphrase: str = ""
+    okx_sandbox: bool = True
 
     # LLM
     openai_api_key: str = ""
@@ -53,29 +36,6 @@ class Settings(BaseSettings):
     # Governance
     # Default True — must be explicitly disabled. Production requires True.
     governance_enabled: bool = True
-
-    # Evidence persistence
-    # Empty = InMemoryBackend (NOT_DURABLE). Path = SQLiteBackend (DURABLE).
-    evidence_db_path: str = ""
-
-    # C-19: Receipt file persistence
-    # Empty = in-memory only (lost on restart). Path = JSONL file backend (DURABLE).
-    receipt_file_path: str = ""
-
-    # C-20: External notifier webhook
-    # Empty = disabled. URL = send incident snapshots to webhook endpoint.
-    notifier_webhook_url: str = ""
-
-    # C-27: Multi-notifier channels
-    # Empty = disabled. Path = append incident JSONL to file.
-    notifier_file_path: str = ""
-    # Empty = disabled. URL = send to Slack webhook.
-    notifier_slack_url: str = ""
-
-    # Logging
-    # Empty = STREAM_ONLY (stdout). Path = FILE_PERSISTED (stdout + rotating file).
-    log_file_path: str = ""
-    log_level: str = "INFO"
 
     # Trading
     default_exchange: str = "binance"
@@ -93,15 +53,3 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
-
-
-# ── Supported Exchanges (SSOT) ─────────────────────────────────────────── #
-# Single Source of Truth for all exchange whitelists.
-# Any exchange not in this list is UNSUPPORTED and must raise ValueError.
-# Categories:
-#   CRYPTO: cryptocurrency exchanges (bid/ask market feed supported)
-#   STOCK:  Korean stock brokerages (bid/ask market feed NOT supported)
-
-SUPPORTED_EXCHANGES_CRYPTO = ("binance", "upbit", "bitget")
-SUPPORTED_EXCHANGES_STOCK = ("kis", "kiwoom")
-SUPPORTED_EXCHANGES_ALL = SUPPORTED_EXCHANGES_CRYPTO + SUPPORTED_EXCHANGES_STOCK

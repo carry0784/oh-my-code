@@ -13,7 +13,6 @@ logger = get_logger(__name__)
 class BaseAgent(ABC):
     def __init__(self, provider: str = "anthropic"):
         self.provider = provider
-        self.last_usage: dict[str, int] = {}
         if provider == "anthropic":
             self.client = AsyncAnthropic(api_key=settings.anthropic_api_key)
             self.model = "claude-sonnet-4-20250514"
@@ -27,7 +26,6 @@ class BaseAgent(ABC):
         pass
 
     async def _call_llm(self, prompt: str) -> str:
-        self.last_usage = {}
         try:
             if self.provider == "anthropic":
                 response = await self.client.messages.create(
@@ -36,11 +34,6 @@ class BaseAgent(ABC):
                     system=self.system_prompt,
                     messages=[{"role": "user", "content": prompt}],
                 )
-                if hasattr(response, "usage") and response.usage:
-                    self.last_usage = {
-                        "input_tokens": response.usage.input_tokens,
-                        "output_tokens": response.usage.output_tokens,
-                    }
                 return response.content[0].text
             else:
                 response = await self.client.chat.completions.create(
@@ -51,11 +44,6 @@ class BaseAgent(ABC):
                         {"role": "user", "content": prompt},
                     ],
                 )
-                if hasattr(response, "usage") and response.usage:
-                    self.last_usage = {
-                        "input_tokens": response.usage.prompt_tokens,
-                        "output_tokens": response.usage.completion_tokens,
-                    }
                 return response.choices[0].message.content
         except Exception as e:
             logger.error("LLM call failed", provider=self.provider, error=str(e))

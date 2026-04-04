@@ -12,7 +12,7 @@ Gate: G-22 BUDGET_CHECK at VALIDATING[7]
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 
 
@@ -49,7 +49,7 @@ class CostCheckResult:
     budgets: dict[str, float]     # resource_type -> usage_ratio
     exceeded: list[str]           # resource types over budget
     passed_gate: bool             # max ratio <= 1.0
-    checked_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    checked_at: datetime = field(default_factory=datetime.utcnow)
 
 
 # ------------------------------------------------------------------ #

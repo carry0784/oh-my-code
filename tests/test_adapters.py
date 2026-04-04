@@ -16,6 +16,9 @@ from __future__ import annotations
 
 import asyncio
 import sys
+import os
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from kdexter.tcl.commands import (
     TCLCommand, CommandType, ExecutionMode, OrderType, CommandTranscript,
@@ -162,29 +165,29 @@ def _test_adapter(name: str, adapter, exchange_id: str,
 
 def test_binance():
     adapter = BinanceAdapter()
-    _test_adapter("Binance", adapter, "binance")
+    return _test_adapter("Binance", adapter, "binance")
 
 def test_bitget():
     adapter = BitgetAdapter()
-    _test_adapter("Bitget", adapter, "bitget",
-                  risk_cap_key="order_cap_usdt", risk_cap=10_000,
-                  buy_symbol="BTC/USDT", buy_qty=0.001, buy_price=60_000)
+    return _test_adapter("Bitget", adapter, "bitget",
+                         risk_cap_key="order_cap_usdt", risk_cap=10_000,
+                         buy_symbol="BTC/USDT", buy_qty=0.001, buy_price=60_000)
 
 def test_upbit():
     adapter = UpbitAdapter()
-    _test_adapter("Upbit", adapter, "upbit")
+    return _test_adapter("Upbit", adapter, "upbit")
 
 def test_kis():
     adapter = KISAdapter(account_no="50123456-01")
-    _test_adapter("KIS", adapter, "kis",
-                  risk_cap_key="order_cap_krw", risk_cap=50_000_000,
-                  buy_symbol="005930/KRW", buy_qty=10, buy_price=70_000)
+    return _test_adapter("KIS", adapter, "kis",
+                         risk_cap_key="order_cap_krw", risk_cap=50_000_000,
+                         buy_symbol="005930/KRW", buy_qty=10, buy_price=70_000)
 
 def test_kiwoom():
     adapter = KiwoomAdapter(account_no="1234567890")
-    _test_adapter("Kiwoom", adapter, "kiwoom",
-                  risk_cap_key="order_cap_krw", risk_cap=50_000_000,
-                  buy_symbol="005930/KRW", buy_qty=10, buy_price=70_000)
+    return _test_adapter("Kiwoom", adapter, "kiwoom",
+                         risk_cap_key="order_cap_krw", risk_cap=50_000_000,
+                         buy_symbol="005930/KRW", buy_qty=10, buy_price=70_000)
 
 
 # ─────────────────────────────────────────────────────────────────────────── #
@@ -212,6 +215,7 @@ def test_dispatcher_all_adapters():
         t = asyncio.run(dispatcher.dispatch(cmd))
         assert t.succeeded, f"Dispatcher {exch} failed: {t.error}"
         results.append(f"  {exch} dispatch  OK")
+    return results
 
 
 def test_upbit_symbol_conversion():
@@ -219,18 +223,21 @@ def test_upbit_symbol_conversion():
     assert UpbitAdapter._to_upbit_symbol("BTC/KRW") == "KRW-BTC"
     assert UpbitAdapter._to_upbit_symbol("ETH/KRW") == "KRW-ETH"
     assert UpbitAdapter._from_upbit_symbol("KRW-BTC") == "BTC/KRW"
+    return ["  Upbit symbol conversion  OK"]
 
 
 def test_kis_code_conversion():
     """KIS code conversion: 005930/KRW → 005930."""
     assert KISAdapter._to_kis_code("005930/KRW") == "005930"
     assert KISAdapter._to_kis_code("005930") == "005930"
+    return ["  KIS code conversion  OK"]
 
 
 def test_kiwoom_code_conversion():
     """Kiwoom code conversion: 005930/KRW → 005930."""
     assert KiwoomAdapter._to_kiwoom_code("005930/KRW") == "005930"
     assert KiwoomAdapter._to_kiwoom_code("005930") == "005930"
+    return ["  Kiwoom code conversion  OK"]
 
 
 # ─────────────────────────────────────────────────────────────────────────── #

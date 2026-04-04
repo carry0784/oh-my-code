@@ -14,7 +14,7 @@ Responsibilities:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 
 from kdexter.audit.evidence_store import EvidenceBundle, EvidenceStore
@@ -40,7 +40,7 @@ class ExecutionResult:
     transcript: Optional[CommandTranscript] = None
     success: bool = False
     error: Optional[str] = None
-    executed_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    executed_at: datetime = field(default_factory=datetime.utcnow)
 
 
 # ------------------------------------------------------------------ #

@@ -29,7 +29,7 @@ from __future__ import annotations
 import asyncio
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 from typing import Optional, Callable, Awaitable
 
@@ -71,7 +71,7 @@ class StrategyCandidate:
     description: str = ""
     parameters: dict = field(default_factory=dict)   # strategy parameters
     source: str = "MUTATION"    # "MUTATION" | "LLM" | "CROSSOVER"
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=datetime.utcnow)
 
 
 @dataclass
@@ -98,13 +98,13 @@ class EvoResult:
     candidates_gate_passed: int = 0
     promoted_candidate_id: Optional[str] = None
     error: Optional[str] = None
-    started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    started_at: datetime = field(default_factory=datetime.utcnow)
     completed_at: Optional[datetime] = None
 
     def finish(self, phase: EvoPhase, error: Optional[str] = None) -> None:
         self.phase_reached = phase
         self.error = error
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.utcnow()
 
 
 # ─────────────────────────────────────────────────────────────────────────── #

@@ -27,7 +27,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import IntEnum
 from typing import Optional, Callable, Awaitable, Protocol
 
@@ -51,7 +51,7 @@ TIMEOUT_EVOLUTION_DEFER_SECONDS: float = 300.0
 @dataclass(order=True)
 class LoopTask:
     priority: LoopPriority
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc), compare=False)
+    created_at: datetime = field(default_factory=datetime.utcnow, compare=False)
     task_id: str = field(default="", compare=False)
     coro: Optional[Callable[[], Awaitable[None]]] = field(default=None, compare=False)
 
@@ -100,7 +100,7 @@ class RuleLedgerLock:
     async def acquire(self, requester: LoopPriority) -> None:
         await self._lock.acquire()
         self._holder = requester
-        self._acquired_at = datetime.now(timezone.utc)
+        self._acquired_at = datetime.utcnow()
 
     def release(self) -> None:
         self._holder = None
@@ -115,7 +115,7 @@ class RuleLedgerLock:
     def held_duration_seconds(self) -> float:
         if self._acquired_at is None:
             return 0.0
-        return (datetime.now(timezone.utc) - self._acquired_at).total_seconds()
+        return (datetime.utcnow() - self._acquired_at).total_seconds()
 
     def is_held(self) -> bool:
         return self._lock.locked()
@@ -143,7 +143,7 @@ class DeadlockDetector:
 
     def notify_main_waiting(self) -> None:
         if self._main_waiting_since is None:
-            self._main_waiting_since = datetime.now(timezone.utc)
+            self._main_waiting_since = datetime.utcnow()
 
     def notify_main_acquired(self) -> None:
         self._main_waiting_since = None
@@ -159,7 +159,7 @@ class DeadlockDetector:
             return False
         if self._main_waiting_since is None:
             return False
-        elapsed = (datetime.now(timezone.utc) - self._main_waiting_since).total_seconds()
+        elapsed = (datetime.utcnow() - self._main_waiting_since).total_seconds()
         return elapsed > self._timeout
 
 
@@ -175,7 +175,7 @@ class EvolutionDeferGuard:
 
     def start_deferral(self) -> None:
         if self._deferred_since is None:
-            self._deferred_since = datetime.now(timezone.utc)
+            self._deferred_since = datetime.utcnow()
 
     def clear_deferral(self) -> None:
         self._deferred_since = None
@@ -183,7 +183,7 @@ class EvolutionDeferGuard:
     def is_exceeded(self) -> bool:
         if self._deferred_since is None:
             return False
-        elapsed = (datetime.now(timezone.utc) - self._deferred_since).total_seconds()
+        elapsed = (datetime.utcnow() - self._deferred_since).total_seconds()
         return elapsed > self._timeout
 
 
@@ -207,7 +207,7 @@ class OrchestratorEvent:
     kind: str                               # e.g. "DEADLOCK", "EVOLUTION_DEFER_EXCEEDED"
     loop: Optional[LoopPriority]
     message: str
-    occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    occurred_at: datetime = field(default_factory=datetime.utcnow)
 
 
 HumanOverrideCallback = Callable[[OrchestratorEvent], Awaitable[None]]
@@ -455,7 +455,7 @@ class LoopCounter:
             incident_id: unique ID for the current incident/session
         """
         ceiling = get_loop_ceiling(loop_name)
-        now = datetime.now(timezone.utc)
+        now = datetime.utcnow()
         day_key = (now.strftime("%Y-%m-%d"), loop_name)
         week_key = (now.strftime("%Y-W%W"), loop_name)
 
@@ -486,7 +486,7 @@ class LoopCounter:
 
     def counts(self, loop_name: str, incident_id: str) -> dict[str, int]:
         """Return current activation counts for a given loop and incident."""
-        now = datetime.now(timezone.utc)
+        now = datetime.utcnow()
         day_key = (now.strftime("%Y-%m-%d"), loop_name)
         week_key = (now.strftime("%Y-W%W"), loop_name)
         return {

@@ -50,17 +50,6 @@ async def agent_status():
 
 if settings.debug and not settings.is_production:
 
-    @router.get("/governance/monitor")
-    async def get_governance_monitor():
-        """
-        G-MON: On-demand governance monitor report.
-        Returns 6-indicator snapshot (OK/WARN/FAIL).
-        Read-only. No state modification.
-        """
-        from app.core.governance_monitor import run_governance_monitor
-        report = run_governance_monitor()
-        return report.to_dict()
-
     @router.get("/governance/evidence")
     async def get_governance_evidence(
         request: Request,

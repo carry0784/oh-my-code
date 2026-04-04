@@ -9,7 +9,7 @@ Governance: B2 (governance_layer_map.md -- L25)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Optional
 
 
@@ -77,7 +77,7 @@ class SchedulerEngine:
         Returns:
             The registered ScheduledTask
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.utcnow()
         task = ScheduledTask(
             task_id=task_id,
             interval=interval_seconds,
@@ -128,7 +128,7 @@ class SchedulerEngine:
             KeyError: if task_id is not in the registry
         """
         task = self._tasks[task_id]
-        now = datetime.now(timezone.utc)
+        now = datetime.utcnow()
         task.last_run = now
         task.next_run = now + timedelta(seconds=task.interval)
 
@@ -154,7 +154,7 @@ class SchedulerEngine:
 
         Useful for polling loops that need to dispatch overdue tasks.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.utcnow()
         return [
             t for t in self._tasks.values()
             if t.active and t.next_run is not None and t.next_run <= now

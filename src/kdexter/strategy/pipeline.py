@@ -11,7 +11,7 @@ the MainLoop at RUNNING state via the run_execution hook.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 from typing import Optional
 
@@ -42,7 +42,7 @@ class PipelineResult:
     sizing_result: Optional[SizingResult] = None
     execution_result: Optional[ExecutionResult] = None
     error: Optional[str] = None
-    processed_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    processed_at: datetime = field(default_factory=datetime.utcnow)
 
 
 # ------------------------------------------------------------------ #
