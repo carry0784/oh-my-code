@@ -14,15 +14,17 @@ import os
 
 import pytest
 
-# Skip when kdexter package is not installed (CI test job uses requirements.txt only)
+# Skip when kdexter is not pip-installed (import may work via src/ path,
+# but metadata/packaging tests require actual pip install -e .)
 try:
-    import kdexter as _kdexter_check  # noqa: F401
-    _KDEXTER_INSTALLED = True
-except ImportError:
-    _KDEXTER_INSTALLED = False
+    from importlib.metadata import metadata as _meta
+    _meta("kdexter")
+    _KDEXTER_PIP_INSTALLED = True
+except Exception:
+    _KDEXTER_PIP_INSTALLED = False
 
 
-@pytest.mark.skipif(not _KDEXTER_INSTALLED, reason="kdexter not installed (use pip install -e .)")
+@pytest.mark.skipif(not _KDEXTER_PIP_INSTALLED, reason="kdexter not pip-installed (use pip install -e .)")
 class TestKdexterPackaging:
     """B-04: kdexter pip packaging verification."""
 
