@@ -14,11 +14,11 @@
 | 2 | dry_schedule_true | **true** | → false 전환 시 A 승인 | A |
 | 3 | dispatch_active | **false** | beat uncomment 후 true | A |
 | 4 | purge_active | **false** | 별도 A 승인 후 true | A |
-| 5 | rollback_verified | **false** | 구현 완료 후 true | 구현자 |
-| 6 | idempotency_verified | **false** | 테스트 PASS 후 true | 구현자 |
-| 7 | observability_verified | **false** | 10필드 구현 확인 후 true | 구현자 |
+| 5 | rollback_verified | **true** | 구현 완료 후 true | 구현자 |
+| 6 | idempotency_verified | **true** | 테스트 PASS 후 true | 구현자 |
+| 7 | observability_verified | **true** | 10필드 구현 확인 후 true | 구현자 |
 | 8 | dry_24h_clean | **false** | dry-schedule 24H 무오류 후 true | 구현자 + A |
-| 9 | consecutive_failures_zero | **false** | 연속 실패 0 확인 후 true | 구현자 |
+| 9 | consecutive_failures_zero | **true** | 연속 실패 0 확인 후 true | 구현자 |
 | 10 | schema_introduced | **true** | is_archived 컬럼 추가됨 | — |
 | 11 | schema_operationally_active | **false** | retention purge 미구현 | A |
 
@@ -40,13 +40,16 @@
 | 날짜 | 항목 | 변경 | 근거 |
 |------|------|------|------|
 | 2026-04-04 | 초기 생성 | 전체 초기값 설정 | RI-2A-2b 구현 착수 |
+| 2026-04-04 | rollback_verified / idempotency_verified / observability_verified / consecutive_failures_zero | false → true | 구현·테스트 완료 (completion_evidence §1 18/18, §3 Activation Block Table) |
+| 2026-04-04 | RI-2A-2b SEALED | Baseline v2.5 (5456/5456 PASS) 확정 | A 판정 ACCEPT · SEALED (completion_evidence §A 판정) |
 
 ---
 
 ```
-RI-2A-2b Activation Manifest v1.0
-Status: ALL BLOCKED (implementation phase)
-Beat enable: NOT ALLOWED
-DRY_SCHEDULE False: NOT ALLOWED
-Purge active: NOT ALLOWED
+RI-2A-2b Activation Manifest v1.1
+Status: SEALED phase — Activation BLOCKED
+Baseline: v2.5 (5456/5456 PASS)
+Beat enable: NOT ALLOWED (별도 A 승인 필요)
+DRY_SCHEDULE False: NOT ALLOWED (별도 A 승인 필요)
+Purge active: NOT ALLOWED (별도 A 승인 필요)
 ```
