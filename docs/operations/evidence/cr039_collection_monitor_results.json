@@ -1,0 +1,207 @@
+{
+  "generated_at": "2026-04-01T10:36:46.736585+00:00",
+  "config": {
+    "rounds": 3,
+    "interval_seconds": 5
+  },
+  "summary": {
+    "total_rounds": 3,
+    "duration_hours": 0.0,
+    "source_stats": {
+      "alternative_me": {
+        "total_checks": 3,
+        "successes": 3,
+        "failures": 0,
+        "success_rate": 1.0,
+        "avg_latency_ms": 589.0,
+        "label": "STABLE"
+      },
+      "binance_testnet": {
+        "total_checks": 3,
+        "successes": 0,
+        "failures": 3,
+        "success_rate": 0.0,
+        "avg_latency_ms": 0,
+        "label": "UNUSABLE"
+      },
+      "blockchain_com": {
+        "total_checks": 3,
+        "successes": 3,
+        "failures": 0,
+        "success_rate": 1.0,
+        "avg_latency_ms": 44.8,
+        "label": "STABLE"
+      },
+      "coingecko_global": {
+        "total_checks": 3,
+        "successes": 3,
+        "failures": 0,
+        "success_rate": 1.0,
+        "avg_latency_ms": 397.9,
+        "label": "STABLE"
+      },
+      "mempool_space_fees": {
+        "total_checks": 3,
+        "successes": 3,
+        "failures": 0,
+        "success_rate": 1.0,
+        "avg_latency_ms": 669.5,
+        "label": "STABLE"
+      },
+      "mempool_space_stats": {
+        "total_checks": 3,
+        "successes": 3,
+        "failures": 0,
+        "success_rate": 1.0,
+        "avg_latency_ms": 672.4,
+        "label": "STABLE"
+      }
+    },
+    "grade_distribution": {
+      "FULL": 0,
+      "PARTIAL": 3,
+      "DEGRADED": 0,
+      "UNUSABLE": 0,
+      "UNKNOWN": 0
+    },
+    "cadence": {
+      "avg_seconds": 6.3,
+      "max_seconds": 6.7,
+      "violations_gt_6min": 0
+    }
+  },
+  "rounds": [
+    {
+      "timestamp": "2026-04-01T10:36:33.152945+00:00",
+      "quality_grade": "PARTIAL",
+      "successful_sources": 5,
+      "total_sources": 6,
+      "sources": [
+        {
+          "source": "alternative_me",
+          "success": true,
+          "latency_ms": 599.3,
+          "error": null
+        },
+        {
+          "source": "blockchain_com",
+          "success": true,
+          "latency_ms": 75.3,
+          "error": null
+        },
+        {
+          "source": "mempool_space_fees",
+          "success": true,
+          "latency_ms": 692.6,
+          "error": null
+        },
+        {
+          "source": "mempool_space_stats",
+          "success": true,
+          "latency_ms": 701.8,
+          "error": null
+        },
+        {
+          "source": "coingecko_global",
+          "success": true,
+          "latency_ms": 645.5,
+          "error": null
+        },
+        {
+          "source": "binance_testnet",
+          "success": false,
+          "latency_ms": 642.7,
+          "error": "ExchangeNotAvailable: binance GET https://testnet.binance.vision/api/v3/exchangeInfo 502 Bad Gateway <html>\r\n<head><title>"
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-04-01T10:36:39.818615+00:00",
+      "quality_grade": "PARTIAL",
+      "successful_sources": 5,
+      "total_sources": 6,
+      "sources": [
+        {
+          "source": "alternative_me",
+          "success": true,
+          "latency_ms": 563.8,
+          "error": null
+        },
+        {
+          "source": "blockchain_com",
+          "success": true,
+          "latency_ms": 33.0,
+          "error": null
+        },
+        {
+          "source": "mempool_space_fees",
+          "success": true,
+          "latency_ms": 659.0,
+          "error": null
+        },
+        {
+          "source": "mempool_space_stats",
+          "success": true,
+          "latency_ms": 658.6,
+          "error": null
+        },
+        {
+          "source": "coingecko_global",
+          "success": true,
+          "latency_ms": 269.7,
+          "error": null
+        },
+        {
+          "source": "binance_testnet",
+          "success": false,
+          "latency_ms": 260.3,
+          "error": "ExchangeNotAvailable: binance GET https://testnet.binance.vision/api/v3/exchangeInfo 502 Bad Gateway <html>\r\n<head><title>"
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-04-01T10:36:45.742662+00:00",
+      "quality_grade": "PARTIAL",
+      "successful_sources": 5,
+      "total_sources": 6,
+      "sources": [
+        {
+          "source": "alternative_me",
+          "success": true,
+          "latency_ms": 603.8,
+          "error": null
+        },
+        {
+          "source": "blockchain_com",
+          "success": true,
+          "latency_ms": 26.0,
+          "error": null
+        },
+        {
+          "source": "mempool_space_fees",
+          "success": true,
+          "latency_ms": 656.9,
+          "error": null
+        },
+        {
+          "source": "mempool_space_stats",
+          "success": true,
+          "latency_ms": 656.7,
+          "error": null
+        },
+        {
+          "source": "coingecko_global",
+          "success": true,
+          "latency_ms": 278.6,
+          "error": null
+        },
+        {
+          "source": "binance_testnet",
+          "success": false,
+          "latency_ms": 332.9,
+          "error": "ExchangeNotAvailable: binance GET https://testnet.binance.vision/api/v3/exchangeInfo 502 Bad Gateway <html>\r\n<head><title>"
+        }
+      ]
+    }
+  ]
+}

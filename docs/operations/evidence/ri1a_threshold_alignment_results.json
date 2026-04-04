@@ -1,0 +1,325 @@
+{
+  "run_id": "RI1A-ALIGN-20260403-134137",
+  "run_timestamp": "2026-04-03T13:41:37.370104+00:00",
+  "total_symbols": 30,
+  "unique_symbols": 30,
+  "asset_class_distribution": {
+    "CRYPTO": 10,
+    "US_STOCK": 10,
+    "KR_STOCK": 10
+  },
+  "verdict_distribution": {
+    "qualified": 15,
+    "screen_failed": 5,
+    "data_rejected": 10
+  },
+  "comparison_distribution": {
+    "match": 20,
+    "insufficient_existing_data": 10
+  },
+  "verdict_match_rate": 1.0,
+  "fail_reason_match_rate": null,
+  "insufficient_rate": 0.3333333333333333,
+  "records": [
+    {
+      "symbol": "SOL/USDT",
+      "asset_class": "CRYPTO",
+      "sector": "layer1",
+      "shadow_verdict": "qualified",
+      "comparison_verdict": "match",
+      "input_fingerprint": "d69bd10e54ad9f12",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "crypto_golden_l1"
+    },
+    {
+      "symbol": "ETH/USDT",
+      "asset_class": "CRYPTO",
+      "sector": "layer1",
+      "shadow_verdict": "qualified",
+      "comparison_verdict": "match",
+      "input_fingerprint": "72acb51de0345b4e",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "crypto_golden_l1_eth"
+    },
+    {
+      "symbol": "AVAX/USDT",
+      "asset_class": "CRYPTO",
+      "sector": "layer1",
+      "shadow_verdict": "qualified",
+      "comparison_verdict": "match",
+      "input_fingerprint": "041817c6230550f5",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "crypto_golden_l1_avax"
+    },
+    {
+      "symbol": "UNI/USDT",
+      "asset_class": "CRYPTO",
+      "sector": "defi",
+      "shadow_verdict": "qualified",
+      "comparison_verdict": "match",
+      "input_fingerprint": "48f44c9c9c9e638f",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "crypto_defi_aligned"
+    },
+    {
+      "symbol": "FET/USDT",
+      "asset_class": "CRYPTO",
+      "sector": "ai",
+      "shadow_verdict": "qualified",
+      "comparison_verdict": "match",
+      "input_fingerprint": "466bbb988400630a",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "crypto_ai_aligned"
+    },
+    {
+      "symbol": "LINK/USDT",
+      "asset_class": "CRYPTO",
+      "sector": "infra",
+      "shadow_verdict": "qualified",
+      "comparison_verdict": "match",
+      "input_fingerprint": "94d2e160f7c227a4",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "crypto_infra_golden"
+    },
+    {
+      "symbol": "RENDER/USDT",
+      "asset_class": "CRYPTO",
+      "sector": "ai",
+      "shadow_verdict": "qualified",
+      "comparison_verdict": "match",
+      "input_fingerprint": "6552c62c19caeedd",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "crypto_ai_low_sharpe_aligned"
+    },
+    {
+      "symbol": "OBSCURE/USDT",
+      "asset_class": "CRYPTO",
+      "sector": "layer1",
+      "shadow_verdict": "screen_failed",
+      "comparison_verdict": "match",
+      "input_fingerprint": "161edaa7ee36a498",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "crypto_screen_fail"
+    },
+    {
+      "symbol": "DEAD/USDT",
+      "asset_class": "CRYPTO",
+      "sector": "layer1",
+      "shadow_verdict": "data_rejected",
+      "comparison_verdict": "insufficient_existing_data",
+      "input_fingerprint": "115655dcd97193c2",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "crypto_data_reject"
+    },
+    {
+      "symbol": "STALE/USDT",
+      "asset_class": "CRYPTO",
+      "sector": "defi",
+      "shadow_verdict": "data_rejected",
+      "comparison_verdict": "insufficient_existing_data",
+      "input_fingerprint": "c5598fdc909a4298",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "crypto_stale_reject"
+    },
+    {
+      "symbol": "NVDA",
+      "asset_class": "US_STOCK",
+      "sector": "tech",
+      "shadow_verdict": "qualified",
+      "comparison_verdict": "match",
+      "input_fingerprint": "0e876c62cbe3f1b1",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "us_tech_golden"
+    },
+    {
+      "symbol": "MSFT",
+      "asset_class": "US_STOCK",
+      "sector": "tech",
+      "shadow_verdict": "qualified",
+      "comparison_verdict": "match",
+      "input_fingerprint": "ba26546678b3abe3",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "us_tech_golden_msft"
+    },
+    {
+      "symbol": "AVGO",
+      "asset_class": "US_STOCK",
+      "sector": "tech",
+      "shadow_verdict": "qualified",
+      "comparison_verdict": "match",
+      "input_fingerprint": "c9e1a02fd7e923b5",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "us_tech_avgo"
+    },
+    {
+      "symbol": "LLY",
+      "asset_class": "US_STOCK",
+      "sector": "healthcare",
+      "shadow_verdict": "qualified",
+      "comparison_verdict": "match",
+      "input_fingerprint": "2b2f44292a81a1e2",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "us_healthcare_golden"
+    },
+    {
+      "symbol": "XOM",
+      "asset_class": "US_STOCK",
+      "sector": "energy",
+      "shadow_verdict": "qualified",
+      "comparison_verdict": "match",
+      "input_fingerprint": "956cacce7118be7d",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "us_energy_golden"
+    },
+    {
+      "symbol": "JPM",
+      "asset_class": "US_STOCK",
+      "sector": "finance",
+      "shadow_verdict": "qualified",
+      "comparison_verdict": "match",
+      "input_fingerprint": "bcc4df975c8289d2",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "us_finance_golden"
+    },
+    {
+      "symbol": "SMALL_US",
+      "asset_class": "US_STOCK",
+      "sector": "tech",
+      "shadow_verdict": "data_rejected",
+      "comparison_verdict": "insufficient_existing_data",
+      "input_fingerprint": "cdfb2563997e1507",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "us_screen_fail"
+    },
+    {
+      "symbol": "WEAK_US",
+      "asset_class": "US_STOCK",
+      "sector": "healthcare",
+      "shadow_verdict": "data_rejected",
+      "comparison_verdict": "insufficient_existing_data",
+      "input_fingerprint": "898fa0417ed66e7b",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "us_qual_fail"
+    },
+    {
+      "symbol": "NODATA_US",
+      "asset_class": "US_STOCK",
+      "sector": "tech",
+      "shadow_verdict": "data_rejected",
+      "comparison_verdict": "insufficient_existing_data",
+      "input_fingerprint": "feef83331c8745d2",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "us_data_reject"
+    },
+    {
+      "symbol": "MISMATCH_US",
+      "asset_class": "US_STOCK",
+      "sector": "tech",
+      "shadow_verdict": "data_rejected",
+      "comparison_verdict": "insufficient_existing_data",
+      "input_fingerprint": "e334bd06ddee3e68",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "us_verdict_mismatch"
+    },
+    {
+      "symbol": "005930",
+      "asset_class": "KR_STOCK",
+      "sector": "semiconductor",
+      "shadow_verdict": "qualified",
+      "comparison_verdict": "match",
+      "input_fingerprint": "1e67e75247baa6ad",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "kr_semi_golden"
+    },
+    {
+      "symbol": "000660",
+      "asset_class": "KR_STOCK",
+      "sector": "semiconductor",
+      "shadow_verdict": "qualified",
+      "comparison_verdict": "match",
+      "input_fingerprint": "becb960273db14a3",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "kr_semi_hynix"
+    },
+    {
+      "symbol": "035420",
+      "asset_class": "KR_STOCK",
+      "sector": "it",
+      "shadow_verdict": "screen_failed",
+      "comparison_verdict": "match",
+      "input_fingerprint": "2aecc72c4f05a681",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "kr_it_naver_aligned_screen_fail"
+    },
+    {
+      "symbol": "105560",
+      "asset_class": "KR_STOCK",
+      "sector": "kr_finance",
+      "shadow_verdict": "screen_failed",
+      "comparison_verdict": "match",
+      "input_fingerprint": "47e4bf78d44de1bc",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "kr_finance_kb_aligned_screen_fail"
+    },
+    {
+      "symbol": "005380",
+      "asset_class": "KR_STOCK",
+      "sector": "automotive",
+      "shadow_verdict": "screen_failed",
+      "comparison_verdict": "match",
+      "input_fingerprint": "bb8e8fdd6f7c750f",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "kr_auto_hyundai_aligned_screen_fail"
+    },
+    {
+      "symbol": "000270",
+      "asset_class": "KR_STOCK",
+      "sector": "automotive",
+      "shadow_verdict": "screen_failed",
+      "comparison_verdict": "match",
+      "input_fingerprint": "ac13477191f2be23",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "kr_auto_kia_aligned_screen_fail"
+    },
+    {
+      "symbol": "SMALL_KR",
+      "asset_class": "KR_STOCK",
+      "sector": "it",
+      "shadow_verdict": "data_rejected",
+      "comparison_verdict": "insufficient_existing_data",
+      "input_fingerprint": "84b41d173b8182a0",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "kr_screen_fail"
+    },
+    {
+      "symbol": "STALE_KR",
+      "asset_class": "KR_STOCK",
+      "sector": "semiconductor",
+      "shadow_verdict": "data_rejected",
+      "comparison_verdict": "insufficient_existing_data",
+      "input_fingerprint": "c895d78c9416ec7d",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "kr_stale_reject"
+    },
+    {
+      "symbol": "MISMATCH_KR",
+      "asset_class": "KR_STOCK",
+      "sector": "kr_finance",
+      "shadow_verdict": "data_rejected",
+      "comparison_verdict": "insufficient_existing_data",
+      "input_fingerprint": "885c448fadcdbaaa",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "kr_verdict_mismatch"
+    },
+    {
+      "symbol": "NODATA_KR",
+      "asset_class": "KR_STOCK",
+      "sector": "it",
+      "shadow_verdict": "data_rejected",
+      "comparison_verdict": "insufficient_existing_data",
+      "input_fingerprint": "385e8f2a3f243464",
+      "shadow_timestamp": "2026-04-03T13:41:37.370104+00:00",
+      "scenario": "kr_data_reject"
+    }
+  ]
+}

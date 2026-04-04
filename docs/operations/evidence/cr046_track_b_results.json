@@ -1,0 +1,232 @@
+{
+  "track": "B",
+  "asset": "ETH/USDT",
+  "strategy": "SMC+MACD",
+  "generated_at": "2026-04-01T09:40:27.088433+00:00",
+  "data_bars": 4320,
+  "phases": {
+    "B-1": {
+      "phase": "B-1",
+      "description": "In-sample baseline (full 6mo)",
+      "smc_macd": {
+        "indicator": "SMC+MACD",
+        "total_trades": 34,
+        "winning_trades": 14,
+        "losing_trades": 20,
+        "win_rate": 41.18,
+        "total_return_pct": 3.02,
+        "max_drawdown_pct": 28.14,
+        "avg_trade_pct": 0.1616,
+        "sharpe_ratio": 0.6639,
+        "profit_factor": 1.0947
+      },
+      "smc_wavetrend": {
+        "indicator": "SMC+WaveTrend",
+        "total_trades": 33,
+        "winning_trades": 9,
+        "losing_trades": 24,
+        "win_rate": 27.27,
+        "total_return_pct": -25.06,
+        "max_drawdown_pct": 33.81,
+        "avg_trade_pct": -0.8156,
+        "sharpe_ratio": -3.8814,
+        "profit_factor": 0.6031
+      },
+      "macd_only": {
+        "indicator": "MACD_only",
+        "total_trades": 355,
+        "winning_trades": 123,
+        "losing_trades": 232,
+        "win_rate": 34.65,
+        "total_return_pct": -37.04,
+        "max_drawdown_pct": 48.4,
+        "avg_trade_pct": -0.1041,
+        "sharpe_ratio": -0.716,
+        "profit_factor": 0.8893
+      },
+      "smc_only": {
+        "indicator": "SMC_only",
+        "total_trades": 137,
+        "winning_trades": 52,
+        "losing_trades": 85,
+        "win_rate": 37.96,
+        "total_return_pct": 17.35,
+        "max_drawdown_pct": 37.89,
+        "avg_trade_pct": 0.1752,
+        "sharpe_ratio": 0.8093,
+        "profit_factor": 1.1228
+      },
+      "buy_and_hold_return_pct": -52.59,
+      "checks": {
+        "smc_macd_sharpe_gt_0": 1,
+        "smc_macd_pf_gt_1": 1,
+        "smc_macd_beats_bnh": 1
+      },
+      "status": "PASS"
+    },
+    "B-2": {
+      "phase": "B-2",
+      "description": "OOS (4mo/2mo) + purged CV (5-fold, 48-bar embargo)",
+      "oos": {
+        "split_idx": 2880,
+        "total_bars": 4320,
+        "oos_bars": 1440,
+        "indicator": "SMC+MACD_OOS",
+        "total_trades": 10,
+        "winning_trades": 4,
+        "losing_trades": 6,
+        "win_rate": 40.0,
+        "total_return_pct": 1.37,
+        "max_drawdown_pct": 8.2,
+        "avg_trade_pct": 0.2169,
+        "sharpe_ratio": 0.8525,
+        "profit_factor": 1.1203
+      },
+      "purged_cv": {
+        "n_folds": 5,
+        "embargo_bars": 48,
+        "folds": [
+          {
+            "fold": 1,
+            "test_range": [
+              0,
+              864
+            ],
+            "embargo_bars": 48,
+            "sharpe_ratio": 20.0214,
+            "profit_factor": 12.1974,
+            "total_trades": 7,
+            "total_return_pct": 26.57,
+            "win_rate": 85.71,
+            "pass": 1
+          },
+          {
+            "fold": 2,
+            "test_range": [
+              864,
+              1728
+            ],
+            "embargo_bars": 48,
+            "sharpe_ratio": -33.0295,
+            "profit_factor": 0.0,
+            "total_trades": 5,
+            "total_return_pct": -15.49,
+            "win_rate": 0.0,
+            "pass": 0
+          },
+          {
+            "fold": 3,
+            "test_range": [
+              1728,
+              2592
+            ],
+            "embargo_bars": 48,
+            "sharpe_ratio": -7.4069,
+            "profit_factor": 0.3673,
+            "total_trades": 10,
+            "total_return_pct": -11.79,
+            "win_rate": 30.0,
+            "pass": 0
+          },
+          {
+            "fold": 4,
+            "test_range": [
+              2592,
+              3456
+            ],
+            "embargo_bars": 48,
+            "sharpe_ratio": -1.3419,
+            "profit_factor": 0.839,
+            "total_trades": 6,
+            "total_return_pct": -2.03,
+            "win_rate": 33.33,
+            "pass": 0
+          },
+          {
+            "fold": 5,
+            "test_range": [
+              3456,
+              4320
+            ],
+            "embargo_bars": 48,
+            "sharpe_ratio": 3.7495,
+            "profit_factor": 1.6414,
+            "total_trades": 6,
+            "total_return_pct": 5.74,
+            "win_rate": 50.0,
+            "pass": 1
+          }
+        ],
+        "folds_passing": 2,
+        "stability_threshold": 4,
+        "stability_pass": false
+      },
+      "checks": {
+        "oos_sharpe_gt_0": 1,
+        "oos_pf_gt_1": 1,
+        "cv_stability_ge_4of5": false
+      },
+      "status": "FAIL"
+    },
+    "B-3": {
+      "phase": "B-3",
+      "description": "Execution realism (slippage 0.05%, 1-bar delay, fee 0.1%, worst-case)",
+      "slippage_005pct": {
+        "indicator": "SMC+MACD_slip",
+        "total_trades": 34,
+        "winning_trades": 14,
+        "losing_trades": 20,
+        "win_rate": 41.18,
+        "total_return_pct": -0.42,
+        "max_drawdown_pct": 29.58,
+        "avg_trade_pct": 0.0616,
+        "sharpe_ratio": 0.253,
+        "profit_factor": 1.0349
+      },
+      "one_bar_delay": {
+        "indicator": "SMC+MACD_delay",
+        "total_trades": 35,
+        "winning_trades": 16,
+        "losing_trades": 19,
+        "win_rate": 45.71,
+        "total_return_pct": 19.75,
+        "max_drawdown_pct": 20.72,
+        "avg_trade_pct": 0.5894,
+        "sharpe_ratio": 2.4348,
+        "profit_factor": 1.3914
+      },
+      "high_fee_01pct": {
+        "indicator": "SMC+MACD_highfee",
+        "total_trades": 34,
+        "winning_trades": 14,
+        "losing_trades": 20,
+        "win_rate": 41.18,
+        "total_return_pct": 1.29,
+        "max_drawdown_pct": 28.86,
+        "avg_trade_pct": 0.1116,
+        "sharpe_ratio": 0.4585,
+        "profit_factor": 1.0643
+      },
+      "worst_case_combined": {
+        "indicator": "SMC+MACD_worstcase",
+        "total_trades": 35,
+        "winning_trades": 16,
+        "losing_trades": 19,
+        "win_rate": 45.71,
+        "total_return_pct": 13.65,
+        "max_drawdown_pct": 23.09,
+        "avg_trade_pct": 0.4394,
+        "sharpe_ratio": 1.8151,
+        "profit_factor": 1.2768
+      },
+      "checks": {
+        "slippage_sharpe_gt_0": 1,
+        "delay_sharpe_gt_0": 1,
+        "highfee_sharpe_gt_0": 1,
+        "worstcase_sharpe_gt_0": 1
+      },
+      "status": "PASS"
+    }
+  },
+  "overall_verdict": "NO-GO"
+}
