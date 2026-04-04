@@ -13,6 +13,7 @@ Tests the calibrated threshold band system:
 
 Run: pytest tests/test_threshold_calibration.py -v
 """
+
 import sys
 import json
 from pathlib import Path
@@ -26,16 +27,32 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services.order_service", "app.services.position_service",
-    "app.services.signal_service", "ccxt", "ccxt.async_support",
-    "redis", "celery", "asyncpg",
-    "kdexter", "kdexter.ledger", "kdexter.ledger.forbidden_ledger",
-    "kdexter.audit", "kdexter.audit.evidence_store",
-    "kdexter.state_machine", "kdexter.state_machine.security_state",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
+    "kdexter",
+    "kdexter.ledger",
+    "kdexter.ledger.forbidden_ledger",
+    "kdexter.audit",
+    "kdexter.audit.evidence_store",
+    "kdexter.state_machine",
+    "kdexter.state_machine.security_state",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -70,23 +87,33 @@ from app.services.operator_decision_service import (
 
 # -- Helpers ---------------------------------------------------------------- #
 
+
 def _now_iso():
     return datetime.now(timezone.utc).isoformat()
 
+
 def _past_iso(seconds_ago):
     return (datetime.now(timezone.utc) - timedelta(seconds=seconds_ago)).isoformat()
+
 
 class _FakeLedger:
     def __init__(self, proposals=None, stale_count=0):
         self._data = proposals or []
         self._stale_count = stale_count
+
     def get_proposals(self):
         return self._data
+
     def get_board(self):
         return {
-            "total": len(self._data), "receipted_count": 0, "blocked_count": 0,
-            "failed_count": 0, "orphan_count": 0, "stale_count": self._stale_count,
-            "stale_threshold_seconds": 600.0, "guard_reason_top": [],
+            "total": len(self._data),
+            "receipted_count": 0,
+            "blocked_count": 0,
+            "failed_count": 0,
+            "orphan_count": 0,
+            "stale_count": self._stale_count,
+            "stale_threshold_seconds": 600.0,
+            "guard_reason_top": [],
         }
 
 
@@ -94,8 +121,8 @@ class _FakeLedger:
 # AXIS 1: Band Boundary Precision                                              #
 # =========================================================================== #
 
-class TestBandBoundary:
 
+class TestBandBoundary:
     def test_below_1_5x_is_watch(self):
         """age < 1.5x threshold → WATCH."""
         # 800s / 600s = 1.33x → WATCH
@@ -145,8 +172,8 @@ class TestBandBoundary:
 # AXIS 2: Band Label in Explanation                                            #
 # =========================================================================== #
 
-class TestBandLabel:
 
+class TestBandLabel:
     def test_early_band_label(self):
         """Multiplier < 1.5 → band=early."""
         assert _classify_stale_band(1.2) == "early"
@@ -168,34 +195,50 @@ class TestBandLabel:
     def test_explanation_contains_band(self):
         """Stale explanation includes band= marker."""
         explanation = _build_explanation(
-            ACTION_WATCH, "STALE_AGENT",
-            is_stale=True, is_orphan=False,
-            stale_age_seconds=700, threshold=600, tier="agent",
+            ACTION_WATCH,
+            "STALE_AGENT",
+            is_stale=True,
+            is_orphan=False,
+            stale_age_seconds=700,
+            threshold=600,
+            tier="agent",
         )
         assert "band=early" in explanation
 
     def test_explanation_review_band(self):
         explanation = _build_explanation(
-            ACTION_REVIEW, "STALE_AGENT",
-            is_stale=True, is_orphan=False,
-            stale_age_seconds=1200, threshold=600, tier="agent",
+            ACTION_REVIEW,
+            "STALE_AGENT",
+            is_stale=True,
+            is_orphan=False,
+            stale_age_seconds=1200,
+            threshold=600,
+            tier="agent",
         )
         assert "band=review" in explanation
 
     def test_explanation_prolonged_band(self):
         explanation = _build_explanation(
-            ACTION_REVIEW, "STALE_AGENT",
-            is_stale=True, is_orphan=False,
-            stale_age_seconds=2000, threshold=600, tier="agent",
+            ACTION_REVIEW,
+            "STALE_AGENT",
+            is_stale=True,
+            is_orphan=False,
+            stale_age_seconds=2000,
+            threshold=600,
+            tier="agent",
         )
         assert "band=prolonged" in explanation
 
     def test_explanation_orphan_no_band(self):
         """Orphan-only explanation should not contain band=."""
         explanation = _build_explanation(
-            ACTION_REVIEW, "ORPHAN_EXEC_PARENT",
-            is_stale=False, is_orphan=True,
-            stale_age_seconds=0, threshold=600, tier="execution",
+            ACTION_REVIEW,
+            "ORPHAN_EXEC_PARENT",
+            is_stale=False,
+            is_orphan=True,
+            stale_age_seconds=0,
+            threshold=600,
+            tier="execution",
         )
         assert "band=" not in explanation
 
@@ -204,8 +247,8 @@ class TestBandLabel:
 # AXIS 3: Threshold Constants Correctness                                      #
 # =========================================================================== #
 
-class TestThresholdConstants:
 
+class TestThresholdConstants:
     def test_watch_upper_is_1_5(self):
         assert THRESHOLD_WATCH_UPPER == 1.5
 
@@ -224,14 +267,14 @@ class TestThresholdConstants:
 # AXIS 4: Cross-layer Impact                                                   #
 # =========================================================================== #
 
-class TestCrossLayerImpact:
 
+class TestCrossLayerImpact:
     def test_early_stale_produces_watch_monitor(self):
         """Stale at 1.2x → WATCH → LOW pressure → MONITOR posture."""
         # 720s / 600s = 1.2x → WATCH → LOW
-        action = _FakeLedger([
-            {"proposal_id": "AP-1", "status": "GUARDED", "created_at": _past_iso(720)}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "GUARDED", "created_at": _past_iso(720)}]
+        )
         decision = build_decision_summary(action)
         assert decision.recommended_posture == POSTURE_MONITOR
         assert decision.risk_level == RISK_LOW
@@ -239,26 +282,28 @@ class TestCrossLayerImpact:
     def test_review_stale_produces_review_posture(self):
         """Stale at 2x → REVIEW → MODERATE pressure → REVIEW posture."""
         # 1200s / 600s = 2.0x → REVIEW → MODERATE
-        action = _FakeLedger([
-            {"proposal_id": "AP-1", "status": "GUARDED", "created_at": _past_iso(1200)}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "GUARDED", "created_at": _past_iso(1200)}]
+        )
         decision = build_decision_summary(action)
         assert decision.recommended_posture == POSTURE_REVIEW
 
     def test_multiple_review_increases_risk(self):
         """3+ REVIEW candidates → MEDIUM risk."""
-        action = _FakeLedger([
-            {"proposal_id": f"AP-{i}", "status": "GUARDED", "created_at": _past_iso(1200)}
-            for i in range(4)
-        ])
+        action = _FakeLedger(
+            [
+                {"proposal_id": f"AP-{i}", "status": "GUARDED", "created_at": _past_iso(1200)}
+                for i in range(4)
+            ]
+        )
         decision = build_decision_summary(action)
         assert decision.risk_level == RISK_MEDIUM
 
     def test_safety_preserved_through_calibration(self):
         """Safety labels unchanged regardless of threshold changes."""
-        action = _FakeLedger([
-            {"proposal_id": "AP-1", "status": "GUARDED", "created_at": _past_iso(3000)}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "GUARDED", "created_at": _past_iso(3000)}]
+        )
         decision = build_decision_summary(action)
         assert decision.action_allowed is False
         assert decision.suggestion_only is True
@@ -269,14 +314,16 @@ class TestCrossLayerImpact:
 # AXIS 5: Reason Chain Action Distribution                                     #
 # =========================================================================== #
 
-class TestReasonChainDistribution:
 
+class TestReasonChainDistribution:
     def test_reason_chain_has_action_counts(self):
         """Reason chain includes action class distribution."""
-        action = _FakeLedger([
-            {"proposal_id": "AP-w", "status": "GUARDED", "created_at": _past_iso(700)},
-            {"proposal_id": "AP-r", "status": "GUARDED", "created_at": _past_iso(1200)},
-        ])
+        action = _FakeLedger(
+            [
+                {"proposal_id": "AP-w", "status": "GUARDED", "created_at": _past_iso(700)},
+                {"proposal_id": "AP-r", "status": "GUARDED", "created_at": _past_iso(1200)},
+            ]
+        )
         decision = build_decision_summary(action)
         chain_str = " ".join(decision.reason_chain)
         assert "action_WATCH=" in chain_str or "action_REVIEW=" in chain_str
@@ -294,13 +341,17 @@ class TestReasonChainDistribution:
 # AXIS 6: Safety Invariants Preserved                                          #
 # =========================================================================== #
 
-class TestSafetyInvariants:
 
+class TestSafetyInvariants:
     def test_no_new_action_class(self):
         """Calibration did not introduce new action classes."""
         from app.services.cleanup_simulation_service import (
-            ACTION_INFO, ACTION_WATCH, ACTION_REVIEW, ACTION_MANUAL,
+            ACTION_INFO,
+            ACTION_WATCH,
+            ACTION_REVIEW,
+            ACTION_MANUAL,
         )
+
         known = {ACTION_INFO, ACTION_WATCH, ACTION_REVIEW, ACTION_MANUAL}
         assert len(known) == 4
 
@@ -312,13 +363,14 @@ class TestSafetyInvariants:
         assert _determine_action_class(True, True, 6000, 600) == ACTION_MANUAL
 
     def test_simulation_only_flag(self):
-        action = _FakeLedger([
-            {"proposal_id": "AP-1", "status": "GUARDED", "created_at": _past_iso(1200)}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "GUARDED", "created_at": _past_iso(1200)}]
+        )
         report = simulate_cleanup(action_ledger=action)
         assert report.simulation_only is True
 
     def test_board_action_allowed_false(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.decision_summary.safety.action_allowed is False

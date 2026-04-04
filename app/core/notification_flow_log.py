@@ -11,6 +11,7 @@ Design:
   - Fail-closed: store errors never propagate
   - Read-only query interface
 """
+
 from __future__ import annotations
 
 from collections import deque
@@ -25,6 +26,7 @@ DEFAULT_MAX_ENTRIES = 50
 @dataclass
 class FlowLogEntry:
     """Compact summary of one notification flow execution."""
+
     log_id: str = ""
     executed_at: str = ""
     routing_ok: bool = False

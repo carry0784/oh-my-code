@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -31,23 +40,28 @@ def _make_manager() -> StrategyLifecycleManager:
 def _register_and_advance(manager: StrategyLifecycleManager, gid: str) -> None:
     """Register a genome and walk it to PAPER_TRADING state."""
     manager.register(gid)
-    manager.request_transition(TransitionRequest(
-        genome_id=gid,
-        from_state=StrategyState.CANDIDATE,
-        to_state=StrategyState.VALIDATED,
-        reason="test",
-    ))
-    manager.request_transition(TransitionRequest(
-        genome_id=gid,
-        from_state=StrategyState.VALIDATED,
-        to_state=StrategyState.PAPER_TRADING,
-        reason="test",
-    ))
+    manager.request_transition(
+        TransitionRequest(
+            genome_id=gid,
+            from_state=StrategyState.CANDIDATE,
+            to_state=StrategyState.VALIDATED,
+            reason="test",
+        )
+    )
+    manager.request_transition(
+        TransitionRequest(
+            genome_id=gid,
+            from_state=StrategyState.VALIDATED,
+            to_state=StrategyState.PAPER_TRADING,
+            reason="test",
+        )
+    )
 
 
 # ---------------------------------------------------------------------------
 # test_register_creates_candidate
 # ---------------------------------------------------------------------------
+
 
 def test_register_creates_candidate():
     manager = _make_manager()
@@ -64,16 +78,19 @@ def test_register_creates_candidate():
 # test_valid_transition_succeeds
 # ---------------------------------------------------------------------------
 
+
 def test_valid_transition_succeeds():
     manager = _make_manager()
     manager.register("g2")
 
-    ok = manager.request_transition(TransitionRequest(
-        genome_id="g2",
-        from_state=StrategyState.CANDIDATE,
-        to_state=StrategyState.VALIDATED,
-        reason="passed_checks",
-    ))
+    ok = manager.request_transition(
+        TransitionRequest(
+            genome_id="g2",
+            from_state=StrategyState.CANDIDATE,
+            to_state=StrategyState.VALIDATED,
+            reason="passed_checks",
+        )
+    )
 
     assert ok is True
     assert manager.get_state("g2").current_state == StrategyState.VALIDATED
@@ -83,16 +100,19 @@ def test_valid_transition_succeeds():
 # test_invalid_transition_rejected — CANDIDATE → PROMOTED not allowed
 # ---------------------------------------------------------------------------
 
+
 def test_invalid_transition_rejected():
     manager = _make_manager()
     manager.register("g3")
 
-    ok = manager.request_transition(TransitionRequest(
-        genome_id="g3",
-        from_state=StrategyState.CANDIDATE,
-        to_state=StrategyState.PROMOTED,
-        reason="skip_steps",
-    ))
+    ok = manager.request_transition(
+        TransitionRequest(
+            genome_id="g3",
+            from_state=StrategyState.CANDIDATE,
+            to_state=StrategyState.PROMOTED,
+            reason="skip_steps",
+        )
+    )
 
     assert ok is False
     # State must remain CANDIDATE
@@ -103,16 +123,19 @@ def test_invalid_transition_rejected():
 # test_state_mismatch_rejected — request from_state doesn't match current
 # ---------------------------------------------------------------------------
 
+
 def test_state_mismatch_rejected():
     manager = _make_manager()
     manager.register("g4")
     # genome is CANDIDATE, but request claims from_state=VALIDATED
-    ok = manager.request_transition(TransitionRequest(
-        genome_id="g4",
-        from_state=StrategyState.VALIDATED,
-        to_state=StrategyState.PAPER_TRADING,
-        reason="wrong_from_state",
-    ))
+    ok = manager.request_transition(
+        TransitionRequest(
+            genome_id="g4",
+            from_state=StrategyState.VALIDATED,
+            to_state=StrategyState.PAPER_TRADING,
+            reason="wrong_from_state",
+        )
+    )
 
     assert ok is False
     assert manager.get_state("g4").current_state == StrategyState.CANDIDATE
@@ -122,25 +145,30 @@ def test_state_mismatch_rejected():
 # test_retired_is_terminal — no transitions out of RETIRED
 # ---------------------------------------------------------------------------
 
+
 def test_retired_is_terminal():
     manager = _make_manager()
     manager.register("g5")
     # Retire from CANDIDATE (allowed)
-    manager.request_transition(TransitionRequest(
-        genome_id="g5",
-        from_state=StrategyState.CANDIDATE,
-        to_state=StrategyState.RETIRED,
-        reason="initial_retire",
-    ))
+    manager.request_transition(
+        TransitionRequest(
+            genome_id="g5",
+            from_state=StrategyState.CANDIDATE,
+            to_state=StrategyState.RETIRED,
+            reason="initial_retire",
+        )
+    )
     assert manager.get_state("g5").current_state == StrategyState.RETIRED
 
     # Attempt any transition from RETIRED — must fail
-    ok = manager.request_transition(TransitionRequest(
-        genome_id="g5",
-        from_state=StrategyState.RETIRED,
-        to_state=StrategyState.CANDIDATE,
-        reason="zombie",
-    ))
+    ok = manager.request_transition(
+        TransitionRequest(
+            genome_id="g5",
+            from_state=StrategyState.RETIRED,
+            to_state=StrategyState.CANDIDATE,
+            reason="zombie",
+        )
+    )
 
     assert ok is False
     assert manager.get_state("g5").current_state == StrategyState.RETIRED
@@ -150,16 +178,19 @@ def test_retired_is_terminal():
 # test_promotion_increments_count
 # ---------------------------------------------------------------------------
 
+
 def test_promotion_increments_count():
     manager = _make_manager()
     _register_and_advance(manager, "g6")
 
-    manager.request_transition(TransitionRequest(
-        genome_id="g6",
-        from_state=StrategyState.PAPER_TRADING,
-        to_state=StrategyState.PROMOTED,
-        reason="good_fitness",
-    ))
+    manager.request_transition(
+        TransitionRequest(
+            genome_id="g6",
+            from_state=StrategyState.PAPER_TRADING,
+            to_state=StrategyState.PROMOTED,
+            reason="good_fitness",
+        )
+    )
 
     record = manager.get_state("g6")
     assert record.current_state == StrategyState.PROMOTED
@@ -170,16 +201,19 @@ def test_promotion_increments_count():
 # test_demotion_increments_count
 # ---------------------------------------------------------------------------
 
+
 def test_demotion_increments_count():
     manager = _make_manager()
     _register_and_advance(manager, "g7")
 
-    manager.request_transition(TransitionRequest(
-        genome_id="g7",
-        from_state=StrategyState.PAPER_TRADING,
-        to_state=StrategyState.DEMOTED,
-        reason="underperformance",
-    ))
+    manager.request_transition(
+        TransitionRequest(
+            genome_id="g7",
+            from_state=StrategyState.PAPER_TRADING,
+            to_state=StrategyState.DEMOTED,
+            reason="underperformance",
+        )
+    )
 
     record = manager.get_state("g7")
     assert record.current_state == StrategyState.DEMOTED
@@ -190,17 +224,20 @@ def test_demotion_increments_count():
 # test_auto_retire — retires all listed genome_ids that are retirable
 # ---------------------------------------------------------------------------
 
+
 def test_auto_retire():
     manager = _make_manager()
     for gid in ["r1", "r2", "r3"]:
         manager.register(gid)
     # Advance r3 to RETIRED already — should be skipped
-    manager.request_transition(TransitionRequest(
-        genome_id="r3",
-        from_state=StrategyState.CANDIDATE,
-        to_state=StrategyState.RETIRED,
-        reason="pre_retired",
-    ))
+    manager.request_transition(
+        TransitionRequest(
+            genome_id="r3",
+            from_state=StrategyState.CANDIDATE,
+            to_state=StrategyState.RETIRED,
+            reason="pre_retired",
+        )
+    )
 
     retired = manager.auto_retire(["r1", "r2", "r3"], reason="batch_retire")
 

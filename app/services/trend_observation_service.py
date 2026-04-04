@@ -19,6 +19,7 @@ Safety:
   - No future estimation or extrapolation
   - No judgment language
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -46,7 +47,9 @@ _TEMPLATE_NO_BUFFER = "No snapshot buffer available."
 _TEMPLATE_INSUFFICIENT = "Insufficient history for comparison."
 _TEMPLATE_WAITING = "Waiting for comparison window ({samples} snapshot(s) available)."
 _TEMPLATE_STABLE = "{name}: {current} (stable vs. previous window)."
-_TEMPLATE_CHANGE = "{name}: {previous} in previous window, {current} in current window (delta: {delta:+d})."
+_TEMPLATE_CHANGE = (
+    "{name}: {previous} in previous window, {current} in current window (delta: {delta:+d})."
+)
 
 # Density templates
 _DENSITY_NONE = "No trend data available."
@@ -55,6 +58,7 @@ _DENSITY_AVAILABLE = "{tracked} metric(s) compared. {changed} changed vs. previo
 
 
 # -- Public API --------------------------------------------------------------- #
+
 
 def build_trend_observation(
     snapshot_buffer: Optional["MetricSnapshotBuffer"] = None,
@@ -75,7 +79,8 @@ def build_trend_observation(
 
     now = datetime.now(timezone.utc)
     current_snaps, previous_snaps = snapshot_buffer.get_windows(
-        window_minutes=_WINDOW_MINUTES, now=now,
+        window_minutes=_WINDOW_MINUTES,
+        now=now,
     )
 
     since_startup = snapshot_buffer.started_at.isoformat()
@@ -87,26 +92,41 @@ def build_trend_observation(
 
     # -- Build metric comparisons ----------------------------------------- #
     blocked = _build_comparison(
-        "blocked_total", current_snaps, previous_snaps,
-        both_sufficient, now,
+        "blocked_total",
+        current_snaps,
+        previous_snaps,
+        both_sufficient,
+        now,
     )
     pending_retry = _build_comparison(
-        "pending_retry_total", current_snaps, previous_snaps,
-        both_sufficient, now,
+        "pending_retry_total",
+        current_snaps,
+        previous_snaps,
+        both_sufficient,
+        now,
     )
     review = _build_comparison(
-        "review_total", current_snaps, previous_snaps,
-        both_sufficient, now,
+        "review_total",
+        current_snaps,
+        previous_snaps,
+        both_sufficient,
+        now,
     )
     watch = _build_comparison(
-        "watch_total", current_snaps, previous_snaps,
-        both_sufficient, now,
+        "watch_total",
+        current_snaps,
+        previous_snaps,
+        both_sufficient,
+        now,
     )
 
     # -- Density signal --------------------------------------------------- #
     all_comparisons = [blocked, pending_retry, review, watch]
     density = _build_density_signal(
-        all_comparisons, both_sufficient, since_startup, snapshot_buffer.count,
+        all_comparisons,
+        both_sufficient,
+        since_startup,
+        snapshot_buffer.count,
     )
 
     return TrendObservationSchema(
@@ -121,6 +141,7 @@ def build_trend_observation(
 
 
 # -- Comparison builder ------------------------------------------------------- #
+
 
 def _build_comparison(
     metric_name: str,
@@ -160,7 +181,8 @@ def _build_comparison(
             previous_window=previous_window,
             insufficient_data=True,
             description=_TEMPLATE_WAITING.format(samples=total_samples)
-            if total_samples > 0 else _TEMPLATE_INSUFFICIENT,
+            if total_samples > 0
+            else _TEMPLATE_INSUFFICIENT,
         )
 
     current_val = current_window.value
@@ -170,7 +192,8 @@ def _build_comparison(
 
     if direction == "stable":
         description = _TEMPLATE_STABLE.format(
-            name=metric_name, current=current_val,
+            name=metric_name,
+            current=current_val,
         )
     else:
         description = _TEMPLATE_CHANGE.format(
@@ -192,6 +215,7 @@ def _build_comparison(
 
 
 # -- Density signal ---------------------------------------------------------- #
+
 
 def _build_density_signal(
     comparisons: list[MetricComparison],
@@ -221,12 +245,14 @@ def _build_density_signal(
         metrics_with_change=changed,
         since_startup=since_startup,
         description=_DENSITY_AVAILABLE.format(
-            tracked=len(comparisons), changed=changed,
+            tracked=len(comparisons),
+            changed=changed,
         ),
     )
 
 
 # -- Helpers ----------------------------------------------------------------- #
+
 
 def _last_value(snapshots: list, metric_name: str) -> int:
     """Get the last (most recent) snapshot value for a metric."""

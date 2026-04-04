@@ -7,6 +7,7 @@ and end-to-end cycle execution.
 
 Run: python -X utf8 tests/test_bootstrap.py
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -35,6 +36,7 @@ def run(coro):
 # ======================================================================== #
 # 1. Wiring
 # ======================================================================== #
+
 
 def test_wire_creates_all_components():
     sys_ = SystemBootstrap()
@@ -89,6 +91,7 @@ def test_wire_sets_flag():
 # 2. Engine wiring verification
 # ======================================================================== #
 
+
 def test_engines_wired():
     sys_ = SystemBootstrap()
     sys_.wire()
@@ -140,6 +143,7 @@ def test_cost_controller_starts_empty():
 # ======================================================================== #
 # 3. Layer registry bindings
 # ======================================================================== #
+
 
 def test_layer_l15_is_drift_engine():
     sys_ = SystemBootstrap()
@@ -193,6 +197,7 @@ def test_layer_l28_is_loop_monitor():
 # 4. End-to-end cycle
 # ======================================================================== #
 
+
 def test_cycle_success():
     """Full MainLoop cycle through bootstrap with real hooks."""
     sys_ = SystemBootstrap()
@@ -204,8 +209,9 @@ def test_cycle_success():
         auto_approve=True,
     )
     result = run(sys_.run_cycle(inp))
-    assert result.outcome == CycleOutcome.SUCCESS, \
+    assert result.outcome == CycleOutcome.SUCCESS, (
         f"Expected SUCCESS, got {result.outcome}: {result.error}"
+    )
     assert result.final_state == WorkStateEnum.DRAFT  # returned to DRAFT
     print("  [15] Full cycle SUCCESS through bootstrap  OK")
 
@@ -278,19 +284,19 @@ def test_multiple_cycles():
 
     for i in range(3):
         inp = CycleInput(
-            intent=f"Multi-cycle test {i+1}",
-            spec_twin_id=f"SPEC-MULTI-{i+1:03d}",
+            intent=f"Multi-cycle test {i + 1}",
+            spec_twin_id=f"SPEC-MULTI-{i + 1:03d}",
             auto_approve=True,
         )
         result = run(sys_.run_cycle(inp))
-        assert result.outcome == CycleOutcome.SUCCESS, \
-            f"Cycle {i+1} failed: {result.error}"
+        assert result.outcome == CycleOutcome.SUCCESS, f"Cycle {i + 1} failed: {result.error}"
     print("  [20] 3 sequential cycles all SUCCESS  OK")
 
 
 # ======================================================================== #
 # 5. Hooks verification
 # ======================================================================== #
+
 
 def test_hook_conflict_check_with_conflicting_rules():
     """Conflict hook should detect rule conflicts."""
@@ -342,6 +348,7 @@ def test_hook_budget_exceeded():
 # ======================================================================== #
 # 6. New layer bindings (L22, L27, L18, L23, L24, L25, L30, L8)
 # ======================================================================== #
+
 
 def test_layer_l22_is_spec_lock():
     sys_ = SystemBootstrap()
@@ -403,6 +410,7 @@ def test_layer_l8_is_execution_cell():
 # 7. Strategy pipeline wiring
 # ======================================================================== #
 
+
 def test_strategy_pipeline_wired():
     sys_ = SystemBootstrap()
     sys_.wire()
@@ -445,53 +453,74 @@ if __name__ == "__main__":
     print("=" * 60)
 
     tests = [
-        ("Wiring", [
-            test_wire_creates_all_components,
-            test_wire_binds_layers,
-            test_wire_registry_summary,
-            test_wire_sets_flag,
-        ]),
-        ("Engine Wiring", [
-            test_engines_wired,
-            test_trust_engine_has_system_component,
-            test_conflict_engine_checks_rule_ledger,
-            test_cost_controller_starts_empty,
-        ]),
-        ("Layer Bindings", [
-            test_layer_l15_is_drift_engine,
-            test_layer_l16_is_conflict_engine,
-            test_layer_l19_is_trust_engine,
-            test_layer_l21_is_completion_engine,
-            test_layer_l29_is_cost_controller,
-            test_layer_l28_is_loop_monitor,
-        ]),
-        ("End-to-End Cycles", [
-            test_cycle_success,
-            test_cycle_produces_evidence,
-            test_cycle_updates_trust,
-            test_summary,
-            test_cycle_blocked_by_security_lockdown,
-            test_multiple_cycles,
-        ]),
-        ("Hook Verification", [
-            test_hook_conflict_check_with_conflicting_rules,
-            test_hook_budget_exceeded,
-        ]),
-        ("New Layer Bindings", [
-            test_layer_l22_is_spec_lock,
-            test_layer_l27_is_override_controller,
-            test_layer_l18_is_budget_evolution,
-            test_layer_l23_is_research_engine,
-            test_layer_l24_is_knowledge_engine,
-            test_layer_l25_is_scheduler_engine,
-            test_layer_l30_is_progress_engine,
-            test_layer_l8_is_execution_cell,
-        ]),
-        ("Strategy Pipeline", [
-            test_strategy_pipeline_wired,
-            test_signal_queue_exists,
-            test_cycle_with_spec_lock,
-        ]),
+        (
+            "Wiring",
+            [
+                test_wire_creates_all_components,
+                test_wire_binds_layers,
+                test_wire_registry_summary,
+                test_wire_sets_flag,
+            ],
+        ),
+        (
+            "Engine Wiring",
+            [
+                test_engines_wired,
+                test_trust_engine_has_system_component,
+                test_conflict_engine_checks_rule_ledger,
+                test_cost_controller_starts_empty,
+            ],
+        ),
+        (
+            "Layer Bindings",
+            [
+                test_layer_l15_is_drift_engine,
+                test_layer_l16_is_conflict_engine,
+                test_layer_l19_is_trust_engine,
+                test_layer_l21_is_completion_engine,
+                test_layer_l29_is_cost_controller,
+                test_layer_l28_is_loop_monitor,
+            ],
+        ),
+        (
+            "End-to-End Cycles",
+            [
+                test_cycle_success,
+                test_cycle_produces_evidence,
+                test_cycle_updates_trust,
+                test_summary,
+                test_cycle_blocked_by_security_lockdown,
+                test_multiple_cycles,
+            ],
+        ),
+        (
+            "Hook Verification",
+            [
+                test_hook_conflict_check_with_conflicting_rules,
+                test_hook_budget_exceeded,
+            ],
+        ),
+        (
+            "New Layer Bindings",
+            [
+                test_layer_l22_is_spec_lock,
+                test_layer_l27_is_override_controller,
+                test_layer_l18_is_budget_evolution,
+                test_layer_l23_is_research_engine,
+                test_layer_l24_is_knowledge_engine,
+                test_layer_l25_is_scheduler_engine,
+                test_layer_l30_is_progress_engine,
+                test_layer_l8_is_execution_cell,
+            ],
+        ),
+        (
+            "Strategy Pipeline",
+            [
+                test_strategy_pipeline_wired,
+                test_signal_queue_exists,
+                test_cycle_with_spec_lock,
+            ],
+        ),
     ]
 
     total = 0

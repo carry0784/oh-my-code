@@ -28,21 +28,22 @@ class IndicatorSet(BaseModel):
 
 class OnChainData(BaseModel):
     """Free on-chain indicators from Blockchain.com + Mempool.space."""
+
     # Blockchain.com (free, no key)
-    hash_rate: float | None = None          # TH/s — miner confidence
-    difficulty: float | None = None          # network difficulty
-    tx_count_24h: int | None = None          # daily transaction count
-    mempool_size: int | None = None          # unconfirmed tx count
-    avg_block_size: float | None = None      # bytes — network load
+    hash_rate: float | None = None  # TH/s — miner confidence
+    difficulty: float | None = None  # network difficulty
+    tx_count_24h: int | None = None  # daily transaction count
+    mempool_size: int | None = None  # unconfirmed tx count
+    avg_block_size: float | None = None  # bytes — network load
 
     # Mempool.space (free, no key)
-    mempool_fee_fast: float | None = None    # sat/vB — fastest confirm
+    mempool_fee_fast: float | None = None  # sat/vB — fastest confirm
     mempool_fee_medium: float | None = None  # sat/vB — ~30min confirm
-    mempool_fee_slow: float | None = None    # sat/vB — ~1h confirm
-    mempool_vsize: float | None = None       # MB — mempool total vsize
+    mempool_fee_slow: float | None = None  # sat/vB — ~1h confirm
+    mempool_vsize: float | None = None  # MB — mempool total vsize
 
     # CoinGecko (free, no key)
-    btc_dominance: float | None = None       # % — BTC market dominance
+    btc_dominance: float | None = None  # % — BTC market dominance
     total_market_cap_usd: float | None = None
     total_volume_24h_usd: float | None = None
 

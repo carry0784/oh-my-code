@@ -29,10 +29,14 @@ def sync_all_positions():
                         continue
 
                     symbol = pos_data.get("symbol")
-                    existing = session.query(Position).filter(
-                        Position.exchange == exchange_name,
-                        Position.symbol == symbol,
-                    ).first()
+                    existing = (
+                        session.query(Position)
+                        .filter(
+                            Position.exchange == exchange_name,
+                            Position.symbol == symbol,
+                        )
+                        .first()
+                    )
 
                     if existing:
                         existing.quantity = abs(contracts)
@@ -42,7 +46,9 @@ def sync_all_positions():
                         position = Position(
                             exchange=exchange_name,
                             symbol=symbol,
-                            side=PositionSide.LONG if pos_data.get("side") == "long" else PositionSide.SHORT,
+                            side=PositionSide.LONG
+                            if pos_data.get("side") == "long"
+                            else PositionSide.SHORT,
                             quantity=abs(contracts),
                             entry_price=pos_data.get("entryPrice", 0),
                             current_price=pos_data.get("markPrice", 0),

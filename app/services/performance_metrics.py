@@ -19,11 +19,12 @@ RISK_FREE_RATE = 0.04  # 4% annual (T-bill proxy)
 @dataclass
 class TradeRecord:
     """Single trade result."""
+
     entry_price: float
     exit_price: float
     side: str  # "long" or "short"
     quantity: float = 1.0
-    entry_time: int = 0   # Unix timestamp
+    entry_time: int = 0  # Unix timestamp
     exit_time: int = 0
     fee_pct: float = 0.001  # 0.1% per side
 
@@ -47,6 +48,7 @@ class TradeRecord:
 @dataclass
 class PerformanceReport:
     """Complete performance metrics report."""
+
     total_trades: int = 0
     winning_trades: int = 0
     losing_trades: int = 0
@@ -102,7 +104,9 @@ class PerformanceCalculator:
         losses = pnls[pnls <= 0]
         report.winning_trades = len(wins)
         report.losing_trades = len(losses)
-        report.win_rate = report.winning_trades / report.total_trades if report.total_trades > 0 else 0
+        report.win_rate = (
+            report.winning_trades / report.total_trades if report.total_trades > 0 else 0
+        )
 
         # PnL stats
         report.total_pnl = float(np.sum(pnls))
@@ -113,7 +117,13 @@ class PerformanceCalculator:
         # Profit factor
         gross_profit = float(np.sum(wins)) if len(wins) > 0 else 0.0
         gross_loss = abs(float(np.sum(losses))) if len(losses) > 0 else 0.0
-        report.profit_factor = gross_profit / gross_loss if gross_loss > 0 else float("inf") if gross_profit > 0 else 0.0
+        report.profit_factor = (
+            gross_profit / gross_loss
+            if gross_loss > 0
+            else float("inf")
+            if gross_profit > 0
+            else 0.0
+        )
 
         # Return stats
         return_pcts = np.array([t.return_pct for t in trades])
@@ -143,10 +153,7 @@ class PerformanceCalculator:
                 report.calmar_ratio = ann_return / abs(report.max_drawdown_pct)
 
         # Holding period (if timestamps available)
-        holding_times = [
-            t.exit_time - t.entry_time for t in trades
-            if t.exit_time > t.entry_time
-        ]
+        holding_times = [t.exit_time - t.entry_time for t in trades if t.exit_time > t.entry_time]
         if holding_times:
             report.avg_holding_periods = float(np.mean(holding_times))
 

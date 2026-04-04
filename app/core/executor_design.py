@@ -80,6 +80,7 @@ def validate_execution_preconditions(
     approval_symbol = approval.get("target_symbol") if approval else None
     try:
         from app.schemas.operator_approval_schema import ApprovalScope
+
         apr_scope = ExecutionScope(approval_scope_str)
     except (ValueError, KeyError):
         apr_scope = ExecutionScope.NO_EXECUTION
@@ -116,10 +117,14 @@ def validate_execution_preconditions(
         state=state,
         execution_scope=execution_scope,
         target_symbol=target_symbol,
-        evidence_chain=chain or EvidenceChainRef(
-            check_id="missing", preflight_id="missing",
-            gate_snapshot_id="missing", approval_id="missing",
-            approval_receipt_hash="missing", policy_snapshot_id="missing",
+        evidence_chain=chain
+        or EvidenceChainRef(
+            check_id="missing",
+            preflight_id="missing",
+            gate_snapshot_id="missing",
+            approval_id="missing",
+            approval_receipt_hash="missing",
+            policy_snapshot_id="missing",
             policy_decision="missing",
         ),
         fail_reasons=fail_reasons,
@@ -135,20 +140,26 @@ def validate_execution_preconditions(
 # Collectors (read-only)
 # ---------------------------------------------------------------------------
 
+
 def _collect_approval() -> dict | None:
     try:
         from app.core.operator_approval import issue_approval
         from app.schemas.operator_approval_schema import ApprovalScope, ApprovalDecision
+
         # Read latest — don't issue new one, just check state
         from app.core.execution_policy import _get_latest_approval
+
         receipt = _get_latest_approval()
         if receipt is None:
             return None
         from app.core.operator_approval import validate_approval_current
+
         return {
             "approved": receipt.decision == ApprovalDecision.APPROVED,
             "expired": not validate_approval_current(receipt),
-            "scope": receipt.approval_scope.value if hasattr(receipt.approval_scope, "value") else str(receipt.approval_scope),
+            "scope": receipt.approval_scope.value
+            if hasattr(receipt.approval_scope, "value")
+            else str(receipt.approval_scope),
             "target_symbol": receipt.target_symbol,
             "approval_id": receipt.approval_id,
             "receipt_hash": "",
@@ -160,6 +171,7 @@ def _collect_approval() -> dict | None:
 def _collect_policy() -> dict | None:
     try:
         from app.core.execution_policy import evaluate_execution_policy
+
         result = evaluate_execution_policy()
         return {
             "decision": result.decision.value,
@@ -171,7 +183,8 @@ def _collect_policy() -> dict | None:
 
 
 def _build_evidence_chain(
-    approval: dict | None, policy: dict | None,
+    approval: dict | None,
+    policy: dict | None,
 ) -> EvidenceChainRef | None:
     try:
         return EvidenceChainRef(
@@ -188,15 +201,19 @@ def _build_evidence_chain(
 
 
 def _store_execution_evidence(
-    execution_id: str, state: ExecutionState,
-    fail_reasons: list, now: datetime,
+    execution_id: str,
+    state: ExecutionState,
+    fail_reasons: list,
+    now: datetime,
 ) -> str:
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate is None or not hasattr(gate, "evidence_store"):
             return f"fallback-exe-{uuid.uuid4().hex[:8]}"
         from kdexter.audit.evidence_store import EvidenceBundle
+
         bundle = EvidenceBundle(
             bundle_id=execution_id,
             created_at=now,

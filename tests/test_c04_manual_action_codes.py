@@ -17,48 +17,56 @@ import pytest
 # ===========================================================================
 
 # 12 Block Codes — pre-execution blocking (실행 이전 차단)
-BLOCK_CODES = frozenset({
-    "MANUAL_ACTION_DISABLED",
-    "PREVIEW_MISSING",
-    "PIPELINE_NOT_READY",
-    "PREFLIGHT_NOT_READY",
-    "GATE_CLOSED",
-    "APPROVAL_REQUIRED",
-    "POLICY_BLOCKED",
-    "RISK_NOT_OK",
-    "AUTH_NOT_OK",
-    "SCOPE_NOT_OK",
-    "EVIDENCE_MISSING",
-    "TRACE_INCOMPLETE",
-})
+BLOCK_CODES = frozenset(
+    {
+        "MANUAL_ACTION_DISABLED",
+        "PREVIEW_MISSING",
+        "PIPELINE_NOT_READY",
+        "PREFLIGHT_NOT_READY",
+        "GATE_CLOSED",
+        "APPROVAL_REQUIRED",
+        "POLICY_BLOCKED",
+        "RISK_NOT_OK",
+        "AUTH_NOT_OK",
+        "SCOPE_NOT_OK",
+        "EVIDENCE_MISSING",
+        "TRACE_INCOMPLETE",
+    }
+)
 
 # 4 Fail Codes — post-execution failure (실행 진입 후 실패)
-FAIL_CODES = frozenset({
-    "EXECUTION_REJECTED",
-    "EXECUTION_FAILED",
-    "PARTIAL_FAILURE",
-    "RESULT_UNKNOWN",
-})
+FAIL_CODES = frozenset(
+    {
+        "EXECUTION_REJECTED",
+        "EXECUTION_FAILED",
+        "PARTIAL_FAILURE",
+        "RESULT_UNKNOWN",
+    }
+)
 
 # Block codes that map to 9-stage chain failures
-CHAIN_BLOCK_CODES = frozenset({
-    "PIPELINE_NOT_READY",
-    "PREFLIGHT_NOT_READY",
-    "GATE_CLOSED",
-    "APPROVAL_REQUIRED",
-    "POLICY_BLOCKED",
-    "RISK_NOT_OK",
-    "AUTH_NOT_OK",
-    "SCOPE_NOT_OK",
-    "EVIDENCE_MISSING",
-})
+CHAIN_BLOCK_CODES = frozenset(
+    {
+        "PIPELINE_NOT_READY",
+        "PREFLIGHT_NOT_READY",
+        "GATE_CLOSED",
+        "APPROVAL_REQUIRED",
+        "POLICY_BLOCKED",
+        "RISK_NOT_OK",
+        "AUTH_NOT_OK",
+        "SCOPE_NOT_OK",
+        "EVIDENCE_MISSING",
+    }
+)
 
 # Sentinel block codes (not tied to specific chain stage)
-SENTINEL_BLOCK_CODES = frozenset({
-    "MANUAL_ACTION_DISABLED",
-    "PREVIEW_MISSING",
-    "TRACE_INCOMPLETE",
-})
+SENTINEL_BLOCK_CODES = frozenset(
+    {
+        "MANUAL_ACTION_DISABLED",
+        "PREVIEW_MISSING",
+        "TRACE_INCOMPLETE",
+    }
+)
 
 
 # ===========================================================================
@@ -74,6 +82,7 @@ class TestC04BlockCodeRegistry:
     def test_block_codes_are_uppercase_snake(self):
         """모든 block code는 UPPERCASE_SNAKE_CASE 형식이어야 한다."""
         import re
+
         pattern = re.compile(r"^[A-Z][A-Z0-9_]+$")
         for code in BLOCK_CODES:
             assert pattern.match(code), f"Block code not UPPER_SNAKE: {code}"
@@ -110,6 +119,7 @@ class TestC04FailCodeRegistry:
     def test_fail_codes_are_uppercase_snake(self):
         """모든 fail code는 UPPERCASE_SNAKE_CASE 형식이어야 한다."""
         import re
+
         pattern = re.compile(r"^[A-Z][A-Z0-9_]+$")
         for code in FAIL_CODES:
             assert pattern.match(code), f"Fail code not UPPER_SNAKE: {code}"
@@ -157,9 +167,7 @@ class TestC04CodeBoundary:
         success_indicators = {"SUCCESS", "COMPLETED", "DONE", "PASSED", "ALLOWED"}
         for code in BLOCK_CODES:
             for indicator in success_indicators:
-                assert indicator not in code, (
-                    f"Block code contains success indicator: {code}"
-                )
+                assert indicator not in code, f"Block code contains success indicator: {code}"
 
     def test_fail_codes_imply_execution_attempted(self):
         """Fail code는 실행이 시도되었음을 의미해야 한다.
@@ -167,9 +175,7 @@ class TestC04CodeBoundary:
         pre_execution_indicators = {"NOT_READY", "MISSING", "CLOSED", "BLOCKED", "DISABLED"}
         for code in FAIL_CODES:
             for indicator in pre_execution_indicators:
-                assert indicator not in code, (
-                    f"Fail code contains pre-execution indicator: {code}"
-                )
+                assert indicator not in code, f"Fail code contains pre-execution indicator: {code}"
 
     def test_combined_codes_cover_full_lifecycle(self):
         """Block + Fail 코드가 전체 실행 수명주기를 커버해야 한다."""

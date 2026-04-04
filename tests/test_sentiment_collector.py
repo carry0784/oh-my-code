@@ -5,10 +5,18 @@ from unittest.mock import MagicMock, patch
 
 # Stub external dependencies before imports
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support",
-    "celery", "redis", "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -63,9 +71,9 @@ class TestSentimentCollectorFearGreed:
     @pytest.mark.asyncio
     async def test_collect_fear_greed_success(self):
         responses = {
-            "alternative.me": _FakeResponse(200, {
-                "data": [{"value": "25", "value_classification": "Extreme Fear"}]
-            }),
+            "alternative.me": _FakeResponse(
+                200, {"data": [{"value": "25", "value_classification": "Extreme Fear"}]}
+            ),
             "blockchain.info/stats": _FakeResponse(200, {}),
             "mempool.space/api/v1/fees": _FakeResponse(200, {}),
             "mempool.space/api/mempool": _FakeResponse(200, {}),
@@ -84,9 +92,9 @@ class TestSentimentCollectorFearGreed:
     @pytest.mark.asyncio
     async def test_collect_fear_greed_greed(self):
         responses = {
-            "alternative.me": _FakeResponse(200, {
-                "data": [{"value": "75", "value_classification": "Greed"}]
-            }),
+            "alternative.me": _FakeResponse(
+                200, {"data": [{"value": "75", "value_classification": "Greed"}]}
+            ),
             "blockchain.info": _FakeResponse(200, {}),
             "mempool.space/api/v1/fees": _FakeResponse(200, {}),
             "mempool.space/api/mempool": _FakeResponse(200, {}),
@@ -142,13 +150,16 @@ class TestSentimentCollectorBlockchain:
     async def test_blockchain_stats_collected(self):
         responses = {
             "alternative.me": _FakeResponse(200, {"data": [{"value": "50"}]}),
-            "blockchain.info/stats": _FakeResponse(200, {
-                "hash_rate": 500_000_000_000_000,  # 500 TH/s after /1e9
-                "difficulty": 83_000_000_000_000,
-                "n_tx": 350000,
-                "n_tx_unconfirmed": 12000,
-                "blocks_size": 1500000,
-            }),
+            "blockchain.info/stats": _FakeResponse(
+                200,
+                {
+                    "hash_rate": 500_000_000_000_000,  # 500 TH/s after /1e9
+                    "difficulty": 83_000_000_000_000,
+                    "n_tx": 350000,
+                    "n_tx_unconfirmed": 12000,
+                    "blocks_size": 1500000,
+                },
+            ),
             "mempool.space/api/v1/fees": _FakeResponse(200, {}),
             "mempool.space/api/mempool": _FakeResponse(200, {}),
             "coingecko.com": _FakeResponse(200, {"data": {}}),
@@ -189,14 +200,20 @@ class TestSentimentCollectorMempool:
         responses = {
             "alternative.me": _FakeResponse(200, {"data": [{"value": "50"}]}),
             "blockchain.info": _FakeResponse(200, {}),
-            "mempool.space/api/v1/fees": _FakeResponse(200, {
-                "fastestFee": 45,
-                "halfHourFee": 30,
-                "hourFee": 15,
-            }),
-            "mempool.space/api/mempool": _FakeResponse(200, {
-                "vsize": 50_000_000,  # 50 MB
-            }),
+            "mempool.space/api/v1/fees": _FakeResponse(
+                200,
+                {
+                    "fastestFee": 45,
+                    "halfHourFee": 30,
+                    "hourFee": 15,
+                },
+            ),
+            "mempool.space/api/mempool": _FakeResponse(
+                200,
+                {
+                    "vsize": 50_000_000,  # 50 MB
+                },
+            ),
             "coingecko.com": _FakeResponse(200, {"data": {}}),
         }
         fake_session = _FakeSession(responses)
@@ -235,11 +252,16 @@ class TestSentimentCollectorCoinGecko:
             "blockchain.info": _FakeResponse(200, {}),
             "mempool.space/api/v1/fees": _FakeResponse(200, {}),
             "mempool.space/api/mempool": _FakeResponse(200, {}),
-            "coingecko.com": _FakeResponse(200, {"data": {
-                "market_cap_percentage": {"btc": 54.3},
-                "total_market_cap": {"usd": 2_500_000_000_000},
-                "total_volume": {"usd": 150_000_000_000},
-            }}),
+            "coingecko.com": _FakeResponse(
+                200,
+                {
+                    "data": {
+                        "market_cap_percentage": {"btc": 54.3},
+                        "total_market_cap": {"usd": 2_500_000_000_000},
+                        "total_volume": {"usd": 150_000_000_000},
+                    }
+                },
+            ),
         }
         fake_session = _FakeSession(responses)
 
@@ -274,25 +296,38 @@ class TestSentimentCollectorFullIntegration:
     @pytest.mark.asyncio
     async def test_all_sources_collected(self):
         responses = {
-            "alternative.me": _FakeResponse(200, {
-                "data": [{"value": "40", "value_classification": "Fear"}]
-            }),
-            "blockchain.info/stats": _FakeResponse(200, {
-                "hash_rate": 600_000_000_000_000,
-                "difficulty": 85_000_000_000_000,
-                "n_tx": 400000,
-                "n_tx_unconfirmed": 8000,
-                "blocks_size": 1200000,
-            }),
-            "mempool.space/api/v1/fees": _FakeResponse(200, {
-                "fastestFee": 35, "halfHourFee": 20, "hourFee": 10,
-            }),
+            "alternative.me": _FakeResponse(
+                200, {"data": [{"value": "40", "value_classification": "Fear"}]}
+            ),
+            "blockchain.info/stats": _FakeResponse(
+                200,
+                {
+                    "hash_rate": 600_000_000_000_000,
+                    "difficulty": 85_000_000_000_000,
+                    "n_tx": 400000,
+                    "n_tx_unconfirmed": 8000,
+                    "blocks_size": 1200000,
+                },
+            ),
+            "mempool.space/api/v1/fees": _FakeResponse(
+                200,
+                {
+                    "fastestFee": 35,
+                    "halfHourFee": 20,
+                    "hourFee": 10,
+                },
+            ),
             "mempool.space/api/mempool": _FakeResponse(200, {"vsize": 30_000_000}),
-            "coingecko.com": _FakeResponse(200, {"data": {
-                "market_cap_percentage": {"btc": 55.1},
-                "total_market_cap": {"usd": 2_800_000_000_000},
-                "total_volume": {"usd": 180_000_000_000},
-            }}),
+            "coingecko.com": _FakeResponse(
+                200,
+                {
+                    "data": {
+                        "market_cap_percentage": {"btc": 55.1},
+                        "total_market_cap": {"usd": 2_800_000_000_000},
+                        "total_volume": {"usd": 180_000_000_000},
+                    }
+                },
+            ),
         }
         fake_session = _FakeSession(responses)
 

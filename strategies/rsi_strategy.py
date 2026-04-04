@@ -48,8 +48,8 @@ class RSICrossStrategy(BaseStrategy):
         if len(gains) < self.rsi_period:
             return np.full(len(closes), 50.0)  # neutral if insufficient data
 
-        avg_gain[self.rsi_period - 1] = np.mean(gains[:self.rsi_period])
-        avg_loss[self.rsi_period - 1] = np.mean(losses[:self.rsi_period])
+        avg_gain[self.rsi_period - 1] = np.mean(gains[: self.rsi_period])
+        avg_loss[self.rsi_period - 1] = np.mean(losses[: self.rsi_period])
 
         for i in range(self.rsi_period, len(deltas)):
             avg_gain[i] = (avg_gain[i - 1] * (self.rsi_period - 1) + gains[i]) / self.rsi_period

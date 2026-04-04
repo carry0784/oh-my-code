@@ -17,6 +17,7 @@ Safety:
   - Simulation-only: no retry execution
   - No future estimation or scoring
 """
+
 from __future__ import annotations
 
 from collections import Counter

@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -42,8 +51,8 @@ def _make_performances(
     for genome, target in zip(population, fitness_values):
         # Use sharpe and win_rate to approximate desired fitness tier.
         # High target → high sharpe; enough trades to avoid penalty.
-        sharpe = target * 4.0          # target=1.0 → sharpe=4.0
-        win = 0.35 + target * 0.25    # range ~[0.35, 0.60]
+        sharpe = target * 4.0  # target=1.0 → sharpe=4.0
+        win = 0.35 + target * 0.25  # range ~[0.35, 0.60]
         performances[genome.id] = PerformanceReport(
             total_trades=20,
             winning_trades=int(20 * win),
@@ -141,7 +150,9 @@ def test_tournament_middle_bred_with_promoted():
 def test_tournament_bottom_double_mutated():
     pop = _make_population(8, seed=7)
     original_ids = {g.id for g in pop}
-    tournament = StrategyTournament(promote_ratio=0.25, mutate_ratio=0.25, eliminate_count=1, seed=7)
+    tournament = StrategyTournament(
+        promote_ratio=0.25, mutate_ratio=0.25, eliminate_count=1, seed=7
+    )
     fitnesses = [0.9, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
     performances = _make_performances(pop, fitnesses)
     result = tournament.run_tournament(pop, performances, generation=0)

@@ -17,6 +17,7 @@ Gate conditions:
   3. Global retry enabled flag must be true
   4. Max concurrent passes must not be exceeded
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict
@@ -26,6 +27,7 @@ from typing import Any
 @dataclass
 class GateDecision:
     """Result of retry policy gate evaluation."""
+
     allowed: bool
     reason: str
     pending_count: int = 0

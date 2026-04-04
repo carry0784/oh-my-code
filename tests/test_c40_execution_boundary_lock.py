@@ -39,7 +39,6 @@ SSOT_DEFINITION_FILE = EXECUTOR_PATH
 # C40-1: SSOT 존재 확인
 # ===========================================================================
 class TestC40SSOTExists:
-
     def test_execute_single_plan_defined(self):
         """execute_single_plan must exist as public function in C-31."""
         content = SSOT_DEFINITION_FILE.read_text(encoding="utf-8")
@@ -48,11 +47,13 @@ class TestC40SSOTExists:
     def test_execute_single_plan_is_public(self):
         """Must not start with underscore."""
         from app.core.retry_executor import execute_single_plan
+
         assert not execute_single_plan.__name__.startswith("_")
 
     def test_execute_single_plan_importable(self):
         """Must be importable from retry_executor."""
         from app.core.retry_executor import execute_single_plan
+
         assert callable(execute_single_plan)
 
     def test_reason_prefix_parameter(self):
@@ -65,13 +66,12 @@ class TestC40SSOTExists:
 # C40-2: C-38 orchestrator — sender 직접 호출 금지
 # ===========================================================================
 class TestC40OrchestratorBoundary:
-
     def test_no_get_sender_import(self):
         """C-38 must NOT import get_sender directly."""
         content = ORCHESTRATOR_PATH.read_text(encoding="utf-8")
-        lines = [l for l in content.split("\n")
-                 if "get_sender" in l
-                 and not l.strip().startswith("#")]
+        lines = [
+            l for l in content.split("\n") if "get_sender" in l and not l.strip().startswith("#")
+        ]
         assert len(lines) == 0, f"Direct get_sender usage found: {lines}"
 
     def test_no_send_webhook(self):
@@ -104,7 +104,6 @@ class TestC40OrchestratorBoundary:
 # C40-3: C-31 executor — SSOT 정의 파일 검수
 # ===========================================================================
 class TestC40ExecutorSSOT:
-
     def test_executor_defines_helper(self):
         content = EXECUTOR_PATH.read_text(encoding="utf-8")
         assert "def execute_single_plan(" in content
@@ -129,7 +128,6 @@ class TestC40ExecutorSSOT:
 # C40-4: notification_flow — sender 직접 호출 경계
 # ===========================================================================
 class TestC40FlowBoundary:
-
     def test_manual_retry_uses_executor(self):
         """run_manual_retry_pass must call execute_retry_pass, not sender."""
         content = FLOW_PATH.read_text(encoding="utf-8")
@@ -146,7 +144,6 @@ class TestC40FlowBoundary:
 # C40-5: bridge — sender 직접 호출 금지
 # ===========================================================================
 class TestC40BridgeBoundary:
-
     def test_bridge_no_sender_call(self):
         """Bridge must NOT call get_sender or send_notifications."""
         content = BRIDGE_PATH.read_text(encoding="utf-8")
@@ -165,7 +162,6 @@ class TestC40BridgeBoundary:
 # C40-6: operator endpoint — sender 직접 호출 금지
 # ===========================================================================
 class TestC40OperatorBoundary:
-
     def test_operator_no_sender(self):
         """Operator endpoint must NOT import sender directly."""
         content = OPERATOR_PATH.read_text(encoding="utf-8")
@@ -187,7 +183,6 @@ class TestC40OperatorBoundary:
 # C40-7: 전체 retry 계층 — execution 경로 단일성
 # ===========================================================================
 class TestC40ExecutionPathUnity:
-
     def test_only_executor_defines_single_plan(self):
         """execute_single_plan must be defined in exactly one file."""
         retry_files = list((PROJECT_ROOT / "app" / "core").glob("*.py"))
@@ -196,8 +191,9 @@ class TestC40ExecutionPathUnity:
             content = f.read_text(encoding="utf-8")
             if "def execute_single_plan(" in content:
                 defining_files.append(f.name)
-        assert defining_files == ["retry_executor.py"], \
+        assert defining_files == ["retry_executor.py"], (
             f"SSOT violation: defined in {defining_files}"
+        )
 
     def test_no_retry_layer_has_own_sender_execution(self):
         """No retry orchestration file should have its own sender call."""
@@ -210,27 +206,32 @@ class TestC40ExecutionPathUnity:
             if not fpath.exists():
                 continue
             content = fpath.read_text(encoding="utf-8")
-            lines = [l.strip() for l in content.split("\n")
-                     if ("get_sender" in l or "send_webhook" in l)
-                     and not l.strip().startswith("#")]
-            assert len(lines) == 0, \
-                f"Direct sender in {fpath.name}: {lines}"
+            lines = [
+                l.strip()
+                for l in content.split("\n")
+                if ("get_sender" in l or "send_webhook" in l) and not l.strip().startswith("#")
+            ]
+            assert len(lines) == 0, f"Direct sender in {fpath.name}: {lines}"
 
 
 # ===========================================================================
 # C40-8: 금지 조항 총합
 # ===========================================================================
 class TestC40ForbiddenSummary:
-
     def test_no_forbidden_in_retry_stack(self):
         """No retry stack file should have forbidden debug strings."""
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
         ]
         files = [
-            EXECUTOR_PATH, ORCHESTRATOR_PATH, BRIDGE_PATH,
-            OPERATOR_PATH, FLOW_PATH,
+            EXECUTOR_PATH,
+            ORCHESTRATOR_PATH,
+            BRIDGE_PATH,
+            OPERATOR_PATH,
+            FLOW_PATH,
         ]
         for fpath in files:
             if not fpath.exists():
@@ -238,17 +239,17 @@ class TestC40ForbiddenSummary:
             content = fpath.read_text(encoding="utf-8")
             body = content.split('"""', 2)[-1] if '"""' in content else content
             for f in forbidden:
-                assert f not in body, \
-                    f"Forbidden '{f}' in {fpath.name}"
+                assert f not in body, f"Forbidden '{f}' in {fpath.name}"
 
     def test_no_engine_in_retry_stack(self):
         files = [
-            EXECUTOR_PATH, ORCHESTRATOR_PATH, BRIDGE_PATH,
+            EXECUTOR_PATH,
+            ORCHESTRATOR_PATH,
+            BRIDGE_PATH,
             OPERATOR_PATH,
         ]
         for fpath in files:
             if not fpath.exists():
                 continue
             content = fpath.read_text(encoding="utf-8")
-            assert "src.kdexter" not in content, \
-                f"Engine import in {fpath.name}"
+            assert "src.kdexter" not in content, f"Engine import in {fpath.name}"

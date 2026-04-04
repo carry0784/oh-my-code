@@ -4,10 +4,20 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config", "structlog",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
+    "structlog",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -30,7 +40,7 @@ def optimizer():
 # Deterministic return series used across tests:
 # s1: low volatility  (step 0.001)
 # s2: high volatility (step 0.01)
-_LOW_VOL  = [0.001 * (1 if i % 2 == 0 else -1) for i in range(40)]
+_LOW_VOL = [0.001 * (1 if i % 2 == 0 else -1) for i in range(40)]
 _HIGH_VOL = [0.010 * (1 if i % 2 == 0 else -1) for i in range(40)]
 _RETURNS_2 = {"s1": _LOW_VOL, "s2": _HIGH_VOL}
 
@@ -44,6 +54,7 @@ _RETURNS_3 = {"sA": _POS_A, "sB": _POS_B, "sC": _POS_C}
 # ---------------------------------------------------------------------------
 # test_equal_weight
 # ---------------------------------------------------------------------------
+
 
 def test_equal_weight(optimizer):
     """N strategies each receive weight 1/N."""
@@ -59,6 +70,7 @@ def test_equal_weight(optimizer):
 # test_risk_parity_lower_vol_gets_more
 # ---------------------------------------------------------------------------
 
+
 def test_risk_parity_lower_vol_gets_more(optimizer):
     """In risk parity, the lower-volatility strategy receives a higher weight."""
     weights = optimizer.optimize_risk_parity(_RETURNS_2)
@@ -69,6 +81,7 @@ def test_risk_parity_lower_vol_gets_more(optimizer):
 # ---------------------------------------------------------------------------
 # test_risk_parity_weights_sum_to_one
 # ---------------------------------------------------------------------------
+
 
 def test_risk_parity_weights_sum_to_one(optimizer):
     """Risk-parity weights must sum to 1.0 after constraint application."""
@@ -81,6 +94,7 @@ def test_risk_parity_weights_sum_to_one(optimizer):
 # test_min_variance_weights_sum_to_one
 # ---------------------------------------------------------------------------
 
+
 def test_min_variance_weights_sum_to_one(optimizer):
     """Min-variance weights must sum to 1.0 after constraint application."""
     weights = optimizer.optimize_min_variance(_RETURNS_2)
@@ -92,6 +106,7 @@ def test_min_variance_weights_sum_to_one(optimizer):
 # test_max_sharpe_weights_sum_to_one
 # ---------------------------------------------------------------------------
 
+
 def test_max_sharpe_weights_sum_to_one(optimizer):
     """Max-Sharpe weights must sum to 1.0 after constraint application."""
     weights = optimizer.optimize_max_sharpe(_RETURNS_3)
@@ -102,6 +117,7 @@ def test_max_sharpe_weights_sum_to_one(optimizer):
 # ---------------------------------------------------------------------------
 # test_constraints_cap_max_weight
 # ---------------------------------------------------------------------------
+
 
 def test_constraints_cap_max_weight(optimizer):
     """No individual weight may exceed max_weight after constraint application."""
@@ -116,6 +132,7 @@ def test_constraints_cap_max_weight(optimizer):
 # ---------------------------------------------------------------------------
 # test_empty_returns_empty_weights
 # ---------------------------------------------------------------------------
+
 
 def test_empty_returns_empty_weights(optimizer):
     """An empty input dict returns an empty weight dict for all methods."""

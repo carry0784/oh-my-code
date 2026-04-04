@@ -45,10 +45,14 @@ class FakeChannelResult:
 def _store_with_plans(n=3):
     store = RetryPlanStore(ttl_seconds=9999)
     for i in range(n):
-        store.enqueue(channel=f"ch{i}", reason="timeout",
-                      reliability_tier="transient_failure",
-                      retryable=True, retry_after_seconds=0,
-                      incident=f"inc_{i}")
+        store.enqueue(
+            channel=f"ch{i}",
+            reason="timeout",
+            reliability_tier="transient_failure",
+            retryable=True,
+            retry_after_seconds=0,
+            incident=f"inc_{i}",
+        )
     return store
 
 
@@ -56,7 +60,6 @@ def _store_with_plans(n=3):
 # C38-1: 모듈 구조
 # ===========================================================================
 class TestC38ModuleStructure:
-
     def test_module_exists(self):
         assert ORCH_PATH.exists()
 
@@ -76,7 +79,6 @@ class TestC38ModuleStructure:
 # C38-2: gate 통과 시 실행
 # ===========================================================================
 class TestC38GatePass:
-
     def test_no_gate_proceeds(self):
         store = _store_with_plans(2)
         fake = FakeChannelResult(channel="ext", delivered=True)
@@ -105,7 +107,6 @@ class TestC38GatePass:
 # C38-3: gate 차단 시 미실행
 # ===========================================================================
 class TestC38GateBlock:
-
     def test_disabled_gate_blocks(self):
         store = _store_with_plans()
         gate = RetryPolicyGate(enabled=False)
@@ -131,7 +132,6 @@ class TestC38GateBlock:
 # C38-4: budget 차단 시 skip
 # ===========================================================================
 class TestC38BudgetBlock:
-
     def test_budget_exhausted_skips(self):
         store = _store_with_plans(3)
         budget = RetryBudget(global_budget=0)
@@ -141,10 +141,14 @@ class TestC38BudgetBlock:
 
     def test_channel_budget_exhausted(self):
         store = RetryPlanStore(ttl_seconds=9999)
-        store.enqueue(channel="ext", reason="timeout",
-                      reliability_tier="transient_failure",
-                      retryable=True, retry_after_seconds=0,
-                      incident="inc_1")
+        store.enqueue(
+            channel="ext",
+            reason="timeout",
+            reliability_tier="transient_failure",
+            retryable=True,
+            retry_after_seconds=0,
+            incident="inc_1",
+        )
         budget = RetryBudget(channel_budget=0)
         result = run_auto_retry(store, budget=budget)
         assert result.plans_budget_denied >= 1
@@ -161,7 +165,6 @@ class TestC38BudgetBlock:
 # C38-5: metrics 기록
 # ===========================================================================
 class TestC38Metrics:
-
     def test_success_recorded(self):
         store = _store_with_plans(1)
         metrics = RetryMetrics()
@@ -202,7 +205,6 @@ class TestC38Metrics:
 # C38-6: bounded execution
 # ===========================================================================
 class TestC38Bounded:
-
     def test_max_executions_respected(self):
         store = _store_with_plans(10)
         fake = FakeChannelResult(channel="ext", delivered=True)
@@ -218,7 +220,6 @@ class TestC38Bounded:
 # C38-7: pass lock 관리
 # ===========================================================================
 class TestC38PassLock:
-
     def test_pass_lock_released_on_success(self):
         store = _store_with_plans(1)
         gate = RetryPolicyGate()
@@ -246,7 +247,6 @@ class TestC38PassLock:
 # C38-8: fail-closed
 # ===========================================================================
 class TestC38FailClosed:
-
     def test_corrupted_store_handled(self):
         result = run_auto_retry("not_a_store")
         assert isinstance(result, AutoRetryResult)
@@ -270,13 +270,14 @@ class TestC38FailClosed:
 # C38-9: 금지 조항
 # ===========================================================================
 class TestC38Forbidden:
-
     def test_no_forbidden_strings(self):
         content = ORCH_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

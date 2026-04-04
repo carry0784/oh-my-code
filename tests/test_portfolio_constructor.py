@@ -4,10 +4,20 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config", "structlog",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
+    "structlog",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -46,6 +56,7 @@ _EQUITY_CURVES = {
 # test_construct_returns_result
 # ---------------------------------------------------------------------------
 
+
 def test_construct_returns_result(constructor):
     """construct() returns a fully populated PortfolioConstructionResult."""
     result = constructor.construct(_EQUITY_CURVES, capital=CAPITAL)
@@ -62,6 +73,7 @@ def test_construct_returns_result(constructor):
 # test_construct_risk_parity
 # ---------------------------------------------------------------------------
 
+
 def test_construct_risk_parity(constructor):
     """method='risk_parity' is recorded in optimization_method field."""
     result = constructor.construct(_EQUITY_CURVES, capital=CAPITAL, method="risk_parity")
@@ -74,6 +86,7 @@ def test_construct_risk_parity(constructor):
 # test_construct_min_variance
 # ---------------------------------------------------------------------------
 
+
 def test_construct_min_variance(constructor):
     """method='min_variance' is recorded in optimization_method field."""
     result = constructor.construct(_EQUITY_CURVES, capital=CAPITAL, method="min_variance")
@@ -85,6 +98,7 @@ def test_construct_min_variance(constructor):
 # ---------------------------------------------------------------------------
 # test_construct_equal_weight
 # ---------------------------------------------------------------------------
+
 
 def test_construct_equal_weight(constructor):
     """method='equal_weight' produces equal weights across all strategies."""
@@ -101,9 +115,10 @@ def test_construct_equal_weight(constructor):
 # test_rebalance_check_triggers
 # ---------------------------------------------------------------------------
 
+
 def test_rebalance_check_triggers(constructor):
     """Drift exceeding the threshold triggers a rebalance."""
-    target  = {"s1": 0.50, "s2": 0.30, "s3": 0.20}
+    target = {"s1": 0.50, "s2": 0.30, "s3": 0.20}
     current = {"s1": 0.40, "s2": 0.35, "s3": 0.25}  # s1 drifted 10 pct points
 
     triggered = constructor.rebalance_check(target, current, threshold_pct=5.0)
@@ -115,9 +130,10 @@ def test_rebalance_check_triggers(constructor):
 # test_rebalance_check_no_trigger
 # ---------------------------------------------------------------------------
 
+
 def test_rebalance_check_no_trigger(constructor):
     """Drift within the threshold does not trigger a rebalance."""
-    target  = {"s1": 0.50, "s2": 0.30, "s3": 0.20}
+    target = {"s1": 0.50, "s2": 0.30, "s3": 0.20}
     current = {"s1": 0.52, "s2": 0.29, "s3": 0.19}  # max drift = 2 pct points
 
     triggered = constructor.rebalance_check(target, current, threshold_pct=5.0)

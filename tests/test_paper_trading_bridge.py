@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -47,6 +56,7 @@ def _make_paper_session_with_trades(bridge: PaperTradingBridge, genome_id: str, 
 # test_start_session
 # ---------------------------------------------------------------------------
 
+
 def test_start_session():
     bridge = PaperTradingBridge()
     session_id = bridge.start_session("genome_A")
@@ -63,6 +73,7 @@ def test_start_session():
 # test_record_trade
 # ---------------------------------------------------------------------------
 
+
 def test_record_trade():
     bridge = PaperTradingBridge()
     session_id = bridge.start_session("genome_B")
@@ -78,6 +89,7 @@ def test_record_trade():
 # test_record_trade_closed_session
 # ---------------------------------------------------------------------------
 
+
 def test_record_trade_closed_session():
     bridge = PaperTradingBridge()
     session_id = bridge.start_session("genome_C")
@@ -92,6 +104,7 @@ def test_record_trade_closed_session():
 # ---------------------------------------------------------------------------
 # test_evaluate_no_trades — default 0.5 match score when no trades
 # ---------------------------------------------------------------------------
+
 
 def test_evaluate_no_trades():
     bridge = PaperTradingBridge()
@@ -109,6 +122,7 @@ def test_evaluate_no_trades():
 # test_compute_live_match_same_direction — direction match contributes 0.6
 # ---------------------------------------------------------------------------
 
+
 def test_compute_live_match_same_direction():
     bridge = PaperTradingBridge()
     # Both positive returns, identical win rate → full score
@@ -125,6 +139,7 @@ def test_compute_live_match_same_direction():
 # test_compute_live_match_opposite_direction — 0.0 direction component
 # ---------------------------------------------------------------------------
 
+
 def test_compute_live_match_opposite_direction():
     bridge = PaperTradingBridge()
     backtest = PerformanceReport(total_return_pct=10.0, win_rate=0.6, total_trades=30)
@@ -140,6 +155,7 @@ def test_compute_live_match_opposite_direction():
 # ---------------------------------------------------------------------------
 # test_promotion_readiness — sufficient trades + high match + low DD = ready
 # ---------------------------------------------------------------------------
+
 
 def test_promotion_readiness():
     config = PaperTradingConfig(

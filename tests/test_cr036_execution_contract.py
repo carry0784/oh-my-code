@@ -7,6 +7,7 @@ Verifies:
 3. OrderExecutor → Exchange create_order() call binds correctly
 4. Dry-run / live boundary preserves ledger/evidence
 """
+
 import asyncio
 import inspect
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -16,11 +17,13 @@ import pytest
 
 # ── Test 1: Binance adapter spot mode ────────────────────────────────────── #
 
+
 def test_binance_adapter_spot_mode():
     """CR-036: Binance adapter must use defaultType='spot', not 'futures'."""
     # Verify at source level — BinanceExchange.__init__ requires async event loop
     # for aiohttp session, so we inspect the source code directly.
     import exchanges.binance as bmod
+
     source = inspect.getsource(bmod.BinanceExchange.__init__)
 
     assert '"defaultType": "spot"' in source or "'defaultType': 'spot'" in source, (
@@ -31,14 +34,15 @@ def test_binance_adapter_spot_mode():
 
 # ── Test 2: Futures path NOT active ──────────────────────────────────────── #
 
+
 def test_binance_adapter_no_futures():
     """CR-036: Verify futures path is explicitly blocked."""
     import exchanges.binance as bmod
+
     source = inspect.getsource(bmod.BinanceExchange.__init__)
 
     assert '"defaultType": "future"' not in source, (
-        "CR-036: defaultType must NOT be 'future'. "
-        "M2-2 approval scope is spot only."
+        "CR-036: defaultType must NOT be 'future'. M2-2 approval scope is spot only."
     )
     assert "'defaultType': 'future'" not in source, (
         "CR-036: defaultType must NOT be 'future' (single quotes). "
@@ -47,6 +51,7 @@ def test_binance_adapter_no_futures():
 
 
 # ── Test 3: OrderExecutor → Exchange create_order() contract ─────────────── #
+
 
 def test_order_executor_create_order_signature_match():
     """CR-036: OrderExecutor call must match BaseExchange.create_order() signature."""
@@ -66,6 +71,7 @@ def test_order_executor_create_order_signature_match():
 
     # Verify OrderExecutor source uses 'quantity=' not 'amount='
     import app.services.order_executor as oe_mod
+
     source = inspect.getsource(oe_mod.OrderExecutor.execute_order)
 
     assert "quantity=requested_size" in source, (
@@ -81,6 +87,7 @@ def test_order_executor_create_order_signature_match():
 def test_order_executor_create_order_arg_order():
     """CR-036: OrderExecutor must pass args in correct order: symbol, side, order_type."""
     import app.services.order_executor as oe_mod
+
     source = inspect.getsource(oe_mod.OrderExecutor.execute_order)
 
     # Find the create_order call block
@@ -111,6 +118,7 @@ def test_order_executor_create_order_arg_order():
 
 # ── Test 4: Dry-run / live boundary — ledger/evidence preserved ──────────── #
 
+
 def test_dry_run_live_boundary_ledger_preserved():
     """CR-036: Both dry_run=True and dry_run=False paths preserve ledger lineage."""
     from app.agents.action_ledger import ActionLedger
@@ -123,8 +131,10 @@ def test_dry_run_live_boundary_ledger_preserved():
     risk_result = {"approved": True, "position_size": 10.0, "risk_score": 0.05}
 
     passed, proposal = al.propose_and_guard(
-        task_type="order_execution", symbol="BTC/USDT",
-        exchange="binance", risk_result=risk_result,
+        task_type="order_execution",
+        symbol="BTC/USDT",
+        exchange="binance",
+        risk_result=risk_result,
         pre_evidence_id="PRE-CR036-test",
     )
     assert passed
@@ -132,9 +142,12 @@ def test_dry_run_live_boundary_ledger_preserved():
 
     el = ExecutionLedger()
     ep, eproposal = el.propose_and_guard(
-        task_type="order_execution", symbol="BTC/USDT",
-        exchange="binance", agent_proposal_id=proposal.proposal_id,
-        agent_proposal_status=proposal.status, risk_result=risk_result,
+        task_type="order_execution",
+        symbol="BTC/USDT",
+        exchange="binance",
+        agent_proposal_id=proposal.proposal_id,
+        agent_proposal_status=proposal.status,
+        risk_result=risk_result,
         pre_evidence_id="PRE-CR036-test",
     )
     assert ep
@@ -142,14 +155,19 @@ def test_dry_run_live_boundary_ledger_preserved():
 
     sl = SubmitLedger()
     sp, sproposal = sl.propose_and_guard(
-        task_type="order_execution", symbol="BTC/USDT",
-        exchange="binance", agent_proposal_id=proposal.proposal_id,
+        task_type="order_execution",
+        symbol="BTC/USDT",
+        exchange="binance",
+        agent_proposal_id=proposal.proposal_id,
         execution_proposal_id=eproposal.proposal_id,
-        execution_proposal_status=eproposal.status, risk_result=risk_result,
+        execution_proposal_status=eproposal.status,
+        risk_result=risk_result,
         pre_evidence_id="PRE-CR036-test",
     )
     assert sp
-    sl.record_receipt(sproposal, final_result={"stage": "test"}, post_evidence_id="POST-CR036-submit")
+    sl.record_receipt(
+        sproposal, final_result={"stage": "test"}, post_evidence_id="POST-CR036-submit"
+    )
     assert sproposal.submit_ready is True
 
     # Test: dry_run path preserves lineage

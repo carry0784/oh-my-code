@@ -35,7 +35,6 @@ SRC = PROJECT_ROOT / "src"
 # A01-1: Constitution document existence
 # ===========================================================================
 class TestA01ConstitutionExists:
-
     def test_system_constitution(self):
         assert (DOCS / "system_final_constitution.md").exists()
 
@@ -59,7 +58,6 @@ class TestA01ConstitutionExists:
 # A01-2: Seal document existence
 # ===========================================================================
 class TestA01SealsExist:
-
     def test_retry_seal(self):
         assert (DOCS / "retry_layer_final_seal.md").exists()
 
@@ -80,7 +78,6 @@ class TestA01SealsExist:
 # A01-3: Constitution content integrity
 # ===========================================================================
 class TestA01ConstitutionContent:
-
     def test_constitution_has_layer_hierarchy(self):
         content = (DOCS / "system_final_constitution.md").read_text(encoding="utf-8")
         assert "Layer Hierarchy" in content
@@ -106,38 +103,42 @@ class TestA01ConstitutionContent:
 # A01-4: Layer boundary — no cross-layer violations
 # ===========================================================================
 class TestA01LayerBoundary:
-
     def test_retry_layer_no_engine_import(self):
         """Retry layer must not import engine modules."""
         retry_files = [
-            "retry_executor.py", "retry_plan_store.py",
-            "retry_policy_gate.py", "retry_budget.py",
-            "retry_metrics.py", "auto_retry_orchestrator.py",
-            "delivery_retry_policy.py", "flow_retry_bridge.py",
+            "retry_executor.py",
+            "retry_plan_store.py",
+            "retry_policy_gate.py",
+            "retry_budget.py",
+            "retry_metrics.py",
+            "auto_retry_orchestrator.py",
+            "delivery_retry_policy.py",
+            "flow_retry_bridge.py",
         ]
         for fname in retry_files:
             fpath = APP / "core" / fname
             if fpath.exists():
                 content = fpath.read_text(encoding="utf-8")
-                assert "src.kdexter" not in content, \
-                    f"Engine import in retry file: {fname}"
-                assert "from src" not in content, \
-                    f"Engine import in retry file: {fname}"
+                assert "src.kdexter" not in content, f"Engine import in retry file: {fname}"
+                assert "from src" not in content, f"Engine import in retry file: {fname}"
 
     def test_notification_layer_no_engine_import(self):
         """Notification layer must not import engine modules."""
         notif_files = [
-            "notification_sender.py", "notification_flow.py",
-            "notification_receipt_store.py", "alert_router.py",
-            "alert_policy.py", "channel_policy.py",
-            "real_notifier_adapter.py", "notifier_adapters.py",
+            "notification_sender.py",
+            "notification_flow.py",
+            "notification_receipt_store.py",
+            "alert_router.py",
+            "alert_policy.py",
+            "channel_policy.py",
+            "real_notifier_adapter.py",
+            "notifier_adapters.py",
         ]
         for fname in notif_files:
             fpath = APP / "core" / fname
             if fpath.exists():
                 content = fpath.read_text(encoding="utf-8")
-                assert "from src" not in content, \
-                    f"Engine import in notification file: {fname}"
+                assert "from src" not in content, f"Engine import in notification file: {fname}"
 
     def test_operator_endpoint_no_engine_import(self):
         fpath = APP / "api" / "routes" / "operator_retry.py"
@@ -150,20 +151,22 @@ class TestA01LayerBoundary:
 # A01-5: Execution SSOT compliance
 # ===========================================================================
 class TestA01ExecutionSSOT:
-
     def test_execute_single_plan_defined_once(self):
         """SSOT must be defined in exactly one file."""
         core_files = list((APP / "core").glob("*.py"))
-        defining = [f.name for f in core_files
-                    if "def execute_single_plan(" in
-                    f.read_text(encoding="utf-8")]
+        defining = [
+            f.name
+            for f in core_files
+            if "def execute_single_plan(" in f.read_text(encoding="utf-8")
+        ]
         assert defining == ["retry_executor.py"]
 
     def test_orchestrator_no_direct_sender(self):
         fpath = APP / "core" / "auto_retry_orchestrator.py"
         content = fpath.read_text(encoding="utf-8")
-        lines = [l for l in content.split("\n")
-                 if "get_sender" in l and not l.strip().startswith("#")]
+        lines = [
+            l for l in content.split("\n") if "get_sender" in l and not l.strip().startswith("#")
+        ]
         assert len(lines) == 0
 
     def test_orchestrator_no_private_executor(self):
@@ -187,7 +190,6 @@ class TestA01ExecutionSSOT:
 # A01-6: Forbidden pattern scan (system-wide app/)
 # ===========================================================================
 class TestA01ForbiddenPatterns:
-
     def _scan_app_files(self, pattern):
         """Scan all app/ .py files for pattern in non-docstring body."""
         hits = []
@@ -221,7 +223,6 @@ class TestA01ForbiddenPatterns:
 # A01-7: Engine layer isolation
 # ===========================================================================
 class TestA01EngineIsolation:
-
     def test_engine_exists(self):
         assert (SRC / "kdexter").exists()
 
@@ -239,16 +240,16 @@ class TestA01EngineIsolation:
         for fpath in (APP / "core").glob("*.py"):
             content = fpath.read_text(encoding="utf-8")
             # Check for imports that might mutate
-            assert "kdexter.state_machine" not in content or \
-                   "import" not in content.split("kdexter.state_machine")[0].split("\n")[-1], \
-                   f"Potential engine mutation in {fpath.name}"
+            assert (
+                "kdexter.state_machine" not in content
+                or "import" not in content.split("kdexter.state_machine")[0].split("\n")[-1]
+            ), f"Potential engine mutation in {fpath.name}"
 
 
 # ===========================================================================
 # A01-8: Card B test preservation
 # ===========================================================================
 class TestA01CardBPreservation:
-
     def test_card_b_test_files_exist(self):
         """Card B core test files should exist."""
         test_dir = PROJECT_ROOT / "tests"
@@ -258,9 +259,11 @@ class TestA01CardBPreservation:
     def test_total_test_count_not_decreased(self):
         """Total test count must be >= sealed baseline."""
         import subprocess
+
         result = subprocess.run(
             ["python", "-m", "pytest", "--co", "-q"],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
             cwd=str(PROJECT_ROOT),
         )
         # Count "test session starts" or collected items
@@ -275,7 +278,6 @@ class TestA01CardBPreservation:
 # A01-9: Fail-closed doctrine
 # ===========================================================================
 class TestA01FailClosed:
-
     def test_retry_executor_has_try_except(self):
         content = (APP / "core" / "retry_executor.py").read_text(encoding="utf-8")
         assert "except Exception" in content
@@ -301,7 +303,6 @@ class TestA01FailClosed:
 # A01-10: State ownership — no cross-layer mutation
 # ===========================================================================
 class TestA01StateOwnership:
-
     def test_mark_executed_only_in_executor(self):
         """mark_executed calls must only be in retry_executor.py."""
         for fpath in (APP / "core").glob("*.py"):
@@ -310,8 +311,7 @@ class TestA01StateOwnership:
             if fpath.name == "retry_plan_store.py":
                 continue  # definition is allowed
             content = fpath.read_text(encoding="utf-8")
-            assert "mark_executed(" not in content, \
-                f"mark_executed in {fpath.name} (not executor)"
+            assert "mark_executed(" not in content, f"mark_executed in {fpath.name} (not executor)"
 
     def test_mark_expired_only_in_executor(self):
         """mark_expired calls must only be in retry_executor.py."""
@@ -321,8 +321,7 @@ class TestA01StateOwnership:
             if fpath.name == "retry_plan_store.py":
                 continue  # definition is allowed
             content = fpath.read_text(encoding="utf-8")
-            assert "mark_expired(" not in content, \
-                f"mark_expired in {fpath.name} (not executor)"
+            assert "mark_expired(" not in content, f"mark_expired in {fpath.name} (not executor)"
 
     def test_get_sender_only_in_allowed_files(self):
         """get_sender must only be in sender and executor."""
@@ -331,7 +330,9 @@ class TestA01StateOwnership:
             if fpath.name in allowed:
                 continue
             content = fpath.read_text(encoding="utf-8")
-            lines = [l for l in content.split("\n")
-                     if "get_sender" in l and not l.strip().startswith("#")]
-            assert len(lines) == 0, \
-                f"get_sender in {fpath.name}"
+            lines = [
+                l
+                for l in content.split("\n")
+                if "get_sender" in l and not l.strip().startswith("#")
+            ]
+            assert len(lines) == 0, f"get_sender in {fpath.name}"

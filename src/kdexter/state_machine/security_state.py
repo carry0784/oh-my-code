@@ -10,6 +10,7 @@ States:
 Transitions are triggered by Failure Severity (from failure_taxonomy.md).
 LOCKDOWN can only be released by Human (L27 Override Controller).
 """
+
 from __future__ import annotations
 import threading
 from enum import Enum

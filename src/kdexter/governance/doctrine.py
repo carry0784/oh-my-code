@@ -17,6 +17,7 @@ Each Doctrine has:
   - A constraint expression (machine-checkable condition)
   - A human-readable description
 """
+
 from __future__ import annotations
 
 import uuid
@@ -30,49 +31,56 @@ from typing import Optional
 # Enums
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 class DoctrineSeverity(Enum):
     """How strictly this doctrine must be enforced."""
+
     CONSTITUTIONAL = "CONSTITUTIONAL"  # Violation → immediate LOCKDOWN
-    CRITICAL = "CRITICAL"              # Violation → QUARANTINED + block
-    ADVISORY = "ADVISORY"              # Violation → warning + log
+    CRITICAL = "CRITICAL"  # Violation → QUARANTINED + block
+    ADVISORY = "ADVISORY"  # Violation → warning + log
 
 
 class DoctrineStatus(Enum):
     """Lifecycle status of a doctrine."""
-    DRAFT = "DRAFT"           # Proposed, not yet ratified
-    RATIFIED = "RATIFIED"     # Active and enforceable
-    SUSPENDED = "SUSPENDED"   # Temporarily disabled (requires B1 approval)
-    RETIRED = "RETIRED"       # Permanently deactivated
+
+    DRAFT = "DRAFT"  # Proposed, not yet ratified
+    RATIFIED = "RATIFIED"  # Active and enforceable
+    SUSPENDED = "SUSPENDED"  # Temporarily disabled (requires B1 approval)
+    RETIRED = "RETIRED"  # Permanently deactivated
 
 
 class GovernanceTier(Enum):
     """Governance attribution tiers."""
-    B1 = "B1"   # Constitutional Foundry
-    B2 = "B2"   # Build Orchestration
-    A = "A"      # Runtime Execution
+
+    B1 = "B1"  # Constitutional Foundry
+    B2 = "B2"  # Build Orchestration
+    A = "A"  # Runtime Execution
 
 
 class ChangeAuthority(Enum):
     """Who can authorize a change."""
-    HUMAN_ONLY = "HUMAN_ONLY"   # L1 — machine cannot change
-    B1_RATIFY = "B1_RATIFY"     # Requires B1 ratification
-    B2_APPROVE = "B2_APPROVE"   # B2 approval sufficient
-    A_RUNTIME = "A_RUNTIME"     # A layer can change (evidence required)
+
+    HUMAN_ONLY = "HUMAN_ONLY"  # L1 — machine cannot change
+    B1_RATIFY = "B1_RATIFY"  # Requires B1 ratification
+    B2_APPROVE = "B2_APPROVE"  # B2 approval sufficient
+    A_RUNTIME = "A_RUNTIME"  # A layer can change (evidence required)
 
 
 # ─────────────────────────────────────────────────────────────────────────── #
 # Data models
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass(frozen=True)
 class DoctrineArticle:
     """A single doctrine article — one enforceable principle."""
-    doctrine_id: str                          # "D-001", "D-002", ...
-    name: str                                 # short name
-    description: str                          # what it enforces
+
+    doctrine_id: str  # "D-001", "D-002", ...
+    name: str  # short name
+    description: str  # what it enforces
     severity: DoctrineSeverity
-    constraint: str                           # machine-checkable expression
-    ratified_by: str = "L1"                   # who ratified (always L1/Human)
+    constraint: str  # machine-checkable expression
+    ratified_by: str = "L1"  # who ratified (always L1/Human)
     ratified_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     status: DoctrineStatus = DoctrineStatus.RATIFIED
     related_mandatory: list[str] = field(default_factory=list)  # M-xx refs
@@ -81,9 +89,10 @@ class DoctrineArticle:
 @dataclass
 class DoctrineViolation:
     """Record of a doctrine violation."""
+
     violation_id: str = field(default_factory=lambda: f"DV-{uuid.uuid4().hex[:8].upper()}")
     doctrine_id: str = ""
-    violated_by: str = ""           # layer or actor that violated
+    violated_by: str = ""  # layer or actor that violated
     severity: DoctrineSeverity = DoctrineSeverity.ADVISORY
     description: str = ""
     detected_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -99,7 +108,7 @@ _CORE_DOCTRINES: list[DoctrineArticle] = [
         doctrine_id="D-001",
         name="TCL-only execution",
         description="All exchange interactions must go through TCL. "
-                    "No layer may call exchange APIs directly.",
+        "No layer may call exchange APIs directly.",
         severity=DoctrineSeverity.CONSTITUTIONAL,
         constraint="exchange_call.via_tcl == True",
         related_mandatory=["M-07"],
@@ -108,7 +117,7 @@ _CORE_DOCTRINES: list[DoctrineArticle] = [
         doctrine_id="D-002",
         name="Evidence on every change",
         description="Every state transition, gate evaluation, and TCL command "
-                    "must produce an EvidenceBundle (M-07).",
+        "must produce an EvidenceBundle (M-07).",
         severity=DoctrineSeverity.CONSTITUTIONAL,
         constraint="evidence_bundle_count >= expected_evidence_count",
         related_mandatory=["M-07"],
@@ -117,7 +126,7 @@ _CORE_DOCTRINES: list[DoctrineArticle] = [
         doctrine_id="D-003",
         name="Provenance required",
         description="Every Rule Ledger write must include RuleProvenance (M-10). "
-                    "No anonymous rule changes permitted.",
+        "No anonymous rule changes permitted.",
         severity=DoctrineSeverity.CONSTITUTIONAL,
         constraint="rule_change.provenance is not None",
         related_mandatory=["M-10"],
@@ -126,7 +135,7 @@ _CORE_DOCTRINES: list[DoctrineArticle] = [
         doctrine_id="D-004",
         name="Human-only LOCKDOWN release",
         description="Only L27 Override Controller (Human) can de-escalate LOCKDOWN. "
-                    "No automated process may release LOCKDOWN state.",
+        "No automated process may release LOCKDOWN state.",
         severity=DoctrineSeverity.CONSTITUTIONAL,
         constraint="lockdown_release.authorized_by == 'L27_HUMAN'",
     ),
@@ -134,7 +143,7 @@ _CORE_DOCTRINES: list[DoctrineArticle] = [
         doctrine_id="D-005",
         name="B1 immutability",
         description="B1 layer code and doctrines cannot be modified by B2 or A. "
-                    "Only Human (L1) can ratify changes to B1.",
+        "Only Human (L1) can ratify changes to B1.",
         severity=DoctrineSeverity.CONSTITUTIONAL,
         constraint="b1_modification.requester == 'L1'",
     ),
@@ -142,7 +151,7 @@ _CORE_DOCTRINES: list[DoctrineArticle] = [
         doctrine_id="D-006",
         name="Recovery loop ceiling",
         description="Recovery Loop may attempt at most 3 recoveries per incident. "
-                    "Exceeding requires Human Override.",
+        "Exceeding requires Human Override.",
         severity=DoctrineSeverity.CRITICAL,
         constraint="recovery_attempts_per_incident <= 3",
         related_mandatory=["M-14"],
@@ -151,7 +160,7 @@ _CORE_DOCTRINES: list[DoctrineArticle] = [
         doctrine_id="D-007",
         name="Intent clarification mandatory",
         description="No execution may begin without explicit intent clarification (M-01). "
-                    "CLARIFYING state must set intent before proceeding.",
+        "CLARIFYING state must set intent before proceeding.",
         severity=DoctrineSeverity.CRITICAL,
         constraint="work_state.intent != ''",
         related_mandatory=["M-01"],
@@ -160,7 +169,7 @@ _CORE_DOCTRINES: list[DoctrineArticle] = [
         doctrine_id="D-008",
         name="Risk check before execution",
         description="Risk assessment (M-03) must complete before VALIDATING state. "
-                    "No execution without risk clearance.",
+        "No execution without risk clearance.",
         severity=DoctrineSeverity.CRITICAL,
         constraint="work_state.risk_checked == True",
         related_mandatory=["M-03"],
@@ -169,16 +178,15 @@ _CORE_DOCTRINES: list[DoctrineArticle] = [
         doctrine_id="D-009",
         name="Forbidden action zero tolerance",
         description="Forbidden Ledger violations with LOCKDOWN severity trigger "
-                    "immediate system lockdown. No exceptions.",
+        "immediate system lockdown. No exceptions.",
         severity=DoctrineSeverity.CONSTITUTIONAL,
-        constraint="forbidden_violation.severity != 'LOCKDOWN' or "
-                   "security_state == 'LOCKDOWN'",
+        constraint="forbidden_violation.severity != 'LOCKDOWN' or security_state == 'LOCKDOWN'",
     ),
     DoctrineArticle(
         doctrine_id="D-010",
         name="Concurrent write serialization",
         description="All Rule Ledger writes must be serialized via RuleLedgerLock. "
-                    "No concurrent writes from multiple loops.",
+        "No concurrent writes from multiple loops.",
         severity=DoctrineSeverity.CRITICAL,
         constraint="rule_ledger_lock.held_by is not None",
         related_mandatory=["M-10"],
@@ -189,6 +197,7 @@ _CORE_DOCTRINES: list[DoctrineArticle] = [
 # ─────────────────────────────────────────────────────────────────────────── #
 # Doctrine Registry
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 class DoctrineRegistry:
     """
@@ -217,8 +226,11 @@ class DoctrineRegistry:
         return [d for d in self._doctrines.values() if d.status == status]
 
     def list_by_severity(self, severity: DoctrineSeverity) -> list[DoctrineArticle]:
-        return [d for d in self._doctrines.values()
-                if d.severity == severity and d.status == DoctrineStatus.RATIFIED]
+        return [
+            d
+            for d in self._doctrines.values()
+            if d.severity == severity and d.status == DoctrineStatus.RATIFIED
+        ]
 
     def count(self) -> int:
         return len(self._doctrines)
@@ -346,6 +358,8 @@ class DoctrineRegistry:
 # Exceptions
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 class DoctrineRatificationError(Exception):
     """Raised when an unauthorized entity attempts to ratify a doctrine."""
+
     pass

@@ -8,6 +8,7 @@ Tests:
 
 Run: python tests/test_tier3.py
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -17,22 +18,37 @@ from kdexter.audit.evidence_store import EvidenceStore
 from kdexter.governance.doctrine import DoctrineRegistry
 from kdexter.ledger.rule_ledger import RuleLedger, RuleProvenance, Rule
 from kdexter.loops.concurrency import (
-    LoopCounter, LoopPriority, LoopPriorityQueue, RuleLedgerLock,
+    LoopCounter,
+    LoopPriority,
+    LoopPriorityQueue,
+    RuleLedgerLock,
 )
 from kdexter.loops.self_improvement_loop import (
-    SelfImprovementLoop, SIHooks, SIPhase, SIResult,
-    ImprovementProposal, PerformanceSample, SIFailureError,
+    SelfImprovementLoop,
+    SIHooks,
+    SIPhase,
+    SIResult,
+    ImprovementProposal,
+    PerformanceSample,
+    SIFailureError,
     BACKTEST_ACCEPTANCE_THRESHOLD,
 )
 from kdexter.loops.evolution_loop import (
-    EvolutionLoop, EvoHooks, EvoPhase, EvoResult,
-    StrategyCandidate, SandboxResult, EvoFailureError,
-    SANDBOX_FITNESS_THRESHOLD, PROMOTION_FITNESS_THRESHOLD,
+    EvolutionLoop,
+    EvoHooks,
+    EvoPhase,
+    EvoResult,
+    StrategyCandidate,
+    SandboxResult,
+    EvoFailureError,
+    SANDBOX_FITNESS_THRESHOLD,
+    PROMOTION_FITNESS_THRESHOLD,
 )
 from kdexter.state_machine.security_state import SecurityStateContext
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────── #
+
 
 def _make_si(hooks=None):
     lock = RuleLedgerLock()
@@ -42,9 +58,12 @@ def _make_si(hooks=None):
     counter = LoopCounter()
     queue = LoopPriorityQueue()
     loop = SelfImprovementLoop(
-        rule_ledger=ledger, rule_lock=lock,
-        evidence_store=evidence, security=security,
-        loop_counter=counter, loop_queue=queue,
+        rule_ledger=ledger,
+        rule_lock=lock,
+        evidence_store=evidence,
+        security=security,
+        loop_counter=counter,
+        loop_queue=queue,
         hooks=hooks,
     )
     return loop, ledger, evidence, counter
@@ -59,10 +78,13 @@ def _make_evo(hooks=None):
     counter = LoopCounter()
     queue = LoopPriorityQueue()
     loop = EvolutionLoop(
-        rule_ledger=ledger, rule_lock=lock,
-        evidence_store=evidence, security=security,
+        rule_ledger=ledger,
+        rule_lock=lock,
+        evidence_store=evidence,
+        security=security,
         doctrine=doctrine,
-        loop_counter=counter, loop_queue=queue,
+        loop_counter=counter,
+        loop_queue=queue,
         hooks=hooks,
     )
     return loop, ledger, evidence, counter
@@ -71,6 +93,7 @@ def _make_evo(hooks=None):
 # ======================================================================== #
 # 1. SelfImprovementLoop
 # ======================================================================== #
+
 
 def test_si_default_no_proposals():
     """Default hooks produce no proposals -> finishes at PROPOSE."""
@@ -85,6 +108,7 @@ def test_si_default_no_proposals():
 
 def test_si_full_cycle():
     """Full cycle with proposals that pass backtest."""
+
     async def fake_propose(sample):
         return [
             ImprovementProposal(
@@ -111,10 +135,16 @@ def test_si_full_cycle():
 
 def test_si_backtest_rejection():
     """Proposals below threshold are rejected."""
+
     async def fake_propose(sample):
-        return [ImprovementProposal(
-            parameter_name="x", current_value="1", proposed_value="2", rationale="test",
-        )]
+        return [
+            ImprovementProposal(
+                parameter_name="x",
+                current_value="1",
+                proposed_value="2",
+                rationale="test",
+            )
+        ]
 
     async def fake_backtest(proposal):
         return 0.2  # below BACKTEST_ACCEPTANCE_THRESHOLD
@@ -133,6 +163,7 @@ def test_si_backtest_rejection():
 
 def test_si_risk_check_fail():
     """M-03 risk check failure aborts at PROPOSE."""
+
     async def fake_risk():
         return False
 
@@ -151,13 +182,19 @@ def test_si_risk_check_fail():
 
 def test_si_security_check_fail():
     """M-04 security check failure aborts at APPLY."""
+
     async def fake_security():
         return False
 
     async def fake_propose(sample):
-        return [ImprovementProposal(
-            parameter_name="x", current_value="1", proposed_value="2", rationale="t",
-        )]
+        return [
+            ImprovementProposal(
+                parameter_name="x",
+                current_value="1",
+                proposed_value="2",
+                rationale="t",
+            )
+        ]
 
     hooks = SIHooks(check_security=fake_security, propose=fake_propose)
     loop, _, _, _ = _make_si(hooks)
@@ -201,11 +238,16 @@ def test_si_is_active_lifecycle():
 
 def test_si_provenance_on_rules():
     """Rules created by SI have proper provenance (L9, incident_id)."""
+
     async def fake_propose(sample):
-        return [ImprovementProposal(
-            parameter_name="alpha", current_value="0.1",
-            proposed_value="0.2", rationale="optimize alpha",
-        )]
+        return [
+            ImprovementProposal(
+                parameter_name="alpha",
+                current_value="0.1",
+                proposed_value="0.2",
+                rationale="optimize alpha",
+            )
+        ]
 
     hooks = SIHooks(propose=fake_propose)
     loop, ledger, _, _ = _make_si(hooks)
@@ -225,6 +267,7 @@ def test_si_provenance_on_rules():
 # 2. EvolutionLoop
 # ======================================================================== #
 
+
 def test_evo_full_cycle():
     """Full cycle: generate -> sandbox -> evaluate -> gate -> promote."""
     loop, ledger, evidence, _ = _make_evo()
@@ -243,6 +286,7 @@ def test_evo_full_cycle():
 
 def test_evo_sandbox_fail():
     """Candidates below fitness threshold fail sandbox."""
+
     async def low_fitness_sandbox(candidate):
         return SandboxResult(
             candidate_id=candidate.candidate_id,
@@ -263,6 +307,7 @@ def test_evo_sandbox_fail():
 
 def test_evo_gate_fitness_fail():
     """Candidates below promotion threshold fail gate."""
+
     async def mediocre_sandbox(candidate):
         return SandboxResult(
             candidate_id=candidate.candidate_id,
@@ -282,6 +327,7 @@ def test_evo_gate_fitness_fail():
 
 def test_evo_gate_security_fail():
     """M-04 security check failure at gate phase."""
+
     async def fail_security():
         return False
 
@@ -296,6 +342,7 @@ def test_evo_gate_security_fail():
 
 def test_evo_risk_check_fail():
     """M-03 risk check failure at generate phase."""
+
     async def fail_risk():
         return False
 
@@ -329,6 +376,7 @@ def test_evo_ceiling_enforcement():
 
 def test_evo_no_candidates():
     """No candidates generated -> finishes at GENERATE."""
+
     async def empty_generate(failure_ids):
         return []
 
@@ -359,6 +407,7 @@ def test_evo_provenance_on_rules():
 
 def test_evo_multiple_candidates():
     """Multiple candidates — best fitness wins."""
+
     async def multi_generate(failure_ids):
         return [
             StrategyCandidate(name="weak", parameters={"a": 1}),
@@ -366,6 +415,7 @@ def test_evo_multiple_candidates():
         ]
 
     call_count = [0]
+
     async def varied_sandbox(candidate):
         call_count[0] += 1
         score = 0.4 if candidate.name == "weak" else 0.8
@@ -413,28 +463,34 @@ if __name__ == "__main__":
     print("=" * 60)
 
     tests = [
-        ("SelfImprovementLoop", [
-            test_si_default_no_proposals,
-            test_si_full_cycle,
-            test_si_backtest_rejection,
-            test_si_risk_check_fail,
-            test_si_security_check_fail,
-            test_si_ceiling_enforcement,
-            test_si_is_active_lifecycle,
-            test_si_provenance_on_rules,
-        ]),
-        ("EvolutionLoop", [
-            test_evo_full_cycle,
-            test_evo_sandbox_fail,
-            test_evo_gate_fitness_fail,
-            test_evo_gate_security_fail,
-            test_evo_risk_check_fail,
-            test_evo_ceiling_enforcement,
-            test_evo_no_candidates,
-            test_evo_provenance_on_rules,
-            test_evo_multiple_candidates,
-            test_evo_is_active_lifecycle,
-        ]),
+        (
+            "SelfImprovementLoop",
+            [
+                test_si_default_no_proposals,
+                test_si_full_cycle,
+                test_si_backtest_rejection,
+                test_si_risk_check_fail,
+                test_si_security_check_fail,
+                test_si_ceiling_enforcement,
+                test_si_is_active_lifecycle,
+                test_si_provenance_on_rules,
+            ],
+        ),
+        (
+            "EvolutionLoop",
+            [
+                test_evo_full_cycle,
+                test_evo_sandbox_fail,
+                test_evo_gate_fitness_fail,
+                test_evo_gate_security_fail,
+                test_evo_risk_check_fail,
+                test_evo_ceiling_enforcement,
+                test_evo_no_candidates,
+                test_evo_provenance_on_rules,
+                test_evo_multiple_candidates,
+                test_evo_is_active_lifecycle,
+            ],
+        ),
     ]
 
     total = 0

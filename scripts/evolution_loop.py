@@ -42,6 +42,7 @@ os.chdir(_REPO_ROOT)
 
 # ── Data Loaders ──────────────────────────────────────────────────────────── #
 
+
 def _load_json(path: str) -> dict | list | None:
     p = Path(path)
     if not p.exists():
@@ -73,8 +74,8 @@ def _load_evolution_history() -> list[dict]:
 
 # ── Phase 1: ANALYZE ─────────────────────────────────────────────────────── #
 
-def analyze(patterns: list[dict], grades: list[dict],
-            loop_report: dict | None) -> dict:
+
+def analyze(patterns: list[dict], grades: list[dict], loop_report: dict | None) -> dict:
     """Analyze system state for improvement opportunities."""
     analysis = {
         "pattern_count": len(patterns),
@@ -125,8 +126,9 @@ def analyze(patterns: list[dict], grades: list[dict],
     # Fix success rates by type
     fix_rates: dict[str, dict] = {}
     for ftype in type_counts:
-        matching = [p for p in patterns
-                    if p.get("failure_type") == ftype and p.get("fix_attempted")]
+        matching = [
+            p for p in patterns if p.get("failure_type") == ftype and p.get("fix_attempted")
+        ]
         if matching:
             succeeded = sum(1 for p in matching if p.get("fix_succeeded"))
             fix_rates[ftype] = {
@@ -141,6 +143,7 @@ def analyze(patterns: list[dict], grades: list[dict],
 
 # ── Phase 2: DIAGNOSE ────────────────────────────────────────────────────── #
 
+
 def diagnose(analysis: dict) -> list[dict]:
     """Identify inefficiencies and recurring weaknesses."""
     diagnoses = []
@@ -149,79 +152,93 @@ def diagnose(analysis: dict) -> list[dict]:
     type_dist = analysis.get("failure_type_distribution", {})
     for ftype, count in type_dist.items():
         if count >= 3:
-            diagnoses.append({
-                "id": f"D-TYPE-{ftype}",
-                "severity": "HIGH" if count >= 5 else "MEDIUM",
-                "category": "recurring_failure",
-                "description": f"{ftype} has occurred {count} times",
-                "failure_type": ftype,
-                "count": count,
-            })
+            diagnoses.append(
+                {
+                    "id": f"D-TYPE-{ftype}",
+                    "severity": "HIGH" if count >= 5 else "MEDIUM",
+                    "category": "recurring_failure",
+                    "description": f"{ftype} has occurred {count} times",
+                    "failure_type": ftype,
+                    "count": count,
+                }
+            )
 
     # D2: PATTERN recurrence accumulation
     rec_dist = analysis.get("recurrence_distribution", {})
     pattern_count = rec_dist.get("PATTERN", 0)
     if pattern_count >= 3:
-        diagnoses.append({
-            "id": "D-PATTERN-ACCUMULATION",
-            "severity": "HIGH",
-            "category": "pattern_accumulation",
-            "description": f"{pattern_count} failures classified as PATTERN (structural recurring)",
-            "count": pattern_count,
-        })
+        diagnoses.append(
+            {
+                "id": "D-PATTERN-ACCUMULATION",
+                "severity": "HIGH",
+                "category": "pattern_accumulation",
+                "description": f"{pattern_count} failures classified as PATTERN (structural recurring)",
+                "count": pattern_count,
+            }
+        )
 
     # D3: Health trend degradation
     trend = analysis.get("health_trend")
     if trend == "DEGRADING":
-        diagnoses.append({
-            "id": "D-TREND-DEGRADING",
-            "severity": "MEDIUM",
-            "category": "trend_degradation",
-            "description": "System health trend is degrading based on recent grades",
-        })
+        diagnoses.append(
+            {
+                "id": "D-TREND-DEGRADING",
+                "severity": "MEDIUM",
+                "category": "trend_degradation",
+                "description": "System health trend is degrading based on recent grades",
+            }
+        )
     elif trend == "CRITICAL":
-        diagnoses.append({
-            "id": "D-TREND-CRITICAL",
-            "severity": "HIGH",
-            "category": "trend_critical",
-            "description": "System health is in critical state",
-        })
+        diagnoses.append(
+            {
+                "id": "D-TREND-CRITICAL",
+                "severity": "HIGH",
+                "category": "trend_critical",
+                "description": "System health is in critical state",
+            }
+        )
 
     # D4: File hotspots
     hotspots = analysis.get("hotspot_files", {})
     for filepath, count in hotspots.items():
         if count >= 3:
-            diagnoses.append({
-                "id": f"D-HOTSPOT-{Path(filepath).stem}",
-                "severity": "MEDIUM",
-                "category": "file_hotspot",
-                "description": f"{filepath} involved in {count} failures",
-                "file": filepath,
-                "count": count,
-            })
+            diagnoses.append(
+                {
+                    "id": f"D-HOTSPOT-{Path(filepath).stem}",
+                    "severity": "MEDIUM",
+                    "category": "file_hotspot",
+                    "description": f"{filepath} involved in {count} failures",
+                    "file": filepath,
+                    "count": count,
+                }
+            )
 
     # D5: Loop efficiency
     last_iters = analysis.get("last_loop_iterations")
     if last_iters and last_iters >= 3:
-        diagnoses.append({
-            "id": "D-LOOP-MAXITER",
-            "severity": "MEDIUM",
-            "category": "loop_inefficiency",
-            "description": f"AutoFix loop used all {last_iters} iterations without full GREEN",
-        })
+        diagnoses.append(
+            {
+                "id": "D-LOOP-MAXITER",
+                "severity": "MEDIUM",
+                "category": "loop_inefficiency",
+                "description": f"AutoFix loop used all {last_iters} iterations without full GREEN",
+            }
+        )
 
     # D6: Low fix success rate
     fix_rates = analysis.get("fix_success_rates", {})
     for ftype, rates in fix_rates.items():
         if rates["attempted"] >= 3 and rates["rate"] < 0.5:
-            diagnoses.append({
-                "id": f"D-LOWFIX-{ftype}",
-                "severity": "HIGH",
-                "category": "low_fix_rate",
-                "description": f"{ftype} fix success rate is {rates['rate']:.0%} ({rates['succeeded']}/{rates['attempted']})",
-                "failure_type": ftype,
-                "rate": rates["rate"],
-            })
+            diagnoses.append(
+                {
+                    "id": f"D-LOWFIX-{ftype}",
+                    "severity": "HIGH",
+                    "category": "low_fix_rate",
+                    "description": f"{ftype} fix success rate is {rates['rate']:.0%} ({rates['succeeded']}/{rates['attempted']})",
+                    "failure_type": ftype,
+                    "rate": rates["rate"],
+                }
+            )
 
     # Sort by severity
     sev_order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
@@ -312,11 +329,14 @@ def propose(diagnoses: list[dict], existing_proposals: list[dict]) -> dict | Non
         if _is_on_cooldown(diag["category"], existing_proposals):
             continue
 
-        template = _PROPOSAL_TEMPLATES.get(diag["category"], {
-            "action": "Review and address: {description}",
-            "strategy": "Manual analysis required",
-            "risk": "MEDIUM",
-        })
+        template = _PROPOSAL_TEMPLATES.get(
+            diag["category"],
+            {
+                "action": "Review and address: {description}",
+                "strategy": "Manual analysis required",
+                "risk": "MEDIUM",
+            },
+        )
 
         action = template["action"].format(**{**diag, "description": diag["description"]})
         strategy = template["strategy"].format(**{**diag, "description": diag["description"]})
@@ -364,6 +384,7 @@ def score_proposal(proposal: dict, analysis: dict) -> int:
 
 # ── Phase 4: VALIDATE ────────────────────────────────────────────────────── #
 
+
 def validate_proposal(proposal: dict) -> dict:
     """Validate proposal safety (governance + risk check)."""
     validation = {
@@ -374,41 +395,65 @@ def validate_proposal(proposal: dict) -> dict:
 
     # Check 1: Risk level
     if proposal["risk"] in ("LOW", "MEDIUM"):
-        validation["checks"].append({"name": "risk_level", "status": "OK",
-                                      "detail": f"Risk: {proposal['risk']}"})
+        validation["checks"].append(
+            {"name": "risk_level", "status": "OK", "detail": f"Risk: {proposal['risk']}"}
+        )
     else:
-        validation["checks"].append({"name": "risk_level", "status": "WARN",
-                                      "detail": "High risk proposal"})
+        validation["checks"].append(
+            {"name": "risk_level", "status": "WARN", "detail": "High risk proposal"}
+        )
 
     # Check 2: Not touching governance-protected area
     governance_keywords = ["governance_gate", "governance_check", "constitution"]
     action_lower = (proposal["action"] + proposal["strategy"]).lower()
     touches_governance = any(kw in action_lower for kw in governance_keywords)
     if touches_governance:
-        validation["checks"].append({"name": "governance_proximity", "status": "BLOCK",
-                                      "detail": "Proposal touches governance-protected area"})
+        validation["checks"].append(
+            {
+                "name": "governance_proximity",
+                "status": "BLOCK",
+                "detail": "Proposal touches governance-protected area",
+            }
+        )
         validation["passed"] = False
     else:
-        validation["checks"].append({"name": "governance_proximity", "status": "OK",
-                                      "detail": "No governance area impact"})
+        validation["checks"].append(
+            {"name": "governance_proximity", "status": "OK", "detail": "No governance area impact"}
+        )
 
     # Check 3: Category safety
-    safe_categories = {"recurring_failure", "pattern_accumulation",
-                       "trend_degradation", "loop_inefficiency"}
+    safe_categories = {
+        "recurring_failure",
+        "pattern_accumulation",
+        "trend_degradation",
+        "loop_inefficiency",
+    }
     if proposal["category"] in safe_categories:
-        validation["checks"].append({"name": "category_safety", "status": "OK",
-                                      "detail": f"Category '{proposal['category']}' is safe"})
+        validation["checks"].append(
+            {
+                "name": "category_safety",
+                "status": "OK",
+                "detail": f"Category '{proposal['category']}' is safe",
+            }
+        )
     else:
-        validation["checks"].append({"name": "category_safety", "status": "WARN",
-                                      "detail": f"Category '{proposal['category']}' needs human review"})
+        validation["checks"].append(
+            {
+                "name": "category_safety",
+                "status": "WARN",
+                "detail": f"Category '{proposal['category']}' needs human review",
+            }
+        )
 
     return validation
 
 
 # ── Phase 5: RECORD ──────────────────────────────────────────────────────── #
 
-def record_evolution(proposal: dict | None, validation: dict | None,
-                     analysis: dict, diagnoses: list[dict]) -> dict:
+
+def record_evolution(
+    proposal: dict | None, validation: dict | None, analysis: dict, diagnoses: list[dict]
+) -> dict:
     """Record evolution result."""
     entry = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -436,6 +481,7 @@ def record_evolution(proposal: dict | None, validation: dict | None,
 
 
 # ── Main ──────────────────────────────────────────────────────────────────── #
+
 
 def evolution_loop() -> dict:
     """Run one cycle of the evolution loop."""
@@ -469,8 +515,7 @@ def evolution_loop() -> dict:
     # Phase 3: PROPOSE
     print("\n[3/5] PROPOSE")
     existing = _load_evolution_history()
-    existing_proposals = [e.get("proposal", {}) for e in existing
-                          if e.get("proposal")]
+    existing_proposals = [e.get("proposal", {}) for e in existing if e.get("proposal")]
     proposal = propose(diagnoses, existing_proposals)
 
     if proposal:
@@ -532,9 +577,11 @@ def _cmd_list():
     print(f"{'ID':<25} {'Score':>5} {'Severity':<8} {'Status':<10} {'Category':<20} {'Action'}")
     print("-" * 100)
     for p in proposals:
-        print(f"{p.get('proposal_id', '?'):<25} {p.get('score', '?'):>5} "
-              f"{p.get('severity', '?'):<8} {p.get('status', '?'):<10} "
-              f"{p.get('category', '?'):<20} {p.get('action', '?')[:40]}")
+        print(
+            f"{p.get('proposal_id', '?'):<25} {p.get('score', '?'):>5} "
+            f"{p.get('severity', '?'):<8} {p.get('status', '?'):<10} "
+            f"{p.get('category', '?'):<20} {p.get('action', '?')[:40]}"
+        )
 
 
 def _cmd_board():
@@ -565,17 +612,21 @@ def _cmd_board():
         print(f"  {'ID':<25} {'Score':>5} {'Severity':<8} {'Category':<20} {'Action'}")
         print("  " + "-" * 75)
         for p in items:
-            print(f"  {p.get('proposal_id', '?'):<25} {p.get('score', '?'):>5} "
-                  f"{p.get('severity', '?'):<8} "
-                  f"{p.get('category', '?'):<20} {p.get('action', '?')[:35]}")
+            print(
+                f"  {p.get('proposal_id', '?'):<25} {p.get('score', '?'):>5} "
+                f"{p.get('severity', '?'):<8} "
+                f"{p.get('category', '?'):<20} {p.get('action', '?')[:35]}"
+            )
 
     print(f"\n{'=' * 80}")
     total = len(proposals)
     pending = len(buckets["PENDING (PROPOSED)"])
     approved = len(buckets["APPROVED"])
-    print(f"  Total: {total}  |  Pending: {pending}  |  Approved: {approved}  |  "
-          f"Rejected: {len(buckets['REJECTED'])}  |  Applied: {len(buckets['APPLIED'])}  |  "
-          f"Blocked: {len(buckets['BLOCKED'])}")
+    print(
+        f"  Total: {total}  |  Pending: {pending}  |  Approved: {approved}  |  "
+        f"Rejected: {len(buckets['REJECTED'])}  |  Applied: {len(buckets['APPLIED'])}  |  "
+        f"Blocked: {len(buckets['BLOCKED'])}"
+    )
     print("=" * 80)
 
 
@@ -640,14 +691,19 @@ def _apply_guard_check(proposal_id: str, commit_hash: str) -> tuple[bool, list[s
     receipt_found = False
     if receipt_dir.exists():
         for f in receipt_dir.iterdir():
-            if f.suffix == ".md" and proposal_id.lower() in f.read_text(encoding="utf-8", errors="replace").lower():
+            if (
+                f.suffix == ".md"
+                and proposal_id.lower() in f.read_text(encoding="utf-8", errors="replace").lower()
+            ):
                 receipt_found = True
                 break
     if receipt_found:
         messages.append("[OK] RECEIPT: Change approval receipt found")
     else:
         messages.append("[!!] RECEIPT: No change_approval_receipt referencing this proposal found")
-        messages.append("     Create receipt from docs/operations/templates/change_approval_receipt.md")
+        messages.append(
+            "     Create receipt from docs/operations/templates/change_approval_receipt.md"
+        )
         passed = False
 
     # Guard 2: Test results check
@@ -659,13 +715,17 @@ def _apply_guard_check(proposal_id: str, commit_hash: str) -> tuple[bool, list[s
             if grade in ("GREEN", "YELLOW"):
                 messages.append(f"[OK] TESTS: Last evaluation grade is {grade}")
             else:
-                messages.append(f"[!!] TESTS: Last evaluation grade is {grade} (should be GREEN or YELLOW)")
+                messages.append(
+                    f"[!!] TESTS: Last evaluation grade is {grade} (should be GREEN or YELLOW)"
+                )
                 passed = False
         except Exception:
             messages.append("[!!] TESTS: Cannot read evaluation_report.json")
             passed = False
     else:
-        messages.append("[!!] TESTS: evaluation_report.json not found -- run evaluate_results.py first")
+        messages.append(
+            "[!!] TESTS: evaluation_report.json not found -- run evaluate_results.py first"
+        )
         passed = False
 
     # Guard 3: Governance check
@@ -794,7 +854,9 @@ def main():
     apply_parser = sub.add_parser("apply", help="Mark proposal as applied")
     apply_parser.add_argument("proposal_id", help="Proposal ID to mark as applied")
     apply_parser.add_argument("--commit", default="", help="Commit hash of the applied change")
-    apply_parser.add_argument("--force", action="store_true", help="Force apply despite guard failures")
+    apply_parser.add_argument(
+        "--force", action="store_true", help="Force apply despite guard failures"
+    )
 
     # Block a proposal (governance/safety)
     block_parser = sub.add_parser("block", help="Block a proposal")
@@ -818,7 +880,7 @@ def main():
     else:
         # Default: run
         result = evolution_loop()
-        if hasattr(args, 'json') and args.json:
+        if hasattr(args, "json") and args.json:
             print(json.dumps(result, ensure_ascii=False, indent=2))
 
 

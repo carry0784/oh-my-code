@@ -6,6 +6,7 @@ Maintains task registry; execution dispatch is handled externally.
 
 Governance: B2 (governance_layer_map.md -- L25)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -17,12 +18,14 @@ from typing import Optional
 # Data models
 # ------------------------------------------------------------------ #
 
+
 @dataclass
 class ScheduledTask:
     """Descriptor for a single scheduled recurring task."""
+
     task_id: str
-    interval: float           # recurrence interval in seconds
-    callback_name: str        # dotted name of the callable to invoke
+    interval: float  # recurrence interval in seconds
+    callback_name: str  # dotted name of the callable to invoke
     active: bool = True
     last_run: Optional[datetime] = None
     next_run: Optional[datetime] = None
@@ -31,6 +34,7 @@ class ScheduledTask:
 # ------------------------------------------------------------------ #
 # L25 Scheduler Engine
 # ------------------------------------------------------------------ #
+
 
 class SchedulerEngine:
     """
@@ -156,6 +160,7 @@ class SchedulerEngine:
         """
         now = datetime.now(timezone.utc)
         return [
-            t for t in self._tasks.values()
+            t
+            for t in self._tasks.values()
             if t.active and t.next_run is not None and t.next_run <= now
         ]

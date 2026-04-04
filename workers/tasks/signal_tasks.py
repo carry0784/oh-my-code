@@ -50,10 +50,14 @@ def expire_signals():
     session = get_sync_session()
     try:
         now = datetime.now(timezone.utc)
-        expired = session.query(Signal).filter(
-            Signal.status == SignalStatus.PENDING,
-            Signal.expires_at < now,
-        ).all()
+        expired = (
+            session.query(Signal)
+            .filter(
+                Signal.status == SignalStatus.PENDING,
+                Signal.expires_at < now,
+            )
+            .all()
+        )
 
         for signal in expired:
             signal.status = SignalStatus.EXPIRED

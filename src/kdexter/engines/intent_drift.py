@@ -14,6 +14,7 @@ Thresholds (OQ-4 resolved — config/thresholds.py):
 Governance: B2 (governance_layer_map.md — L15)
 Gate: G-19 Drift Gate (criteria now defined via DRIFT_HIGH_THRESHOLD)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -25,9 +26,9 @@ from kdexter.config.thresholds import DRIFT_HIGH_THRESHOLD, DRIFT_WARN_THRESHOLD
 
 
 class DriftLevel(Enum):
-    NORMAL = "NORMAL"       # score < DRIFT_WARN_THRESHOLD
-    WARNING = "WARNING"     # DRIFT_WARN_THRESHOLD ≤ score < DRIFT_HIGH_THRESHOLD
-    HIGH = "HIGH"           # score ≥ DRIFT_HIGH_THRESHOLD — execution BLOCKED
+    NORMAL = "NORMAL"  # score < DRIFT_WARN_THRESHOLD
+    WARNING = "WARNING"  # DRIFT_WARN_THRESHOLD ≤ score < DRIFT_HIGH_THRESHOLD
+    HIGH = "HIGH"  # score ≥ DRIFT_HIGH_THRESHOLD — execution BLOCKED
 
 
 @dataclass
@@ -35,7 +36,7 @@ class DriftCheckResult:
     score: float
     level: DriftLevel
     blocked: bool
-    dimensions: dict[str, float]   # per-dimension breakdown
+    dimensions: dict[str, float]  # per-dimension breakdown
     checked_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     reason: Optional[str] = None
 
@@ -46,11 +47,12 @@ class IntentSnapshot:
     Snapshot of the user's original intent, captured at CLARIFYING state.
     Used as the reference point for all subsequent drift measurements.
     """
+
     intent_id: str
     captured_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     intent_text: str = ""
-    goal_scope: list[str] = field(default_factory=list)     # e.g. ["spot_trading", "KRW_pairs"]
-    risk_budget: float = 0.02                                # e.g. max 2% loss per trade
+    goal_scope: list[str] = field(default_factory=list)  # e.g. ["spot_trading", "KRW_pairs"]
+    risk_budget: float = 0.02  # e.g. max 2% loss per trade
     allowed_exchanges: list[str] = field(default_factory=list)
     forbidden_actions: list[str] = field(default_factory=list)
 
@@ -71,7 +73,7 @@ class IntentDriftEngine:
     via embedding comparison) requires LLM integration — TODO in later step.
     """
 
-    DIMENSION_WEIGHT: float = 0.25   # equal weight for all 4 dimensions
+    DIMENSION_WEIGHT: float = 0.25  # equal weight for all 4 dimensions
 
     def __init__(self, intent: IntentSnapshot) -> None:
         self._intent = intent
@@ -86,7 +88,7 @@ class IntentDriftEngine:
         current_scope: list[str],
         current_risk_exposure: float,
         rule_change_count: int,
-        goal_embedding_distance: float = 0.0,   # 0.0 until LLM integration
+        goal_embedding_distance: float = 0.0,  # 0.0 until LLM integration
     ) -> DriftCheckResult:
         """
         Compute drift score from current system state vs captured intent.
@@ -107,9 +109,9 @@ class IntentDriftEngine:
 
         dimensions = {
             "scope_drift": scope_drift,
-            "risk_drift":  risk_drift,
-            "rule_drift":  rule_drift,
-            "goal_drift":  goal_drift,
+            "risk_drift": risk_drift,
+            "rule_drift": rule_drift,
+            "goal_drift": goal_drift,
         }
         score = sum(dimensions.values()) * self.DIMENSION_WEIGHT
 
@@ -172,6 +174,5 @@ class IntentDriftEngine:
     def _build_reason(dimensions: dict[str, float], total: float) -> str:
         top = max(dimensions, key=lambda k: dimensions[k])
         return (
-            f"drift_score={total:.3f} ≥ threshold. "
-            f"Highest contributor: {top}={dimensions[top]:.3f}"
+            f"drift_score={total:.3f} ≥ threshold. Highest contributor: {top}={dimensions[top]:.3f}"
         )

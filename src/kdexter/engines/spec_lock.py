@@ -11,6 +11,7 @@ Governance: B1 (constitution tier — spec integrity is a hard constraint)
 Gate: G-26 LOCK_CHECK at VALIDATING[10]
 Mandatory: M-17 (spec lock check must run at VALIDATING[10])
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -22,9 +23,11 @@ from typing import Any
 # Data models
 # ------------------------------------------------------------------ #
 
+
 @dataclass
 class BlockedMutation:
     """Record of a single rejected mutation attempt."""
+
     field_name: str
     old_value: Any
     new_value: Any
@@ -34,6 +37,7 @@ class BlockedMutation:
 @dataclass
 class SpecLockResult:
     """Snapshot of spec lock state, suitable for gate evaluation."""
+
     locked: bool
     mutation_count: int
     mutations_blocked: list[BlockedMutation] = field(default_factory=list)
@@ -42,6 +46,7 @@ class SpecLockResult:
 # ------------------------------------------------------------------ #
 # L22 Spec Lock Engine
 # ------------------------------------------------------------------ #
+
 
 class SpecLockEngine:
     """

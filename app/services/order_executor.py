@@ -25,6 +25,7 @@ Safety mechanisms:
   OE-06: Ledger write forbidden (read-only access)
   OE-07: History append-only (no deletion, no mutation)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -38,28 +39,32 @@ from app.core.config import SUPPORTED_EXCHANGES_ALL
 
 # -- Exceptions ------------------------------------------------------------ #
 
+
 class ExecutionDeniedError(Exception):
     """Raised when submit_ready is False or execution preconditions not met."""
+
     pass
 
 
 # -- Data Model ------------------------------------------------------------ #
 
+
 @dataclass
 class OrderResult:
     """Immutable record of an order execution attempt."""
-    order_id: str                        # OX-YYYYMMDDHHMMSS-xxxxxx
-    submit_proposal_id: str              # SP-* (lineage)
-    execution_proposal_id: str           # EP-* (lineage)
-    agent_proposal_id: str               # AP-* (lineage)
+
+    order_id: str  # OX-YYYYMMDDHHMMSS-xxxxxx
+    submit_proposal_id: str  # SP-* (lineage)
+    execution_proposal_id: str  # EP-* (lineage)
+    agent_proposal_id: str  # AP-* (lineage)
     exchange: str
     symbol: str
-    side: str                            # "buy" | "sell"
-    order_type: str                      # "limit" | "market"
+    side: str  # "buy" | "sell"
+    order_type: str  # "limit" | "market"
     requested_size: float
     executed_size: Optional[float] = None
     executed_price: Optional[float] = None
-    status: str = "PENDING"              # FILLED | PARTIAL | REJECTED | TIMEOUT | ERROR
+    status: str = "PENDING"  # FILLED | PARTIAL | REJECTED | TIMEOUT | ERROR
     exchange_order_id: Optional[str] = None
     error_detail: Optional[str] = None
     dry_run: bool = True
@@ -71,6 +76,7 @@ class OrderResult:
 
 
 # -- Order Executor -------------------------------------------------------- #
+
 
 class OrderExecutor:
     """
@@ -133,9 +139,13 @@ class OrderExecutor:
         # [3] exchange allowlist 재확인
         if exchange not in SUPPORTED_EXCHANGES_ALL:
             return self._record_result(
-                sp_id=sp_id, ep_id=ep_id, ap_id=ap_id,
-                exchange=exchange or "", symbol=symbol or "",
-                side=side, order_type=order_type,
+                sp_id=sp_id,
+                ep_id=ep_id,
+                ap_id=ap_id,
+                exchange=exchange or "",
+                symbol=symbol or "",
+                side=side,
+                order_type=order_type,
                 requested_size=requested_size,
                 status="ERROR",
                 error_detail=f"Unsupported exchange: '{exchange}'. Allowed: {list(SUPPORTED_EXCHANGES_ALL)}",
@@ -145,9 +155,13 @@ class OrderExecutor:
         # [4] dry_run 모드
         if dry_run:
             return self._record_result(
-                sp_id=sp_id, ep_id=ep_id, ap_id=ap_id,
-                exchange=exchange, symbol=symbol or "",
-                side=side, order_type=order_type,
+                sp_id=sp_id,
+                ep_id=ep_id,
+                ap_id=ap_id,
+                exchange=exchange,
+                symbol=symbol or "",
+                side=side,
+                order_type=order_type,
                 requested_size=requested_size,
                 status="FILLED",
                 executed_size=requested_size,
@@ -159,6 +173,7 @@ class OrderExecutor:
         # [5] 실제 거래소 호출
         try:
             from exchanges.factory import ExchangeFactory
+
             ex = ExchangeFactory.create(exchange)
 
             order_response = await asyncio.wait_for(
@@ -173,9 +188,13 @@ class OrderExecutor:
             )
 
             return self._record_result(
-                sp_id=sp_id, ep_id=ep_id, ap_id=ap_id,
-                exchange=exchange, symbol=symbol or "",
-                side=side, order_type=order_type,
+                sp_id=sp_id,
+                ep_id=ep_id,
+                ap_id=ap_id,
+                exchange=exchange,
+                symbol=symbol or "",
+                side=side,
+                order_type=order_type,
                 requested_size=requested_size,
                 status="FILLED",
                 executed_size=order_response.get("filled", requested_size),
@@ -186,9 +205,13 @@ class OrderExecutor:
 
         except asyncio.TimeoutError:
             return self._record_result(
-                sp_id=sp_id, ep_id=ep_id, ap_id=ap_id,
-                exchange=exchange, symbol=symbol or "",
-                side=side, order_type=order_type,
+                sp_id=sp_id,
+                ep_id=ep_id,
+                ap_id=ap_id,
+                exchange=exchange,
+                symbol=symbol or "",
+                side=side,
+                order_type=order_type,
                 requested_size=requested_size,
                 status="TIMEOUT",
                 error_detail=f"Exchange API timeout ({self._default_timeout}s)",
@@ -197,9 +220,13 @@ class OrderExecutor:
 
         except Exception as e:
             return self._record_result(
-                sp_id=sp_id, ep_id=ep_id, ap_id=ap_id,
-                exchange=exchange, symbol=symbol or "",
-                side=side, order_type=order_type,
+                sp_id=sp_id,
+                ep_id=ep_id,
+                ap_id=ap_id,
+                exchange=exchange,
+                symbol=symbol or "",
+                side=side,
+                order_type=order_type,
                 requested_size=requested_size,
                 status="ERROR",
                 error_detail=f"{type(e).__name__}: {e}",
@@ -210,9 +237,13 @@ class OrderExecutor:
 
     def _record_result(
         self,
-        sp_id: str, ep_id: str, ap_id: str,
-        exchange: str, symbol: str,
-        side: str, order_type: str,
+        sp_id: str,
+        ep_id: str,
+        ap_id: str,
+        exchange: str,
+        symbol: str,
+        side: str,
+        order_type: str,
         requested_size: float,
         status: str,
         executed_size: Optional[float] = None,

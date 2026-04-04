@@ -6,25 +6,39 @@ Tests: Signal, RiskFilter, PositionSizer, ExecutionCell, StrategyPipeline
 
 Run: python -X utf8 tests/test_strategy_pipeline.py
 """
+
 from __future__ import annotations
 
 import asyncio
 import sys
 
 from kdexter.strategy.signal import (
-    Signal, SignalDirection, SignalStrength, SignalStatus,
+    Signal,
+    SignalDirection,
+    SignalStrength,
+    SignalStatus,
 )
 from kdexter.strategy.risk_filter import (
-    RiskFilter, RiskLimits, AccountState, RiskCheckResult,
+    RiskFilter,
+    RiskLimits,
+    AccountState,
+    RiskCheckResult,
 )
 from kdexter.strategy.position_sizer import (
-    PositionSizer, SizingParams, SizingMethod, SizingResult,
+    PositionSizer,
+    SizingParams,
+    SizingMethod,
+    SizingResult,
 )
 from kdexter.strategy.execution_cell import ExecutionCell, ExecutionResult
 from kdexter.strategy.pipeline import StrategyPipeline, PipelineStage
 from kdexter.audit.evidence_store import EvidenceStore
 from kdexter.tcl.commands import (
-    TCLDispatcher, TCLCommand, CommandTranscript, CommandType, ExecutionMode,
+    TCLDispatcher,
+    TCLCommand,
+    CommandTranscript,
+    CommandType,
+    ExecutionMode,
 )
 from kdexter.tcl.adapters import ExchangeAdapter
 
@@ -44,6 +58,7 @@ def run(coro):
 # ------------------------------------------------------------------ #
 # Mock exchange adapter for tests
 # ------------------------------------------------------------------ #
+
 
 class MockAdapter(ExchangeAdapter):
     @property
@@ -110,6 +125,7 @@ def _make_account(**kwargs) -> AccountState:
 # 1. Signal Model
 # ======================================================================== #
 
+
 def test_signal_creation():
     s = _make_signal()
     assert s.status == SignalStatus.PENDING
@@ -142,6 +158,7 @@ def test_signal_rejection():
 
 def test_signal_expiry():
     from datetime import timedelta
+
     s = _make_signal(ttl_seconds=0)
     # TTL=0 means immediately expired
     assert s.is_expired is True
@@ -153,6 +170,7 @@ def test_signal_expiry():
 # ======================================================================== #
 # 2. Risk Filter
 # ======================================================================== #
+
 
 def test_risk_pass():
     rf = RiskFilter(RiskLimits())
@@ -233,11 +251,14 @@ def test_risk_pass_rate():
 # 3. Position Sizer
 # ======================================================================== #
 
+
 def test_sizer_fixed_fraction():
-    sizer = PositionSizer(SizingParams(
-        method=SizingMethod.FIXED_FRACTION,
-        fixed_fraction_pct=0.02,
-    ))
+    sizer = PositionSizer(
+        SizingParams(
+            method=SizingMethod.FIXED_FRACTION,
+            fixed_fraction_pct=0.02,
+        )
+    )
     s = _make_signal()
     s.approve_risk()
     acc = _make_account(total_equity=100000)
@@ -253,12 +274,14 @@ def test_sizer_fixed_fraction():
 
 
 def test_sizer_kelly():
-    sizer = PositionSizer(SizingParams(
-        method=SizingMethod.KELLY,
-        kelly_win_rate=0.55,
-        kelly_payoff_ratio=1.5,
-        kelly_fraction=0.25,
-    ))
+    sizer = PositionSizer(
+        SizingParams(
+            method=SizingMethod.KELLY,
+            kelly_win_rate=0.55,
+            kelly_payoff_ratio=1.5,
+            kelly_fraction=0.25,
+        )
+    )
     s = _make_signal()
     s.approve_risk()
     acc = _make_account(total_equity=100000)
@@ -273,10 +296,12 @@ def test_sizer_kelly():
 
 
 def test_sizer_fixed_quantity():
-    sizer = PositionSizer(SizingParams(
-        method=SizingMethod.FIXED_QUANTITY,
-        fixed_quantity=0.5,
-    ))
+    sizer = PositionSizer(
+        SizingParams(
+            method=SizingMethod.FIXED_QUANTITY,
+            fixed_quantity=0.5,
+        )
+    )
     s = _make_signal()
     s.approve_risk()
     result = sizer.size(s, _make_account())
@@ -295,11 +320,13 @@ def test_sizer_not_risk_approved():
 
 
 def test_sizer_min_max_clamp():
-    sizer = PositionSizer(SizingParams(
-        method=SizingMethod.FIXED_QUANTITY,
-        fixed_quantity=10.0,
-        max_quantity=5.0,
-    ))
+    sizer = PositionSizer(
+        SizingParams(
+            method=SizingMethod.FIXED_QUANTITY,
+            fixed_quantity=10.0,
+            max_quantity=5.0,
+        )
+    )
     s = _make_signal()
     s.approve_risk()
     result = sizer.size(s, _make_account())
@@ -310,6 +337,7 @@ def test_sizer_min_max_clamp():
 # ======================================================================== #
 # 4. Execution Cell
 # ======================================================================== #
+
 
 def test_exec_cell_dry_run():
     dispatcher = TCLDispatcher()
@@ -391,6 +419,7 @@ def test_exec_cell_success_rate():
 # 5. Strategy Pipeline (end-to-end)
 # ======================================================================== #
 
+
 def test_pipeline_success():
     dispatcher = TCLDispatcher()
     dispatcher.register("mock", MockAdapter())
@@ -398,10 +427,12 @@ def test_pipeline_success():
 
     pipeline = StrategyPipeline(
         risk_filter=RiskFilter(),
-        sizer=PositionSizer(SizingParams(
-            method=SizingMethod.FIXED_FRACTION,
-            fixed_fraction_pct=0.02,
-        )),
+        sizer=PositionSizer(
+            SizingParams(
+                method=SizingMethod.FIXED_FRACTION,
+                fixed_fraction_pct=0.02,
+            )
+        ),
         execution_cell=ExecutionCell(tcl=dispatcher, evidence=evidence),
     )
 
@@ -502,7 +533,7 @@ def test_pipeline_mixed_results():
     assert r1.success is True
     assert r2.success is False
     assert r3.success is True
-    assert pipeline.success_rate() == 2/3
+    assert pipeline.success_rate() == 2 / 3
     print("  [27] Pipeline mixed results  OK")
 
 
@@ -515,43 +546,58 @@ if __name__ == "__main__":
     print("=" * 60)
 
     tests = [
-        ("Signal Model", [
-            test_signal_creation,
-            test_signal_lifecycle,
-            test_signal_rejection,
-            test_signal_expiry,
-        ]),
-        ("Risk Filter", [
-            test_risk_pass,
-            test_risk_drawdown_reject,
-            test_risk_forbidden_symbol,
-            test_risk_forbidden_exchange,
-            test_risk_exposure_limit,
-            test_risk_daily_trade_limit,
-            test_risk_expired_signal,
-            test_risk_pass_rate,
-        ]),
-        ("Position Sizer", [
-            test_sizer_fixed_fraction,
-            test_sizer_kelly,
-            test_sizer_fixed_quantity,
-            test_sizer_not_risk_approved,
-            test_sizer_min_max_clamp,
-        ]),
-        ("Execution Cell", [
-            test_exec_cell_dry_run,
-            test_exec_cell_not_sized,
-            test_exec_cell_no_adapter,
-            test_exec_cell_sell,
-            test_exec_cell_success_rate,
-        ]),
-        ("Strategy Pipeline", [
-            test_pipeline_success,
-            test_pipeline_risk_reject,
-            test_pipeline_batch,
-            test_pipeline_summary,
-            test_pipeline_mixed_results,
-        ]),
+        (
+            "Signal Model",
+            [
+                test_signal_creation,
+                test_signal_lifecycle,
+                test_signal_rejection,
+                test_signal_expiry,
+            ],
+        ),
+        (
+            "Risk Filter",
+            [
+                test_risk_pass,
+                test_risk_drawdown_reject,
+                test_risk_forbidden_symbol,
+                test_risk_forbidden_exchange,
+                test_risk_exposure_limit,
+                test_risk_daily_trade_limit,
+                test_risk_expired_signal,
+                test_risk_pass_rate,
+            ],
+        ),
+        (
+            "Position Sizer",
+            [
+                test_sizer_fixed_fraction,
+                test_sizer_kelly,
+                test_sizer_fixed_quantity,
+                test_sizer_not_risk_approved,
+                test_sizer_min_max_clamp,
+            ],
+        ),
+        (
+            "Execution Cell",
+            [
+                test_exec_cell_dry_run,
+                test_exec_cell_not_sized,
+                test_exec_cell_no_adapter,
+                test_exec_cell_sell,
+                test_exec_cell_success_rate,
+            ],
+        ),
+        (
+            "Strategy Pipeline",
+            [
+                test_pipeline_success,
+                test_pipeline_risk_reject,
+                test_pipeline_batch,
+                test_pipeline_summary,
+                test_pipeline_mixed_results,
+            ],
+        ),
     ]
 
     total = 0

@@ -16,7 +16,9 @@ from dataclasses import dataclass, field
 from app.core.logging import get_logger
 from app.services.governance_gate import GovernanceGate, GovernanceDecision
 from app.services.strategy_lifecycle import (
-    StrategyLifecycleManager, StrategyState, TransitionRequest
+    StrategyLifecycleManager,
+    StrategyState,
+    TransitionRequest,
 )
 from app.services.system_health import SystemHealthMonitor, SystemHealthReport
 
@@ -147,10 +149,12 @@ class AutonomousOrchestrator:
         )
         result.is_healthy = result.health.is_healthy
 
-        logger.info("orchestrator_cycle_complete",
-                     cycle=self.cycle_count,
-                     transitions=len(result.transitions),
-                     healthy=result.is_healthy)
+        logger.info(
+            "orchestrator_cycle_complete",
+            cycle=self.cycle_count,
+            transitions=len(result.transitions),
+            healthy=result.is_healthy,
+        )
         return result
 
     def get_summary(self) -> dict:

@@ -18,13 +18,26 @@ from unittest.mock import MagicMock
 import pytest
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services", "app.services.order_service",
-    "app.services.position_service", "app.services.signal_service",
-    "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -55,7 +68,6 @@ def _get_fn_body():
 # C12-1: Timeline panel HTML
 # ===========================================================================
 class TestC12TimelineBlock:
-
     def test_block_exists(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert 'id="incident-chronology-block"' in content
@@ -73,7 +85,6 @@ class TestC12TimelineBlock:
 # C12-2: JS chronology render function
 # ===========================================================================
 class TestC12RenderFunction:
-
     def test_function_exists(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert "function renderIncidentChronology" in content
@@ -137,7 +148,6 @@ class TestC12RenderFunction:
 # C12-3: CSS
 # ===========================================================================
 class TestC12CSS:
-
     def test_row_class(self):
         content = CSS_PATH.read_text(encoding="utf-8")
         assert ".ic-row" in content
@@ -163,7 +173,6 @@ class TestC12CSS:
 # C12-4: Tab 2 통합
 # ===========================================================================
 class TestC12Integration:
-
     def test_called_from_render_tab2(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert "renderIncidentChronology(data, venueStates)" in content
@@ -177,11 +186,18 @@ class TestC12Integration:
 
     def test_existing_blocks_preserved(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        for bid in ['key-facts-block', 'loop-ceiling-block', 'quote-feed-block',
-                     'venue-status-block', 'freshness-timeline-block',
-                     'provenance-block', 'triage-checklist-block',
-                     'handoff-receipt-block', 'event-log-block',
-                     'incident-overlay']:
+        for bid in [
+            "key-facts-block",
+            "loop-ceiling-block",
+            "quote-feed-block",
+            "venue-status-block",
+            "freshness-timeline-block",
+            "provenance-block",
+            "triage-checklist-block",
+            "handoff-receipt-block",
+            "event-log-block",
+            "incident-overlay",
+        ]:
             assert bid in content, f"{bid} must be preserved"
 
 
@@ -189,7 +205,6 @@ class TestC12Integration:
 # C12-5: 상태 구분 원칙 및 금지 조항
 # ===========================================================================
 class TestC12StateDistinction:
-
     def test_distinguishes_unknown_stale_disconnected(self):
         """unknown / stale / disconnected가 별도로 존재한다."""
         fn_body = _get_fn_body()
@@ -203,9 +218,16 @@ class TestC12StateDistinction:
     def test_no_forbidden_strings(self):
         fn_body = _get_fn_body()
         forbidden = [
-            'agent_analysis', 'raw_prompt', 'chain_of_thought',
-            'internal_reasoning', 'debug_trace', 'error_class',
-            'traceback', 'exception_type', 'stack', 'internal_state_dump',
+            "agent_analysis",
+            "raw_prompt",
+            "chain_of_thought",
+            "internal_reasoning",
+            "debug_trace",
+            "error_class",
+            "traceback",
+            "exception_type",
+            "stack",
+            "internal_state_dump",
         ]
         for f in forbidden:
             assert f not in fn_body, f"Forbidden string '{f}'"

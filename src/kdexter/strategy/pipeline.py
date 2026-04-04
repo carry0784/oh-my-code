@@ -8,6 +8,7 @@ Orchestrates the full signal-to-execution pipeline:
 This is the entry point for the strategy pipeline, called by
 the MainLoop at RUNNING state via the run_execution hook.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -25,6 +26,7 @@ from kdexter.strategy.execution_cell import ExecutionCell, ExecutionResult
 # Pipeline result
 # ------------------------------------------------------------------ #
 
+
 class PipelineStage(Enum):
     RISK_CHECK = "RISK_CHECK"
     POSITION_SIZING = "POSITION_SIZING"
@@ -35,6 +37,7 @@ class PipelineStage(Enum):
 @dataclass
 class PipelineResult:
     """End-to-end result of processing a signal through the pipeline."""
+
     signal_id: str
     success: bool
     final_stage: PipelineStage
@@ -48,6 +51,7 @@ class PipelineResult:
 # ------------------------------------------------------------------ #
 # Pipeline
 # ------------------------------------------------------------------ #
+
 
 class StrategyPipeline:
     """

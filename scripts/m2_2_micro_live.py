@@ -22,6 +22,7 @@ ABORT CONDITIONS:
   6. submit_ready == False
   7. Exchange order error/timeout
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -38,7 +39,7 @@ if sys.stdout.encoding != "utf-8":
 # ── FIXED PARAMETERS (A 승인 경계) ────────────────────────────────────────── #
 
 TARGET_SYMBOL = "BTC/USDT"
-MAX_NOTIONAL_USDT = 11.0   # hard cap (must cover ~10 USDT + rounding)
+MAX_NOTIONAL_USDT = 11.0  # hard cap (must cover ~10 USDT + rounding)
 EXCHANGE_NAME = "binance"
 SIDE = "buy"
 ORDER_TYPE = "market"
@@ -132,6 +133,7 @@ def main():
     # ── Step 1: ActionLedger ──────────────────────────────────────────── #
     log("[1/7] ActionLedger: propose_and_guard()")
     from app.agents.action_ledger import ActionLedger
+
     al = ActionLedger()
     passed, proposal = al.propose_and_guard(
         task_type="order_execution",
@@ -158,6 +160,7 @@ def main():
     # ── Step 3: ExecutionLedger ────────────────────────────────────────── #
     log("[3/7] ExecutionLedger: propose_and_guard()")
     from app.services.execution_ledger import ExecutionLedger
+
     el = ExecutionLedger()
     epassed, eproposal = el.propose_and_guard(
         task_type="order_execution",
@@ -186,6 +189,7 @@ def main():
     # ── Step 5: SubmitLedger ───────────────────────────────────────────── #
     log("[5/7] SubmitLedger: propose_and_guard()")
     from app.services.submit_ledger import SubmitLedger
+
     sl = SubmitLedger()
     spassed, sproposal = sl.propose_and_guard(
         task_type="order_execution",
@@ -209,7 +213,9 @@ def main():
         final_result={"stage": "m2_2_micro_live", "adjusted_size": quantity},
         post_evidence_id=f"POST-M22-submit-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
     )
-    assert sproposal.status == "SUBMIT_RECEIPTED", f"Expected SUBMIT_RECEIPTED, got {sproposal.status}"
+    assert sproposal.status == "SUBMIT_RECEIPTED", (
+        f"Expected SUBMIT_RECEIPTED, got {sproposal.status}"
+    )
     assert sproposal.submit_ready is True, "submit_ready must be True"
     log(f"  receipt_id={sreceipt.receipt_id}, submit_ready={sproposal.submit_ready} — PASS")
 
@@ -222,15 +228,18 @@ def main():
         abort(f"Window exceeded: {elapsed:.1f}s > {WINDOW_SECONDS}s")
 
     from app.services.order_executor import OrderExecutor
+
     oe = OrderExecutor()
 
     try:
-        order_result = asyncio.run(oe.execute_order(
-            submit_proposal=sproposal,
-            side=SIDE,
-            order_type=ORDER_TYPE,
-            dry_run=False,  # ← LIVE EXECUTION
-        ))
+        order_result = asyncio.run(
+            oe.execute_order(
+                submit_proposal=sproposal,
+                side=SIDE,
+                order_type=ORDER_TYPE,
+                dry_run=False,  # ← LIVE EXECUTION
+            )
+        )
     except Exception as e:
         log(f"  OrderExecutor EXCEPTION: {type(e).__name__}: {e}")
         _restore_and_exit(1, al, el, sl, oe, proposal, eproposal, sproposal, None)
@@ -256,7 +265,14 @@ def main():
     # ══════════════════════════════════════════════════════════════════════ #
     _restore_and_exit(
         0 if order_result.status == "FILLED" else 1,
-        al, el, sl, oe, proposal, eproposal, sproposal, order_result,
+        al,
+        el,
+        sl,
+        oe,
+        proposal,
+        eproposal,
+        sproposal,
+        order_result,
     )
 
 
@@ -305,11 +321,17 @@ def _restore_and_exit(exit_code, al, el, sl, oe, proposal, eproposal, sproposal,
     print("BOARD SUMMARY")
     print("=" * 70)
     ab = al.get_board()
-    log(f"  ActionLedger:    total={ab['total']}, receipted={ab['receipted_count']}, blocked={ab['blocked_count']}")
+    log(
+        f"  ActionLedger:    total={ab['total']}, receipted={ab['receipted_count']}, blocked={ab['blocked_count']}"
+    )
     eb = el.get_board()
-    log(f"  ExecutionLedger: total={eb['total']}, receipted={eb['receipted_count']}, blocked={eb['blocked_count']}")
+    log(
+        f"  ExecutionLedger: total={eb['total']}, receipted={eb['receipted_count']}, blocked={eb['blocked_count']}"
+    )
     sb = sl.get_board()
-    log(f"  SubmitLedger:    total={sb['total']}, receipted={sb['receipted_count']}, blocked={sb['blocked_count']}")
+    log(
+        f"  SubmitLedger:    total={sb['total']}, receipted={sb['receipted_count']}, blocked={sb['blocked_count']}"
+    )
     oh = oe.get_history()
     log(f"  OrderExecutor:   total={len(oh)}")
 
@@ -336,7 +358,12 @@ def _restore_and_exit(exit_code, al, el, sl, oe, proposal, eproposal, sproposal,
     checks = [
         ("1건 제한", live_orders <= 1),
         ("1종목 제한", order_result is None or order_result.symbol == TARGET_SYMBOL),
-        ("최소금액 범위", order_result is None or (order_result.executed_size or 0) * (order_result.executed_price or 0) <= MAX_NOTIONAL_USDT * 1.5),
+        (
+            "최소금액 범위",
+            order_result is None
+            or (order_result.executed_size or 0) * (order_result.executed_price or 0)
+            <= MAX_NOTIONAL_USDT * 1.5,
+        ),
         ("60초 윈도우", True),  # already checked before execution
         ("spot 모드", order_result is None or not order_result.dry_run or True),
         (".env 미변경", True),  # verified above
@@ -367,6 +394,7 @@ def _restore_and_exit(exit_code, al, el, sl, oe, proposal, eproposal, sproposal,
 async def _preflight_price_and_qty():
     """Fetch current price and calculate quantity for ~10 USDT."""
     from exchanges.binance import BinanceExchange
+
     ex = BinanceExchange()
     try:
         await ex.client.load_markets()
@@ -376,7 +404,9 @@ async def _preflight_price_and_qty():
         market = ex.client.market(TARGET_SYMBOL)
         min_cost = market["limits"]["cost"]["min"]
         if TARGET_NOTIONAL_USDT < min_cost:
-            raise ValueError(f"Target notional {TARGET_NOTIONAL_USDT} < exchange min_cost {min_cost}")
+            raise ValueError(
+                f"Target notional {TARGET_NOTIONAL_USDT} < exchange min_cost {min_cost}"
+            )
 
         raw_qty = TARGET_NOTIONAL_USDT / price
         # Round to exchange step (0.00001 for BTC/USDT spot)
@@ -391,6 +421,7 @@ async def _preflight_price_and_qty():
 async def _preflight_balance():
     """Check free USDT balance on mainnet."""
     from exchanges.binance import BinanceExchange
+
     ex = BinanceExchange()
     try:
         balance = await ex.fetch_balance()

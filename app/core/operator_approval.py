@@ -83,9 +83,7 @@ def issue_approval(
 
     # --- Decision ---
     decision = (
-        ApprovalDecision.APPROVED
-        if len(rejection_reasons) == 0
-        else ApprovalDecision.REJECTED
+        ApprovalDecision.APPROVED if len(rejection_reasons) == 0 else ApprovalDecision.REJECTED
     )
 
     receipt = OperatorApprovalReceipt(
@@ -139,10 +137,12 @@ def validate_approval_current(receipt: OperatorApprovalReceipt) -> bool:
 # Field collectors (read-only, fail-closed)
 # ---------------------------------------------------------------------------
 
+
 def _collect_gate() -> tuple[str, bool]:
     """Collect gate snapshot from I-05."""
     try:
         from app.core.execution_gate import evaluate_execution_gate
+
         result = evaluate_execution_gate()
         return result.evidence_id, result.decision.value == "OPEN"
     except Exception:
@@ -153,6 +153,7 @@ def _collect_preflight() -> tuple[str, bool]:
     """Collect preflight from I-04."""
     try:
         from app.core.recovery_preflight import run_recovery_preflight
+
         result = run_recovery_preflight()
         return result.evidence_id, result.decision.value == "READY"
     except Exception:
@@ -163,6 +164,7 @@ def _collect_check() -> tuple[str, bool]:
     """Collect latest check from I-03."""
     try:
         from app.core.constitution_check_runner import run_daily_check
+
         result = run_daily_check()
         return result.evidence_id, result.result.value != "BLOCK"
     except Exception:
@@ -183,17 +185,31 @@ def _collect_ops_score(threshold: float) -> tuple[float, bool]:
             from app.core.config import settings as _cfg
             from app.models.position import Position
             from datetime import datetime, timezone
+
             _engine = create_engine(_cfg.database_url_sync)
             try:
                 with SyncSession(_engine) as _sess:
-                    latest = _sess.query(Position.updated_at).order_by(Position.updated_at.desc()).first()
+                    latest = (
+                        _sess.query(Position.updated_at)
+                        .order_by(Position.updated_at.desc())
+                        .first()
+                    )
                     ts = latest[0] if latest else None
                     if ts is None:
                         from app.models.asset_snapshot import AssetSnapshot
-                        snap = _sess.query(AssetSnapshot.snapshot_at).order_by(AssetSnapshot.snapshot_at.desc()).first()
+
+                        snap = (
+                            _sess.query(AssetSnapshot.snapshot_at)
+                            .order_by(AssetSnapshot.snapshot_at.desc())
+                            .first()
+                        )
                         ts = snap[0] if snap else None
                     if ts:
-                        snapshot_age = int((datetime.now(timezone.utc) - ts.replace(tzinfo=timezone.utc)).total_seconds())
+                        snapshot_age = int(
+                            (
+                                datetime.now(timezone.utc) - ts.replace(tzinfo=timezone.utc)
+                            ).total_seconds()
+                        )
             finally:
                 _engine.dispose()  # CR-035: prevent connection leak
         except Exception:
@@ -208,7 +224,12 @@ def _collect_ops_score(threshold: float) -> tuple[float, bool]:
             stale_data=snapshot_age is None or (snapshot_age is not None and snapshot_age > 300),
         )
         score = _compute_ops_score(integrity, TradingSafetyPanel(), IncidentEvidencePanel())
-        avg = (score.integrity + score.connectivity + score.execution_safety + score.evidence_completeness) / 4
+        avg = (
+            score.integrity
+            + score.connectivity
+            + score.execution_safety
+            + score.evidence_completeness
+        ) / 4
         return round(avg, 4), avg >= threshold
     except Exception:
         return 0.0, False
@@ -218,6 +239,7 @@ def _collect_security_state() -> tuple[str, bool]:
     """Collect security state from I-01."""
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate and hasattr(gate, "security_ctx"):
             ctx = gate.security_ctx
@@ -232,11 +254,13 @@ def _store_approval_evidence(receipt: OperatorApprovalReceipt) -> None:
     """Store approval receipt to evidence store. Append-only."""
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate is None or not hasattr(gate, "evidence_store"):
             return
 
         from kdexter.audit.evidence_store import EvidenceBundle
+
         bundle = EvidenceBundle(
             bundle_id=receipt.approval_id,
             created_at=datetime.now(timezone.utc),

@@ -20,6 +20,7 @@ VALIDATING state contains 10 internal checks (run as checklist, not separate sta
 v4 Priority 4: each transition now carries Guard conditions.
 Guard failure raises GuardViolationError with the specific unmet condition.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -31,6 +32,7 @@ from typing import Callable, Optional
 # ─────────────────────────────────────────────────────────────────────────── #
 # State enum
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 class WorkStateEnum(Enum):
     # Normal execution path
@@ -64,6 +66,7 @@ class WorkStateEnum(Enum):
 
 class ValidatingCheck(Enum):
     """10 internal checks within VALIDATING state (ordered)."""
+
     FORBIDDEN_CHECK = 1
     MANDATORY_CHECK = 2
     COMPLIANCE_CHECK = 3
@@ -80,10 +83,11 @@ class ValidatingCheck(Enum):
 # Guard system
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass
 class GuardResult:
     passed: bool
-    condition_id: str           # e.g. "INTENT_SET", "SPEC_TWIN_EXISTS"
+    condition_id: str  # e.g. "INTENT_SET", "SPEC_TWIN_EXISTS"
     message: str
 
     @classmethod
@@ -106,6 +110,7 @@ class TransitionGuard:
     condition_id: short identifier used in error messages and audit logs.
     check:        function that validates the WorkStateContext.
     """
+
     condition_id: str
     description: str
     check: GuardFn
@@ -114,6 +119,7 @@ class TransitionGuard:
 # ─────────────────────────────────────────────────────────────────────────── #
 # Context
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 @dataclass
 class ValidationResult:
@@ -132,23 +138,24 @@ class WorkStateContext:
     before requesting a transition. Guards read these fields to decide
     whether the transition is permitted.
     """
+
     # Core state
     current: WorkStateEnum = WorkStateEnum.DRAFT
     previous: Optional[WorkStateEnum] = None
     last_transition: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     # CLARIFYING guard fields
-    intent: Optional[str] = None                # M-01: must be non-empty
+    intent: Optional[str] = None  # M-01: must be non-empty
 
     # SPEC_READY guard fields
-    spec_twin_id: Optional[str] = None          # M-02: execution + verification spec pair ID
+    spec_twin_id: Optional[str] = None  # M-02: execution + verification spec pair ID
 
     # PLANNING guard fields
-    risk_checked: bool = False                  # M-03
-    security_checked: bool = False              # M-04
-    rollback_plan_ready: bool = False           # M-05
-    recovery_simulation_done: bool = False      # M-06
-    research_complete: bool = False             # M-18
+    risk_checked: bool = False  # M-03
+    security_checked: bool = False  # M-04
+    rollback_plan_ready: bool = False  # M-05
+    recovery_simulation_done: bool = False  # M-06
+    research_complete: bool = False  # M-18
 
     # VALIDATING guard fields
     validation_results: list[ValidationResult] = field(default_factory=list)
@@ -169,8 +176,8 @@ class WorkStateContext:
     replay_complete: bool = False
     root_cause_identified: bool = False
     redesign_approved: bool = False
-    repair_complete: bool = False               # fast path: REDESIGN → RESUME
-    provenance_recorded: bool = False           # M-10 for RULE_UPDATE
+    repair_complete: bool = False  # fast path: REDESIGN → RESUME
+    provenance_recorded: bool = False  # M-10 for RULE_UPDATE
     sandbox_passed: bool = False
     improvement_approved: bool = False
     system_health_ok: bool = False
@@ -195,8 +202,7 @@ class WorkStateContext:
         """
         if not self._is_allowed(new_state):
             raise InvalidTransitionError(
-                f"{self.current.value} → {new_state.value} not in transition map. "
-                f"reason={reason}"
+                f"{self.current.value} → {new_state.value} not in transition map. reason={reason}"
             )
 
         if not skip_guards:
@@ -260,6 +266,7 @@ class WorkStateContext:
 # Exceptions
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 class InvalidTransitionError(Exception):
     pass
 
@@ -271,13 +278,8 @@ class GuardViolationError(Exception):
     violations: list[GuardResult]
 
     def __str__(self) -> str:
-        details = "; ".join(
-            f"[{v.condition_id}] {v.message}" for v in self.violations
-        )
-        return (
-            f"Guard violation: {self.from_state.value} → {self.to_state.value} "
-            f"— {details}"
-        )
+        details = "; ".join(f"[{v.condition_id}] {v.message}" for v in self.violations)
+        return f"Guard violation: {self.from_state.value} → {self.to_state.value} — {details}"
 
 
 # ─────────────────────────────────────────────────────────────────────────── #
@@ -285,30 +287,38 @@ class GuardViolationError(Exception):
 # ─────────────────────────────────────────────────────────────────────────── #
 
 _TRANSITION_MAP: dict[WorkStateEnum, set[WorkStateEnum]] = {
-    WorkStateEnum.DRAFT:             {WorkStateEnum.CLARIFYING, WorkStateEnum.CLOSED},
-    WorkStateEnum.CLARIFYING:        {WorkStateEnum.SPEC_READY, WorkStateEnum.BLOCKED},
-    WorkStateEnum.SPEC_READY:        {WorkStateEnum.PLANNING, WorkStateEnum.BLOCKED},
-    WorkStateEnum.PLANNING:          {WorkStateEnum.VALIDATING, WorkStateEnum.BLOCKED, WorkStateEnum.FAILED},
-    WorkStateEnum.VALIDATING:        {WorkStateEnum.RUNNING, WorkStateEnum.BLOCKED, WorkStateEnum.FAILED},
-    WorkStateEnum.RUNNING:           {WorkStateEnum.EVALUATING, WorkStateEnum.FAILED, WorkStateEnum.ISOLATED},
-    WorkStateEnum.EVALUATING:        {WorkStateEnum.APPROVAL_PENDING, WorkStateEnum.FAILED},
-    WorkStateEnum.APPROVAL_PENDING:  {WorkStateEnum.EXECUTING, WorkStateEnum.BLOCKED, WorkStateEnum.FAILED},
-    WorkStateEnum.EXECUTING:         {WorkStateEnum.VERIFY, WorkStateEnum.FAILED, WorkStateEnum.ISOLATED},
-    WorkStateEnum.VERIFY:            {WorkStateEnum.MONITOR, WorkStateEnum.FAILED, WorkStateEnum.BLOCKED},
-    WorkStateEnum.MONITOR:           {WorkStateEnum.DRAFT, WorkStateEnum.FAILED},
+    WorkStateEnum.DRAFT: {WorkStateEnum.CLARIFYING, WorkStateEnum.CLOSED},
+    WorkStateEnum.CLARIFYING: {WorkStateEnum.SPEC_READY, WorkStateEnum.BLOCKED},
+    WorkStateEnum.SPEC_READY: {WorkStateEnum.PLANNING, WorkStateEnum.BLOCKED},
+    WorkStateEnum.PLANNING: {WorkStateEnum.VALIDATING, WorkStateEnum.BLOCKED, WorkStateEnum.FAILED},
+    WorkStateEnum.VALIDATING: {WorkStateEnum.RUNNING, WorkStateEnum.BLOCKED, WorkStateEnum.FAILED},
+    WorkStateEnum.RUNNING: {WorkStateEnum.EVALUATING, WorkStateEnum.FAILED, WorkStateEnum.ISOLATED},
+    WorkStateEnum.EVALUATING: {WorkStateEnum.APPROVAL_PENDING, WorkStateEnum.FAILED},
+    WorkStateEnum.APPROVAL_PENDING: {
+        WorkStateEnum.EXECUTING,
+        WorkStateEnum.BLOCKED,
+        WorkStateEnum.FAILED,
+    },
+    WorkStateEnum.EXECUTING: {WorkStateEnum.VERIFY, WorkStateEnum.FAILED, WorkStateEnum.ISOLATED},
+    WorkStateEnum.VERIFY: {WorkStateEnum.MONITOR, WorkStateEnum.FAILED, WorkStateEnum.BLOCKED},
+    WorkStateEnum.MONITOR: {WorkStateEnum.DRAFT, WorkStateEnum.FAILED},
     # Failure recovery path
-    WorkStateEnum.FAILED:            {WorkStateEnum.REPLAY, WorkStateEnum.ISOLATED, WorkStateEnum.CLOSED},
-    WorkStateEnum.REPLAY:            {WorkStateEnum.ROOT_CAUSE, WorkStateEnum.ISOLATED},
-    WorkStateEnum.ROOT_CAUSE:        {WorkStateEnum.REDESIGN, WorkStateEnum.ISOLATED},
-    WorkStateEnum.REDESIGN:          {WorkStateEnum.RULE_UPDATE, WorkStateEnum.RESUME, WorkStateEnum.BLOCKED},
-    WorkStateEnum.RULE_UPDATE:       {WorkStateEnum.SANDBOX, WorkStateEnum.BLOCKED},
-    WorkStateEnum.SANDBOX:           {WorkStateEnum.IMPROVEMENT, WorkStateEnum.BLOCKED},
-    WorkStateEnum.IMPROVEMENT:       {WorkStateEnum.RESUME, WorkStateEnum.BLOCKED},
-    WorkStateEnum.RESUME:            {WorkStateEnum.DRAFT},
+    WorkStateEnum.FAILED: {WorkStateEnum.REPLAY, WorkStateEnum.ISOLATED, WorkStateEnum.CLOSED},
+    WorkStateEnum.REPLAY: {WorkStateEnum.ROOT_CAUSE, WorkStateEnum.ISOLATED},
+    WorkStateEnum.ROOT_CAUSE: {WorkStateEnum.REDESIGN, WorkStateEnum.ISOLATED},
+    WorkStateEnum.REDESIGN: {
+        WorkStateEnum.RULE_UPDATE,
+        WorkStateEnum.RESUME,
+        WorkStateEnum.BLOCKED,
+    },
+    WorkStateEnum.RULE_UPDATE: {WorkStateEnum.SANDBOX, WorkStateEnum.BLOCKED},
+    WorkStateEnum.SANDBOX: {WorkStateEnum.IMPROVEMENT, WorkStateEnum.BLOCKED},
+    WorkStateEnum.IMPROVEMENT: {WorkStateEnum.RESUME, WorkStateEnum.BLOCKED},
+    WorkStateEnum.RESUME: {WorkStateEnum.DRAFT},
     # Block states
-    WorkStateEnum.BLOCKED:           {WorkStateEnum.DRAFT, WorkStateEnum.CLOSED},
-    WorkStateEnum.ISOLATED:          {WorkStateEnum.REPLAY, WorkStateEnum.CLOSED},
-    WorkStateEnum.CLOSED:            set(),  # terminal
+    WorkStateEnum.BLOCKED: {WorkStateEnum.DRAFT, WorkStateEnum.CLOSED},
+    WorkStateEnum.ISOLATED: {WorkStateEnum.REPLAY, WorkStateEnum.CLOSED},
+    WorkStateEnum.CLOSED: set(),  # terminal
 }
 
 
@@ -318,138 +328,245 @@ _TRANSITION_MAP: dict[WorkStateEnum, set[WorkStateEnum]] = {
 # Value: list of TransitionGuard — ALL must pass
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 def _g(cid: str, desc: str, fn: GuardFn) -> TransitionGuard:
     return TransitionGuard(condition_id=cid, description=desc, check=fn)
 
 
 _TRANSITION_GUARDS: dict[tuple[WorkStateEnum, WorkStateEnum], list[TransitionGuard]] = {
-
     # ── Normal path ──────────────────────────────────────────────────── #
-
     (WorkStateEnum.CLARIFYING, WorkStateEnum.SPEC_READY): [
-        _g("INTENT_SET", "M-01: intent must be non-empty string",
-           lambda ctx: GuardResult.ok("INTENT_SET") if ctx.intent
-           else GuardResult.fail("INTENT_SET", "ctx.intent is None or empty")),
+        _g(
+            "INTENT_SET",
+            "M-01: intent must be non-empty string",
+            lambda ctx: (
+                GuardResult.ok("INTENT_SET")
+                if ctx.intent
+                else GuardResult.fail("INTENT_SET", "ctx.intent is None or empty")
+            ),
+        ),
     ],
-
     (WorkStateEnum.SPEC_READY, WorkStateEnum.PLANNING): [
-        _g("SPEC_TWIN_EXISTS", "M-02: spec_twin_id must be set",
-           lambda ctx: GuardResult.ok("SPEC_TWIN_EXISTS") if ctx.spec_twin_id
-           else GuardResult.fail("SPEC_TWIN_EXISTS", "ctx.spec_twin_id is None")),
+        _g(
+            "SPEC_TWIN_EXISTS",
+            "M-02: spec_twin_id must be set",
+            lambda ctx: (
+                GuardResult.ok("SPEC_TWIN_EXISTS")
+                if ctx.spec_twin_id
+                else GuardResult.fail("SPEC_TWIN_EXISTS", "ctx.spec_twin_id is None")
+            ),
+        ),
     ],
-
     (WorkStateEnum.PLANNING, WorkStateEnum.VALIDATING): [
-        _g("RISK_CHECKED", "M-03: risk check must be complete",
-           lambda ctx: GuardResult.ok("RISK_CHECKED") if ctx.risk_checked
-           else GuardResult.fail("RISK_CHECKED", "ctx.risk_checked is False")),
-        _g("SECURITY_CHECKED", "M-04: security check must be complete",
-           lambda ctx: GuardResult.ok("SECURITY_CHECKED") if ctx.security_checked
-           else GuardResult.fail("SECURITY_CHECKED", "ctx.security_checked is False")),
-        _g("ROLLBACK_PLAN_READY", "M-05: rollback plan must exist",
-           lambda ctx: GuardResult.ok("ROLLBACK_PLAN_READY") if ctx.rollback_plan_ready
-           else GuardResult.fail("ROLLBACK_PLAN_READY", "ctx.rollback_plan_ready is False")),
-        _g("RECOVERY_SIM_DONE", "M-06: recovery simulation must be run",
-           lambda ctx: GuardResult.ok("RECOVERY_SIM_DONE") if ctx.recovery_simulation_done
-           else GuardResult.fail("RECOVERY_SIM_DONE", "ctx.recovery_simulation_done is False")),
-        _g("RESEARCH_COMPLETE", "M-18: research must be complete before execution",
-           lambda ctx: GuardResult.ok("RESEARCH_COMPLETE") if ctx.research_complete
-           else GuardResult.fail("RESEARCH_COMPLETE", "ctx.research_complete is False")),
+        _g(
+            "RISK_CHECKED",
+            "M-03: risk check must be complete",
+            lambda ctx: (
+                GuardResult.ok("RISK_CHECKED")
+                if ctx.risk_checked
+                else GuardResult.fail("RISK_CHECKED", "ctx.risk_checked is False")
+            ),
+        ),
+        _g(
+            "SECURITY_CHECKED",
+            "M-04: security check must be complete",
+            lambda ctx: (
+                GuardResult.ok("SECURITY_CHECKED")
+                if ctx.security_checked
+                else GuardResult.fail("SECURITY_CHECKED", "ctx.security_checked is False")
+            ),
+        ),
+        _g(
+            "ROLLBACK_PLAN_READY",
+            "M-05: rollback plan must exist",
+            lambda ctx: (
+                GuardResult.ok("ROLLBACK_PLAN_READY")
+                if ctx.rollback_plan_ready
+                else GuardResult.fail("ROLLBACK_PLAN_READY", "ctx.rollback_plan_ready is False")
+            ),
+        ),
+        _g(
+            "RECOVERY_SIM_DONE",
+            "M-06: recovery simulation must be run",
+            lambda ctx: (
+                GuardResult.ok("RECOVERY_SIM_DONE")
+                if ctx.recovery_simulation_done
+                else GuardResult.fail("RECOVERY_SIM_DONE", "ctx.recovery_simulation_done is False")
+            ),
+        ),
+        _g(
+            "RESEARCH_COMPLETE",
+            "M-18: research must be complete before execution",
+            lambda ctx: (
+                GuardResult.ok("RESEARCH_COMPLETE")
+                if ctx.research_complete
+                else GuardResult.fail("RESEARCH_COMPLETE", "ctx.research_complete is False")
+            ),
+        ),
     ],
-
     (WorkStateEnum.VALIDATING, WorkStateEnum.RUNNING): [
-        _g("ALL_CHECKS_PASSED", "All 10 VALIDATING checks must pass",
-           lambda ctx: GuardResult.ok("ALL_CHECKS_PASSED") if ctx.all_validating_checks_passed()
-           else GuardResult.fail(
-               "ALL_CHECKS_PASSED",
-               f"Failed check: {ctx.failed_check.name if ctx.failed_check else 'unknown'}"
-           )),
+        _g(
+            "ALL_CHECKS_PASSED",
+            "All 10 VALIDATING checks must pass",
+            lambda ctx: (
+                GuardResult.ok("ALL_CHECKS_PASSED")
+                if ctx.all_validating_checks_passed()
+                else GuardResult.fail(
+                    "ALL_CHECKS_PASSED",
+                    f"Failed check: {ctx.failed_check.name if ctx.failed_check else 'unknown'}",
+                )
+            ),
+        ),
     ],
-
     (WorkStateEnum.APPROVAL_PENDING, WorkStateEnum.EXECUTING): [
-        _g("APPROVAL_GRANTED", "Approval must be granted before executing",
-           lambda ctx: GuardResult.ok("APPROVAL_GRANTED") if ctx.approval_granted
-           else GuardResult.fail("APPROVAL_GRANTED", "ctx.approval_granted is False")),
+        _g(
+            "APPROVAL_GRANTED",
+            "Approval must be granted before executing",
+            lambda ctx: (
+                GuardResult.ok("APPROVAL_GRANTED")
+                if ctx.approval_granted
+                else GuardResult.fail("APPROVAL_GRANTED", "ctx.approval_granted is False")
+            ),
+        ),
     ],
-
     (WorkStateEnum.VERIFY, WorkStateEnum.MONITOR): [
-        _g("COMPLETION_SCORE", "M-16: completion_score must meet threshold",
-           lambda ctx: GuardResult.ok("COMPLETION_SCORE")
-           if ctx.completion_score >= ctx.completion_threshold
-           else GuardResult.fail(
-               "COMPLETION_SCORE",
-               f"score={ctx.completion_score:.3f} < threshold={ctx.completion_threshold:.3f}"
-           )),
+        _g(
+            "COMPLETION_SCORE",
+            "M-16: completion_score must meet threshold",
+            lambda ctx: (
+                GuardResult.ok("COMPLETION_SCORE")
+                if ctx.completion_score >= ctx.completion_threshold
+                else GuardResult.fail(
+                    "COMPLETION_SCORE",
+                    f"score={ctx.completion_score:.3f} < threshold={ctx.completion_threshold:.3f}",
+                )
+            ),
+        ),
     ],
-
     # ── Failure recovery path ─────────────────────────────────────────── #
-
     (WorkStateEnum.FAILED, WorkStateEnum.REPLAY): [
-        _g("FAILURE_EVENT_RECORDED", "failure_event_id must be set before replay",
-           lambda ctx: GuardResult.ok("FAILURE_EVENT_RECORDED") if ctx.failure_event_id
-           else GuardResult.fail("FAILURE_EVENT_RECORDED", "ctx.failure_event_id is None")),
+        _g(
+            "FAILURE_EVENT_RECORDED",
+            "failure_event_id must be set before replay",
+            lambda ctx: (
+                GuardResult.ok("FAILURE_EVENT_RECORDED")
+                if ctx.failure_event_id
+                else GuardResult.fail("FAILURE_EVENT_RECORDED", "ctx.failure_event_id is None")
+            ),
+        ),
     ],
-
     (WorkStateEnum.REPLAY, WorkStateEnum.ROOT_CAUSE): [
-        _g("REPLAY_COMPLETE", "Replay must complete before root cause analysis",
-           lambda ctx: GuardResult.ok("REPLAY_COMPLETE") if ctx.replay_complete
-           else GuardResult.fail("REPLAY_COMPLETE", "ctx.replay_complete is False")),
+        _g(
+            "REPLAY_COMPLETE",
+            "Replay must complete before root cause analysis",
+            lambda ctx: (
+                GuardResult.ok("REPLAY_COMPLETE")
+                if ctx.replay_complete
+                else GuardResult.fail("REPLAY_COMPLETE", "ctx.replay_complete is False")
+            ),
+        ),
     ],
-
     (WorkStateEnum.ROOT_CAUSE, WorkStateEnum.REDESIGN): [
-        _g("ROOT_CAUSE_IDENTIFIED", "Root cause must be identified",
-           lambda ctx: GuardResult.ok("ROOT_CAUSE_IDENTIFIED") if ctx.root_cause_identified
-           else GuardResult.fail("ROOT_CAUSE_IDENTIFIED", "ctx.root_cause_identified is False")),
+        _g(
+            "ROOT_CAUSE_IDENTIFIED",
+            "Root cause must be identified",
+            lambda ctx: (
+                GuardResult.ok("ROOT_CAUSE_IDENTIFIED")
+                if ctx.root_cause_identified
+                else GuardResult.fail("ROOT_CAUSE_IDENTIFIED", "ctx.root_cause_identified is False")
+            ),
+        ),
     ],
-
     (WorkStateEnum.REDESIGN, WorkStateEnum.RULE_UPDATE): [
-        _g("REDESIGN_APPROVED", "Redesign must be approved before rule update",
-           lambda ctx: GuardResult.ok("REDESIGN_APPROVED") if ctx.redesign_approved
-           else GuardResult.fail("REDESIGN_APPROVED", "ctx.redesign_approved is False")),
+        _g(
+            "REDESIGN_APPROVED",
+            "Redesign must be approved before rule update",
+            lambda ctx: (
+                GuardResult.ok("REDESIGN_APPROVED")
+                if ctx.redesign_approved
+                else GuardResult.fail("REDESIGN_APPROVED", "ctx.redesign_approved is False")
+            ),
+        ),
     ],
-
     (WorkStateEnum.REDESIGN, WorkStateEnum.RESUME): [
         # Recovery fast path: skip RULE_UPDATE→SANDBOX→IMPROVEMENT
-        _g("REPAIR_COMPLETE", "Repair must be complete for fast-path resume",
-           lambda ctx: GuardResult.ok("REPAIR_COMPLETE") if ctx.repair_complete
-           else GuardResult.fail("REPAIR_COMPLETE", "ctx.repair_complete is False")),
+        _g(
+            "REPAIR_COMPLETE",
+            "Repair must be complete for fast-path resume",
+            lambda ctx: (
+                GuardResult.ok("REPAIR_COMPLETE")
+                if ctx.repair_complete
+                else GuardResult.fail("REPAIR_COMPLETE", "ctx.repair_complete is False")
+            ),
+        ),
     ],
-
     (WorkStateEnum.RULE_UPDATE, WorkStateEnum.SANDBOX): [
-        _g("PROVENANCE_RECORDED", "M-10: rule provenance must be recorded",
-           lambda ctx: GuardResult.ok("PROVENANCE_RECORDED") if ctx.provenance_recorded
-           else GuardResult.fail("PROVENANCE_RECORDED", "ctx.provenance_recorded is False")),
+        _g(
+            "PROVENANCE_RECORDED",
+            "M-10: rule provenance must be recorded",
+            lambda ctx: (
+                GuardResult.ok("PROVENANCE_RECORDED")
+                if ctx.provenance_recorded
+                else GuardResult.fail("PROVENANCE_RECORDED", "ctx.provenance_recorded is False")
+            ),
+        ),
     ],
-
     (WorkStateEnum.SANDBOX, WorkStateEnum.IMPROVEMENT): [
-        _g("SANDBOX_PASSED", "Sandbox test must pass before improvement",
-           lambda ctx: GuardResult.ok("SANDBOX_PASSED") if ctx.sandbox_passed
-           else GuardResult.fail("SANDBOX_PASSED", "ctx.sandbox_passed is False")),
+        _g(
+            "SANDBOX_PASSED",
+            "Sandbox test must pass before improvement",
+            lambda ctx: (
+                GuardResult.ok("SANDBOX_PASSED")
+                if ctx.sandbox_passed
+                else GuardResult.fail("SANDBOX_PASSED", "ctx.sandbox_passed is False")
+            ),
+        ),
     ],
-
     (WorkStateEnum.IMPROVEMENT, WorkStateEnum.RESUME): [
-        _g("IMPROVEMENT_APPROVED", "Improvement must be approved",
-           lambda ctx: GuardResult.ok("IMPROVEMENT_APPROVED") if ctx.improvement_approved
-           else GuardResult.fail("IMPROVEMENT_APPROVED", "ctx.improvement_approved is False")),
+        _g(
+            "IMPROVEMENT_APPROVED",
+            "Improvement must be approved",
+            lambda ctx: (
+                GuardResult.ok("IMPROVEMENT_APPROVED")
+                if ctx.improvement_approved
+                else GuardResult.fail("IMPROVEMENT_APPROVED", "ctx.improvement_approved is False")
+            ),
+        ),
     ],
-
     (WorkStateEnum.RESUME, WorkStateEnum.DRAFT): [
-        _g("SYSTEM_HEALTH_OK", "System health must be confirmed before re-entering DRAFT",
-           lambda ctx: GuardResult.ok("SYSTEM_HEALTH_OK") if ctx.system_health_ok
-           else GuardResult.fail("SYSTEM_HEALTH_OK", "ctx.system_health_ok is False")),
+        _g(
+            "SYSTEM_HEALTH_OK",
+            "System health must be confirmed before re-entering DRAFT",
+            lambda ctx: (
+                GuardResult.ok("SYSTEM_HEALTH_OK")
+                if ctx.system_health_ok
+                else GuardResult.fail("SYSTEM_HEALTH_OK", "ctx.system_health_ok is False")
+            ),
+        ),
     ],
-
     (WorkStateEnum.BLOCKED, WorkStateEnum.DRAFT): [
-        _g("BLOCKED_REASON_RESOLVED", "Blocking issue must be resolved before returning to DRAFT",
-           lambda ctx: GuardResult.ok("BLOCKED_REASON_RESOLVED") if ctx.blocked_reason_resolved
-           else GuardResult.fail(
-               "BLOCKED_REASON_RESOLVED",
-               f"Unresolved block: {ctx.blocked_reason or 'no reason recorded'}"
-           )),
+        _g(
+            "BLOCKED_REASON_RESOLVED",
+            "Blocking issue must be resolved before returning to DRAFT",
+            lambda ctx: (
+                GuardResult.ok("BLOCKED_REASON_RESOLVED")
+                if ctx.blocked_reason_resolved
+                else GuardResult.fail(
+                    "BLOCKED_REASON_RESOLVED",
+                    f"Unresolved block: {ctx.blocked_reason or 'no reason recorded'}",
+                )
+            ),
+        ),
     ],
-
     (WorkStateEnum.ISOLATED, WorkStateEnum.REPLAY): [
-        _g("FAILURE_EVENT_RECORDED", "failure_event_id must be set to begin replay from ISOLATED",
-           lambda ctx: GuardResult.ok("FAILURE_EVENT_RECORDED") if ctx.failure_event_id
-           else GuardResult.fail("FAILURE_EVENT_RECORDED", "ctx.failure_event_id is None")),
+        _g(
+            "FAILURE_EVENT_RECORDED",
+            "failure_event_id must be set to begin replay from ISOLATED",
+            lambda ctx: (
+                GuardResult.ok("FAILURE_EVENT_RECORDED")
+                if ctx.failure_event_id
+                else GuardResult.fail("FAILURE_EVENT_RECORDED", "ctx.failure_event_id is None")
+            ),
+        ),
     ],
 }

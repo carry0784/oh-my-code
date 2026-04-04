@@ -19,6 +19,7 @@ Routing rules:
   DOCTRINE_VIOLATION / degraded → ["snapshot"]
   HEALTHY (no incidents) → []
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -28,17 +29,21 @@ from typing import Any
 # Severity tiers for routing decisions
 # ---------------------------------------------------------------------------
 
-_CRITICAL_INCIDENTS = frozenset({
-    "LOCKDOWN",
-    "QUARANTINED",
-    "LOOP_EXCEEDED",
-})
+_CRITICAL_INCIDENTS = frozenset(
+    {
+        "LOCKDOWN",
+        "QUARANTINED",
+        "LOOP_EXCEEDED",
+    }
+)
 
-_HIGH_INCIDENTS = frozenset({
-    "WORK_FAILED",
-    "WORK_BLOCKED",
-    "LOOP_CRITICAL",
-})
+_HIGH_INCIDENTS = frozenset(
+    {
+        "WORK_FAILED",
+        "WORK_BLOCKED",
+        "LOOP_CRITICAL",
+    }
+)
 
 # Routes per severity tier
 _ROUTE_CRITICAL = ["console", "snapshot", "external"]
@@ -50,6 +55,7 @@ _ROUTE_CLEAR = []
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def route_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
     """

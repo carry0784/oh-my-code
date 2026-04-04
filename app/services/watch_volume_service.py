@@ -17,6 +17,7 @@ Safety:
   - Simulation-only: no cleanup executed
   - No future estimation or scoring
 """
+
 from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
@@ -75,10 +76,7 @@ def build_watch_volume(
     report = simulate_cleanup(action_ledger, execution_ledger, submit_ledger)
 
     # -- Extract WATCH candidates ----------------------------------------- #
-    watch_candidates = [
-        c for c in report.candidates
-        if c.get("action_class") == ACTION_WATCH
-    ]
+    watch_candidates = [c for c in report.candidates if c.get("action_class") == ACTION_WATCH]
 
     watch_total = len(watch_candidates)
     candidate_total = report.total_candidates

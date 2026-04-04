@@ -12,6 +12,7 @@ Decay function (OQ-5 resolved — see config/thresholds.py):
                 + step_up per success event
                 clamped [0.0, 1.0]
 """
+
 from __future__ import annotations
 from enum import Enum
 from dataclasses import dataclass, field
@@ -37,7 +38,7 @@ class TrustStateEnum(Enum):
     TRUSTED = "TRUSTED"
     DEGRADED = "DEGRADED"
     UNRELIABLE = "UNRELIABLE"
-    STALE = "STALE"       # time-based expiry
+    STALE = "STALE"  # time-based expiry
     DECAYING = "DECAYING"
     ISOLATED = "ISOLATED"
     RECOVERY = "RECOVERY"
@@ -52,9 +53,9 @@ class TrustStateEnum(Enum):
 # Failure severity → step-down map
 _FAILURE_STEP_DOWN: dict[str, float] = {
     "CRITICAL": TRUST_DECAY_ON_CRITICAL,
-    "HIGH":     TRUST_DECAY_ON_HIGH,
-    "MEDIUM":   TRUST_DECAY_ON_MEDIUM,
-    "LOW":      0.0,   # LOW failures do not affect trust score
+    "HIGH": TRUST_DECAY_ON_HIGH,
+    "MEDIUM": TRUST_DECAY_ON_MEDIUM,
+    "LOW": 0.0,  # LOW failures do not affect trust score
 }
 
 
@@ -62,7 +63,7 @@ _FAILURE_STEP_DOWN: dict[str, float] = {
 class TrustStateContext:
     component_id: str
     current: TrustStateEnum = TrustStateEnum.TRUSTED
-    score: float = 1.0          # 0.0 ~ 1.0
+    score: float = 1.0  # 0.0 ~ 1.0
     last_refreshed: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     last_transition: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 

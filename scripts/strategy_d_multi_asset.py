@@ -14,6 +14,7 @@ Also measures:
 Usage:
     python scripts/strategy_d_multi_asset.py
 """
+
 from __future__ import annotations
 
 import json
@@ -41,6 +42,7 @@ def collect_asset_ohlcv(symbol="BTC/USDT", timeframe="1h", months=6):
     """Collect OHLCV for any asset."""
     try:
         import ccxt
+
         exchange = ccxt.binance({"enableRateLimit": True})
         all_ohlcv = []
         target_bars = months * 30 * 24
@@ -187,8 +189,15 @@ def identify_regimes(closes):
             label = "bear"
         else:
             label = "sideways"
-        regimes.append({"quarter": i + 1, "start": start, "end": end,
-                        "return_pct": round(ret, 2), "regime": label})
+        regimes.append(
+            {
+                "quarter": i + 1,
+                "start": start,
+                "end": end,
+                "return_pct": round(ret, 2),
+                "regime": label,
+            }
+        )
     return regimes
 
 
@@ -276,9 +285,11 @@ def main():
                 "beats_bh": core.total_return_pct > bh,
             }
             regime_results.append(regime_res)
-            print(f"\n  Q{reg['quarter']} ({reg['regime']}): B&H={bh:+.1f}%, "
-                  f"Core={core.total_return_pct:+.2f}%, "
-                  f"Sharpe={core.sharpe_ratio:.2f}, Trades={core.total_trades}")
+            print(
+                f"\n  Q{reg['quarter']} ({reg['regime']}): B&H={bh:+.1f}%, "
+                f"Core={core.total_return_pct:+.2f}%, "
+                f"Sharpe={core.sharpe_ratio:.2f}, Trades={core.total_trades}"
+            )
 
         results["regime_analysis"] = regime_results
 
@@ -289,17 +300,16 @@ def main():
 
     # Core pair survival rate
     survival_count = sum(
-        1 for k, v in results.items()
-        if isinstance(v, dict) and v.get("core_pair_survival") is True
+        1 for k, v in results.items() if isinstance(v, dict) and v.get("core_pair_survival") is True
     )
     asset_count = sum(
-        1 for k, v in results.items()
+        1
+        for k, v in results.items()
         if isinstance(v, dict) and v.get("core_pair_survival") is not None
     )
     survival_rate = survival_count / asset_count if asset_count > 0 else 0
 
-    print(f"\n  Core pair survival rate: {survival_count}/{asset_count} "
-          f"({survival_rate:.0%})")
+    print(f"\n  Core pair survival rate: {survival_count}/{asset_count} ({survival_rate:.0%})")
 
     # 3rd slot incremental value
     for symbol in assets:
@@ -307,8 +317,9 @@ def main():
         if isinstance(r, dict) and "trio_supertrend" in r:
             st_inc = r["trio_supertrend"]["incremental_sharpe"]
             macd_inc = r["trio_macd"]["incremental_sharpe"]
-            print(f"  {symbol} 3rd-slot incremental: "
-                  f"Supertrend={st_inc:+.2f}, MACD={macd_inc:+.2f}")
+            print(
+                f"  {symbol} 3rd-slot incremental: Supertrend={st_inc:+.2f}, MACD={macd_inc:+.2f}"
+            )
 
     # Multi-asset core pair Sharpe
     print(f"\n  Multi-asset core pair Sharpe:")
@@ -316,8 +327,10 @@ def main():
         r = results.get(symbol, {})
         if isinstance(r, dict) and "core_pair" in r:
             cp = r["core_pair"]
-            print(f"    {symbol}: Sharpe={cp['sharpe']}, "
-                  f"Return={cp['return_pct']:+.2f}%, PF={cp['pf']}")
+            print(
+                f"    {symbol}: Sharpe={cp['sharpe']}, "
+                f"Return={cp['return_pct']:+.2f}%, PF={cp['pf']}"
+            )
 
     # AC checks
     results["summary"] = {

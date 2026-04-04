@@ -110,10 +110,12 @@ class PaperTradingBridge:
             and result.paper_performance.max_drawdown_pct <= self.config.max_paper_drawdown_pct
         )
 
-        logger.info("paper_session_evaluated",
-                     session_id=session_id,
-                     match_score=round(result.live_match_score, 4),
-                     ready=result.is_ready_for_promotion)
+        logger.info(
+            "paper_session_evaluated",
+            session_id=session_id,
+            match_score=round(result.live_match_score, 4),
+            ready=result.is_ready_for_promotion,
+        )
         return result
 
     def compute_live_match(
@@ -125,10 +127,14 @@ class PaperTradingBridge:
             return 0.5
 
         # Direction match (60%)
-        direction = 1.0 if (
-            (backtest.total_return_pct > 0 and paper.total_return_pct > 0)
-            or (backtest.total_return_pct <= 0 and paper.total_return_pct <= 0)
-        ) else 0.0
+        direction = (
+            1.0
+            if (
+                (backtest.total_return_pct > 0 and paper.total_return_pct > 0)
+                or (backtest.total_return_pct <= 0 and paper.total_return_pct <= 0)
+            )
+            else 0.0
+        )
 
         # Win rate similarity (40%)
         wr_diff = abs(backtest.win_rate - paper.win_rate)

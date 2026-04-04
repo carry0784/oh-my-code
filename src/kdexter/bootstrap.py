@@ -25,6 +25,7 @@ Components wired:
   - TCL: TCLDispatcher
   - LayerRegistry: L1~L30 bindings
 """
+
 from __future__ import annotations
 
 import logging
@@ -91,6 +92,7 @@ logger = logging.getLogger(__name__)
 # Hook factory -- connects MainLoopHooks to real engines
 # ------------------------------------------------------------------ #
 
+
 def _build_hooks(
     forbidden_ledger: ForbiddenLedger,
     mandatory_ledger: MandatoryLedger,
@@ -129,7 +131,7 @@ def _build_hooks(
         # M-10 provenance is recorded continuously (evidence bundles),
         # M-16 completion is checked at VERIFY state, not VALIDATING.
         # Set these contextual flags before checking.
-        ctx.provenance_recorded = True   # M-10: evidence bundles serve as provenance
+        ctx.provenance_recorded = True  # M-10: evidence bundles serve as provenance
         unsatisfied = mandatory_ledger.list_unsatisfied(LoopType.MAIN, ctx)
         # Filter out M-16 (completion) -- enforced at VERIFY via G-25, not VALIDATING
         unsatisfied = [u for u in unsatisfied if u.item_id != "M-16"]
@@ -142,16 +144,16 @@ def _build_hooks(
         # Build context from WorkStateContext fields for doctrine evaluation
         compliance_ctx = {
             "actor": "MainLoop",
-            "via_tcl": True,                           # D-001
-            "evidence_bundle_count": 1,                # D-002 (evidence always recorded)
+            "via_tcl": True,  # D-001
+            "evidence_bundle_count": 1,  # D-002 (evidence always recorded)
             "expected_evidence_count": 1,
-            "provenance": True,                        # D-003
-            "lockdown_release_by": "L27_HUMAN",        # D-004
-            "modification_requester": "L1",            # D-005
-            "recovery_attempts": 0,                    # D-006
-            "intent": ctx.intent,                      # D-007
-            "risk_checked": ctx.risk_checked,          # D-008
-            "security_state": "NORMAL",                # D-009
+            "provenance": True,  # D-003
+            "lockdown_release_by": "L27_HUMAN",  # D-004
+            "modification_requester": "L1",  # D-005
+            "recovery_attempts": 0,  # D-006
+            "intent": ctx.intent,  # D-007
+            "risk_checked": ctx.risk_checked,  # D-008
+            "security_state": "NORMAL",  # D-009
         }
         violations = doctrine_registry.check_compliance(compliance_ctx)
         if violations:
@@ -247,6 +249,7 @@ def _build_hooks(
 # ------------------------------------------------------------------ #
 # System Bootstrap
 # ------------------------------------------------------------------ #
+
 
 class SystemBootstrap:
     """
@@ -475,31 +478,30 @@ class SystemBootstrap:
         self._bind_layers()
 
         self._wired = True
-        logger.info("Bootstrap: wiring complete. %d layers bound.",
-                     self.registry.bound_count())
+        logger.info("Bootstrap: wiring complete. %d layers bound.", self.registry.bound_count())
 
     def _bind_layers(self) -> None:
         """Bind implemented components to their layer slots."""
         bindings: dict[str, object] = {
             # B1
-            "L2":  self.doctrine,
-            "L3":  self.security_state,
+            "L2": self.doctrine,
+            "L3": self.security_state,
             "L22": self.spec_lock,
             "L27": self.override_controller,
             # B2
-            "L4":  self.clarify_spec,
-            "L5":  self.harness_engine,
-            "L9":  self.si_loop,
+            "L4": self.clarify_spec,
+            "L5": self.harness_engine,
+            "L9": self.si_loop,
             "L11": self.rule_ledger,
-            "L12": self.rule_ledger,       # Rule Provenance Store -- embedded in RuleLedger
-            "L13": self.b1,                # Compliance via B1
+            "L12": self.rule_ledger,  # Rule Provenance Store -- embedded in RuleLedger
+            "L13": self.b1,  # Compliance via B1
             "L14": self.evolution_loop,
             "L15": self.drift_engine,
             "L16": self.conflict_engine,
             "L17": self.pattern_memory,
             "L18": self.budget_evolution,
             "L19": self.trust_engine,
-            "L20": self.loop_counter,      # Meta Loop Controller
+            "L20": self.loop_counter,  # Meta Loop Controller
             "L21": self.completion_engine,
             "L23": self.research_engine,
             "L24": self.knowledge_engine,
@@ -508,10 +510,10 @@ class SystemBootstrap:
             "L29": self.cost_controller,
             "L30": self.progress_engine,
             # A
-            "L1":  self.human_decision,
-            "L6":  self.parallel_agent,
-            "L7":  self.evaluation_engine,
-            "L8":  self.execution_cell,
+            "L1": self.human_decision,
+            "L6": self.parallel_agent,
+            "L7": self.evaluation_engine,
+            "L8": self.execution_cell,
             "L10": self.evidence_store,
             "L26": self.recovery_loop,
         }
@@ -526,16 +528,18 @@ class SystemBootstrap:
             raise RuntimeError("Call wire() before init()")
         logger.info("Bootstrap: initializing layers...")
         results = await self.registry.init_all_bound()
-        logger.info("Bootstrap: init complete. %d/%d succeeded.",
-                     sum(results.values()), len(results))
+        logger.info(
+            "Bootstrap: init complete. %d/%d succeeded.", sum(results.values()), len(results)
+        )
         return results
 
     async def start(self) -> dict[str, bool]:
         """Start all ready layers. Returns {layer_id: success}."""
         logger.info("Bootstrap: starting layers...")
         results = await self.registry.start_all_ready()
-        logger.info("Bootstrap: start complete. %d/%d succeeded.",
-                     sum(results.values()), len(results))
+        logger.info(
+            "Bootstrap: start complete. %d/%d succeeded.", sum(results.values()), len(results)
+        )
         return results
 
     async def run_cycle(self, cycle_input: CycleInput) -> CycleResult:

@@ -19,6 +19,7 @@ SMC Version: B (pure-causal)
 Usage:
     python scripts/strategy_d_regime_filter.py
 """
+
 from __future__ import annotations
 
 import json
@@ -49,6 +50,7 @@ from scripts.strategy_d_execution_sim import backtest_with_realism
 # ===================================================================
 # REGIME INDICATORS (all causal, no lookahead)
 # ===================================================================
+
 
 def calc_adx(highs, lows, closes, period=14):
     """Average Directional Index. ADX > 25 = trending, < 20 = sideways."""
@@ -100,7 +102,7 @@ def calc_bb_width_percentile(closes, period=20, mult=2.0, lookback=100):
             bb_width[i] = (2 * dev[i]) / basis[i] * 100 if not np.isnan(dev[i]) else 0
 
     for i in range(lookback, n):
-        window = bb_width[max(0, i - lookback):i + 1]
+        window = bb_width[max(0, i - lookback) : i + 1]
         valid = window[window > 0]
         if len(valid) > 0:
             bb_pctile[i] = np.sum(valid <= bb_width[i]) / len(valid) * 100
@@ -188,8 +190,12 @@ def classify_regime(adx, bb_pctile, atr_ratio, sma_dir):
 # REGIME-FILTERED BACKTEST
 # ===================================================================
 
+
 def backtest_with_regime_filter(
-    closes, signals, regime, name,
+    closes,
+    signals,
+    regime,
+    name,
     filter_mode="suppress",
     fee_pct=0.075,
     slippage_pct=0.0,
@@ -210,7 +216,9 @@ def backtest_with_regime_filter(
                 filtered_signals[i] = 0
 
     return backtest_with_realism(
-        closes, filtered_signals, name,
+        closes,
+        filtered_signals,
+        name,
         fee_pct=fee_pct,
         slippage_pct=slippage_pct,
         stop_loss_pct=stop_loss_pct,
@@ -221,6 +229,7 @@ def backtest_with_regime_filter(
 # ===================================================================
 # PHASE C-1: REGIME IDENTIFICATION ACCURACY
 # ===================================================================
+
 
 def evaluate_regime_accuracy(closes, highs, lows, known_regimes):
     """Compare regime indicators vs known quarterly labels.
@@ -278,7 +287,9 @@ def evaluate_regime_accuracy(closes, highs, lows, known_regimes):
         total_correct += np.sum(segment == expected)
         total_bars += len(segment)
 
-    results["overall_accuracy"] = round(total_correct / total_bars * 100, 1) if total_bars > 0 else 0
+    results["overall_accuracy"] = (
+        round(total_correct / total_bars * 100, 1) if total_bars > 0 else 0
+    )
 
     return results, adx, bb_pctile, atr_ratio, sma_dir, composite
 
@@ -286,6 +297,7 @@ def evaluate_regime_accuracy(closes, highs, lows, known_regimes):
 # ===================================================================
 # PHASE C-2: FILTER INTEGRATION
 # ===================================================================
+
 
 def test_filter_integration(symbol, ohlcv):
     """Test regime filter on one asset with canonical core."""
@@ -298,8 +310,9 @@ def test_filter_integration(symbol, ohlcv):
     _, smc_sigs = calc_smc_pure_causal(highs, lows, closes)
     _, _, wt_sigs = calc_wavetrend(highs, lows, closes)
     core_signals = {"SMC": smc_sigs, "WaveTrend": wt_sigs}
-    composite = build_composite_strategy(closes, core_signals,
-                                         {"SMC": 1.0, "WaveTrend": 1.0}, threshold=2.0)
+    composite = build_composite_strategy(
+        closes, core_signals, {"SMC": 1.0, "WaveTrend": 1.0}, threshold=2.0
+    )
 
     # Compute regime
     adx = calc_adx(highs, lows, closes)
@@ -332,8 +345,12 @@ def test_filter_integration(symbol, ohlcv):
 
     # Filtered: suppress mode
     filtered_suppress = backtest_with_regime_filter(
-        closes, composite, regime, f"{symbol}_suppress",
-        filter_mode="suppress", fee_pct=0.075,
+        closes,
+        composite,
+        regime,
+        f"{symbol}_suppress",
+        filter_mode="suppress",
+        fee_pct=0.075,
     )
     results["filtered_suppress"] = {
         "sharpe": round(filtered_suppress.sharpe_ratio, 2),
@@ -356,10 +373,11 @@ def test_filter_integration(symbol, ohlcv):
         bh = (c_q[-1] / c_q[0] - 1) * 100
 
         # Unfiltered
-        uf = backtest_with_realism(c_q, sig_q, f"Q{q+1}_unfilt", fee_pct=0.075)
+        uf = backtest_with_realism(c_q, sig_q, f"Q{q + 1}_unfilt", fee_pct=0.075)
         # Filtered
-        ft = backtest_with_regime_filter(c_q, sig_q, regime_q, f"Q{q+1}_filt",
-                                          filter_mode="suppress", fee_pct=0.075)
+        ft = backtest_with_regime_filter(
+            c_q, sig_q, regime_q, f"Q{q + 1}_filt", filter_mode="suppress", fee_pct=0.075
+        )
 
         # Regime label from BH return
         if bh > 10:
@@ -372,20 +390,22 @@ def test_filter_integration(symbol, ohlcv):
         trending_q = np.sum(regime_q == 1)
         sideways_q = np.sum(regime_q == 0)
 
-        quarter_results.append({
-            "quarter": q + 1,
-            "regime_label": rlabel,
-            "buy_hold_pct": round(bh, 2),
-            "trending_bars_pct": round(trending_q / len(regime_q) * 100, 1),
-            "sideways_bars_pct": round(sideways_q / len(regime_q) * 100, 1),
-            "unfiltered_sharpe": round(uf.sharpe_ratio, 2),
-            "unfiltered_return": round(uf.total_return_pct, 2),
-            "unfiltered_trades": uf.total_trades,
-            "filtered_sharpe": round(ft.sharpe_ratio, 2),
-            "filtered_return": round(ft.total_return_pct, 2),
-            "filtered_trades": ft.total_trades,
-            "sharpe_improvement": round(ft.sharpe_ratio - uf.sharpe_ratio, 2),
-        })
+        quarter_results.append(
+            {
+                "quarter": q + 1,
+                "regime_label": rlabel,
+                "buy_hold_pct": round(bh, 2),
+                "trending_bars_pct": round(trending_q / len(regime_q) * 100, 1),
+                "sideways_bars_pct": round(sideways_q / len(regime_q) * 100, 1),
+                "unfiltered_sharpe": round(uf.sharpe_ratio, 2),
+                "unfiltered_return": round(uf.total_return_pct, 2),
+                "unfiltered_trades": uf.total_trades,
+                "filtered_sharpe": round(ft.sharpe_ratio, 2),
+                "filtered_return": round(ft.total_return_pct, 2),
+                "filtered_trades": ft.total_trades,
+                "sharpe_improvement": round(ft.sharpe_ratio - uf.sharpe_ratio, 2),
+            }
+        )
 
     results["quarters"] = quarter_results
     results["regime_stats"] = regime_stats
@@ -406,6 +426,7 @@ def test_filter_integration(symbol, ohlcv):
 # ===================================================================
 # MAIN
 # ===================================================================
+
 
 def main():
     print("=" * 70)
@@ -440,26 +461,31 @@ def main():
         for q in range(4):
             s = q * quarter_len
             e = min((q + 1) * quarter_len, n)
-            bh = (closes[e-1] / closes[s] - 1) * 100
+            bh = (closes[e - 1] / closes[s] - 1) * 100
             if bh > 10:
                 label = "bull"
             elif bh < -10:
                 label = "bear"
             else:
                 label = "sideways"
-            known_regimes.append({"quarter": q+1, "start": s, "end": e, "regime": label})
-            print(f"  Q{q+1}: {label} (B&H {bh:+.1f}%)")
+            known_regimes.append({"quarter": q + 1, "start": s, "end": e, "regime": label})
+            print(f"  Q{q + 1}: {label} (B&H {bh:+.1f}%)")
 
-        accuracy_results, adx, bb_pctile, atr_ratio_vals, sma_dir, composite_regime = \
+        accuracy_results, adx, bb_pctile, atr_ratio_vals, sma_dir, composite_regime = (
             evaluate_regime_accuracy(closes, highs, lows, known_regimes)
+        )
 
-        print(f"\n  Overall regime classification accuracy: {accuracy_results['overall_accuracy']}%")
+        print(
+            f"\n  Overall regime classification accuracy: {accuracy_results['overall_accuracy']}%"
+        )
         for q in range(1, 5):
             key = f"Q{q}"
             if key in accuracy_results:
                 ar = accuracy_results[key]
-                print(f"  {key} ({ar['regime']}): accuracy={ar['composite_accuracy']}%, "
-                      f"ADX={ar['adx_mean']}, BB%={ar['bb_pctile_mean']}, ATR_r={ar['atr_ratio_mean']}")
+                print(
+                    f"  {key} ({ar['regime']}): accuracy={ar['composite_accuracy']}%, "
+                    f"ADX={ar['adx_mean']}, BB%={ar['bb_pctile_mean']}, ATR_r={ar['atr_ratio_mean']}"
+                )
 
         all_results[f"{symbol}_regime_accuracy"] = accuracy_results
 
@@ -473,23 +499,33 @@ def main():
         fs = filter_results["filtered_suppress"]
         imp = filter_results["improvement"]
 
-        print(f"\n  Baseline:  Sharpe={bl['sharpe']}, Return={bl['return_pct']:+.2f}%, "
-              f"PF={bl['pf']}, MDD={bl['mdd']}%, Trades={bl['trades']}")
-        print(f"  Filtered:  Sharpe={fs['sharpe']}, Return={fs['return_pct']:+.2f}%, "
-              f"PF={fs['pf']}, MDD={fs['mdd']}%, Trades={fs['trades']}")
-        print(f"  Delta:     Sharpe {imp['sharpe_delta']:+.2f}, Return {imp['return_delta_pp']:+.2f}pp, "
-              f"Trades reduced by {imp['trades_reduced']}")
+        print(
+            f"\n  Baseline:  Sharpe={bl['sharpe']}, Return={bl['return_pct']:+.2f}%, "
+            f"PF={bl['pf']}, MDD={bl['mdd']}%, Trades={bl['trades']}"
+        )
+        print(
+            f"  Filtered:  Sharpe={fs['sharpe']}, Return={fs['return_pct']:+.2f}%, "
+            f"PF={fs['pf']}, MDD={fs['mdd']}%, Trades={fs['trades']}"
+        )
+        print(
+            f"  Delta:     Sharpe {imp['sharpe_delta']:+.2f}, Return {imp['return_delta_pp']:+.2f}pp, "
+            f"Trades reduced by {imp['trades_reduced']}"
+        )
         print(f"  Filter effective: {'YES' if imp['filter_effective'] else 'NO'}")
 
         rs = filter_results["regime_stats"]
-        print(f"\n  Regime distribution: Trending {rs['trending_pct']}%, Sideways {rs['sideways_pct']}%")
+        print(
+            f"\n  Regime distribution: Trending {rs['trending_pct']}%, Sideways {rs['sideways_pct']}%"
+        )
 
         print(f"\n  Per-quarter breakdown:")
         for qr in filter_results["quarters"]:
-            print(f"    Q{qr['quarter']} ({qr['regime_label']}): "
-                  f"unfilt Sharpe={qr['unfiltered_sharpe']}, filt Sharpe={qr['filtered_sharpe']} "
-                  f"(delta={qr['sharpe_improvement']:+.2f}), "
-                  f"trending={qr['trending_bars_pct']}%, sideways={qr['sideways_bars_pct']}%")
+            print(
+                f"    Q{qr['quarter']} ({qr['regime_label']}): "
+                f"unfilt Sharpe={qr['unfiltered_sharpe']}, filt Sharpe={qr['filtered_sharpe']} "
+                f"(delta={qr['sharpe_improvement']:+.2f}), "
+                f"trending={qr['trending_bars_pct']}%, sideways={qr['sideways_bars_pct']}%"
+            )
 
     # Summary
     print(f"\n{'=' * 70}")
@@ -528,8 +564,10 @@ def main():
             if qr["regime_label"] == "bear" and qr["sharpe_improvement"] < -0.5:
                 bear_degradation_ok = False
 
-        print(f"  {symbol}: Sharpe improved={'PASS' if sharpe_improved else 'FAIL'}, "
-              f"Bear preservation={'PASS' if bear_degradation_ok else 'FAIL'}")
+        print(
+            f"  {symbol}: Sharpe improved={'PASS' if sharpe_improved else 'FAIL'}, "
+            f"Bear preservation={'PASS' if bear_degradation_ok else 'FAIL'}"
+        )
         if not sharpe_improved or not bear_degradation_ok:
             all_pass = False
 

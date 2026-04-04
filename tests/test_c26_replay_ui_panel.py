@@ -18,13 +18,26 @@ from unittest.mock import MagicMock
 import pytest
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services", "app.services.order_service",
-    "app.services.position_service", "app.services.signal_service",
-    "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -55,7 +68,6 @@ def _get_fn_body():
 # C26-1: Dashboard panel 블록
 # ===========================================================================
 class TestC26Panel:
-
     def test_block_exists(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert 'id="audit-replay-block"' in content
@@ -73,7 +85,6 @@ class TestC26Panel:
 # C26-2: JS 렌더링 함수
 # ===========================================================================
 class TestC26RenderFunction:
-
     def test_function_exists(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert "function renderAuditReplay" in content
@@ -125,9 +136,16 @@ class TestC26RenderFunction:
     def test_no_forbidden_strings(self):
         fn_body = _get_fn_body()
         forbidden = [
-            'agent_analysis', 'raw_prompt', 'chain_of_thought',
-            'internal_reasoning', 'debug_trace', 'error_class',
-            'traceback', 'exception_type', 'stack', 'internal_state_dump',
+            "agent_analysis",
+            "raw_prompt",
+            "chain_of_thought",
+            "internal_reasoning",
+            "debug_trace",
+            "error_class",
+            "traceback",
+            "exception_type",
+            "stack",
+            "internal_state_dump",
         ]
         for f in forbidden:
             assert f not in fn_body, f"Forbidden string '{f}'"
@@ -137,7 +155,6 @@ class TestC26RenderFunction:
 # C26-3: CSS
 # ===========================================================================
 class TestC26CSS:
-
     def test_summary_class(self):
         content = CSS_PATH.read_text(encoding="utf-8")
         assert ".ar-summary" in content
@@ -148,7 +165,7 @@ class TestC26CSS:
 
     def test_action_tag_classes(self):
         content = CSS_PATH.read_text(encoding="utf-8")
-        for cls in ['.ar-sent', '.ar-suppressed', '.ar-escalated', '.ar-resolved', '.ar-error']:
+        for cls in [".ar-sent", ".ar-suppressed", ".ar-escalated", ".ar-resolved", ".ar-error"]:
             assert cls in content, f"CSS class {cls} must exist"
 
     def test_overflow_class(self):
@@ -160,7 +177,6 @@ class TestC26CSS:
 # C26-4: Tab 2 통합
 # ===========================================================================
 class TestC26Integration:
-
     def test_called_from_render_tab2(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert "renderAuditReplay()" in content
@@ -174,7 +190,11 @@ class TestC26Integration:
 
     def test_existing_blocks_preserved(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        for bid in ['receipt-review-block', 'flow-log-block',
-                     'incident-chronology-block', 'event-log-block',
-                     'incident-overlay']:
+        for bid in [
+            "receipt-review-block",
+            "flow-log-block",
+            "incident-chronology-block",
+            "event-log-block",
+            "incident-overlay",
+        ]:
             assert bid in content, f"{bid} must be preserved"

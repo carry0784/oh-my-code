@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock, patch
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -23,8 +32,10 @@ from app.services.island_model import Island, IslandModel, IslandModelConfig, Mi
 from app.services.strategy_genome import GenomeFactory
 
 # Minimal OHLCV: 100 bars
-_OHLCV = [[1_000_000 + i * 60_000, 100 + i * 0.1, 101 + i * 0.1,
-           99 + i * 0.1, 100.5 + i * 0.1, 1000] for i in range(100)]
+_OHLCV = [
+    [1_000_000 + i * 60_000, 100 + i * 0.1, 101 + i * 0.1, 99 + i * 0.1, 100.5 + i * 0.1, 1000]
+    for i in range(100)
+]
 
 
 def _make_model(n_islands=3, pop=4, interval=5, topology="ring", seed=42):
@@ -75,9 +86,13 @@ def test_evolve_generation_runs():
     mock_t_result.best_fitness = 0.5
     mock_t_result.avg_fitness = 0.4
 
-    with patch.object(BacktestingEngine, "run", return_value=mock_bt), \
-         patch.object(StrategyTournament, "run_tournament", return_value=mock_t_result), \
-         patch("app.services.island_model.IslandModel._genome_to_strategy", return_value=MagicMock()):
+    with (
+        patch.object(BacktestingEngine, "run", return_value=mock_bt),
+        patch.object(StrategyTournament, "run_tournament", return_value=mock_t_result),
+        patch(
+            "app.services.island_model.IslandModel._genome_to_strategy", return_value=MagicMock()
+        ),
+    ):
         model.evolve_generation(_OHLCV, lookback=20)
 
     for island in model.islands:
@@ -97,7 +112,7 @@ def test_migrate_ring_topology():
 
     # Ring pairs: (0->1), (1->2), (2->0)
     from_ids = [e.from_island for e in events]
-    to_ids   = [e.to_island   for e in events]
+    to_ids = [e.to_island for e in events]
 
     assert "island_0" in from_ids
     assert "island_1" in from_ids

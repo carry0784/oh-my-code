@@ -23,6 +23,7 @@ Safety:
   - Simulation-only: no execution triggered
   - No contractual targets, no scoring, no judgment
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -53,6 +54,7 @@ _TEMPLATE_MULTI = "{count} tier(s) measured. Slowest median: {median:.1f}s ({tie
 
 
 # -- Public API --------------------------------------------------------------- #
+
 
 def build_latency_observation(
     action_ledger: Optional["ActionLedger"] = None,
@@ -109,6 +111,7 @@ def build_latency_observation(
 
 
 # -- Tier measurement -------------------------------------------------------- #
+
 
 def _measure_tier(
     tier_name: str,
@@ -244,6 +247,7 @@ def _measure_order_tier(executor: Optional["OrderExecutor"]) -> TierLatency:
 
 # -- Density signal ---------------------------------------------------------- #
 
+
 def _build_density_signal(*tiers: TierLatency) -> LatencyDensitySignal:
     """Build descriptive density signal from tier measurements."""
     measured = [t for t in tiers if t.measured]
@@ -276,6 +280,7 @@ def _build_density_signal(*tiers: TierLatency) -> LatencyDensitySignal:
 
 
 # -- Helpers ----------------------------------------------------------------- #
+
 
 def _parse_iso(value: str) -> Optional[datetime]:
     """Parse ISO datetime string safely. Returns None on failure."""

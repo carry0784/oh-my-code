@@ -22,13 +22,26 @@ from unittest.mock import MagicMock
 import pytest
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services", "app.services.order_service",
-    "app.services.position_service", "app.services.signal_service",
-    "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -58,7 +71,6 @@ from app.core.notification_flow import FlowResult
 # C23-1: FlowLog 모듈 구조
 # ===========================================================================
 class TestC23ModuleStructure:
-
     def test_module_exists(self):
         assert FLOW_LOG_PATH.exists()
 
@@ -77,7 +89,6 @@ class TestC23ModuleStructure:
 # C23-2: FlowLog CRUD
 # ===========================================================================
 class TestC23FlowLogCRUD:
-
     def test_record_returns_log_id(self):
         log = FlowLog()
         lid = log.record(FlowResult(executed_at="2026"))
@@ -142,7 +153,6 @@ class TestC23FlowLogCRUD:
 # C23-3: /api/flow-log 엔드포인트
 # ===========================================================================
 class TestC23Endpoint:
-
     def test_endpoint_exists(self):
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         assert '"/api/flow-log"' in content
@@ -150,14 +160,13 @@ class TestC23Endpoint:
     def test_endpoint_is_get(self):
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         idx = content.index("async def flow_log_review")
-        preceding = content[max(0, idx - 100):idx]
+        preceding = content[max(0, idx - 100) : idx]
         assert "@router.get" in preceding
 
     def test_returns_entries_key(self):
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         fn_match = re.search(
-            r'async def flow_log_review.*?(?=\n@router\.|\nasync def )',
-            content, re.DOTALL
+            r"async def flow_log_review.*?(?=\n@router\.|\nasync def )", content, re.DOTALL
         )
         assert fn_match
         assert '"entries"' in fn_match.group()
@@ -165,8 +174,7 @@ class TestC23Endpoint:
     def test_fail_closed(self):
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         fn_match = re.search(
-            r'async def flow_log_review.*?(?=\n@router\.|\nasync def )',
-            content, re.DOTALL
+            r"async def flow_log_review.*?(?=\n@router\.|\nasync def )", content, re.DOTALL
         )
         assert fn_match
         assert "except" in fn_match.group()
@@ -176,7 +184,6 @@ class TestC23Endpoint:
 # C23-4: Dashboard panel + JS
 # ===========================================================================
 class TestC23Panel:
-
     def test_block_exists(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert 'id="flow-log-block"' in content
@@ -209,8 +216,14 @@ class TestC23Panel:
         fn_start = content.index("function renderFlowLog")
         fn_end = content.index("function renderKeyFacts")
         fn_body = content[fn_start:fn_end]
-        forbidden = ['agent_analysis', 'raw_prompt', 'chain_of_thought',
-                      'internal_reasoning', 'debug_trace', 'error_class']
+        forbidden = [
+            "agent_analysis",
+            "raw_prompt",
+            "chain_of_thought",
+            "internal_reasoning",
+            "debug_trace",
+            "error_class",
+        ]
         for f in forbidden:
             assert f not in fn_body, f"Forbidden string '{f}'"
 
@@ -219,14 +232,13 @@ class TestC23Panel:
 # C23-5: CSS
 # ===========================================================================
 class TestC23CSS:
-
     def test_row_class(self):
         content = CSS_PATH.read_text(encoding="utf-8")
         assert ".fl-row" in content
 
     def test_action_classes(self):
         content = CSS_PATH.read_text(encoding="utf-8")
-        for cls in ['.fl-send', '.fl-suppress', '.fl-escalate', '.fl-resolve', '.fl-urgent']:
+        for cls in [".fl-send", ".fl-suppress", ".fl-escalate", ".fl-resolve", ".fl-urgent"]:
             assert cls in content, f"CSS class {cls} must exist"
 
 
@@ -234,7 +246,6 @@ class TestC23CSS:
 # C23-6: Tab 2 통합
 # ===========================================================================
 class TestC23Integration:
-
     def test_called_from_render_tab2(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert "renderFlowLog()" in content
@@ -248,8 +259,12 @@ class TestC23Integration:
 
     def test_existing_blocks_preserved(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        for bid in ['receipt-review-block', 'incident-chronology-block',
-                     'event-log-block', 'incident-overlay']:
+        for bid in [
+            "receipt-review-block",
+            "incident-chronology-block",
+            "event-log-block",
+            "incident-overlay",
+        ]:
             assert bid in content, f"{bid} must be preserved"
 
 
@@ -257,7 +272,6 @@ class TestC23Integration:
 # C23-7: app.state.flow_log 슬롯
 # ===========================================================================
 class TestC23AppState:
-
     def test_flow_log_initialized(self):
         content = MAIN_PATH.read_text(encoding="utf-8")
         assert "app.state.flow_log" in content

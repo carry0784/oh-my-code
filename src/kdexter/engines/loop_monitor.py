@@ -9,6 +9,7 @@ Output: loop_counts (dict) -> EvaluationContext.loop_counts -> Gate G-24 (ceilin
 Governance: B2 (governance_layer_map.md -- L28)
 Gate: G-24 LOOP_CHECK at VALIDATING[9]
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -24,11 +25,12 @@ from kdexter.loops.concurrency import LoopCounter
 # Data models
 # ------------------------------------------------------------------ #
 
+
 class LoopHealthStatus(Enum):
-    HEALTHY = "HEALTHY"        # usage well below ceilings
-    WARNING = "WARNING"        # usage > 70% of any ceiling
-    CRITICAL = "CRITICAL"      # usage > 90% of any ceiling
-    EXCEEDED = "EXCEEDED"      # ceiling breached
+    HEALTHY = "HEALTHY"  # usage well below ceilings
+    WARNING = "WARNING"  # usage > 70% of any ceiling
+    CRITICAL = "CRITICAL"  # usage > 90% of any ceiling
+    EXCEEDED = "EXCEEDED"  # ceiling breached
 
 
 WARNING_THRESHOLD = 0.70
@@ -38,6 +40,7 @@ CRITICAL_THRESHOLD = 0.90
 @dataclass
 class LoopStatus:
     """Health status for a single loop."""
+
     loop_name: str
     incident_count: int
     daily_count: int
@@ -46,12 +49,13 @@ class LoopStatus:
     daily_ceiling: int
     weekly_ceiling: int
     health: LoopHealthStatus
-    max_usage_ratio: float     # highest ratio across the 3 windows
+    max_usage_ratio: float  # highest ratio across the 3 windows
 
 
 @dataclass
 class LoopMonitorResult:
     """Result of monitoring all loops."""
+
     loop_statuses: dict[str, LoopStatus] = field(default_factory=dict)
     overall_health: LoopHealthStatus = LoopHealthStatus.HEALTHY
     any_exceeded: bool = False
@@ -61,6 +65,7 @@ class LoopMonitorResult:
 # ------------------------------------------------------------------ #
 # L28 Loop Monitor
 # ------------------------------------------------------------------ #
+
 
 class LoopMonitor:
     """
@@ -136,8 +141,9 @@ class LoopMonitor:
             )
 
             # Track worst health
-            if health.value > worst_health.value or \
-               list(LoopHealthStatus).index(health) > list(LoopHealthStatus).index(worst_health):
+            if health.value > worst_health.value or list(LoopHealthStatus).index(health) > list(
+                LoopHealthStatus
+            ).index(worst_health):
                 worst_health = health
 
         any_exceeded = any(s.health == LoopHealthStatus.EXCEEDED for s in statuses.values())

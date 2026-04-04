@@ -34,6 +34,7 @@ Constraints:
   - Execution receipt required: execution_proposal must be EXEC_RECEIPTED
   - Exchange whitelist enforced: exchange must be in SUPPORTED_EXCHANGES_ALL
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -52,16 +53,20 @@ FINGERPRINT_COOLDOWN_SECONDS = 60
 
 # -- Exceptions ------------------------------------------------------------ #
 
+
 class SubmitStateTransitionError(Exception):
     """Raised when an invalid submit state transition is attempted."""
+
     pass
 
 
 # -- Data Models ------------------------------------------------------------ #
 
+
 @dataclass
 class SubmitReceipt:
     """Immutable receipt generated after a submit proposal passes guard."""
+
     receipt_id: str
     proposal_id: str
     agent_proposal_id: str
@@ -83,6 +88,7 @@ class SubmitProposal:
     Single submit proposal with strict state machine.
     Replicated from ExecutionProposal with SUBMIT_ prefix states.
     """
+
     proposal_id: str
     agent_proposal_id: str
     execution_proposal_id: str
@@ -101,13 +107,16 @@ class SubmitProposal:
     created_at: str = ""
 
     # Allowed transitions (fail-closed: unlisted = forbidden)
-    _TRANSITIONS: dict = field(default_factory=lambda: {
-        "SUBMIT_PROPOSED": {"SUBMIT_GUARDED", "SUBMIT_BLOCKED"},
-        "SUBMIT_GUARDED": {"SUBMIT_RECEIPTED", "SUBMIT_FAILED"},
-        "SUBMIT_BLOCKED": set(),      # terminal
-        "SUBMIT_RECEIPTED": set(),    # terminal
-        "SUBMIT_FAILED": set(),       # terminal
-    }, repr=False)
+    _TRANSITIONS: dict = field(
+        default_factory=lambda: {
+            "SUBMIT_PROPOSED": {"SUBMIT_GUARDED", "SUBMIT_BLOCKED"},
+            "SUBMIT_GUARDED": {"SUBMIT_RECEIPTED", "SUBMIT_FAILED"},
+            "SUBMIT_BLOCKED": set(),  # terminal
+            "SUBMIT_RECEIPTED": set(),  # terminal
+            "SUBMIT_FAILED": set(),  # terminal
+        },
+        repr=False,
+    )
 
     # Terminal states — proposals in these states are never stale
     _TERMINAL_STATES: frozenset = field(
@@ -169,11 +178,15 @@ class SubmitProposal:
 
 # -- Submit Guard (6 checks) ----------------------------------------------- #
 
+
 def _check_exec_receipted(execution_proposal_status: Optional[str]) -> tuple[bool, str]:
     """Guard 1: Execution proposal must be EXEC_RECEIPTED."""
     if execution_proposal_status == "EXEC_RECEIPTED":
         return True, "EXEC_RECEIPTED: execution proposal is EXEC_RECEIPTED"
-    return False, f"EXEC_RECEIPTED: execution proposal status is {execution_proposal_status} (must be EXEC_RECEIPTED)"
+    return (
+        False,
+        f"EXEC_RECEIPTED: execution proposal status is {execution_proposal_status} (must be EXEC_RECEIPTED)",
+    )
 
 
 def _check_governance_final(pre_evidence_id: Optional[str]) -> tuple[bool, str]:
@@ -190,10 +203,16 @@ def _check_cost_final(cost_controller: Any = None) -> tuple[bool, str]:
     try:
         api_budget = cost_controller.get_budget("API_CALLS")
         if api_budget and api_budget.current >= api_budget.limit:
-            return False, f"COST_FINAL: API calls exhausted ({api_budget.current}/{api_budget.limit})"
+            return (
+                False,
+                f"COST_FINAL: API calls exhausted ({api_budget.current}/{api_budget.limit})",
+            )
         token_budget = cost_controller.get_budget("LLM_TOKENS")
         if token_budget and token_budget.current >= token_budget.limit:
-            return False, f"COST_FINAL: tokens exhausted ({token_budget.current}/{token_budget.limit})"
+            return (
+                False,
+                f"COST_FINAL: tokens exhausted ({token_budget.current}/{token_budget.limit})",
+            )
         return True, "COST_FINAL: within budget"
     except Exception as e:
         return True, f"COST_FINAL: check error ({e}), allowing"
@@ -220,8 +239,7 @@ def _check_exchange_allowed(exchange: Optional[str]) -> tuple[bool, str]:
     if exchange in SUPPORTED_EXCHANGES_ALL:
         return True, f"EXCHANGE_ALLOWED: '{exchange}' is in whitelist"
     return False, (
-        f"EXCHANGE_ALLOWED: '{exchange}' is not supported. "
-        f"Allowed: {list(SUPPORTED_EXCHANGES_ALL)}"
+        f"EXCHANGE_ALLOWED: '{exchange}' is not supported. Allowed: {list(SUPPORTED_EXCHANGES_ALL)}"
     )
 
 
@@ -236,6 +254,7 @@ def _check_size_submit(risk_result: dict, max_position_usd: float = 100000.0) ->
 
 
 # -- Submit Ledger ---------------------------------------------------------- #
+
 
 class SubmitLedger:
     """
@@ -253,10 +272,15 @@ class SubmitLedger:
     # -- Fingerprint ------------------------------------------------------- #
 
     @staticmethod
-    def _compute_fingerprint(task_type: str, symbol: Optional[str],
-                             exchange: Optional[str], position_size: Any) -> str:
+    def _compute_fingerprint(
+        task_type: str, symbol: Optional[str], exchange: Optional[str], position_size: Any
+    ) -> str:
         """Compute submit fingerprint for duplicate detection."""
-        size_bucket = int((position_size or 0) / 1000) * 1000 if isinstance(position_size, (int, float)) else 0
+        size_bucket = (
+            int((position_size or 0) / 1000) * 1000
+            if isinstance(position_size, (int, float))
+            else 0
+        )
         raw = f"SUBMIT|{task_type}|{symbol}|{exchange}|{size_bucket}"
         return hashlib.md5(raw.encode()).hexdigest()[:12]
 
@@ -317,8 +341,12 @@ class SubmitLedger:
         # Duplicate suppression
         if self._is_duplicate(fp):
             proposal.guard_passed = False
-            proposal.guard_reasons = [f"DUPLICATE: fingerprint {fp} seen within {FINGERPRINT_COOLDOWN_SECONDS}s"]
-            proposal.guard_checks = {"DUPLICATE": {"passed": False, "detail": proposal.guard_reasons[0]}}
+            proposal.guard_reasons = [
+                f"DUPLICATE: fingerprint {fp} seen within {FINGERPRINT_COOLDOWN_SECONDS}s"
+            ]
+            proposal.guard_checks = {
+                "DUPLICATE": {"passed": False, "detail": proposal.guard_reasons[0]}
+            }
             proposal.transition_to("SUBMIT_BLOCKED")
             self._proposals.append(proposal)
             return False, proposal
@@ -412,18 +440,20 @@ class SubmitLedger:
         for p in self._proposals:
             key = p.status.lower()
             if key in board:
-                board[key].append({
-                    "proposal_id": p.proposal_id,
-                    "agent_proposal_id": p.agent_proposal_id,
-                    "execution_proposal_id": p.execution_proposal_id,
-                    "task_type": p.task_type,
-                    "symbol": p.symbol,
-                    "exchange": p.exchange,
-                    "status": p.status,
-                    "submit_ready": p.submit_ready,
-                    "fingerprint": p.fingerprint,
-                    "created_at": p.created_at,
-                })
+                board[key].append(
+                    {
+                        "proposal_id": p.proposal_id,
+                        "agent_proposal_id": p.agent_proposal_id,
+                        "execution_proposal_id": p.execution_proposal_id,
+                        "task_type": p.task_type,
+                        "symbol": p.symbol,
+                        "exchange": p.exchange,
+                        "status": p.status,
+                        "submit_ready": p.submit_ready,
+                        "fingerprint": p.fingerprint,
+                        "created_at": p.created_at,
+                    }
+                )
 
         orphan_count = len(board["submit_guarded"])
 
@@ -443,6 +473,7 @@ class SubmitLedger:
     def _top_block_reasons(self, limit: int = 5) -> list[str]:
         """Top N blocking reasons."""
         from collections import Counter
+
         reasons = Counter()
         for p in self._proposals:
             if p.status == "SUBMIT_BLOCKED":

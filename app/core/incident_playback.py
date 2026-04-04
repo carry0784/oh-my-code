@@ -41,6 +41,7 @@ def build_incident_playback() -> IncidentPlaybackResult:
 
     try:
         import app.main as main_module
+
         app_inst = main_module.app
 
         # Source 1: Receipt store → 발생 phase
@@ -51,13 +52,15 @@ def build_incident_playback() -> IncidentPlaybackResult:
                 receipt_ids.append(rid)
                 sev = r.get("severity_tier", "")
                 phase = "발생" if sev in ("critical", "high") else "탐지"
-                timeline.append(PlaybackTimelineEntry(
-                    timestamp=r.get("stored_at", now.isoformat()),
-                    phase=phase,
-                    description=f"{sev}: {r.get('highest_incident', 'unknown')}",
-                    source="receipt_store",
-                    evidence_ref=rid,
-                ))
+                timeline.append(
+                    PlaybackTimelineEntry(
+                        timestamp=r.get("stored_at", now.isoformat()),
+                        phase=phase,
+                        description=f"{sev}: {r.get('highest_incident', 'unknown')}",
+                        source="receipt_store",
+                        evidence_ref=rid,
+                    )
+                )
 
         # Source 2: Flow log → 탐지/자동조치/종료 phases
         flow_log = getattr(app_inst.state, "flow_log", None)
@@ -74,13 +77,15 @@ def build_incident_playback() -> IncidentPlaybackResult:
                     phase = "탐지"
                 else:
                     phase = "운영자조치"
-                timeline.append(PlaybackTimelineEntry(
-                    timestamp=e.get("executed_at", now.isoformat()),
-                    phase=phase,
-                    description=f"action={action}, channels={e.get('channels_delivered', 0)}",
-                    source="flow_log",
-                    evidence_ref=e.get("receipt_id"),
-                ))
+                timeline.append(
+                    PlaybackTimelineEntry(
+                        timestamp=e.get("executed_at", now.isoformat()),
+                        phase=phase,
+                        description=f"action={action}, channels={e.get('channels_delivered', 0)}",
+                        source="flow_log",
+                        evidence_ref=e.get("receipt_id"),
+                    )
+                )
 
         # Source 3: Evidence store → check results
         # CR-027: Bounded query — only recent N bundles, not full 84K+ scan.
@@ -97,13 +102,17 @@ def build_incident_playback() -> IncidentPlaybackResult:
                     bid = b.bundle_id if hasattr(b, "bundle_id") else str(uuid.uuid4())
                     evidence_ids.append(bid)
                     check_refs.append(f"check:{bid[:8]}")
-                    timeline.append(PlaybackTimelineEntry(
-                        timestamp=b.created_at.isoformat() if hasattr(b.created_at, "isoformat") else str(b.created_at),
-                        phase="탐지",
-                        description=f"check by {b.actor}" if hasattr(b, "actor") else "check",
-                        source="check_runner",
-                        evidence_ref=bid,
-                    ))
+                    timeline.append(
+                        PlaybackTimelineEntry(
+                            timestamp=b.created_at.isoformat()
+                            if hasattr(b.created_at, "isoformat")
+                            else str(b.created_at),
+                            phase="탐지",
+                            description=f"check by {b.actor}" if hasattr(b, "actor") else "check",
+                            source="check_runner",
+                            evidence_ref=bid,
+                        )
+                    )
 
     except Exception as e:
         logger.warning("incident_playback_build_failed", error=str(e))
@@ -177,11 +186,13 @@ def _store_playback_evidence(
     """Store playback result to evidence store. Append-only."""
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate is None or not hasattr(gate, "evidence_store"):
             return f"fallback-pb-{uuid.uuid4().hex[:8]}"
 
         from kdexter.audit.evidence_store import EvidenceBundle
+
         bundle = EvidenceBundle(
             bundle_id=str(uuid.uuid4()),
             created_at=now,
@@ -194,7 +205,10 @@ def _store_playback_evidence(
                 "timeline_entries": len(timeline),
                 "confidence": confidence.value,
             },
-            artifacts=[{"phase": e.phase, "source": e.source, "timestamp": e.timestamp} for e in timeline[:20]],
+            artifacts=[
+                {"phase": e.phase, "source": e.source, "timestamp": e.timestamp}
+                for e in timeline[:20]
+            ],
         )
         return gate.evidence_store.store(bundle)
     except Exception as e:

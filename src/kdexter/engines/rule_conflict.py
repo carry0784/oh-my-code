@@ -9,6 +9,7 @@ Output: conflict_count (int) -> EvaluationContext.conflict_count -> Gate G-20 (c
 Governance: B2 (governance_layer_map.md -- L16)
 Gate: G-20 CONFLICT_CHECK at VALIDATING[5]
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -22,9 +23,11 @@ from kdexter.ledger.rule_ledger import Rule
 # Data models
 # ------------------------------------------------------------------ #
 
+
 @dataclass
 class ConflictPair:
     """A pair of rules that conflict."""
+
     rule_a_id: str
     rule_b_id: str
     reason: str
@@ -34,6 +37,7 @@ class ConflictPair:
 @dataclass
 class ConflictCheckResult:
     """Result of a conflict scan."""
+
     conflict_count: int
     conflicts: list[ConflictPair] = field(default_factory=list)
     checked_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -59,8 +63,7 @@ def _actions_contradict(action_a: str, action_b: str) -> bool:
     a_upper = action_a.upper()
     b_upper = action_b.upper()
     for left, right in _CONTRADICTORY_ACTIONS:
-        if (left in a_upper and right in b_upper) or \
-           (right in a_upper and left in b_upper):
+        if (left in a_upper and right in b_upper) or (right in a_upper and left in b_upper):
             return True
     return False
 
@@ -100,6 +103,7 @@ def _conditions_overlap(cond_a: str, cond_b: str) -> bool:
 # L16 Rule Conflict Engine
 # ------------------------------------------------------------------ #
 
+
 class RuleConflictEngine:
     """
     L16 Rule Conflict Engine.
@@ -137,14 +141,17 @@ class RuleConflictEngine:
         for i in range(len(rules)):
             for j in range(i + 1, len(rules)):
                 ra, rb = rules[i], rules[j]
-                if _conditions_overlap(ra.condition, rb.condition) and \
-                   _actions_contradict(ra.action, rb.action):
-                    conflicts.append(ConflictPair(
-                        rule_a_id=ra.rule_id,
-                        rule_b_id=rb.rule_id,
-                        reason=f"Overlapping conditions with contradictory actions: "
-                               f"'{ra.action}' vs '{rb.action}'",
-                    ))
+                if _conditions_overlap(ra.condition, rb.condition) and _actions_contradict(
+                    ra.action, rb.action
+                ):
+                    conflicts.append(
+                        ConflictPair(
+                            rule_a_id=ra.rule_id,
+                            rule_b_id=rb.rule_id,
+                            reason=f"Overlapping conditions with contradictory actions: "
+                            f"'{ra.action}' vs '{rb.action}'",
+                        )
+                    )
 
         result = ConflictCheckResult(
             conflict_count=len(conflicts),

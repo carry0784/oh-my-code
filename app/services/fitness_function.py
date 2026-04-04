@@ -32,8 +32,9 @@ W_LIVE_MATCH = 0.10
 @dataclass
 class FitnessBreakdown:
     """Detailed fitness score breakdown."""
-    total: float = 0.0          # 0.0 to 1.0
-    return_score: float = 0.0   # 0.0 to 1.0
+
+    total: float = 0.0  # 0.0 to 1.0
+    return_score: float = 0.0  # 0.0 to 1.0
     stability_score: float = 0.0
     consistency_score: float = 0.0
     live_match_score: float = 0.5  # Default 0.5 until paper trading (Phase 7)
@@ -70,8 +71,7 @@ class FitnessFunction:
         if performance.total_trades < self.min_trades:
             result.penalties = 0.5
             result.total = 0.0
-            result.details = {"penalty": "insufficient_trades",
-                            "trades": performance.total_trades}
+            result.details = {"penalty": "insufficient_trades", "trades": performance.total_trades}
             return result
 
         # 1. Return score (40%) — Sharpe-based
@@ -100,8 +100,10 @@ class FitnessFunction:
 
         result.details = {
             "weights": {
-                "return": W_RETURN, "stability": W_STABILITY,
-                "consistency": W_CONSISTENCY, "live_match": W_LIVE_MATCH,
+                "return": W_RETURN,
+                "stability": W_STABILITY,
+                "consistency": W_CONSISTENCY,
+                "live_match": W_LIVE_MATCH,
             },
             "raw_total": round(raw, 4),
         }
@@ -140,7 +142,7 @@ class FitnessFunction:
         pf_score = min(pf / self.target_pf, 1.0)
 
         # Average of win rate and profit factor scores
-        return (wr_score * 0.5 + pf_score * 0.5)
+        return wr_score * 0.5 + pf_score * 0.5
 
     def _live_match_score(
         self,
@@ -152,10 +154,14 @@ class FitnessFunction:
             return 0.5  # Neutral when no live data available
 
         # Compare return direction match
-        direction_match = 1.0 if (
-            (backtest.total_return_pct > 0 and live.total_return_pct > 0)
-            or (backtest.total_return_pct <= 0 and live.total_return_pct <= 0)
-        ) else 0.0
+        direction_match = (
+            1.0
+            if (
+                (backtest.total_return_pct > 0 and live.total_return_pct > 0)
+                or (backtest.total_return_pct <= 0 and live.total_return_pct <= 0)
+            )
+            else 0.0
+        )
 
         # Compare win rate similarity
         wr_diff = abs(backtest.win_rate - live.win_rate)

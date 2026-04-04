@@ -18,6 +18,7 @@ Usage:
   from app.core.notification_flow import execute_notification_flow
   result = execute_notification_flow(snapshot, policy, store)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
@@ -28,6 +29,7 @@ from typing import Any, Optional
 @dataclass
 class FlowResult:
     """Result of a complete notification flow execution."""
+
     executed_at: str = ""
     # Step results
     routing_ok: bool = False
@@ -76,6 +78,7 @@ def execute_notification_flow(
     routing = {"channels": [], "severity_tier": "unknown", "reason": "routing_failed"}
     try:
         from app.core.alert_router import route_snapshot
+
         routing = route_snapshot(snapshot)
         result.routing_ok = True
         result.routing = routing
@@ -112,6 +115,7 @@ def execute_notification_flow(
     if effective_channels and not result.policy_suppressed:
         try:
             from app.core.notification_sender import send_notifications
+
             send_routing = {
                 "channels": effective_channels,
                 "severity_tier": effective_severity,
@@ -140,6 +144,7 @@ def execute_notification_flow(
 # Card C-32: Manual Retry Pass Entrypoint
 # ---------------------------------------------------------------------------
 
+
 def run_manual_retry_pass(
     plan_store: Any,
     snapshot: Optional[dict[str, Any]] = None,
@@ -166,6 +171,7 @@ def run_manual_retry_pass(
     """
     try:
         from app.core.retry_executor import execute_retry_pass
+
         result = execute_retry_pass(
             plan_store=plan_store,
             snapshot=snapshot,

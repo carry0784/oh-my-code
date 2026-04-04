@@ -18,6 +18,7 @@ logger = get_logger(__name__)
 @dataclass
 class MonteCarloResult:
     """Monte Carlo simulation result with confidence intervals."""
+
     n_simulations: int = 0
     n_trades: int = 0
 
@@ -25,15 +26,15 @@ class MonteCarloResult:
     return_mean: float = 0.0
     return_median: float = 0.0
     return_std: float = 0.0
-    return_5th: float = 0.0     # 5th percentile (worst case)
+    return_5th: float = 0.0  # 5th percentile (worst case)
     return_25th: float = 0.0
     return_75th: float = 0.0
-    return_95th: float = 0.0    # 95th percentile (best case)
+    return_95th: float = 0.0  # 95th percentile (best case)
 
     # Drawdown distribution
     max_dd_mean: float = 0.0
     max_dd_median: float = 0.0
-    max_dd_95th: float = 0.0    # 95th percentile worst drawdown
+    max_dd_95th: float = 0.0  # 95th percentile worst drawdown
 
     # Sharpe distribution
     sharpe_mean: float = 0.0

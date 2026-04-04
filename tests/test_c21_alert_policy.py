@@ -36,7 +36,6 @@ ROUTER_PATH = PROJECT_ROOT / "app" / "core" / "alert_router.py"
 # C21-1: 모듈 구조
 # ===========================================================================
 class TestC21ModuleStructure:
-
     def test_module_exists(self):
         assert POLICY_PATH.exists()
 
@@ -66,7 +65,6 @@ class TestC21ModuleStructure:
 # C21-2: Duplicate suppression
 # ===========================================================================
 class TestC21DuplicateSuppression:
-
     def test_first_send_not_suppressed(self):
         policy = AlertPolicy()
         routing = {"channels": ["console", "snapshot"], "severity_tier": "high", "reason": "test"}
@@ -105,7 +103,6 @@ class TestC21DuplicateSuppression:
 # C21-3: Degraded escalation
 # ===========================================================================
 class TestC21DegradedEscalation:
-
     def test_single_degraded_stays_low(self):
         policy = AlertPolicy(escalation_threshold=3)
         routing = {"channels": ["snapshot"], "severity_tier": "low", "reason": "degraded"}
@@ -139,7 +136,6 @@ class TestC21DegradedEscalation:
 # C21-4: Clear de-escalation
 # ===========================================================================
 class TestC21ClearDeescalation:
-
     def test_clear_after_incident_sends_resolve(self):
         policy = AlertPolicy()
         # First: active incident
@@ -185,10 +181,13 @@ class TestC21ClearDeescalation:
 # C21-5: Urgency markers
 # ===========================================================================
 class TestC21Urgency:
-
     def test_critical_is_urgent(self):
         policy = AlertPolicy()
-        routing = {"channels": ["console", "snapshot", "external"], "severity_tier": "critical", "reason": "lockdown"}
+        routing = {
+            "channels": ["console", "snapshot", "external"],
+            "severity_tier": "critical",
+            "reason": "lockdown",
+        }
         result = policy.evaluate(routing, {"highest_incident": "LOCKDOWN"})
         assert result.urgent is True
 
@@ -209,7 +208,6 @@ class TestC21Urgency:
 # C21-6: Fail-closed
 # ===========================================================================
 class TestC21FailClosed:
-
     def test_malformed_routing_returns_fallthrough(self):
         policy = AlertPolicy()
         result = policy.evaluate({}, None)
@@ -234,7 +232,6 @@ class TestC21FailClosed:
 # C21-7: 기존 router 보존
 # ===========================================================================
 class TestC21RouterPreserved:
-
     def test_router_unchanged(self):
         content = ROUTER_PATH.read_text(encoding="utf-8")
         assert "def route_snapshot" in content
@@ -251,13 +248,16 @@ class TestC21RouterPreserved:
 # C21-8: 금지 조항
 # ===========================================================================
 class TestC21Forbidden:
-
     def test_no_forbidden_strings(self):
         content = POLICY_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace', 'agent_analysis', 'error_class',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
+            "agent_analysis",
+            "error_class",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

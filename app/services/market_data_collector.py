@@ -71,9 +71,7 @@ class MarketDataCollector:
             logger.warning("ticker_fetch_failed", symbol=symbol, error=str(e))
             return None
 
-    async def _fetch_ohlcv(
-        self, symbol: str, timeframe: str, limit: int
-    ) -> list[OHLCVBar]:
+    async def _fetch_ohlcv(self, symbol: str, timeframe: str, limit: int) -> list[OHLCVBar]:
         try:
             raw = await self.client.fetch_ohlcv(symbol, timeframe, limit=limit)
             return [
@@ -91,9 +89,7 @@ class MarketDataCollector:
             logger.warning("ohlcv_fetch_failed", symbol=symbol, error=str(e))
             return []
 
-    async def _fetch_order_book(
-        self, symbol: str, limit: int
-    ) -> dict[str, Any] | None:
+    async def _fetch_order_book(self, symbol: str, limit: int) -> dict[str, Any] | None:
         try:
             if not self.client.has.get("fetchOrderBook", False):
                 return None
@@ -102,9 +98,7 @@ class MarketDataCollector:
             logger.warning("order_book_fetch_failed", symbol=symbol, error=str(e))
             return None
 
-    async def _fetch_recent_trades(
-        self, symbol: str, limit: int
-    ) -> list[dict[str, Any]]:
+    async def _fetch_recent_trades(self, symbol: str, limit: int) -> list[dict[str, Any]]:
         try:
             if not self.client.has.get("fetchTrades", False):
                 return []

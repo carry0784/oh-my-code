@@ -29,7 +29,9 @@ def run_daily_governance_report():
 
         report = run_governance_monitor()
         text = format_report_text(report)
-        logger.info("governance_monitor_daily", overall=report.overall.value, summary=report.summary)
+        logger.info(
+            "governance_monitor_daily", overall=report.overall.value, summary=report.summary
+        )
 
         # Attach latest evaluation report if available
         eval_snapshot = _load_evaluation_snapshot()
@@ -109,7 +111,9 @@ def run_weekly_governance_summary():
                 name = ind["name"]
                 if name not in indicator_stats:
                     indicator_stats[name] = {"OK": 0, "WARN": 0, "FAIL": 0}
-                indicator_stats[name][ind["status"]] = indicator_stats[name].get(ind["status"], 0) + 1
+                indicator_stats[name][ind["status"]] = (
+                    indicator_stats[name].get(ind["status"], 0) + 1
+                )
 
         # Determine weekly overall
         if fail_count > 0:
@@ -119,9 +123,7 @@ def run_weekly_governance_summary():
         else:
             weekly_overall = "OK"
 
-        summary = (
-            f"WEEKLY: {total} reports — {ok_count} OK, {warn_count} WARN, {fail_count} FAIL"
-        )
+        summary = f"WEEKLY: {total} reports — {ok_count} OK, {warn_count} WARN, {fail_count} FAIL"
 
         result = {
             "check_type": "GOVERNANCE_WEEKLY",
@@ -157,11 +159,13 @@ def run_weekly_governance_summary():
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _load_evaluation_snapshot() -> dict | None:
     """Load latest evaluation report for G-MON daily embedding. Fail-silent."""
     try:
         import json
         from pathlib import Path
+
         eval_path = Path("data/evaluation_report.json")
         if not eval_path.exists():
             return None
@@ -186,6 +190,7 @@ def _append_report_file(report, eval_snapshot: dict | None = None):
     try:
         import json
         from pathlib import Path
+
         path = Path("data/governance_reports.jsonl")
         path.parent.mkdir(parents=True, exist_ok=True)
         entry = report.to_dict()
@@ -207,6 +212,7 @@ def _send_notification(report):
         webhook_url = settings.notifier_webhook_url
         if webhook_url:
             from app.core.real_notifier_adapter import send_webhook
+
             payload = format_discord_report(report)
             send_webhook(webhook_url, payload)
 
@@ -215,15 +221,23 @@ def _send_notification(report):
         if file_path:
             import json
             from pathlib import Path
+
             p = Path(file_path)
             p.parent.mkdir(parents=True, exist_ok=True)
             with open(p, "a", encoding="utf-8") as f:
-                f.write(json.dumps({
-                    "type": "governance_monitor",
-                    "overall": report.overall.value,
-                    "summary": report.summary,
-                    "timestamp": report.timestamp,
-                }, ensure_ascii=False, default=str) + "\n")
+                f.write(
+                    json.dumps(
+                        {
+                            "type": "governance_monitor",
+                            "overall": report.overall.value,
+                            "summary": report.summary,
+                            "timestamp": report.timestamp,
+                        },
+                        ensure_ascii=False,
+                        default=str,
+                    )
+                    + "\n"
+                )
 
     except Exception as e:
         logger.warning("governance_notification_failed", error=str(e))
@@ -233,6 +247,7 @@ def _send_weekly_notification(result: dict):
     """Send weekly summary notification. Fail-silent."""
     try:
         from app.core.config import settings
+
         webhook_url = settings.notifier_webhook_url
         if not webhook_url:
             return
@@ -240,16 +255,20 @@ def _send_weekly_notification(result: dict):
         from app.core.real_notifier_adapter import send_webhook
 
         overall = result.get("result", "UNKNOWN")
-        icon = {"OK": ":white_check_mark:", "WARN": ":warning:", "FAIL": ":x:"}.get(overall, ":grey_question:")
+        icon = {"OK": ":white_check_mark:", "WARN": ":warning:", "FAIL": ":x:"}.get(
+            overall, ":grey_question:"
+        )
 
         payload = {
-            "content": "\n".join([
-                f"{icon} **K-Dexter Weekly Governance Summary** | {overall}",
-                f"Period: 7 days | Reports: {result.get('total_reports', 0)}",
-                f"OK: {result.get('ok_count', 0)} | WARN: {result.get('warn_count', 0)} | FAIL: {result.get('fail_count', 0)}",
-                "",
-                f"_{result.get('summary', '')}_",
-            ]),
+            "content": "\n".join(
+                [
+                    f"{icon} **K-Dexter Weekly Governance Summary** | {overall}",
+                    f"Period: 7 days | Reports: {result.get('total_reports', 0)}",
+                    f"OK: {result.get('ok_count', 0)} | WARN: {result.get('warn_count', 0)} | FAIL: {result.get('fail_count', 0)}",
+                    "",
+                    f"_{result.get('summary', '')}_",
+                ]
+            ),
         }
         send_webhook(webhook_url, payload)
 

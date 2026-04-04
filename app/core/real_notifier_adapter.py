@@ -16,6 +16,7 @@ Usage:
   from app.core.real_notifier_adapter import send_webhook
   success = send_webhook(url, payload)
 """
+
 from __future__ import annotations
 
 import json

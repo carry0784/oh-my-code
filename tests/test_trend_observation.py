@@ -15,6 +15,7 @@ Tests the two-window comparative observation card:
 
 Run: pytest tests/test_trend_observation.py -v
 """
+
 import sys
 import json
 from datetime import datetime, timezone, timedelta
@@ -28,16 +29,32 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services.order_service", "app.services.position_service",
-    "app.services.signal_service", "ccxt", "ccxt.async_support",
-    "redis", "celery", "asyncpg",
-    "kdexter", "kdexter.ledger", "kdexter.ledger.forbidden_ledger",
-    "kdexter.audit", "kdexter.audit.evidence_store",
-    "kdexter.state_machine", "kdexter.state_machine.security_state",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
+    "kdexter",
+    "kdexter.ledger",
+    "kdexter.ledger.forbidden_ledger",
+    "kdexter.audit",
+    "kdexter.audit.evidence_store",
+    "kdexter.state_machine",
+    "kdexter.state_machine.security_state",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -59,12 +76,18 @@ from app.schemas.trend_observation_schema import (
 
 # -- Helpers ---------------------------------------------------------------- #
 
+
 def _make_buffer_with_snapshots(
-    current_count=0, previous_count=0,
-    current_blocked=10, previous_blocked=5,
-    current_retry=3, previous_retry=3,
-    current_review=2, previous_review=4,
-    current_watch=1, previous_watch=1,
+    current_count=0,
+    previous_count=0,
+    current_blocked=10,
+    previous_blocked=5,
+    current_retry=3,
+    previous_retry=3,
+    current_review=2,
+    previous_review=4,
+    current_watch=1,
+    previous_watch=1,
 ):
     """Create a buffer with snapshots in current and previous 60m windows."""
     now = datetime.now(timezone.utc)
@@ -73,24 +96,28 @@ def _make_buffer_with_snapshots(
     # Previous window snapshots (60-120 min ago)
     for i in range(previous_count):
         ts = now - timedelta(minutes=90) + timedelta(minutes=i * (30 / max(previous_count, 1)))
-        buf.record_snapshot(MetricSnapshot(
-            timestamp=ts,
-            blocked_total=previous_blocked,
-            pending_retry_total=previous_retry,
-            review_total=previous_review,
-            watch_total=previous_watch,
-        ))
+        buf.record_snapshot(
+            MetricSnapshot(
+                timestamp=ts,
+                blocked_total=previous_blocked,
+                pending_retry_total=previous_retry,
+                review_total=previous_review,
+                watch_total=previous_watch,
+            )
+        )
 
     # Current window snapshots (0-60 min ago)
     for i in range(current_count):
         ts = now - timedelta(minutes=30) + timedelta(minutes=i * (30 / max(current_count, 1)))
-        buf.record_snapshot(MetricSnapshot(
-            timestamp=ts,
-            blocked_total=current_blocked,
-            pending_retry_total=current_retry,
-            review_total=current_review,
-            watch_total=current_watch,
-        ))
+        buf.record_snapshot(
+            MetricSnapshot(
+                timestamp=ts,
+                blocked_total=current_blocked,
+                pending_retry_total=current_retry,
+                review_total=current_review,
+                watch_total=current_watch,
+            )
+        )
 
     return buf
 
@@ -99,8 +126,8 @@ def _make_buffer_with_snapshots(
 # AXIS 1: Zero-Safe / No Buffer                                                #
 # =========================================================================== #
 
-class TestZeroSafe:
 
+class TestZeroSafe:
     def test_none_buffer_returns_zero_safe(self):
         obs = build_trend_observation(None)
         assert obs.density.trend_available is False
@@ -128,8 +155,8 @@ class TestZeroSafe:
 # AXIS 2: Insufficient Data                                                    #
 # =========================================================================== #
 
-class TestInsufficientData:
 
+class TestInsufficientData:
     def test_few_snapshots_marks_insufficient(self):
         """Less than 5 snapshots per window → insufficient_data=True."""
         buf = _make_buffer_with_snapshots(current_count=3, previous_count=3)
@@ -159,13 +186,15 @@ class TestInsufficientData:
 # AXIS 3: Two-Window Comparison                                                #
 # =========================================================================== #
 
-class TestTwoWindowComparison:
 
+class TestTwoWindowComparison:
     def test_increasing_detected(self):
         """Current > previous → direction = increasing."""
         buf = _make_buffer_with_snapshots(
-            current_count=10, previous_count=10,
-            current_blocked=15, previous_blocked=5,
+            current_count=10,
+            previous_count=10,
+            current_blocked=15,
+            previous_blocked=5,
         )
         obs = build_trend_observation(buf)
         assert obs.blocked_trend.insufficient_data is False
@@ -175,8 +204,10 @@ class TestTwoWindowComparison:
     def test_decreasing_detected(self):
         """Current < previous → direction = decreasing."""
         buf = _make_buffer_with_snapshots(
-            current_count=10, previous_count=10,
-            current_blocked=3, previous_blocked=10,
+            current_count=10,
+            previous_count=10,
+            current_blocked=3,
+            previous_blocked=10,
         )
         obs = build_trend_observation(buf)
         assert obs.blocked_trend.direction == "decreasing"
@@ -185,8 +216,10 @@ class TestTwoWindowComparison:
     def test_stable_detected(self):
         """Current == previous → direction = stable."""
         buf = _make_buffer_with_snapshots(
-            current_count=10, previous_count=10,
-            current_blocked=5, previous_blocked=5,
+            current_count=10,
+            previous_count=10,
+            current_blocked=5,
+            previous_blocked=5,
         )
         obs = build_trend_observation(buf)
         assert obs.blocked_trend.direction == "stable"
@@ -195,11 +228,16 @@ class TestTwoWindowComparison:
     def test_all_four_metrics_compared(self):
         """All 4 metrics get independent comparisons."""
         buf = _make_buffer_with_snapshots(
-            current_count=10, previous_count=10,
-            current_blocked=10, previous_blocked=5,   # increasing
-            current_retry=3, previous_retry=3,         # stable
-            current_review=1, previous_review=4,       # decreasing
-            current_watch=2, previous_watch=2,         # stable
+            current_count=10,
+            previous_count=10,
+            current_blocked=10,
+            previous_blocked=5,  # increasing
+            current_retry=3,
+            previous_retry=3,  # stable
+            current_review=1,
+            previous_review=4,  # decreasing
+            current_watch=2,
+            previous_watch=2,  # stable
         )
         obs = build_trend_observation(buf)
         assert obs.blocked_trend.direction == "increasing"
@@ -210,8 +248,10 @@ class TestTwoWindowComparison:
     def test_delta_is_count_based(self):
         """Delta is simple integer subtraction, not a ratio."""
         buf = _make_buffer_with_snapshots(
-            current_count=10, previous_count=10,
-            current_blocked=20, previous_blocked=8,
+            current_count=10,
+            previous_count=10,
+            current_blocked=20,
+            previous_blocked=8,
         )
         obs = build_trend_observation(buf)
         assert obs.blocked_trend.delta == 12
@@ -231,8 +271,10 @@ class TestTwoWindowComparison:
 
     def test_description_for_change(self):
         buf = _make_buffer_with_snapshots(
-            current_count=10, previous_count=10,
-            current_blocked=15, previous_blocked=5,
+            current_count=10,
+            previous_count=10,
+            current_blocked=15,
+            previous_blocked=5,
         )
         obs = build_trend_observation(buf)
         desc = obs.blocked_trend.description
@@ -242,8 +284,10 @@ class TestTwoWindowComparison:
 
     def test_description_for_stable(self):
         buf = _make_buffer_with_snapshots(
-            current_count=10, previous_count=10,
-            current_retry=3, previous_retry=3,
+            current_count=10,
+            previous_count=10,
+            current_retry=3,
+            previous_retry=3,
         )
         obs = build_trend_observation(buf)
         assert "stable" in obs.pending_retry_trend.description
@@ -253,8 +297,8 @@ class TestTwoWindowComparison:
 # AXIS 4: Ring Buffer Mechanics                                                #
 # =========================================================================== #
 
-class TestRingBufferMechanics:
 
+class TestRingBufferMechanics:
     def test_buffer_creation(self):
         buf = MetricSnapshotBuffer()
         assert buf.count == 0
@@ -269,20 +313,24 @@ class TestRingBufferMechanics:
         buf = MetricSnapshotBuffer(max_snapshots=10)
         now = datetime.now(timezone.utc)
         for i in range(20):
-            buf.record_snapshot(MetricSnapshot(
-                timestamp=now + timedelta(seconds=i),
-                blocked_total=i,
-            ))
+            buf.record_snapshot(
+                MetricSnapshot(
+                    timestamp=now + timedelta(seconds=i),
+                    blocked_total=i,
+                )
+            )
         assert buf.count == 10
 
     def test_buffer_evicts_oldest(self):
         buf = MetricSnapshotBuffer(max_snapshots=5)
         now = datetime.now(timezone.utc)
         for i in range(10):
-            buf.record_snapshot(MetricSnapshot(
-                timestamp=now + timedelta(seconds=i),
-                blocked_total=i,
-            ))
+            buf.record_snapshot(
+                MetricSnapshot(
+                    timestamp=now + timedelta(seconds=i),
+                    blocked_total=i,
+                )
+            )
         snaps = buf.list_snapshots()
         assert snaps[0].blocked_total == 5  # oldest remaining
         assert snaps[-1].blocked_total == 9  # newest
@@ -307,8 +355,8 @@ class TestRingBufferMechanics:
 # AXIS 5: Density Signal                                                       #
 # =========================================================================== #
 
-class TestDensitySignal:
 
+class TestDensitySignal:
     def test_no_buffer_description(self):
         obs = build_trend_observation(None)
         assert obs.density.description == "No snapshot buffer available."
@@ -323,9 +371,12 @@ class TestDensitySignal:
 
     def test_sufficient_data_shows_tracked(self):
         buf = _make_buffer_with_snapshots(
-            current_count=10, previous_count=10,
-            current_blocked=10, previous_blocked=5,
-            current_retry=3, previous_retry=3,
+            current_count=10,
+            previous_count=10,
+            current_blocked=10,
+            previous_blocked=5,
+            current_retry=3,
+            previous_retry=3,
         )
         obs = build_trend_observation(buf)
         assert obs.density.trend_available is True
@@ -334,11 +385,16 @@ class TestDensitySignal:
 
     def test_density_counts_changed_metrics(self):
         buf = _make_buffer_with_snapshots(
-            current_count=10, previous_count=10,
-            current_blocked=10, previous_blocked=5,  # changed
-            current_retry=3, previous_retry=3,         # stable
-            current_review=1, previous_review=4,       # changed
-            current_watch=2, previous_watch=2,         # stable
+            current_count=10,
+            previous_count=10,
+            current_blocked=10,
+            previous_blocked=5,  # changed
+            current_retry=3,
+            previous_retry=3,  # stable
+            current_review=1,
+            previous_review=4,  # changed
+            current_watch=2,
+            previous_watch=2,  # stable
         )
         obs = build_trend_observation(buf)
         assert obs.density.metrics_with_change == 2
@@ -361,8 +417,8 @@ class TestDensitySignal:
 # AXIS 6: Safety Invariants                                                    #
 # =========================================================================== #
 
-class TestSafetyInvariants:
 
+class TestSafetyInvariants:
     def test_safety_all_true_empty(self):
         obs = build_trend_observation(None)
         assert obs.safety.read_only is True
@@ -383,29 +439,53 @@ class TestSafetyInvariants:
     def test_source_has_no_write_methods(self):
         import inspect
         import app.services.trend_observation_service as mod
+
         source = inspect.getsource(mod)
-        forbidden = ["propose_and_guard", "record_receipt", "transition_to",
-                      ".delete(", ".write(", "enqueue("]
+        forbidden = [
+            "propose_and_guard",
+            "record_receipt",
+            "transition_to",
+            ".delete(",
+            ".write(",
+            "enqueue(",
+        ]
         for keyword in forbidden:
             assert keyword not in source, f"Forbidden keyword '{keyword}' in source"
 
     def test_source_has_no_prediction_keywords(self):
         import inspect
         import app.services.trend_observation_service as mod
+
         source = inspect.getsource(mod)
-        forbidden = ["predict", "forecast", "score(", "auto_promote",
-                      "auto_escalate", "auto_judge",
-                      "likely to", "expected to"]
+        forbidden = [
+            "predict",
+            "forecast",
+            "score(",
+            "auto_promote",
+            "auto_escalate",
+            "auto_judge",
+            "likely to",
+            "expected to",
+        ]
         for keyword in forbidden:
             assert keyword not in source, f"Prediction keyword '{keyword}' in source"
 
     def test_source_has_no_judgment_words(self):
         import inspect
         import app.services.trend_observation_service as mod
+
         source = inspect.getsource(mod)
-        forbidden = ['"improving"', '"worsening"', '"deteriorating"',
-                      '"recovering"', '"healthy"', '"unhealthy"',
-                      '"alert"', '"warning"', '"breach"']
+        forbidden = [
+            '"improving"',
+            '"worsening"',
+            '"deteriorating"',
+            '"recovering"',
+            '"healthy"',
+            '"unhealthy"',
+            '"alert"',
+            '"warning"',
+            '"breach"',
+        ]
         for keyword in forbidden:
             assert keyword not in source, f"Judgment word {keyword} in source"
 
@@ -413,6 +493,7 @@ class TestSafetyInvariants:
         """v1 constraint: no percentage change in descriptions."""
         import inspect
         import app.services.trend_observation_service as mod
+
         source = inspect.getsource(mod)
         assert "%" not in source.split("# --")[0]  # Check before helper section
 
@@ -429,15 +510,20 @@ class TestSafetyInvariants:
 # AXIS 7: Schema Drift Sentinel                                                #
 # =========================================================================== #
 
-class TestSchemaDriftSentinel:
 
+class TestSchemaDriftSentinel:
     def test_trend_observation_field_count(self):
         assert len(TrendObservationSchema.model_fields) == 7
 
     def test_trend_observation_field_names(self):
         expected = {
-            "blocked_trend", "pending_retry_trend", "review_trend",
-            "watch_trend", "window_minutes", "density", "safety",
+            "blocked_trend",
+            "pending_retry_trend",
+            "review_trend",
+            "watch_trend",
+            "window_minutes",
+            "density",
+            "safety",
         }
         assert set(TrendObservationSchema.model_fields.keys()) == expected
 
@@ -458,30 +544,35 @@ class TestSchemaDriftSentinel:
 # AXIS 8: Board Integration                                                    #
 # =========================================================================== #
 
-class TestBoardIntegration:
 
+class TestBoardIntegration:
     def test_board_schema_has_trend_observation(self):
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         assert "trend_observation" in FourTierBoardResponse.model_fields
 
     def test_board_schema_trend_is_typed(self):
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         field_info = FourTierBoardResponse.model_fields["trend_observation"]
         assert field_info.annotation is TrendObservationSchema
 
     def test_board_service_returns_typed_trend(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert isinstance(board.trend_observation, TrendObservationSchema)
 
     def test_board_trend_safety_intact(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.trend_observation.safety.read_only is True
         assert board.trend_observation.safety.no_prediction is True
 
     def test_board_serializes_trend_to_json(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         j = json.loads(board.model_dump_json())
         assert "trend_observation" in j
@@ -490,6 +581,7 @@ class TestBoardIntegration:
 
     def test_board_trend_empty_is_zero_safe(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.trend_observation.density.trend_available is False
         assert board.trend_observation.blocked_trend.insufficient_data is True

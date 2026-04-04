@@ -11,6 +11,7 @@ Sizing methods:
 
 Default: fixed fraction (most common for crypto/stock trading).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -30,24 +31,26 @@ class SizingMethod(Enum):
 @dataclass
 class SizingParams:
     """Configuration for position sizing."""
+
     method: SizingMethod = SizingMethod.FIXED_FRACTION
-    fixed_fraction_pct: float = 0.02   # risk 2% of equity
-    kelly_win_rate: float = 0.55       # historical win rate
-    kelly_payoff_ratio: float = 1.5    # avg_win / avg_loss
-    kelly_fraction: float = 0.25       # fraction of Kelly to use (quarter-Kelly)
-    fixed_quantity: float = 0.0        # for FIXED_QUANTITY method
-    min_quantity: float = 0.0          # minimum order size
-    max_quantity: float = float("inf") # maximum order size
+    fixed_fraction_pct: float = 0.02  # risk 2% of equity
+    kelly_win_rate: float = 0.55  # historical win rate
+    kelly_payoff_ratio: float = 1.5  # avg_win / avg_loss
+    kelly_fraction: float = 0.25  # fraction of Kelly to use (quarter-Kelly)
+    fixed_quantity: float = 0.0  # for FIXED_QUANTITY method
+    min_quantity: float = 0.0  # minimum order size
+    max_quantity: float = float("inf")  # maximum order size
 
 
 @dataclass
 class SizingResult:
     """Result of position sizing calculation."""
+
     signal_id: str
     quantity: float
     method_used: SizingMethod
-    risk_amount: float       # $ amount risked
-    notional_value: float    # total position value
+    risk_amount: float  # $ amount risked
+    notional_value: float  # total position value
     sized: bool = True
     rejection_reason: Optional[str] = None
 
@@ -98,9 +101,11 @@ class PositionSizer:
             qty, risk_amt = self._kelly(signal, account)
         elif self._params.method == SizingMethod.FIXED_QUANTITY:
             qty = self._params.fixed_quantity
-            risk_amt = qty * abs(signal.entry_price - signal.stop_loss) if (
-                signal.entry_price and signal.stop_loss
-            ) else 0.0
+            risk_amt = (
+                qty * abs(signal.entry_price - signal.stop_loss)
+                if (signal.entry_price and signal.stop_loss)
+                else 0.0
+            )
         else:
             qty, risk_amt = 0.0, 0.0
 

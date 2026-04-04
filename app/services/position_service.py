@@ -58,7 +58,9 @@ class PositionService:
                             exchange=exch_name,
                             symbol=pos_data["symbol"],
                             symbol_name=new_symbol_name,
-                            side=PositionSide.LONG if pos_data.get("side") == "long" else PositionSide.SHORT,
+                            side=PositionSide.LONG
+                            if pos_data.get("side") == "long"
+                            else PositionSide.SHORT,
                             quantity=abs(pos_data.get("contracts", 0)),
                             entry_price=pos_data.get("entryPrice", 0),
                             current_price=pos_data.get("markPrice", 0),

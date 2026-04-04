@@ -17,6 +17,7 @@ Source/Derived relationship:
   decision_summary = DERIVED from observation (Layer 5)
   decision_card = DERIVED UI view from decision (Layer 6)
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
@@ -26,6 +27,7 @@ from app.schemas.decision_summary_schema import PressureEnum
 
 # -- Safety sub-model ------------------------------------------------------ #
 
+
 class ObservationSafety(BaseModel):
     """
     Structurally fixed safety labels for observation layer.
@@ -33,16 +35,21 @@ class ObservationSafety(BaseModel):
     All four fields are ALWAYS True. These are constitutional constraints,
     not computed values. NEVER set to False.
     """
+
     read_only: bool = Field(default=True, description="ALWAYS True. No mutations performed.")
     simulation_only: bool = Field(default=True, description="ALWAYS True. No cleanup executed.")
-    no_action_executed: bool = Field(default=True, description="ALWAYS True. No state transitions triggered.")
+    no_action_executed: bool = Field(
+        default=True, description="ALWAYS True. No state transitions triggered."
+    )
     no_prediction: bool = Field(default=True, description="ALWAYS True. No forecasting.")
 
 
 # -- Nested models --------------------------------------------------------- #
 
+
 class ReasonActionEntry(BaseModel):
     """Single row of reason × action cross table."""
+
     reason: str = ""
     action: str = ""
     count: int = 0
@@ -50,6 +57,7 @@ class ReasonActionEntry(BaseModel):
 
 class TopPriorityCandidate(BaseModel):
     """Top priority cleanup candidate for operator attention."""
+
     proposal_id: str = ""
     tier: str = ""
     action_class: str = ""
@@ -63,6 +71,7 @@ class TopPriorityCandidate(BaseModel):
 
 # -- Main schema ----------------------------------------------------------- #
 
+
 class ObservationSummarySchema(BaseModel):
     """
     Typed observation summary for operator dashboard.
@@ -75,6 +84,7 @@ class ObservationSummarySchema(BaseModel):
         → DecisionSummarySchema (derived, Layer 5)
         → DecisionCard (derived UI view, Layer 6)
     """
+
     cleanup_pressure: PressureEnum = PressureEnum.LOW
     stale_total: int = 0
     orphan_total: int = 0

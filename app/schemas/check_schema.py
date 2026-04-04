@@ -119,9 +119,7 @@ class ConstitutionCheckResult(BaseModel):
     timestamp: str = Field(description="점검 실행 시각 (ISO 8601, 제13조)")
     result: CheckResultGrade = Field(description="전체 판정 등급 (제25조)")
     summary: str = Field(description="점검 결과 한 줄 요약")
-    items: list[CheckItem] = Field(
-        default_factory=list, description="개별 점검 항목 목록 (제27조)"
-    )
+    items: list[CheckItem] = Field(default_factory=list, description="개별 점검 항목 목록 (제27조)")
     failures: list[str] = Field(
         default_factory=list,
         description="실패 항목명 목록 (항목명 기준 오름차순 정렬, 제29조)",
@@ -151,9 +149,7 @@ class ConstitutionCheckResult(BaseModel):
     def enforce_event_trigger(self) -> "ConstitutionCheckResult":
         """EVENT 점검 유형은 trigger 필드가 반드시 지정되어야 한다 (제28조)."""
         if self.check_type == CheckType.EVENT and self.trigger is None:
-            raise ValueError(
-                "check_type=EVENT 인 경우 trigger 필드는 필수입니다. (제28조)"
-            )
+            raise ValueError("check_type=EVENT 인 경우 trigger 필드는 필수입니다. (제28조)")
         return self
 
     @model_validator(mode="after")
@@ -191,12 +187,8 @@ class CheckSummaryResponse(BaseModel):
         default=0,
         description="BLOCK 등급 점검 건수 (제26조 — 운영자 개입 필요 건수)",
     )
-    fail_count: int = Field(
-        default=0, description="FAIL 등급 점검 건수"
-    )
+    fail_count: int = Field(default=0, description="FAIL 등급 점검 건수")
     note: str = Field(
-        default=(
-            "Check, Don't Repair. 자동 실행 권한 없음. (제24조, 제31조)"
-        ),
+        default=("Check, Don't Repair. 자동 실행 권한 없음. (제24조, 제31조)"),
         description="운영 원칙 고지",
     )

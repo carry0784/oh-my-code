@@ -7,6 +7,7 @@ Violation triggers immediate LOCKDOWN or BLOCKED.
 Used by VALIDATING [1] FORBIDDEN_CHECK in the Main Loop.
 Violations produce EvidenceBundles for audit trail.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -22,24 +23,27 @@ from kdexter.state_machine.security_state import SecurityStateContext, SecurityS
 # Data models
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass(frozen=True)
 class ForbiddenAction:
     """A registered forbidden action."""
-    action_id: str              # "FA-001", "FA-002", ...
-    description: str            # what is forbidden
-    severity: str               # "LOCKDOWN" | "BLOCKED"
-    pattern: str                # action name pattern to match
-    registered_by: str          # author layer (e.g. "B1", "L3")
+
+    action_id: str  # "FA-001", "FA-002", ...
+    description: str  # what is forbidden
+    severity: str  # "LOCKDOWN" | "BLOCKED"
+    pattern: str  # action name pattern to match
+    registered_by: str  # author layer (e.g. "B1", "L3")
     registered_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 @dataclass
 class ForbiddenViolation:
     """Record of a detected forbidden action violation."""
+
     violation_id: str = field(default_factory=lambda: f"FV-{uuid.uuid4().hex[:8].upper()}")
-    action_id: str = ""                 # which ForbiddenAction was violated
+    action_id: str = ""  # which ForbiddenAction was violated
     action_pattern: str = ""
-    detected_action: str = ""           # what the system tried to do
+    detected_action: str = ""  # what the system tried to do
     severity: str = ""
     detected_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     context: dict = field(default_factory=dict)
@@ -49,6 +53,7 @@ class ForbiddenViolation:
 # ─────────────────────────────────────────────────────────────────────────── #
 # Forbidden Ledger
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 class ForbiddenLedger:
     """
@@ -136,13 +141,15 @@ class ForbiddenLedger:
             actor="ForbiddenLedger",
             action=f"VIOLATION:{matched.action_id}",
             before_state=security_ctx.current.value,
-            artifacts=[{
-                "action_id": matched.action_id,
-                "pattern": matched.pattern,
-                "detected_action": action_name,
-                "severity": matched.severity,
-                "context": context,
-            }],
+            artifacts=[
+                {
+                    "action_id": matched.action_id,
+                    "pattern": matched.pattern,
+                    "detected_action": action_name,
+                    "severity": matched.severity,
+                    "context": context,
+                }
+            ],
         )
         bundle_id = evidence_store.store(bundle)
 

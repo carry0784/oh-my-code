@@ -23,6 +23,7 @@ Open Questions:
   OQ-2: timeout_deadlock (seconds) — placeholder: 30s
   OQ-3: timeout_evolution_defer (seconds) — placeholder: 300s
 """
+
 from __future__ import annotations
 import asyncio
 import logging
@@ -191,8 +192,10 @@ class EvolutionDeferGuard:
 # Loop protocol — each loop must implement this interface
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 class LoopProtocol(Protocol):
     """Interface all 4 loops must satisfy to plug into LoopOrchestrator."""
+
     @property
     def is_active(self) -> bool: ...
     async def run(self) -> None: ...
@@ -202,9 +205,10 @@ class LoopProtocol(Protocol):
 # Orchestrator events
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass
 class OrchestratorEvent:
-    kind: str                               # e.g. "DEADLOCK", "EVOLUTION_DEFER_EXCEEDED"
+    kind: str  # e.g. "DEADLOCK", "EVOLUTION_DEFER_EXCEEDED"
     loop: Optional[LoopPriority]
     message: str
     occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -216,6 +220,7 @@ HumanOverrideCallback = Callable[[OrchestratorEvent], Awaitable[None]]
 # ─────────────────────────────────────────────────────────────────────────── #
 # LoopOrchestrator
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 class LoopOrchestrator:
     """
@@ -238,7 +243,7 @@ class LoopOrchestrator:
         await orch.stop()            # graceful shutdown
     """
 
-    WATCHDOG_INTERVAL: float = 1.0   # seconds between deadlock checks
+    WATCHDOG_INTERVAL: float = 1.0  # seconds between deadlock checks
 
     def __init__(
         self,
@@ -263,7 +268,7 @@ class LoopOrchestrator:
 
         self._main_suspended: bool = False
         self._main_resume_event: asyncio.Event = asyncio.Event()
-        self._main_resume_event.set()   # initially not suspended
+        self._main_resume_event.set()  # initially not suspended
 
         self._running: bool = False
         self._watchdog_task: Optional[asyncio.Task] = None
@@ -338,9 +343,7 @@ class LoopOrchestrator:
         """
         while self._running:
             try:
-                task: LoopTask = await asyncio.wait_for(
-                    self._queue.dequeue(), timeout=1.0
-                )
+                task: LoopTask = await asyncio.wait_for(self._queue.dequeue(), timeout=1.0)
             except asyncio.TimeoutError:
                 continue
 
@@ -353,9 +356,7 @@ class LoopOrchestrator:
                     self._queue.mark_active(task.priority)
                     await task.coro()
                 except Exception as exc:
-                    logger.error(
-                        f"Loop {task.priority.name} task {task.task_id!r} raised: {exc}"
-                    )
+                    logger.error(f"Loop {task.priority.name} task {task.task_id!r} raised: {exc}")
                 finally:
                     self._queue.mark_inactive(task.priority)
                     # If Recovery just finished, resume Main
@@ -413,6 +414,7 @@ class LoopOrchestrator:
 
 class ConcurrencyError(Exception):
     """Raised when a concurrency violation is detected."""
+
     pass
 
 
@@ -460,8 +462,8 @@ class LoopCounter:
         week_key = (now.strftime("%Y-W%W"), loop_name)
 
         current_incident = self._incident_counts[incident_id][loop_name]
-        current_daily   = self._daily_counts[day_key]
-        current_weekly  = self._weekly_counts[week_key]
+        current_daily = self._daily_counts[day_key]
+        current_weekly = self._weekly_counts[week_key]
 
         if current_incident >= ceiling.per_incident:
             raise LoopCeilingExceededError(
@@ -470,13 +472,11 @@ class LoopCounter:
             )
         if current_daily >= ceiling.per_day:
             raise LoopCeilingExceededError(
-                f"{loop_name} per_day ceiling ({ceiling.per_day}) reached "
-                f"for {day_key[0]}."
+                f"{loop_name} per_day ceiling ({ceiling.per_day}) reached for {day_key[0]}."
             )
         if current_weekly >= ceiling.per_week:
             raise LoopCeilingExceededError(
-                f"{loop_name} per_week ceiling ({ceiling.per_week}) reached "
-                f"for week {week_key[0]}."
+                f"{loop_name} per_week ceiling ({ceiling.per_week}) reached for week {week_key[0]}."
             )
 
         # Record activation
@@ -491,11 +491,12 @@ class LoopCounter:
         week_key = (now.strftime("%Y-W%W"), loop_name)
         return {
             "incident": self._incident_counts[incident_id][loop_name],
-            "daily":    self._daily_counts[day_key],
-            "weekly":   self._weekly_counts[week_key],
+            "daily": self._daily_counts[day_key],
+            "weekly": self._weekly_counts[week_key],
         }
 
 
 class LoopCeilingExceededError(Exception):
     """Raised when a loop activation would exceed its configured ceiling."""
+
     pass

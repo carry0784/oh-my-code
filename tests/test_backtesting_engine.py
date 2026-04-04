@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -70,11 +79,13 @@ class TestBacktestingEngine:
         assert result.strategy_name == "SMA_5_10"
 
     def test_generates_trades_on_oscillating_data(self):
-        engine = BacktestingEngine(BacktestConfig(
-            position_size_pct=10.0,
-            slippage_pct=0.0,
-            fee_pct=0.0,
-        ))
+        engine = BacktestingEngine(
+            BacktestConfig(
+                position_size_pct=10.0,
+                slippage_pct=0.0,
+                fee_pct=0.0,
+            )
+        )
         strategy = SimpleMAStrategy("BTC/USDT", fast_period=5, slow_period=10)
         ohlcv = _make_oscillating_ohlcv(400, period=25)
         result = engine.run(strategy, ohlcv, lookback=15)
@@ -105,9 +116,9 @@ class TestBacktestingEngine:
             assert r2.performance.total_pnl <= r1.performance.total_pnl + 1  # tolerance
 
     def test_stop_loss_triggers(self):
-        engine = BacktestingEngine(BacktestConfig(
-            stop_loss_enabled=True, slippage_pct=0, fee_pct=0
-        ))
+        engine = BacktestingEngine(
+            BacktestConfig(stop_loss_enabled=True, slippage_pct=0, fee_pct=0)
+        )
         strategy = SimpleMAStrategy("BTC/USDT", fast_period=3, slow_period=5)
         # Bullish crossover followed by crash
         ohlcv = [
@@ -116,7 +127,7 @@ class TestBacktestingEngine:
             [2, 93, 94, 92, 93, 1000],
             [3, 92, 93, 91, 92, 1000],
             [4, 91, 92, 90, 91, 1000],
-            [5, 95, 100, 94, 99, 1000],   # Price jumps → bullish crossover
+            [5, 95, 100, 94, 99, 1000],  # Price jumps → bullish crossover
             [6, 99, 101, 98, 100, 1000],
             [7, 100, 102, 99, 101, 1000],
             [8, 101, 102, 80, 82, 1000],  # Crash through stop loss

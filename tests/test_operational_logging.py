@@ -9,6 +9,7 @@ Validates:
   - No sensitive fields in operational logs
   - Evidence write failure logged
 """
+
 from __future__ import annotations
 
 import importlib
@@ -25,6 +26,7 @@ import structlog
 # B-03: OPERATIONAL LOGGING TESTS
 # ═══════════════════════════════════════════════════════════════════════════ #
 
+
 class TestOperationalLogging:
     """B-03: Operational log accumulation and audit verification."""
 
@@ -32,19 +34,14 @@ class TestOperationalLogging:
         """Startup and shutdown log events exist in app/main.py lifespan."""
         import ast
 
-        main_path = os.path.join(
-            os.path.dirname(__file__), "..", "app", "main.py"
-        )
+        main_path = os.path.join(os.path.dirname(__file__), "..", "app", "main.py")
         with open(main_path, "r", encoding="utf-8") as f:
             source = f.read()
 
         # Verify startup and shutdown log keywords exist in source
-        assert "Starting trading system" in source, \
-            "Startup log event must exist in main.py"
-        assert "Shutting down trading system" in source, \
-            "Shutdown log event must exist in main.py"
-        assert "log_mode" in source, \
-            "log_mode must be reported at startup"
+        assert "Starting trading system" in source, "Startup log event must exist in main.py"
+        assert "Shutting down trading system" in source, "Shutdown log event must exist in main.py"
+        assert "log_mode" in source, "log_mode must be reported at startup"
 
     def test_governance_logs_include_gate_id(self):
         """Governance gate logs include gate_id for audit traceability."""
@@ -64,20 +61,18 @@ class TestOperationalLogging:
             "governance_post_record_error",
         ]
         for event_name in log_calls:
-            assert event_name in source, \
-                f"Governance log event '{event_name}' must exist"
+            assert event_name in source, f"Governance log event '{event_name}' must exist"
 
         # gate_id must appear in log calls (not just in evidence artifacts)
         # Count occurrences of gate_id= in logger calls
         gate_id_in_logs = source.count("gate_id=self.gate_id")
-        assert gate_id_in_logs >= 4, \
+        assert gate_id_in_logs >= 4, (
             f"gate_id must be included in at least 4 log calls, found {gate_id_in_logs}"
+        )
 
     def test_log_file_persistence(self):
         """Log events persist to file and survive re-initialization."""
-        with tempfile.NamedTemporaryFile(
-            suffix=".log", delete=False, mode="w"
-        ) as f:
+        with tempfile.NamedTemporaryFile(suffix=".log", delete=False, mode="w") as f:
             log_path = f.name
 
         try:
@@ -88,6 +83,7 @@ class TestOperationalLogging:
                 mock_settings.log_level = "INFO"
 
                 from app.core.logging import setup_logging
+
                 setup_logging()
 
                 logger = structlog.get_logger("test_persistence")
@@ -95,6 +91,7 @@ class TestOperationalLogging:
 
             # Phase 2: flush all handlers
             import logging
+
             root = logging.getLogger()
             for h in root.handlers:
                 h.flush()
@@ -104,10 +101,8 @@ class TestOperationalLogging:
             with open(log_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
-            assert "B03_PERSISTENCE_TEST_EVENT" in content, \
-                "Log event must be persisted to file"
-            assert "persist_check" in content, \
-                "Structured fields must be preserved in file output"
+            assert "B03_PERSISTENCE_TEST_EVENT" in content, "Log event must be persisted to file"
+            assert "persist_check" in content, "Structured fields must be preserved in file output"
 
         finally:
             os.unlink(log_path)
@@ -137,6 +132,7 @@ class TestOperationalLogging:
         finally:
             # Clean up handlers before deleting file
             import logging
+
             for h in logging.getLogger().handlers[:]:
                 h.close()
             logging.getLogger().handlers.clear()
@@ -145,9 +141,15 @@ class TestOperationalLogging:
     def test_no_sensitive_fields_in_logs(self):
         """Operational logging code does not log sensitive fields."""
         sensitive_keywords = [
-            "secret", "token", "password", "credential",
-            "api_key", "private_key", "authorization",
-            "raw_prompt", "reasoning",
+            "secret",
+            "token",
+            "password",
+            "credential",
+            "api_key",
+            "private_key",
+            "authorization",
+            "raw_prompt",
+            "reasoning",
         ]
 
         # Scan key operational logging files
@@ -198,20 +200,24 @@ class TestOperationalLogging:
 
         # post_record_error must have:
         # 1. logger.error call for evidence write failure
-        assert "governance_post_record_error" in source, \
+        assert "governance_post_record_error" in source, (
             "Evidence write error must have a named log event"
+        )
 
         # 2. FALLBACK critical log for when evidence storage itself fails
-        assert "governance_post_record_error_FALLBACK" in source, \
+        assert "governance_post_record_error_FALLBACK" in source, (
             "Evidence storage failure must have a FALLBACK critical log"
+        )
 
         # 3. gate_id must be in fallback log too
-        assert source.count("governance_post_record_error_FALLBACK") >= 1, \
+        assert source.count("governance_post_record_error_FALLBACK") >= 1, (
             "FALLBACK log event must exist"
+        )
 
         # Verify the fallback log includes gate_id
         fallback_idx = source.index("governance_post_record_error_FALLBACK")
         # Look at the surrounding 500 chars for gate_id
-        surrounding = source[fallback_idx:fallback_idx + 500]
-        assert "gate_id" in surrounding, \
+        surrounding = source[fallback_idx : fallback_idx + 500]
+        assert "gate_id" in surrounding, (
             "FALLBACK critical log must include gate_id for audit traceability"
+        )

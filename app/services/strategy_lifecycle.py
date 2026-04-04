@@ -32,7 +32,11 @@ class StrategyState(str, Enum):
 ALLOWED_TRANSITIONS: dict[StrategyState, list[StrategyState]] = {
     StrategyState.CANDIDATE: [StrategyState.VALIDATED, StrategyState.RETIRED],
     StrategyState.VALIDATED: [StrategyState.PAPER_TRADING, StrategyState.RETIRED],
-    StrategyState.PAPER_TRADING: [StrategyState.PROMOTED, StrategyState.DEMOTED, StrategyState.RETIRED],
+    StrategyState.PAPER_TRADING: [
+        StrategyState.PROMOTED,
+        StrategyState.DEMOTED,
+        StrategyState.RETIRED,
+    ],
     StrategyState.PROMOTED: [StrategyState.DEMOTED, StrategyState.RETIRED],
     StrategyState.DEMOTED: [StrategyState.PAPER_TRADING, StrategyState.RETIRED],
     StrategyState.RETIRED: [],
@@ -74,18 +78,22 @@ class StrategyLifecycleManager:
             return False
 
         if record.current_state != request.from_state:
-            logger.warning("lifecycle_state_mismatch",
-                          genome_id=request.genome_id,
-                          expected=request.from_state.value,
-                          actual=record.current_state.value)
+            logger.warning(
+                "lifecycle_state_mismatch",
+                genome_id=request.genome_id,
+                expected=request.from_state.value,
+                actual=record.current_state.value,
+            )
             return False
 
         allowed = ALLOWED_TRANSITIONS.get(request.from_state, [])
         if request.to_state not in allowed:
-            logger.warning("lifecycle_invalid_transition",
-                          genome_id=request.genome_id,
-                          from_state=request.from_state.value,
-                          to_state=request.to_state.value)
+            logger.warning(
+                "lifecycle_invalid_transition",
+                genome_id=request.genome_id,
+                from_state=request.from_state.value,
+                to_state=request.to_state.value,
+            )
             return False
 
         # Execute transition
@@ -98,11 +106,13 @@ class StrategyLifecycleManager:
         elif request.to_state == StrategyState.DEMOTED:
             record.demotion_count += 1
 
-        logger.info("lifecycle_transition",
-                     genome_id=request.genome_id,
-                     from_state=request.from_state.value,
-                     to_state=request.to_state.value,
-                     reason=request.reason)
+        logger.info(
+            "lifecycle_transition",
+            genome_id=request.genome_id,
+            from_state=request.from_state.value,
+            to_state=request.to_state.value,
+            reason=request.reason,
+        )
         return True
 
     def get_state(self, genome_id: str) -> LifecycleRecord | None:

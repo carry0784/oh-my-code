@@ -84,7 +84,9 @@ class AgentOrchestrator:
         return None
 
     def _governance_post_record(
-        self, task: AgentTask, result: dict[str, Any],
+        self,
+        task: AgentTask,
+        result: dict[str, Any],
     ) -> Optional[str]:
         """Record post-execution evidence. Returns evidence_id or None."""
         if self.governance_gate is None or self._pre_evidence_id is None:
@@ -92,7 +94,9 @@ class AgentOrchestrator:
         return self.governance_gate.post_record(task, result, self._pre_evidence_id)
 
     def _governance_post_error(
-        self, task: AgentTask, exc: Exception,
+        self,
+        task: AgentTask,
+        exc: Exception,
     ) -> Optional[str]:
         """Record error evidence. Returns evidence_id or None."""
         if self.governance_gate is None or self._pre_evidence_id is None:
@@ -163,6 +167,7 @@ class AgentOrchestrator:
             # Step 1: Validate signal if present
             if task.signal_id:
                 from app.services.signal_service import SignalService
+
                 signal_service = SignalService(self.db)
                 signal = await signal_service.get_signal(task.signal_id)
                 if signal:
@@ -197,7 +202,11 @@ class AgentOrchestrator:
             # Step 2.5: Agent Apply Guard (before execution commitment)
             _action_proposal = None
             if self.action_ledger is not None:
-                _cost_ctrl = getattr(self.governance_gate, "_cost_controller", None) if self.governance_gate else None
+                _cost_ctrl = (
+                    getattr(self.governance_gate, "_cost_controller", None)
+                    if self.governance_gate
+                    else None
+                )
                 guard_passed, _action_proposal = self.action_ledger.propose_and_guard(
                     task_type=task.task_type,
                     symbol=task.symbol,
@@ -207,15 +216,21 @@ class AgentOrchestrator:
                     cost_controller=_cost_ctrl,
                 )
                 if not guard_passed:
-                    post_eid = self._governance_post_record(task, {
-                        "stage": "agent_apply_guard",
-                        "proposal_id": _action_proposal.proposal_id,
-                        "guard_reasons": _action_proposal.guard_reasons,
-                    })
+                    post_eid = self._governance_post_record(
+                        task,
+                        {
+                            "stage": "agent_apply_guard",
+                            "proposal_id": _action_proposal.proposal_id,
+                            "guard_reasons": _action_proposal.guard_reasons,
+                        },
+                    )
                     return AgentResponse(
                         success=False,
                         task_type="execute",
-                        result={"stage": "agent_apply_guard", "proposal": _action_proposal.to_dict()},
+                        result={
+                            "stage": "agent_apply_guard",
+                            "proposal": _action_proposal.to_dict(),
+                        },
                         reasoning=f"Agent Apply Guard blocked: {_action_proposal.guard_reasons}",
                         confidence=0.0,
                         governance_evidence_id=post_eid or self._pre_evidence_id,
@@ -242,8 +257,16 @@ class AgentOrchestrator:
             # Step 4: Execution Guard (final boundary before execution_ready)
             _exec_proposal = None
             if self.execution_ledger is not None:
-                _cost_ctrl = getattr(self.governance_gate, "cost_controller", None) if self.governance_gate else None
-                _sec_ctx = getattr(self.governance_gate, "security_ctx", None) if self.governance_gate else None
+                _cost_ctrl = (
+                    getattr(self.governance_gate, "cost_controller", None)
+                    if self.governance_gate
+                    else None
+                )
+                _sec_ctx = (
+                    getattr(self.governance_gate, "security_ctx", None)
+                    if self.governance_gate
+                    else None
+                )
                 _agent_status = _action_proposal.status if _action_proposal else "UNKNOWN"
                 _agent_pid = _action_proposal.proposal_id if _action_proposal else "NONE"
 
@@ -330,7 +353,9 @@ class AgentOrchestrator:
                     "execution_ready": _exec_proposal.execution_ready if _exec_proposal else None,
                     "execution_proposal_id": _exec_proposal.proposal_id if _exec_proposal else None,
                     "submit_ready": _submit_proposal.submit_ready if _submit_proposal else None,
-                    "submit_proposal_id": _submit_proposal.proposal_id if _submit_proposal else None,
+                    "submit_proposal_id": _submit_proposal.proposal_id
+                    if _submit_proposal
+                    else None,
                     "order_id": _order_result.order_id if _order_result else None,
                     "order_status": _order_result.status if _order_result else None,
                     "dry_run": _order_result.dry_run if _order_result else None,

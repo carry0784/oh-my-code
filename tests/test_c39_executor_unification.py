@@ -39,16 +39,19 @@ class FakeChannelResult:
 # C39-1: execute_single_plan public API
 # ===========================================================================
 class TestC39PublicAPI:
-
     def test_function_exists(self):
         assert callable(execute_single_plan)
 
     def test_returns_attempt_result(self):
         store = RetryPlanStore()
-        store.enqueue(channel="ext", reason="timeout",
-                      reliability_tier="transient_failure",
-                      retryable=True, retry_after_seconds=0,
-                      incident="inc_1")
+        store.enqueue(
+            channel="ext",
+            reason="timeout",
+            reliability_tier="transient_failure",
+            retryable=True,
+            retry_after_seconds=0,
+            incident="inc_1",
+        )
         plan = store.list_plans()[0]
 
         fake = FakeChannelResult(channel="ext", delivered=True, detail="ok")
@@ -56,8 +59,10 @@ class TestC39PublicAPI:
 
         with patch("app.core.notification_sender.get_sender", return_value=mock_sender):
             result = execute_single_plan(
-                plan_store=store, plan=plan,
-                snapshot=None, retry_id=plan["retry_id"],
+                plan_store=store,
+                plan=plan,
+                snapshot=None,
+                retry_id=plan["retry_id"],
                 channel="ext",
             )
 
@@ -66,21 +71,28 @@ class TestC39PublicAPI:
 
     def test_reason_prefix_default(self):
         store = RetryPlanStore()
-        store.enqueue(channel="ext", reason="timeout",
-                      reliability_tier="transient_failure",
-                      retryable=True, retry_after_seconds=0,
-                      incident="inc_1")
+        store.enqueue(
+            channel="ext",
+            reason="timeout",
+            reliability_tier="transient_failure",
+            retryable=True,
+            retry_after_seconds=0,
+            incident="inc_1",
+        )
         plan = store.list_plans()[0]
 
         captured_routing = {}
+
         def capture_sender(snapshot, routing):
             captured_routing.update(routing)
             return FakeChannelResult(channel="ext", delivered=True)
 
         with patch("app.core.notification_sender.get_sender", return_value=capture_sender):
             execute_single_plan(
-                plan_store=store, plan=plan,
-                snapshot=None, retry_id=plan["retry_id"],
+                plan_store=store,
+                plan=plan,
+                snapshot=None,
+                retry_id=plan["retry_id"],
                 channel="ext",
             )
 
@@ -88,22 +100,30 @@ class TestC39PublicAPI:
 
     def test_reason_prefix_custom(self):
         store = RetryPlanStore()
-        store.enqueue(channel="ext", reason="timeout",
-                      reliability_tier="transient_failure",
-                      retryable=True, retry_after_seconds=0,
-                      incident="inc_2")
+        store.enqueue(
+            channel="ext",
+            reason="timeout",
+            reliability_tier="transient_failure",
+            retryable=True,
+            retry_after_seconds=0,
+            incident="inc_2",
+        )
         plan = store.list_plans()[0]
 
         captured_routing = {}
+
         def capture_sender(snapshot, routing):
             captured_routing.update(routing)
             return FakeChannelResult(channel="ext", delivered=True)
 
         with patch("app.core.notification_sender.get_sender", return_value=capture_sender):
             execute_single_plan(
-                plan_store=store, plan=plan,
-                snapshot=None, retry_id=plan["retry_id"],
-                channel="ext", reason_prefix="auto_retry",
+                plan_store=store,
+                plan=plan,
+                snapshot=None,
+                retry_id=plan["retry_id"],
+                channel="ext",
+                reason_prefix="auto_retry",
             )
 
         assert captured_routing["reason"].startswith("auto_retry:")
@@ -113,7 +133,6 @@ class TestC39PublicAPI:
 # C39-2: C-31 uses execute_single_plan
 # ===========================================================================
 class TestC39ExecutorUsesShared:
-
     def test_executor_calls_execute_single_plan(self):
         content = EXECUTOR_PATH.read_text(encoding="utf-8")
         assert "execute_single_plan(" in content
@@ -129,7 +148,6 @@ class TestC39ExecutorUsesShared:
 # C39-3: C-38 uses execute_single_plan
 # ===========================================================================
 class TestC39OrchestratorUsesShared:
-
     def test_orchestrator_imports_shared(self):
         content = ORCH_PATH.read_text(encoding="utf-8")
         assert "execute_single_plan" in content
@@ -143,7 +161,6 @@ class TestC39OrchestratorUsesShared:
 # C39-4: _execute_single 제거 확인
 # ===========================================================================
 class TestC39OldCodeRemoved:
-
     def test_no_execute_single_in_orchestrator(self):
         content = ORCH_PATH.read_text(encoding="utf-8")
         assert "def _execute_single(" not in content
@@ -154,8 +171,10 @@ class TestC39OldCodeRemoved:
         # The only sender usage should be via execute_single_plan
         lines = content.split("\n")
         direct_sender_imports = [
-            l for l in lines
-            if "get_sender" in l and "execute_single_plan" not in l
+            l
+            for l in lines
+            if "get_sender" in l
+            and "execute_single_plan" not in l
             and not l.strip().startswith("#")
         ]
         assert len(direct_sender_imports) == 0
@@ -165,7 +184,6 @@ class TestC39OldCodeRemoved:
 # C39-5: manual/auto 동일 semantics
 # ===========================================================================
 class TestC39UnifiedSemantics:
-
     def test_both_use_same_function(self):
         """C-31과 C-38 모두 execute_single_plan을 사용한다."""
         executor_content = EXECUTOR_PATH.read_text(encoding="utf-8")
@@ -176,17 +194,26 @@ class TestC39UnifiedSemantics:
     def test_mark_executed_on_success(self):
         """Shared helper marks executed on success."""
         store = RetryPlanStore()
-        store.enqueue(channel="ext", reason="timeout",
-                      reliability_tier="transient_failure",
-                      retryable=True, retry_after_seconds=0,
-                      incident="inc_test")
+        store.enqueue(
+            channel="ext",
+            reason="timeout",
+            reliability_tier="transient_failure",
+            retryable=True,
+            retry_after_seconds=0,
+            incident="inc_test",
+        )
         plan = store.list_plans()[0]
 
         fake = FakeChannelResult(channel="ext", delivered=True)
-        with patch("app.core.notification_sender.get_sender",
-                    return_value=MagicMock(return_value=fake)):
+        with patch(
+            "app.core.notification_sender.get_sender", return_value=MagicMock(return_value=fake)
+        ):
             result = execute_single_plan(
-                store, plan, None, plan["retry_id"], "ext",
+                store,
+                plan,
+                None,
+                plan["retry_id"],
+                "ext",
             )
 
         assert result.new_status == "executed"
@@ -195,17 +222,26 @@ class TestC39UnifiedSemantics:
     def test_mark_expired_on_failure(self):
         """Shared helper marks expired on failure."""
         store = RetryPlanStore()
-        store.enqueue(channel="ext", reason="timeout",
-                      reliability_tier="transient_failure",
-                      retryable=True, retry_after_seconds=0,
-                      incident="inc_fail")
+        store.enqueue(
+            channel="ext",
+            reason="timeout",
+            reliability_tier="transient_failure",
+            retryable=True,
+            retry_after_seconds=0,
+            incident="inc_fail",
+        )
         plan = store.list_plans()[0]
 
         fake = FakeChannelResult(channel="ext", delivered=False, detail="fail")
-        with patch("app.core.notification_sender.get_sender",
-                    return_value=MagicMock(return_value=fake)):
+        with patch(
+            "app.core.notification_sender.get_sender", return_value=MagicMock(return_value=fake)
+        ):
             result = execute_single_plan(
-                store, plan, None, plan["retry_id"], "ext",
+                store,
+                plan,
+                None,
+                plan["retry_id"],
+                "ext",
             )
 
         assert result.new_status == "expired"
@@ -215,7 +251,6 @@ class TestC39UnifiedSemantics:
 # C39-6: reason_prefix 분리
 # ===========================================================================
 class TestC39ReasonPrefix:
-
     def test_c31_uses_retry_prefix(self):
         content = EXECUTOR_PATH.read_text(encoding="utf-8")
         assert 'reason_prefix="retry"' in content
@@ -229,17 +264,16 @@ class TestC39ReasonPrefix:
 # C39-7: 금지 조항
 # ===========================================================================
 class TestC39Forbidden:
-
     def test_no_forbidden_strings_executor(self):
         content = EXECUTOR_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
-        for f in ['chain_of_thought', 'raw_prompt', 'internal_reasoning']:
+        for f in ["chain_of_thought", "raw_prompt", "internal_reasoning"]:
             assert f not in body
 
     def test_no_forbidden_strings_orchestrator(self):
         content = ORCH_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
-        for f in ['chain_of_thought', 'raw_prompt', 'internal_reasoning']:
+        for f in ["chain_of_thought", "raw_prompt", "internal_reasoning"]:
             assert f not in body
 
     def test_no_engine(self):

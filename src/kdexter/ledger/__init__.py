@@ -1,4 +1,5 @@
 """Ledger module — Rule, Mandatory, and Forbidden ledgers."""
+
 from kdexter.ledger.forbidden_ledger import (
     ForbiddenAction,
     ForbiddenLedger,

@@ -18,6 +18,7 @@ B1 Doctrine:
   - Adapters never introduce exchange-specific logic into upper layers
   - CLI-like abstraction required for exchanges without REST CLI (e.g., Kiwoom)
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

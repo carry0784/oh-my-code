@@ -8,7 +8,9 @@ from app.models.signal import SignalType
 class SimpleMAStrategy(BaseStrategy):
     """Example strategy using simple moving average crossover."""
 
-    def __init__(self, symbol: str, exchange: str = "binance", fast_period: int = 10, slow_period: int = 20):
+    def __init__(
+        self, symbol: str, exchange: str = "binance", fast_period: int = 10, slow_period: int = 20
+    ):
         super().__init__(symbol, exchange)
         self.fast_period = fast_period
         self.slow_period = slow_period

@@ -14,6 +14,7 @@ Append-only contract:
   - No update/delete/upsert API exists.
   - clear() is test-only and blocked in production.
 """
+
 from __future__ import annotations
 
 import os
@@ -30,12 +31,14 @@ if TYPE_CHECKING:
 # Exceptions
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 class DuplicateEvidenceError(ValueError):
     """Raised when attempting to store a bundle with an existing bundle_id.
 
     Append-only contract: duplicate writes are forbidden.
     Callers must handle this explicitly — silent swallowing is not permitted.
     """
+
     pass
 
 
@@ -43,26 +46,29 @@ class DuplicateEvidenceError(ValueError):
 # Evidence Bundle (M-07)
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass
 class EvidenceBundle:
     """
     Immutable audit record for a single action.
     Must be attached to every state transition (M-07).
     """
+
     bundle_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    trigger: Optional[str] = None       # what caused this action
-    actor: Optional[str] = None         # who performed the action
-    action: Optional[str] = None        # what was done
+    trigger: Optional[str] = None  # what caused this action
+    actor: Optional[str] = None  # who performed the action
+    action: Optional[str] = None  # what was done
     before_state: Optional[Any] = None
     after_state: Optional[Any] = None
     artifacts: list = field(default_factory=list)
-    cycle_id: Optional[str] = None      # MainLoop cycle ID for grouping
+    cycle_id: Optional[str] = None  # MainLoop cycle ID for grouping
 
 
 # ─────────────────────────────────────────────────────────────────────────── #
 # Evidence Store (facade)
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 class EvidenceStore:
     """
@@ -79,6 +85,7 @@ class EvidenceStore:
     def __init__(self, backend: Optional[EvidenceBackend] = None) -> None:
         if backend is None:
             from kdexter.audit.backends.memory import InMemoryBackend
+
             backend = InMemoryBackend()
         self._backend = backend
 

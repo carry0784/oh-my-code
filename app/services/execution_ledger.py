@@ -32,6 +32,7 @@ Constraints:
   - Duplicate proposals (same fingerprint within 60s) are suppressed
   - Agent receipt required: agent_proposal must be RECEIPTED to enter
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -48,16 +49,20 @@ FINGERPRINT_COOLDOWN_SECONDS = 60
 
 # ── Exceptions ──────────────────────────────────────────────────────────── #
 
+
 class ExecStateTransitionError(Exception):
     """Raised when an invalid execution state transition is attempted."""
+
     pass
 
 
 # ── Data Models ─────────────────────────────────────────────────────────── #
 
+
 @dataclass
 class ExecutionReceipt:
     """Immutable receipt generated after an execution proposal passes guard."""
+
     receipt_id: str
     proposal_id: str
     agent_proposal_id: str
@@ -78,6 +83,7 @@ class ExecutionProposal:
     Single execution proposal with strict state machine.
     Replicated from ActionProposal with EXEC_ prefix states.
     """
+
     proposal_id: str
     agent_proposal_id: str  # lineage: link to agent ActionProposal
     task_type: str
@@ -95,13 +101,16 @@ class ExecutionProposal:
     created_at: str = ""
 
     # Allowed transitions (fail-closed: unlisted = forbidden)
-    _TRANSITIONS: dict = field(default_factory=lambda: {
-        "EXEC_PROPOSED": {"EXEC_GUARDED", "EXEC_BLOCKED"},
-        "EXEC_GUARDED": {"EXEC_RECEIPTED", "EXEC_FAILED"},
-        "EXEC_BLOCKED": set(),      # terminal
-        "EXEC_RECEIPTED": set(),    # terminal
-        "EXEC_FAILED": set(),       # terminal
-    }, repr=False)
+    _TRANSITIONS: dict = field(
+        default_factory=lambda: {
+            "EXEC_PROPOSED": {"EXEC_GUARDED", "EXEC_BLOCKED"},
+            "EXEC_GUARDED": {"EXEC_RECEIPTED", "EXEC_FAILED"},
+            "EXEC_BLOCKED": set(),  # terminal
+            "EXEC_RECEIPTED": set(),  # terminal
+            "EXEC_FAILED": set(),  # terminal
+        },
+        repr=False,
+    )
 
     # Terminal states — proposals in these states are never stale
     _TERMINAL_STATES: frozenset = field(
@@ -163,11 +172,15 @@ class ExecutionProposal:
 
 # ── Execution Guard (5 checks) ─────────────────────────────────────────── #
 
+
 def _check_agent_receipted(agent_proposal_status: Optional[str]) -> tuple[bool, str]:
     """Guard 1: Agent proposal must be RECEIPTED."""
     if agent_proposal_status == "RECEIPTED":
         return True, "AGENT_RECEIPTED: agent proposal is RECEIPTED"
-    return False, f"AGENT_RECEIPTED: agent proposal status is {agent_proposal_status} (must be RECEIPTED)"
+    return (
+        False,
+        f"AGENT_RECEIPTED: agent proposal status is {agent_proposal_status} (must be RECEIPTED)",
+    )
 
 
 def _check_governance_clear(pre_evidence_id: Optional[str]) -> tuple[bool, str]:
@@ -184,10 +197,16 @@ def _check_cost_within_budget(cost_controller: Any = None) -> tuple[bool, str]:
     try:
         api_budget = cost_controller.get_budget("API_CALLS")
         if api_budget and api_budget.current >= api_budget.limit:
-            return False, f"COST_WITHIN_BUDGET: API calls exhausted ({api_budget.current}/{api_budget.limit})"
+            return (
+                False,
+                f"COST_WITHIN_BUDGET: API calls exhausted ({api_budget.current}/{api_budget.limit})",
+            )
         token_budget = cost_controller.get_budget("LLM_TOKENS")
         if token_budget and token_budget.current >= token_budget.limit:
-            return False, f"COST_WITHIN_BUDGET: tokens exhausted ({token_budget.current}/{token_budget.limit})"
+            return (
+                False,
+                f"COST_WITHIN_BUDGET: tokens exhausted ({token_budget.current}/{token_budget.limit})",
+            )
         return True, "COST_WITHIN_BUDGET: within budget"
     except Exception as e:
         return True, f"COST_WITHIN_BUDGET: check error ({e}), allowing"
@@ -219,6 +238,7 @@ def _check_size_final(risk_result: dict, max_position_usd: float = 100000.0) -> 
 
 # ── Execution Ledger ────────────────────────────────────────────────────── #
 
+
 class ExecutionLedger:
     """
     Append-only ledger for execution proposals and receipts.
@@ -234,10 +254,15 @@ class ExecutionLedger:
     # ── Fingerprint ───────────────────────────────────────────────────── #
 
     @staticmethod
-    def _compute_fingerprint(task_type: str, symbol: Optional[str],
-                             exchange: Optional[str], position_size: Any) -> str:
+    def _compute_fingerprint(
+        task_type: str, symbol: Optional[str], exchange: Optional[str], position_size: Any
+    ) -> str:
         """Compute execution fingerprint for duplicate detection."""
-        size_bucket = int((position_size or 0) / 1000) * 1000 if isinstance(position_size, (int, float)) else 0
+        size_bucket = (
+            int((position_size or 0) / 1000) * 1000
+            if isinstance(position_size, (int, float))
+            else 0
+        )
         raw = f"EXEC|{task_type}|{symbol}|{exchange}|{size_bucket}"
         return hashlib.md5(raw.encode()).hexdigest()[:12]
 
@@ -296,8 +321,12 @@ class ExecutionLedger:
         # Duplicate suppression
         if self._is_duplicate(fp):
             proposal.guard_passed = False
-            proposal.guard_reasons = [f"DUPLICATE: fingerprint {fp} seen within {FINGERPRINT_COOLDOWN_SECONDS}s"]
-            proposal.guard_checks = {"DUPLICATE": {"passed": False, "detail": proposal.guard_reasons[0]}}
+            proposal.guard_reasons = [
+                f"DUPLICATE: fingerprint {fp} seen within {FINGERPRINT_COOLDOWN_SECONDS}s"
+            ]
+            proposal.guard_checks = {
+                "DUPLICATE": {"passed": False, "detail": proposal.guard_reasons[0]}
+            }
             proposal.transition_to("EXEC_BLOCKED")
             self._proposals.append(proposal)
             return False, proposal
@@ -389,16 +418,18 @@ class ExecutionLedger:
         for p in self._proposals:
             key = p.status.lower()
             if key in board:
-                board[key].append({
-                    "proposal_id": p.proposal_id,
-                    "agent_proposal_id": p.agent_proposal_id,
-                    "task_type": p.task_type,
-                    "symbol": p.symbol,
-                    "status": p.status,
-                    "execution_ready": p.execution_ready,
-                    "fingerprint": p.fingerprint,
-                    "created_at": p.created_at,
-                })
+                board[key].append(
+                    {
+                        "proposal_id": p.proposal_id,
+                        "agent_proposal_id": p.agent_proposal_id,
+                        "task_type": p.task_type,
+                        "symbol": p.symbol,
+                        "status": p.status,
+                        "execution_ready": p.execution_ready,
+                        "fingerprint": p.fingerprint,
+                        "created_at": p.created_at,
+                    }
+                )
 
         orphan_count = len(board["exec_guarded"])
 
@@ -418,6 +449,7 @@ class ExecutionLedger:
     def _top_block_reasons(self, limit: int = 5) -> list[str]:
         """Top N blocking reasons."""
         from collections import Counter
+
         reasons = Counter()
         for p in self._proposals:
             if p.status == "EXEC_BLOCKED":

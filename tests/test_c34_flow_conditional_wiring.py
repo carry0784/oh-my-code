@@ -47,7 +47,6 @@ class FakeReceipt:
 # C34-1: 모듈 구조
 # ===========================================================================
 class TestC34ModuleStructure:
-
     def test_module_exists(self):
         assert BRIDGE_PATH.exists()
 
@@ -68,12 +67,13 @@ class TestC34ModuleStructure:
 # C34-2: 성공 채널 skip
 # ===========================================================================
 class TestC34SuccessSkip:
-
     def test_delivered_channel_skipped(self):
-        receipt = FakeReceipt(results=[
-            FakeChannelResult(channel="console", delivered=True),
-            FakeChannelResult(channel="snapshot", delivered=True),
-        ])
+        receipt = FakeReceipt(
+            results=[
+                FakeChannelResult(channel="console", delivered=True),
+                FakeChannelResult(channel="snapshot", delivered=True),
+            ]
+        )
         store = RetryPlanStore()
         result = bridge_failed_to_retry_store(receipt, store)
         assert result.checked == 2
@@ -92,39 +92,51 @@ class TestC34SuccessSkip:
 # C34-3: 실패 채널 enqueue
 # ===========================================================================
 class TestC34FailureEnqueue:
-
     def test_failed_channel_enqueued(self):
-        receipt = FakeReceipt(results=[
-            FakeChannelResult(channel="external", delivered=False, detail="timeout"),
-        ])
+        receipt = FakeReceipt(
+            results=[
+                FakeChannelResult(channel="external", delivered=False, detail="timeout"),
+            ]
+        )
         store = RetryPlanStore()
         result = bridge_failed_to_retry_store(
-            receipt, store, incident="inc_001",
+            receipt,
+            store,
+            incident="inc_001",
         )
         assert result.enqueued == 1
         assert store.pending_count() == 1
 
     def test_mixed_success_failure(self):
-        receipt = FakeReceipt(results=[
-            FakeChannelResult(channel="console", delivered=True),
-            FakeChannelResult(channel="external", delivered=False, detail="timeout"),
-            FakeChannelResult(channel="slack", delivered=False, detail="connection error"),
-        ])
+        receipt = FakeReceipt(
+            results=[
+                FakeChannelResult(channel="console", delivered=True),
+                FakeChannelResult(channel="external", delivered=False, detail="timeout"),
+                FakeChannelResult(channel="slack", delivered=False, detail="connection error"),
+            ]
+        )
         store = RetryPlanStore()
         result = bridge_failed_to_retry_store(
-            receipt, store, incident="inc_002",
+            receipt,
+            store,
+            incident="inc_002",
         )
         assert result.checked == 3
         assert result.enqueued == 2
         assert result.skipped == 1
 
     def test_severity_preserved(self):
-        receipt = FakeReceipt(results=[
-            FakeChannelResult(channel="external", delivered=False, detail="timeout"),
-        ])
+        receipt = FakeReceipt(
+            results=[
+                FakeChannelResult(channel="external", delivered=False, detail="timeout"),
+            ]
+        )
         store = RetryPlanStore()
         bridge_failed_to_retry_store(
-            receipt, store, incident="inc_003", severity_tier="critical",
+            receipt,
+            store,
+            incident="inc_003",
+            severity_tier="critical",
         )
         plans = store.list_plans()
         assert plans[0]["severity_tier"] == "critical"
@@ -134,39 +146,56 @@ class TestC34FailureEnqueue:
 # C34-4: retry policy 연동
 # ===========================================================================
 class TestC34PolicyIntegration:
-
     def test_policy_rejects_permanent_failure(self):
-        receipt = FakeReceipt(results=[
-            FakeChannelResult(channel="external", delivered=False,
-                              detail="external notifier not configured (stub)"),
-        ])
+        receipt = FakeReceipt(
+            results=[
+                FakeChannelResult(
+                    channel="external",
+                    delivered=False,
+                    detail="external notifier not configured (stub)",
+                ),
+            ]
+        )
         store = RetryPlanStore()
         policy = DeliveryRetryPolicy()
         result = bridge_failed_to_retry_store(
-            receipt, store, retry_policy=policy, incident="inc_004",
+            receipt,
+            store,
+            retry_policy=policy,
+            incident="inc_004",
         )
         assert result.enqueued == 0
         assert result.skipped == 1
 
     def test_policy_allows_transient(self):
-        receipt = FakeReceipt(results=[
-            FakeChannelResult(channel="external", delivered=False,
-                              detail="webhook delivery failed"),
-        ])
+        receipt = FakeReceipt(
+            results=[
+                FakeChannelResult(
+                    channel="external", delivered=False, detail="webhook delivery failed"
+                ),
+            ]
+        )
         store = RetryPlanStore()
         policy = DeliveryRetryPolicy(cooldown_seconds=0)
         result = bridge_failed_to_retry_store(
-            receipt, store, retry_policy=policy, incident="inc_005",
+            receipt,
+            store,
+            retry_policy=policy,
+            incident="inc_005",
         )
         assert result.enqueued == 1
 
     def test_no_policy_defaults_to_retryable(self):
-        receipt = FakeReceipt(results=[
-            FakeChannelResult(channel="external", delivered=False, detail="fail"),
-        ])
+        receipt = FakeReceipt(
+            results=[
+                FakeChannelResult(channel="external", delivered=False, detail="fail"),
+            ]
+        )
         store = RetryPlanStore()
         result = bridge_failed_to_retry_store(
-            receipt, store, incident="inc_006",
+            receipt,
+            store,
+            incident="inc_006",
         )
         assert result.enqueued == 1
 
@@ -175,11 +204,12 @@ class TestC34PolicyIntegration:
 # C34-5: duplicate suppression
 # ===========================================================================
 class TestC34DuplicateSuppression:
-
     def test_duplicate_channel_incident_suppressed(self):
-        receipt = FakeReceipt(results=[
-            FakeChannelResult(channel="external", delivered=False, detail="timeout"),
-        ])
+        receipt = FakeReceipt(
+            results=[
+                FakeChannelResult(channel="external", delivered=False, detail="timeout"),
+            ]
+        )
         store = RetryPlanStore()
         bridge_failed_to_retry_store(receipt, store, incident="inc_007")
         result2 = bridge_failed_to_retry_store(receipt, store, incident="inc_007")
@@ -191,27 +221,33 @@ class TestC34DuplicateSuppression:
 # C34-6: fail-closed
 # ===========================================================================
 class TestC34FailClosed:
-
     def test_corrupted_receipt_handled(self):
         result = bridge_failed_to_retry_store("not_a_receipt", RetryPlanStore())
         assert isinstance(result, BridgeResult)
 
     def test_corrupted_store_handled(self):
-        receipt = FakeReceipt(results=[
-            FakeChannelResult(channel="ext", delivered=False, detail="fail"),
-        ])
+        receipt = FakeReceipt(
+            results=[
+                FakeChannelResult(channel="ext", delivered=False, detail="fail"),
+            ]
+        )
         result = bridge_failed_to_retry_store(receipt, "not_a_store")
         assert isinstance(result, BridgeResult)
 
     def test_policy_error_handled(self):
-        receipt = FakeReceipt(results=[
-            FakeChannelResult(channel="ext", delivered=False, detail="fail"),
-        ])
+        receipt = FakeReceipt(
+            results=[
+                FakeChannelResult(channel="ext", delivered=False, detail="fail"),
+            ]
+        )
         bad_policy = MagicMock()
         bad_policy.check_eligibility.side_effect = RuntimeError("boom")
         store = RetryPlanStore()
         result = bridge_failed_to_retry_store(
-            receipt, store, retry_policy=bad_policy, incident="inc_err",
+            receipt,
+            store,
+            retry_policy=bad_policy,
+            incident="inc_err",
         )
         # Policy error → not retryable → skipped
         assert result.skipped == 1
@@ -221,10 +257,10 @@ class TestC34FailClosed:
 # C34-7: 기존 flow 무변경
 # ===========================================================================
 class TestC34FlowUnchanged:
-
     def test_notification_flow_unchanged(self):
         """execute_notification_flow는 bridge를 호출하지 않는다."""
         from app.core.notification_flow import execute_notification_flow
+
         snapshot = {"overall_status": "HEALTHY", "highest_incident": "NONE"}
         result = execute_notification_flow(snapshot)
         assert result.executed_at != ""
@@ -234,13 +270,14 @@ class TestC34FlowUnchanged:
 # C34-8: 금지 조항
 # ===========================================================================
 class TestC34Forbidden:
-
     def test_no_forbidden_strings(self):
         content = BRIDGE_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

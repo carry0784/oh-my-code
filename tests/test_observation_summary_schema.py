@@ -14,6 +14,7 @@ Tests the typed observation summary schema:
 
 Run: pytest tests/test_observation_summary_schema.py -v
 """
+
 import sys
 import json
 from pathlib import Path
@@ -27,16 +28,32 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services.order_service", "app.services.position_service",
-    "app.services.signal_service", "ccxt", "ccxt.async_support",
-    "redis", "celery", "asyncpg",
-    "kdexter", "kdexter.ledger", "kdexter.ledger.forbidden_ledger",
-    "kdexter.audit", "kdexter.audit.evidence_store",
-    "kdexter.state_machine", "kdexter.state_machine.security_state",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
+    "kdexter",
+    "kdexter.ledger",
+    "kdexter.ledger.forbidden_ledger",
+    "kdexter.audit",
+    "kdexter.audit.evidence_store",
+    "kdexter.state_machine",
+    "kdexter.state_machine.security_state",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -64,23 +81,33 @@ from app.services.observation_summary_service import (
 
 # -- Helpers ---------------------------------------------------------------- #
 
+
 def _now_iso():
     return datetime.now(timezone.utc).isoformat()
 
+
 def _past_iso(seconds_ago):
     return (datetime.now(timezone.utc) - timedelta(seconds=seconds_ago)).isoformat()
+
 
 class _FakeLedger:
     def __init__(self, proposals=None, stale_count=0):
         self._data = proposals or []
         self._stale_count = stale_count
+
     def get_proposals(self):
         return self._data
+
     def get_board(self):
         return {
-            "total": len(self._data), "receipted_count": 0, "blocked_count": 0,
-            "failed_count": 0, "orphan_count": 0, "stale_count": self._stale_count,
-            "stale_threshold_seconds": 600.0, "guard_reason_top": [],
+            "total": len(self._data),
+            "receipted_count": 0,
+            "blocked_count": 0,
+            "failed_count": 0,
+            "orphan_count": 0,
+            "stale_count": self._stale_count,
+            "stale_threshold_seconds": 600.0,
+            "guard_reason_top": [],
         }
 
 
@@ -88,8 +115,8 @@ class _FakeLedger:
 # AXIS 1: PressureEnum Constraints                                            #
 # =========================================================================== #
 
-class TestPressureEnumConstraints:
 
+class TestPressureEnumConstraints:
     def test_pressure_enum_has_four_values(self):
         values = {e.value for e in PressureEnum}
         assert values == {"LOW", "MODERATE", "HIGH", "CRITICAL"}
@@ -111,6 +138,7 @@ class TestPressureEnumConstraints:
         """PressureEnum is shared between observation and decision schemas."""
         from app.schemas.decision_summary_schema import PressureEnum as DecPressure
         from app.schemas.observation_summary_schema import PressureEnum as ObsPressure
+
         # They should be the exact same class (imported, not duplicated)
         assert DecPressure is ObsPressure
 
@@ -119,8 +147,8 @@ class TestPressureEnumConstraints:
 # AXIS 2: ObservationSafety Structural Fixation                               #
 # =========================================================================== #
 
-class TestObservationSafety:
 
+class TestObservationSafety:
     def test_default_safety_all_true(self):
         safety = ObservationSafety()
         assert safety.read_only is True
@@ -160,8 +188,8 @@ class TestObservationSafety:
 # AXIS 3: Schema Field Contracts                                               #
 # =========================================================================== #
 
-class TestSchemaFieldContracts:
 
+class TestSchemaFieldContracts:
     def test_default_schema_has_zero_counts(self):
         schema = ObservationSummarySchema()
         assert schema.stale_total == 0
@@ -188,9 +216,14 @@ class TestSchemaFieldContracts:
 
     def test_top_priority_candidate_fields(self):
         candidate = TopPriorityCandidate(
-            proposal_id="AP-1", tier="agent", action_class="REVIEW",
-            reason_code="STALE_AGENT", is_stale=True, is_orphan=False,
-            stale_age_seconds=900.0, current_status="GUARDED",
+            proposal_id="AP-1",
+            tier="agent",
+            action_class="REVIEW",
+            reason_code="STALE_AGENT",
+            is_stale=True,
+            is_orphan=False,
+            stale_age_seconds=900.0,
+            current_status="GUARDED",
             explanation="Stale in agent tier.",
         )
         assert candidate.proposal_id == "AP-1"
@@ -215,8 +248,13 @@ class TestSchemaFieldContracts:
 
     def test_schema_fields_complete_set(self):
         expected = {
-            "cleanup_pressure", "stale_total", "orphan_total", "candidate_total",
-            "stale_by_tier", "reason_action_matrix", "top_priority_candidates",
+            "cleanup_pressure",
+            "stale_total",
+            "orphan_total",
+            "candidate_total",
+            "stale_by_tier",
+            "reason_action_matrix",
+            "top_priority_candidates",
             "safety",
         }
         actual = set(ObservationSummarySchema.model_fields.keys())
@@ -232,8 +270,8 @@ class TestSchemaFieldContracts:
 # AXIS 4: Dataclass-to-Schema Conversion                                      #
 # =========================================================================== #
 
-class TestDataclassToSchema:
 
+class TestDataclassToSchema:
     def test_to_schema_returns_observation_summary_schema(self):
         obs = ObservationSummary()
         schema = obs.to_schema()
@@ -257,9 +295,11 @@ class TestDataclassToSchema:
         assert schema.stale_by_tier == {"agent": 3, "execution": 1}
 
     def test_to_schema_converts_matrix_entries(self):
-        obs = ObservationSummary(reason_action_matrix=[
-            {"reason": "STALE_AGENT", "action": "WATCH", "count": 2},
-        ])
+        obs = ObservationSummary(
+            reason_action_matrix=[
+                {"reason": "STALE_AGENT", "action": "WATCH", "count": 2},
+            ]
+        )
         schema = obs.to_schema()
         assert len(schema.reason_action_matrix) == 1
         entry = schema.reason_action_matrix[0]
@@ -268,12 +308,21 @@ class TestDataclassToSchema:
         assert entry.count == 2
 
     def test_to_schema_converts_top_priority(self):
-        obs = ObservationSummary(top_priority_candidates=[
-            {"proposal_id": "AP-1", "tier": "agent", "action_class": "REVIEW",
-             "reason_code": "STALE_AGENT", "is_stale": True, "is_orphan": False,
-             "stale_age_seconds": 900.0, "current_status": "GUARDED",
-             "explanation": "Test."},
-        ])
+        obs = ObservationSummary(
+            top_priority_candidates=[
+                {
+                    "proposal_id": "AP-1",
+                    "tier": "agent",
+                    "action_class": "REVIEW",
+                    "reason_code": "STALE_AGENT",
+                    "is_stale": True,
+                    "is_orphan": False,
+                    "stale_age_seconds": 900.0,
+                    "current_status": "GUARDED",
+                    "explanation": "Test.",
+                },
+            ]
+        )
         schema = obs.to_schema()
         assert len(schema.top_priority_candidates) == 1
         candidate = schema.top_priority_candidates[0]
@@ -297,9 +346,10 @@ class TestDataclassToSchema:
 
     def test_to_schema_from_live_build(self):
         """to_schema on a live build_observation_summary result."""
-        action = _FakeLedger([
-            {"proposal_id": "AP-1", "status": "GUARDED", "created_at": _past_iso(700)}
-        ], stale_count=1)
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "GUARDED", "created_at": _past_iso(700)}],
+            stale_count=1,
+        )
         obs = build_observation_summary(action_ledger=action)
         schema = obs.to_schema()
         assert isinstance(schema, ObservationSummarySchema)
@@ -311,20 +361,23 @@ class TestDataclassToSchema:
 # AXIS 5: Board Integration                                                    #
 # =========================================================================== #
 
-class TestBoardIntegration:
 
+class TestBoardIntegration:
     def test_board_schema_has_typed_observation_summary(self):
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         field_info = FourTierBoardResponse.model_fields["observation_summary"]
         assert field_info.annotation is ObservationSummarySchema
 
     def test_board_service_returns_typed_observation(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert isinstance(board.observation_summary, ObservationSummarySchema)
 
     def test_board_observation_safety_intact(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         safety = board.observation_summary.safety
         assert safety.read_only is True
@@ -333,12 +386,14 @@ class TestBoardIntegration:
 
     def test_board_observation_pressure_is_typed(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         # Must be one of the valid pressure values
         assert board.observation_summary.cleanup_pressure in {"LOW", "MODERATE", "HIGH", "CRITICAL"}
 
     def test_board_serializes_observation_to_json(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         j = json.loads(board.model_dump_json())
         obs = j["observation_summary"]
@@ -351,16 +406,18 @@ class TestBoardIntegration:
 # AXIS 6: Source/Derived Layer Relationship                                    #
 # =========================================================================== #
 
-class TestSourceDerivedRelationship:
 
+class TestSourceDerivedRelationship:
     def test_observation_is_source_decision_is_derived(self):
         """Observation (L4) feeds Decision (L5) — verify data flow."""
-        action = _FakeLedger([
-            {"proposal_id": "AP-1", "status": "GUARDED", "created_at": _past_iso(700)}
-        ], stale_count=1)
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "GUARDED", "created_at": _past_iso(700)}],
+            stale_count=1,
+        )
         obs = build_observation_summary(action_ledger=action)
 
         from app.services.operator_decision_service import build_decision_summary
+
         decision = build_decision_summary(action_ledger=action)
 
         # Decision's counts should reflect observation's counts
@@ -370,24 +427,30 @@ class TestSourceDerivedRelationship:
 
     def test_observation_pressure_flows_to_decision(self):
         """Observation pressure feeds decision posture mapping."""
-        action = _FakeLedger([
-            {"proposal_id": f"AP-{i}", "status": "GUARDED", "created_at": _past_iso(1200)}
-            for i in range(4)
-        ], stale_count=4)
+        action = _FakeLedger(
+            [
+                {"proposal_id": f"AP-{i}", "status": "GUARDED", "created_at": _past_iso(1200)}
+                for i in range(4)
+            ],
+            stale_count=4,
+        )
         obs = build_observation_summary(action_ledger=action)
         from app.services.operator_decision_service import build_decision_summary
+
         decision = build_decision_summary(action_ledger=action)
         assert decision.cleanup_pressure == obs.cleanup_pressure
 
     def test_schema_layers_are_independent_models(self):
         """ObservationSummarySchema and DecisionSummarySchema are separate classes."""
         from app.schemas.decision_summary_schema import DecisionSummarySchema
+
         assert ObservationSummarySchema is not DecisionSummarySchema
 
     def test_pressure_enum_shared_not_duplicated(self):
         """Both schemas share the same PressureEnum."""
         obs_schema = ObservationSummarySchema()
         from app.schemas.decision_summary_schema import DecisionSummarySchema
+
         dec_schema = DecisionSummarySchema()
         # Both default to LOW via same enum
         assert obs_schema.cleanup_pressure == dec_schema.cleanup_pressure
@@ -396,6 +459,7 @@ class TestSourceDerivedRelationship:
 # =========================================================================== #
 # AXIS 7: Schema Drift Sentinel                                                #
 # =========================================================================== #
+
 
 class TestSchemaDriftSentinel:
     """Snapshot-style tests to detect unintended schema changes."""
@@ -419,8 +483,13 @@ class TestSchemaDriftSentinel:
     def test_schema_field_names_snapshot(self):
         """Exact field names must match this snapshot."""
         expected = {
-            "cleanup_pressure", "stale_total", "orphan_total", "candidate_total",
-            "stale_by_tier", "reason_action_matrix", "top_priority_candidates",
+            "cleanup_pressure",
+            "stale_total",
+            "orphan_total",
+            "candidate_total",
+            "stale_by_tier",
+            "reason_action_matrix",
+            "top_priority_candidates",
             "safety",
         }
         assert set(ObservationSummarySchema.model_fields.keys()) == expected

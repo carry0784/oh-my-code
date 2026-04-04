@@ -20,13 +20,26 @@ from unittest.mock import MagicMock
 import pytest
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services", "app.services.order_service",
-    "app.services.position_service", "app.services.signal_service",
-    "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -48,8 +61,7 @@ DASHBOARD_ROUTE_PATH = PROJECT_ROOT / "app" / "api" / "routes" / "dashboard.py"
 def _get_fn_body():
     content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
     fn_match = re.search(
-        r'async def audit_replay.*?(?=\n@router\.|\nasync def dashboard_data)',
-        content, re.DOTALL
+        r"async def audit_replay.*?(?=\n@router\.|\nasync def dashboard_data)", content, re.DOTALL
     )
     assert fn_match, "audit_replay not found"
     return fn_match.group()
@@ -59,7 +71,6 @@ def _get_fn_body():
 # C25-1: /api/audit-replay 엔드포인트
 # ===========================================================================
 class TestC25Endpoint:
-
     def test_endpoint_exists(self):
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         assert '"/api/audit-replay"' in content
@@ -67,7 +78,7 @@ class TestC25Endpoint:
     def test_endpoint_is_get(self):
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         idx = content.index("async def audit_replay")
-        preceding = content[max(0, idx - 100):idx]
+        preceding = content[max(0, idx - 100) : idx]
         assert "@router.get" in preceding
 
     def test_fail_closed(self):
@@ -79,7 +90,6 @@ class TestC25Endpoint:
 # C25-2: Replay 구조
 # ===========================================================================
 class TestC25ReplayStructure:
-
     def test_has_replay_version(self):
         assert '"replay_version"' in _get_fn_body()
 
@@ -117,7 +127,6 @@ class TestC25ReplayStructure:
 # C25-3: Incident summary
 # ===========================================================================
 class TestC25IncidentSummary:
-
     def test_summary_has_total_events(self):
         assert '"total_events"' in _get_fn_body()
 
@@ -141,7 +150,6 @@ class TestC25IncidentSummary:
 # C25-4: Receipt 매칭
 # ===========================================================================
 class TestC25ReceiptMatching:
-
     def test_builds_receipt_lookup(self):
         fn_body = _get_fn_body()
         assert "receipt_lookup" in fn_body
@@ -159,7 +167,6 @@ class TestC25ReceiptMatching:
 # C25-5: 기존 엔드포인트 보존
 # ===========================================================================
 class TestC25ExistingPreserved:
-
     def test_v2_preserved(self):
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         assert '"/api/data/v2"' in content
@@ -185,13 +192,16 @@ class TestC25ExistingPreserved:
 # C25-6: 금지 조항
 # ===========================================================================
 class TestC25Forbidden:
-
     def test_no_forbidden_strings(self):
         fn_body = _get_fn_body()
         body = fn_body.split('"""', 2)[-1] if '"""' in fn_body else fn_body
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace', 'agent_analysis', 'error_class',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
+            "agent_analysis",
+            "error_class",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

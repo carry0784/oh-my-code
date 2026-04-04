@@ -47,6 +47,7 @@ def _is_activation_consumed(activation_id: str) -> bool:
     # Evidence store fallback: check if dispatch evidence exists for this activation
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate and hasattr(gate, "evidence_store"):
             bundles = gate.evidence_store.list_by_actor("e03_micro_executor")
@@ -54,7 +55,10 @@ def _is_activation_consumed(activation_id: str) -> bool:
                 after = b.after_state if hasattr(b, "after_state") else {}
                 if isinstance(after, dict):
                     consumed_aid = after.get("activation_id", "")
-                    if consumed_aid == activation_id and after.get("decision") == "DISPATCH_ALLOWED":
+                    if (
+                        consumed_aid == activation_id
+                        and after.get("decision") == "DISPATCH_ALLOWED"
+                    ):
                         # Rebuild hot cache entry
                         exe_id = b.bundle_id if hasattr(b, "bundle_id") else "unknown"
                         _consumed_activations[activation_id] = exe_id
@@ -70,6 +74,7 @@ def _is_hash_consumed(intent_hash: str) -> bool:
         return True
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate and hasattr(gate, "evidence_store"):
             bundles = gate.evidence_store.list_by_actor("e03_micro_executor")
@@ -107,22 +112,34 @@ def evaluate_dispatch(
     # --- 1. Activation 존재 ---
     act = _collect_activation()
     act_ok = act is not None and act.get("decision") == "ACTIVATION_ALLOWED"
-    items.append(DispatchCheckItem(
-        name="activation_allowed", passed=act_ok,
-        observed=act.get("decision", "none") if act else "none",
-        expected="ACTIVATION_ALLOWED", rule_refs=["Art43"],
-    ))
+    items.append(
+        DispatchCheckItem(
+            name="activation_allowed",
+            passed=act_ok,
+            observed=act.get("decision", "none") if act else "none",
+            expected="ACTIVATION_ALLOWED",
+            rule_refs=["Art43"],
+        )
+    )
     if not act_ok:
-        reasons.append(DispatchReason.ACTIVATION_MISSING if act is None else DispatchReason.ACTIVATION_NOT_ALLOWED)
+        reasons.append(
+            DispatchReason.ACTIVATION_MISSING
+            if act is None
+            else DispatchReason.ACTIVATION_NOT_ALLOWED
+        )
 
     # --- 2. activation_consumed_at 미소비 (S-01A: evidence_store + hot cache) ---
     act_aid = activation_id or (act.get("activation_id", "") if act else "")
     already_consumed = _is_activation_consumed(act_aid) if act_aid else False
-    items.append(DispatchCheckItem(
-        name="activation_not_consumed", passed=not already_consumed,
-        observed=f"consumed={already_consumed}", expected="not_consumed",
-        rule_refs=["Art43"],
-    ))
+    items.append(
+        DispatchCheckItem(
+            name="activation_not_consumed",
+            passed=not already_consumed,
+            observed=f"consumed={already_consumed}",
+            expected="not_consumed",
+            rule_refs=["Art43"],
+        )
+    )
     if already_consumed:
         reasons.append(DispatchReason.ACTIVATION_ALREADY_CONSUMED)
 
@@ -132,11 +149,15 @@ def evaluate_dispatch(
     # --- 4. intent_hash 재사용 금지 (S-01A: evidence_store + hot cache) ---
     hash_val = execution_intent_hash or (act.get("execution_intent_hash", "") if act else "")
     hash_reused = _is_hash_consumed(hash_val) if hash_val else False
-    items.append(DispatchCheckItem(
-        name="intent_hash_not_reused", passed=not hash_reused,
-        observed=f"reused={hash_reused}", expected="not_reused",
-        rule_refs=["Art43"],
-    ))
+    items.append(
+        DispatchCheckItem(
+            name="intent_hash_not_reused",
+            passed=not hash_reused,
+            observed=f"reused={hash_reused}",
+            expected="not_reused",
+            rule_refs=["Art43"],
+        )
+    )
     if hash_reused:
         reasons.append(DispatchReason.INTENT_HASH_ALREADY_USED)
 
@@ -148,6 +169,7 @@ def evaluate_dispatch(
         # Already consumed — check stored window expiry from evidence
         try:
             import app.main as main_module
+
             gate = getattr(main_module.app.state, "governance_gate", None)
             if gate and hasattr(gate, "evidence_store"):
                 for b in gate.evidence_store.list_by_actor("e03_micro_executor"):
@@ -165,14 +187,19 @@ def evaluate_dispatch(
                                 pass
         except Exception:
             pass
-    items.append(DispatchCheckItem(
-        name="dispatch_window_valid", passed=window_ok,
-        observed=window_obs, expected=f"<={dispatch_window_seconds}s",
-        rule_refs=["Art43"],
-    ))
+    items.append(
+        DispatchCheckItem(
+            name="dispatch_window_valid",
+            passed=window_ok,
+            observed=window_obs,
+            expected=f"<={dispatch_window_seconds}s",
+            rule_refs=["Art43"],
+        )
+    )
 
     # --- 6. scope ---
     from app.schemas.executor_schema import ExecutionScope, is_scope_compatible
+
     scope_ok = execution_scope in ("PAPER_ONLY", "MICRO_LIVE_ONLY", "SPECIFIC_SYMBOL_ONLY")
     if execution_scope == "NO_EXECUTION":
         scope_ok = False
@@ -189,11 +216,15 @@ def evaluate_dispatch(
     if not compat:
         scope_ok = False
         reasons.append(DispatchReason.APPROVAL_SCOPE_MISMATCH)
-    items.append(DispatchCheckItem(
-        name="scope_valid", passed=scope_ok,
-        observed=f"{execution_scope}⊆{apr_scope}", expected="paper/micro only",
-        rule_refs=["Art36", "Art38"],
-    ))
+    items.append(
+        DispatchCheckItem(
+            name="scope_valid",
+            passed=scope_ok,
+            observed=f"{execution_scope}⊆{apr_scope}",
+            expected="paper/micro only",
+            rule_refs=["Art36", "Art38"],
+        )
+    )
 
     # --- 7. target_symbol ---
     sym_ok = True
@@ -201,56 +232,88 @@ def evaluate_dispatch(
         sym_ok = target_symbol is not None and target_symbol == apr_symbol
         if not sym_ok:
             reasons.append(DispatchReason.TARGET_SYMBOL_MISMATCH)
-    items.append(DispatchCheckItem(
-        name="target_symbol_match", passed=sym_ok,
-        observed=target_symbol or "none", expected=apr_symbol or "any",
-        rule_refs=["Art38"],
-    ))
+    items.append(
+        DispatchCheckItem(
+            name="target_symbol_match",
+            passed=sym_ok,
+            observed=target_symbol or "none",
+            expected=apr_symbol or "any",
+            rule_refs=["Art38"],
+        )
+    )
 
     # --- 8. I-07 MATCH ---
     pol_ok, pol_obs = _recheck_policy()
-    items.append(DispatchCheckItem(
-        name="policy_match", passed=pol_ok,
-        observed=pol_obs, expected="MATCH", rule_refs=["Art33", "Art39"],
-    ))
+    items.append(
+        DispatchCheckItem(
+            name="policy_match",
+            passed=pol_ok,
+            observed=pol_obs,
+            expected="MATCH",
+            rule_refs=["Art33", "Art39"],
+        )
+    )
     if not pol_ok:
         reasons.append(DispatchReason.POLICY_NOT_MATCH)
 
     # --- 9. approval expiry ---
     exp_ok = act is not None and not act.get("approval_expired", True)
-    items.append(DispatchCheckItem(
-        name="approval_not_expired", passed=exp_ok,
-        observed=str(not act.get("approval_expired", True)) if act else "none",
-        expected="true", rule_refs=["Art43"],
-    ))
+    items.append(
+        DispatchCheckItem(
+            name="approval_not_expired",
+            passed=exp_ok,
+            observed=str(not act.get("approval_expired", True)) if act else "none",
+            expected="true",
+            rule_refs=["Art43"],
+        )
+    )
     if not exp_ok:
         reasons.append(DispatchReason.APPROVAL_EXPIRED)
 
     # --- 10. CRITICAL ---
     crit_ok, crit_obs = _recheck_critical()
-    items.append(DispatchCheckItem(
-        name="no_critical", passed=crit_ok,
-        observed=crit_obs, expected="0 critical", rule_refs=["Art18"],
-    ))
+    items.append(
+        DispatchCheckItem(
+            name="no_critical",
+            passed=crit_ok,
+            observed=crit_obs,
+            expected="0 critical",
+            rule_refs=["Art18"],
+        )
+    )
     if not crit_ok:
         reasons.append(DispatchReason.CRITICAL_ALERT_DETECTED)
 
     # --- 11. security ---
     sec_ok, sec_obs = _recheck_security()
-    items.append(DispatchCheckItem(
-        name="no_lockdown", passed=sec_ok,
-        observed=sec_obs, expected="!=LOCKDOWN", rule_refs=["Art7"],
-    ))
+    items.append(
+        DispatchCheckItem(
+            name="no_lockdown",
+            passed=sec_ok,
+            observed=sec_obs,
+            expected="!=LOCKDOWN",
+            rule_refs=["Art7"],
+        )
+    )
     if not sec_ok:
         reasons.append(DispatchReason.LOCKDOWN_ACTIVE)
 
     # --- 12. paper/micro only ---
-    live_forbidden = execution_scope not in ("PAPER_ONLY", "MICRO_LIVE_ONLY", "SPECIFIC_SYMBOL_ONLY", "NO_EXECUTION")
-    items.append(DispatchCheckItem(
-        name="no_live_scope", passed=not live_forbidden,
-        observed=execution_scope, expected="paper/micro only",
-        rule_refs=["Art36"],
-    ))
+    live_forbidden = execution_scope not in (
+        "PAPER_ONLY",
+        "MICRO_LIVE_ONLY",
+        "SPECIFIC_SYMBOL_ONLY",
+        "NO_EXECUTION",
+    )
+    items.append(
+        DispatchCheckItem(
+            name="no_live_scope",
+            passed=not live_forbidden,
+            observed=execution_scope,
+            expected="paper/micro only",
+            rule_refs=["Art36"],
+        )
+    )
     if live_forbidden:
         reasons.append(DispatchReason.LIVE_SCOPE_FORBIDDEN)
 
@@ -285,9 +348,15 @@ def evaluate_dispatch(
         execution_scope=execution_scope,
         requested_action=requested_action,
         target_symbol=target_symbol,
-        activation_consumed_at=now.isoformat() if decision == DispatchDecision.DISPATCH_ALLOWED else None,
-        consumed_by_execution_id=execution_id if decision == DispatchDecision.DISPATCH_ALLOWED else None,
-        dispatch_window_expires_at=window_expiry.isoformat() if decision == DispatchDecision.DISPATCH_ALLOWED else None,
+        activation_consumed_at=now.isoformat()
+        if decision == DispatchDecision.DISPATCH_ALLOWED
+        else None,
+        consumed_by_execution_id=execution_id
+        if decision == DispatchDecision.DISPATCH_ALLOWED
+        else None,
+        dispatch_window_expires_at=window_expiry.isoformat()
+        if decision == DispatchDecision.DISPATCH_ALLOWED
+        else None,
         evidence_chain=DispatchEvidenceChain(
             activation_id=act_aid,
             execution_intent_hash=hash_val,
@@ -305,9 +374,11 @@ def evaluate_dispatch(
 # Helpers (read-only except consume registry)
 # ---------------------------------------------------------------------------
 
+
 def _collect_activation() -> dict | None:
     try:
         from app.core.executor_activation import evaluate_activation
+
         r = evaluate_activation()
         return {
             "decision": r.decision.value,
@@ -317,9 +388,7 @@ def _collect_activation() -> dict | None:
             "approval_id": r.approval_id,
             "approval_scope": r.execution_scope,
             "target_symbol": r.target_symbol,
-            "approval_expired": any(
-                r2.value == "APPROVAL_EXPIRED" for r2 in r.reasons
-            ),
+            "approval_expired": any(r2.value == "APPROVAL_EXPIRED" for r2 in r.reasons),
         }
     except Exception:
         return None
@@ -328,6 +397,7 @@ def _collect_activation() -> dict | None:
 def _recheck_policy() -> tuple[bool, str]:
     try:
         from app.core.execution_policy import evaluate_execution_policy
+
         r = evaluate_execution_policy()
         return r.decision.value == "MATCH", r.decision.value
     except Exception as e:
@@ -337,6 +407,7 @@ def _recheck_policy() -> tuple[bool, str]:
 def _recheck_critical() -> tuple[bool, str]:
     try:
         import app.main as main_module
+
         fl = getattr(main_module.app.state, "flow_log", None)
         if fl is None:
             return True, "no_flow_log"
@@ -349,9 +420,14 @@ def _recheck_critical() -> tuple[bool, str]:
 def _recheck_security() -> tuple[bool, str]:
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate and hasattr(gate, "security_ctx"):
-            v = gate.security_ctx.current.value if hasattr(gate.security_ctx.current, "value") else str(gate.security_ctx.current)
+            v = (
+                gate.security_ctx.current.value
+                if hasattr(gate.security_ctx.current, "value")
+                else str(gate.security_ctx.current)
+            )
             return v != "LOCKDOWN", v
         return False, "UNKNOWN"
     except Exception:
@@ -359,15 +435,19 @@ def _recheck_security() -> tuple[bool, str]:
 
 
 def _store_dispatch_evidence(
-    execution_id: str, decision: DispatchDecision,
-    reasons: list, now: datetime,
+    execution_id: str,
+    decision: DispatchDecision,
+    reasons: list,
+    now: datetime,
 ) -> str:
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate is None or not hasattr(gate, "evidence_store"):
             return f"fallback-dis-{uuid.uuid4().hex[:8]}"
         from kdexter.audit.evidence_store import EvidenceBundle
+
         bundle = EvidenceBundle(
             bundle_id=execution_id,
             created_at=now,

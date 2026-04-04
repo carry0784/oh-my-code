@@ -4,13 +4,16 @@ K-Dexter AOS v4
 
 Run: python -X utf8 tests/test_remaining_layers.py
 """
+
 from __future__ import annotations
 
 import sys
 
 from kdexter.engines.spec_lock import SpecLockEngine, SpecLockResult, BlockedMutation
 from kdexter.engines.override_controller import (
-    OverrideController, OverrideType, OverrideStatus,
+    OverrideController,
+    OverrideType,
+    OverrideStatus,
 )
 from kdexter.engines.budget_evolution import BudgetEvolutionEngine, PerformanceData
 from kdexter.engines.research import ResearchEngine
@@ -22,6 +25,7 @@ from kdexter.engines.progress import ProgressEngine
 # ======================================================================== #
 # 1. L22 Spec Lock
 # ======================================================================== #
+
 
 def test_spec_lock_initial_unlocked():
     e = SpecLockEngine()
@@ -79,6 +83,7 @@ def test_spec_lock_unlock_resets():
 # ======================================================================== #
 # 2. L27 Override Controller
 # ======================================================================== #
+
 
 def test_override_submit():
     c = OverrideController()
@@ -139,9 +144,12 @@ def test_override_double_approve_rejected():
 # 3. L18 Budget Evolution Engine
 # ======================================================================== #
 
+
 def test_budget_evolution_propose():
     e = BudgetEvolutionEngine()
-    perf = PerformanceData(resource_type="API_CALLS", average_usage=300, peak_usage=500, observation_window=7)
+    perf = PerformanceData(
+        resource_type="API_CALLS", average_usage=300, peak_usage=500, observation_window=7
+    )
     adj = e.propose_adjustment(1000.0, perf)
     assert adj.resource_type == "API_CALLS"
     assert adj.current_limit == 1000.0
@@ -151,7 +159,9 @@ def test_budget_evolution_propose():
 
 def test_budget_evolution_high_usage():
     e = BudgetEvolutionEngine()
-    perf = PerformanceData(resource_type="USD_COST", average_usage=8.0, peak_usage=9.5, observation_window=7)
+    perf = PerformanceData(
+        resource_type="USD_COST", average_usage=8.0, peak_usage=9.5, observation_window=7
+    )
     adj = e.propose_adjustment(10.0, perf)
     # Peak 9.5/10 = 95% -> should propose increase
     assert adj.proposed_limit >= 10.0
@@ -160,7 +170,9 @@ def test_budget_evolution_high_usage():
 
 def test_budget_evolution_low_usage():
     e = BudgetEvolutionEngine()
-    perf = PerformanceData(resource_type="USD_COST", average_usage=1.0, peak_usage=2.0, observation_window=7)
+    perf = PerformanceData(
+        resource_type="USD_COST", average_usage=1.0, peak_usage=2.0, observation_window=7
+    )
     adj = e.propose_adjustment(10.0, perf)
     # Average 1/10=10%, peak 2/10=20% -> should propose decrease
     assert adj.proposed_limit <= 10.0
@@ -170,6 +182,7 @@ def test_budget_evolution_low_usage():
 # ======================================================================== #
 # 4. L23 Research Engine
 # ======================================================================== #
+
 
 def test_research_conduct():
     e = ResearchEngine()
@@ -193,6 +206,7 @@ def test_research_multiple():
 # ======================================================================== #
 # 5. L24 Knowledge Engine
 # ======================================================================== #
+
 
 def test_knowledge_store_retrieve():
     e = KnowledgeEngine()
@@ -221,6 +235,7 @@ def test_knowledge_update():
 # ======================================================================== #
 # 6. L25 Scheduler Engine
 # ======================================================================== #
+
 
 def test_scheduler_schedule():
     e = SchedulerEngine()
@@ -251,6 +266,7 @@ def test_scheduler_list():
 # ======================================================================== #
 # 7. L30 Progress Engine
 # ======================================================================== #
+
 
 def test_progress_record_get():
     e = ProgressEngine()
@@ -284,46 +300,67 @@ if __name__ == "__main__":
     print("=" * 60)
 
     tests = [
-        ("L22 Spec Lock", [
-            test_spec_lock_initial_unlocked,
-            test_spec_lock_allows_mutation_when_unlocked,
-            test_spec_lock_blocks_mutation_when_locked,
-            test_spec_lock_allows_same_value,
-            test_spec_lock_result,
-            test_spec_lock_unlock_resets,
-        ]),
-        ("L27 Override Controller", [
-            test_override_submit,
-            test_override_approve,
-            test_override_deny,
-            test_override_has_approved,
-            test_override_pending_list,
-            test_override_double_approve_rejected,
-        ]),
-        ("L18 Budget Evolution", [
-            test_budget_evolution_propose,
-            test_budget_evolution_high_usage,
-            test_budget_evolution_low_usage,
-        ]),
-        ("L23 Research Engine", [
-            test_research_conduct,
-            test_research_multiple,
-        ]),
-        ("L24 Knowledge Engine", [
-            test_knowledge_store_retrieve,
-            test_knowledge_missing_key,
-            test_knowledge_update,
-        ]),
-        ("L25 Scheduler Engine", [
-            test_scheduler_schedule,
-            test_scheduler_cancel,
-            test_scheduler_list,
-        ]),
-        ("L30 Progress Engine", [
-            test_progress_record_get,
-            test_progress_missing,
-            test_progress_summary,
-        ]),
+        (
+            "L22 Spec Lock",
+            [
+                test_spec_lock_initial_unlocked,
+                test_spec_lock_allows_mutation_when_unlocked,
+                test_spec_lock_blocks_mutation_when_locked,
+                test_spec_lock_allows_same_value,
+                test_spec_lock_result,
+                test_spec_lock_unlock_resets,
+            ],
+        ),
+        (
+            "L27 Override Controller",
+            [
+                test_override_submit,
+                test_override_approve,
+                test_override_deny,
+                test_override_has_approved,
+                test_override_pending_list,
+                test_override_double_approve_rejected,
+            ],
+        ),
+        (
+            "L18 Budget Evolution",
+            [
+                test_budget_evolution_propose,
+                test_budget_evolution_high_usage,
+                test_budget_evolution_low_usage,
+            ],
+        ),
+        (
+            "L23 Research Engine",
+            [
+                test_research_conduct,
+                test_research_multiple,
+            ],
+        ),
+        (
+            "L24 Knowledge Engine",
+            [
+                test_knowledge_store_retrieve,
+                test_knowledge_missing_key,
+                test_knowledge_update,
+            ],
+        ),
+        (
+            "L25 Scheduler Engine",
+            [
+                test_scheduler_schedule,
+                test_scheduler_cancel,
+                test_scheduler_list,
+            ],
+        ),
+        (
+            "L30 Progress Engine",
+            [
+                test_progress_record_get,
+                test_progress_missing,
+                test_progress_summary,
+            ],
+        ),
     ]
 
     total = 0

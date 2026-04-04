@@ -10,6 +10,7 @@ Governance: B2 (governance_layer_map.md -- L19)
 Gate: G-23 TRUST_CHECK at VALIDATING[8]
 Thresholds: config/thresholds.py (OQ-5 resolved)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -27,20 +28,23 @@ from kdexter.state_machine.trust_state import TrustStateContext, TrustStateEnum
 # Data models
 # ------------------------------------------------------------------ #
 
+
 @dataclass
 class TrustCheckResult:
     """Result of a trust check."""
+
     component_id: str
     trust_score: float
     trust_state: TrustStateEnum
-    passed_gate: bool          # score >= TRUST_BOUNDARY_DEGRADED (0.60)
-    decay_applied: float       # background decay applied this check
+    passed_gate: bool  # score >= TRUST_BOUNDARY_DEGRADED (0.60)
+    decay_applied: float  # background decay applied this check
     checked_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ------------------------------------------------------------------ #
 # L19 Trust Decay Engine
 # ------------------------------------------------------------------ #
+
 
 class TrustDecayEngine:
     """

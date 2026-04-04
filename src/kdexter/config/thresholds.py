@@ -9,6 +9,7 @@ All values carry:
   - Source: how it was derived
   - Review trigger: condition that should prompt re-evaluation
 """
+
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
@@ -91,7 +92,7 @@ TRUST_BOUNDARY_TRUSTED: Final[float] = 0.80
 TRUST_BOUNDARY_DEGRADED: Final[float] = 0.60
 TRUST_BOUNDARY_UNRELIABLE: Final[float] = 0.40
 TRUST_BOUNDARY_DECAYING: Final[float] = 0.20
-TRUST_BOUNDARY_STALE: Final[float] = 0.01    # > 0.0 but below DECAYING
+TRUST_BOUNDARY_STALE: Final[float] = 0.01  # > 0.0 but below DECAYING
 
 """
 Trust decay function summary:
@@ -113,12 +114,14 @@ Review trigger:
 # OQ-6 resolved: loop_count ceilings
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass(frozen=True)
 class LoopCountCeiling:
     """Max allowed loop activations within the specified window."""
-    per_incident: int    # max runs per single failure incident / session
-    per_day: int         # max runs per calendar day
-    per_week: int        # max runs per calendar week
+
+    per_incident: int  # max runs per single failure incident / session
+    per_day: int  # max runs per calendar day
+    per_week: int  # max runs per calendar week
 
 
 LOOP_COUNT_CEILINGS: Final[dict[str, LoopCountCeiling]] = {
@@ -128,7 +131,7 @@ LOOP_COUNT_CEILINGS: Final[dict[str, LoopCountCeiling]] = {
         per_week=30,
     ),
     "MAIN": LoopCountCeiling(
-        per_incident=10_000,   # effectively unlimited — it's the heartbeat
+        per_incident=10_000,  # effectively unlimited — it's the heartbeat
         per_day=10_000,
         per_week=70_000,
     ),
@@ -170,6 +173,7 @@ Review trigger:
 # ─────────────────────────────────────────────────────────────────────────── #
 # Convenience accessor
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 def get_loop_ceiling(loop_name: str) -> LoopCountCeiling:
     """

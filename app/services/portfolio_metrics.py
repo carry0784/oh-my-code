@@ -25,6 +25,7 @@ RISK_FREE_RATE = 0.04
 @dataclass
 class PortfolioPerformanceReport:
     """Portfolio-level performance metrics."""
+
     portfolio_sharpe: float = 0.0
     portfolio_sortino: float = 0.0
     portfolio_max_drawdown_pct: float = 0.0
@@ -77,9 +78,7 @@ class PortfolioMetricsCalculator:
         """Calculate complete portfolio performance metrics."""
         report = PortfolioPerformanceReport()
 
-        portfolio_equity = self.calculate_portfolio_equity(
-            weights, equity_curves, initial_capital
-        )
+        portfolio_equity = self.calculate_portfolio_equity(weights, equity_curves, initial_capital)
 
         if len(portfolio_equity) < 2:
             return report
@@ -90,9 +89,7 @@ class PortfolioMetricsCalculator:
         returns = np.nan_to_num(returns, nan=0.0)
 
         # Basic metrics
-        report.portfolio_return_pct = float(
-            (equity[-1] - equity[0]) / equity[0] * 100
-        )
+        report.portfolio_return_pct = float((equity[-1] - equity[0]) / equity[0] * 100)
         report.portfolio_volatility_pct = float(np.std(returns) * np.sqrt(ANNUAL_FACTOR) * 100)
 
         # Sharpe
@@ -100,9 +97,7 @@ class PortfolioMetricsCalculator:
         excess = returns - daily_rf
         std = float(np.std(excess))
         if std > 0:
-            report.portfolio_sharpe = float(
-                np.mean(excess) / std * np.sqrt(ANNUAL_FACTOR)
-            )
+            report.portfolio_sharpe = float(np.mean(excess) / std * np.sqrt(ANNUAL_FACTOR))
 
         # Sortino
         downside = returns[returns < daily_rf] - daily_rf
@@ -123,9 +118,7 @@ class PortfolioMetricsCalculator:
             curve = equity_curves[gid]
             if len(curve) >= 2:
                 comp_return = (curve[-1] - curve[0]) / curve[0]
-                report.component_attribution[gid] = float(
-                    weights[gid] * comp_return * 100
-                )
+                report.component_attribution[gid] = float(weights[gid] * comp_return * 100)
 
         # Diversification benefit
         if len(ids) >= 2:
@@ -136,20 +129,24 @@ class PortfolioMetricsCalculator:
                 comp_rets = np.diff(curve) / curve[:-1]
                 comp_rets = np.nan_to_num(comp_rets, nan=0.0)
                 weighted_vol_sum += weights[gid] * float(np.std(comp_rets))
-            
+
             port_vol = float(np.std(returns))
             if port_vol > 0:
-                report.diversification_benefit_pct = float(
-                    (1.0 - port_vol / weighted_vol_sum) * 100
-                ) if weighted_vol_sum > 0 else 0.0
+                report.diversification_benefit_pct = (
+                    float((1.0 - port_vol / weighted_vol_sum) * 100)
+                    if weighted_vol_sum > 0
+                    else 0.0
+                )
 
         # Effective N (Herfindahl-based)
         w_values = list(weights.values())
-        hhi = sum(w ** 2 for w in w_values)
+        hhi = sum(w**2 for w in w_values)
         report.effective_n_strategies = 1.0 / hhi if hhi > 0 else 0.0
 
-        logger.info("portfolio_metrics_calculated",
-                     sharpe=round(report.portfolio_sharpe, 4),
-                     return_pct=round(report.portfolio_return_pct, 2),
-                     max_dd=round(report.portfolio_max_drawdown_pct, 2))
+        logger.info(
+            "portfolio_metrics_calculated",
+            sharpe=round(report.portfolio_sharpe, 4),
+            return_pct=round(report.portfolio_return_pct, 2),
+            max_dd=round(report.portfolio_max_drawdown_pct, 2),
+        )
         return report

@@ -12,6 +12,7 @@ Design:
   - Fail-closed: budget errors → deny retry
   - No daemon, scheduler, background worker
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict
@@ -20,14 +21,15 @@ from typing import Any, Optional
 from collections import deque
 
 
-DEFAULT_GLOBAL_BUDGET = 20      # max 20 retries per window
-DEFAULT_CHANNEL_BUDGET = 10     # max 10 retries per channel per window
-DEFAULT_WINDOW_SECONDS = 3600   # 1 hour window
+DEFAULT_GLOBAL_BUDGET = 20  # max 20 retries per window
+DEFAULT_CHANNEL_BUDGET = 10  # max 10 retries per channel per window
+DEFAULT_WINDOW_SECONDS = 3600  # 1 hour window
 
 
 @dataclass
 class BudgetCheck:
     """Result of a budget check."""
+
     allowed: bool
     reason: str
     global_used: int = 0

@@ -30,12 +30,13 @@ logger = get_logger(__name__)
 @dataclass
 class Gene:
     """Single gene with value, bounds, and mutation rate."""
+
     name: str
     value: float
     min_val: float
     max_val: float
-    mutation_rate: float = 0.1      # Probability of mutation
-    mutation_scale: float = 0.2     # Scale of mutation (% of range)
+    mutation_rate: float = 0.1  # Probability of mutation
+    mutation_scale: float = 0.2  # Scale of mutation (% of range)
     is_integer: bool = False
 
     def mutate(self, rng: np.random.RandomState) -> Gene:
@@ -53,6 +54,7 @@ class Gene:
 @dataclass
 class StrategyGenome:
     """Complete genetic representation of a strategy."""
+
     id: str = field(default_factory=lambda: str(uuid4())[:8])
     generation: int = 0
     parent_ids: list[str] = field(default_factory=list)
@@ -65,8 +67,8 @@ class StrategyGenome:
 
     # Metadata
     fitness: float = 0.0
-    age: int = 0          # Generations survived
-    wins: int = 0         # Tournament wins
+    age: int = 0  # Generations survived
+    wins: int = 0  # Tournament wins
     regime_tag: str = ""  # Preferred market regime
 
     @property
@@ -106,7 +108,9 @@ class GenomeFactory:
         """Create a genome with default SMA crossover parameters."""
         return StrategyGenome(
             indicator_genes={
-                "strategy_type": Gene("strategy_type", 0, 0, 1, is_integer=True),  # CR-045: 0=SMA, 1=RSI
+                "strategy_type": Gene(
+                    "strategy_type", 0, 0, 1, is_integer=True
+                ),  # CR-045: 0=SMA, 1=RSI
                 "fast_period": Gene("fast_period", 10, 3, 50, is_integer=True),
                 "slow_period": Gene("slow_period", 20, 10, 200, is_integer=True),
                 "rsi_period": Gene("rsi_period", 14, 5, 30, is_integer=True),
@@ -134,8 +138,12 @@ class GenomeFactory:
     def create_random(self) -> StrategyGenome:
         """Create a genome with randomized parameters."""
         genome = self.create_default()
-        for gene_group in [genome.indicator_genes, genome.entry_genes,
-                           genome.risk_genes, genome.regime_genes]:
+        for gene_group in [
+            genome.indicator_genes,
+            genome.entry_genes,
+            genome.risk_genes,
+            genome.regime_genes,
+        ]:
             for name, gene in gene_group.items():
                 gene.value = float(self.rng.uniform(gene.min_val, gene.max_val))
                 if gene.is_integer:

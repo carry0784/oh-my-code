@@ -40,9 +40,7 @@ class IndicatorCalculator:
 
         # Bollinger Bands(20, 2)
         if len(closes) >= 20:
-            result.bb_upper, result.bb_middle, result.bb_lower = self._bollinger(
-                closes, 20, 2.0
-            )
+            result.bb_upper, result.bb_middle, result.bb_lower = self._bollinger(closes, 20, 2.0)
 
         # ATR(14)
         if len(closes) >= 15:
@@ -119,9 +117,7 @@ class IndicatorCalculator:
         return float(macd_line[-1]), float(signal_line[-1]), float(histogram[-1])
 
     @staticmethod
-    def _bollinger(
-        closes: np.ndarray, period: int, num_std: float
-    ) -> tuple[float, float, float]:
+    def _bollinger(closes: np.ndarray, period: int, num_std: float) -> tuple[float, float, float]:
         window = closes[-period:]
         middle = float(np.mean(window))
         std = float(np.std(window, ddof=1))
@@ -130,9 +126,7 @@ class IndicatorCalculator:
         return upper, middle, lower
 
     @staticmethod
-    def _atr(
-        highs: np.ndarray, lows: np.ndarray, closes: np.ndarray, period: int
-    ) -> float:
+    def _atr(highs: np.ndarray, lows: np.ndarray, closes: np.ndarray, period: int) -> float:
         tr = np.maximum(
             highs[1:] - lows[1:],
             np.maximum(

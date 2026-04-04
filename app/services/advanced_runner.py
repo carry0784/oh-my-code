@@ -32,6 +32,7 @@ logger = get_logger(__name__)
 @dataclass
 class AdvancedRunnerConfig:
     """Configuration for the advanced evolution runner."""
+
     # Island model
     n_islands: int = 5
     population_per_island: int = 10
@@ -63,6 +64,7 @@ class AdvancedRunnerConfig:
 @dataclass
 class AdvancedRunnerResult:
     """Result of advanced evolution run."""
+
     generations_run: int = 0
     evolution_history: list[EvolutionRecord] = field(default_factory=list)
     best_genome: StrategyGenome | None = None
@@ -92,7 +94,9 @@ class AdvancedStrategyRunner:
             seed=self.config.seed,
         )
         self.island_model = IslandModel(island_config)
-        self.mutation_controller = AdaptiveMutationController() if self.config.adaptive_mutation else None
+        self.mutation_controller = (
+            AdaptiveMutationController() if self.config.adaptive_mutation else None
+        )
         self.registry = StrategyRegistry(max_entries=self.config.registry_max_entries)
         self.state_manager = EvolutionStateManager()
 
@@ -112,8 +116,7 @@ class AdvancedStrategyRunner:
             if self.mutation_controller:
                 for island in self.island_model.islands:
                     island.population = [
-                        self.mutation_controller.apply_to_genome(g)
-                        for g in island.population
+                        self.mutation_controller.apply_to_genome(g) for g in island.population
                     ]
 
             # Evolve all islands (includes migration)
@@ -156,9 +159,9 @@ class AdvancedStrategyRunner:
                 gen=gen,
                 best=round(best_fitness, 4),
                 avg=round(avg_fitness, 4),
-                mutation_rate=round(
-                    self.mutation_controller.get_rate(), 4
-                ) if self.mutation_controller else 0.1,
+                mutation_rate=round(self.mutation_controller.get_rate(), 4)
+                if self.mutation_controller
+                else 0.1,
                 registry=self.registry.size,
             )
 
@@ -177,10 +180,14 @@ class AdvancedStrategyRunner:
         if self.config.persist_state:
             populations = [i.population for i in self.island_model.islands]
             hof = [e.genome for e in self.registry.get_top_n(10)]
-            mut_state = {
-                "current_rate": self.mutation_controller.schedule.current_rate,
-                "history": self.mutation_controller.schedule.history,
-            } if self.mutation_controller else {}
+            mut_state = (
+                {
+                    "current_rate": self.mutation_controller.schedule.current_rate,
+                    "history": self.mutation_controller.schedule.history,
+                }
+                if self.mutation_controller
+                else {}
+            )
 
             fitness_hist = [r.best_fitness for r in result.evolution_history]
             result.checkpoint = self.state_manager.save(
@@ -218,12 +225,12 @@ class AdvancedStrategyRunner:
 
         # Restore mutation state
         if self.mutation_controller and state["mutation_schedule"]:
-            self.mutation_controller.schedule.current_rate = state[
-                "mutation_schedule"
-            ].get("current_rate", 0.1)
-            self.mutation_controller.schedule.history = state[
-                "mutation_schedule"
-            ].get("history", [])
+            self.mutation_controller.schedule.current_rate = state["mutation_schedule"].get(
+                "current_rate", 0.1
+            )
+            self.mutation_controller.schedule.history = state["mutation_schedule"].get(
+                "history", []
+            )
 
         # Restore hall of fame
         for genome in state["hall_of_fame"]:

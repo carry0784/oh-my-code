@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -25,15 +34,13 @@ from app.services.performance_metrics import TradeRecord
 
 def _profitable_trades(n: int = 20) -> list[TradeRecord]:
     return [
-        TradeRecord(entry_price=100, exit_price=105, side="long", fee_pct=0.001)
-        for _ in range(n)
+        TradeRecord(entry_price=100, exit_price=105, side="long", fee_pct=0.001) for _ in range(n)
     ]
 
 
 def _losing_trades(n: int = 20) -> list[TradeRecord]:
     return [
-        TradeRecord(entry_price=100, exit_price=90, side="long", fee_pct=0.001)
-        for _ in range(n)
+        TradeRecord(entry_price=100, exit_price=90, side="long", fee_pct=0.001) for _ in range(n)
     ]
 
 

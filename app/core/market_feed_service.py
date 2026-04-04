@@ -55,9 +55,13 @@ def build_market_feed_from_quote_data(quote_data: dict | None) -> MarketFeedResp
     for exchange in _SUPPORTED_EXCHANGES:
         venue_data = quote_data.get(exchange)
         if not venue_data:
-            venues.append(VenueFeedSummary(
-                exchange=exchange, trust_state="NOT_QUERIED", supported=True,
-            ))
+            venues.append(
+                VenueFeedSummary(
+                    exchange=exchange,
+                    trust_state="NOT_QUERIED",
+                    supported=True,
+                )
+            )
             continue
 
         venue_summary = venue_data.get("_venue_summary", {})
@@ -78,27 +82,31 @@ def build_market_feed_from_quote_data(quote_data: dict | None) -> MarketFeedResp
             trust = q.get("trust_state", "UNKNOWN")
             is_stale = age is not None and age > _STALE_THRESHOLD_S
 
-            quotes.append(QuoteEntry(
-                exchange=exchange,
-                symbol=symbol,
-                bid=bid,
-                ask=ask,
-                spread=spread,
-                last=last,
-                as_of=as_of,
-                age_seconds=age,
-                trust_state=trust,
-                is_stale=is_stale,
-            ))
+            quotes.append(
+                QuoteEntry(
+                    exchange=exchange,
+                    symbol=symbol,
+                    bid=bid,
+                    ask=ask,
+                    spread=spread,
+                    last=last,
+                    as_of=as_of,
+                    age_seconds=age,
+                    trust_state=trust,
+                    is_stale=is_stale,
+                )
+            )
 
-        venues.append(VenueFeedSummary(
-            exchange=exchange,
-            trust_state=v_trust,
-            live_count=v_live,
-            stale_count=v_stale,
-            total_symbols=sym_count,
-            supported=True,
-        ))
+        venues.append(
+            VenueFeedSummary(
+                exchange=exchange,
+                trust_state=v_trust,
+                live_count=v_live,
+                stale_count=v_stale,
+                total_symbols=sym_count,
+                supported=True,
+            )
+        )
 
         total_live += v_live
         total_stale += v_stale

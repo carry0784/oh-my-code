@@ -189,19 +189,21 @@ class KISExchange(BaseExchange):
                 qty = int(item.get("hldg_qty", "0") or "0")
                 if qty <= 0:
                     continue
-                positions.append({
-                    "symbol": item.get("pdno", ""),
-                    "symbol_name": item.get("prdt_name", ""),
-                    "contracts": qty,
-                    "side": "long",  # 국내 주식 현물은 항상 long
-                    "entryPrice": float(item.get("pchs_avg_pric", "0") or "0"),
-                    "markPrice": float(item.get("prpr", "0") or "0"),
-                    "unrealizedPnl": float(item.get("evlu_pfls_amt", "0") or "0"),
-                    "profitRate": float(item.get("evlu_pfls_rt", "0") or "0"),
-                    "evalAmount": float(item.get("evlu_amt", "0") or "0"),
-                    "leverage": 1,
-                    "liquidationPrice": None,  # 현물은 청산가 없음
-                })
+                positions.append(
+                    {
+                        "symbol": item.get("pdno", ""),
+                        "symbol_name": item.get("prdt_name", ""),
+                        "contracts": qty,
+                        "side": "long",  # 국내 주식 현물은 항상 long
+                        "entryPrice": float(item.get("pchs_avg_pric", "0") or "0"),
+                        "markPrice": float(item.get("prpr", "0") or "0"),
+                        "unrealizedPnl": float(item.get("evlu_pfls_amt", "0") or "0"),
+                        "profitRate": float(item.get("evlu_pfls_rt", "0") or "0"),
+                        "evalAmount": float(item.get("evlu_amt", "0") or "0"),
+                        "leverage": 1,
+                        "liquidationPrice": None,  # 현물은 청산가 없음
+                    }
+                )
             return positions
         except Exception as e:
             logger.error("KIS fetch_positions failed", error=str(e))
@@ -282,14 +284,16 @@ class KISExchange(BaseExchange):
         output = data.get("output", [])
         result = []
         for item in output[:limit]:
-            result.append([
-                item.get("stck_bsop_date", ""),
-                float(item.get("stck_oprc", "0") or "0"),
-                float(item.get("stck_hgpr", "0") or "0"),
-                float(item.get("stck_lwpr", "0") or "0"),
-                float(item.get("stck_clpr", "0") or "0"),
-                float(item.get("acml_vol", "0") or "0"),
-            ])
+            result.append(
+                [
+                    item.get("stck_bsop_date", ""),
+                    float(item.get("stck_oprc", "0") or "0"),
+                    float(item.get("stck_hgpr", "0") or "0"),
+                    float(item.get("stck_lwpr", "0") or "0"),
+                    float(item.get("stck_clpr", "0") or "0"),
+                    float(item.get("acml_vol", "0") or "0"),
+                ]
+            )
         return result
 
     async def close(self):

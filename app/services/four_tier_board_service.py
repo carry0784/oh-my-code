@@ -15,6 +15,7 @@ Safety:
   - Fail-closed: missing tier → connected=False, zero counts
   - No raw reasoning/prompt/error_class exposure
 """
+
 from __future__ import annotations
 
 from collections import Counter
@@ -110,12 +111,16 @@ def build_four_tier_board(
 
     # -- Observation summary ----------------------------------------------- #
     obs_summary = build_observation_summary(
-        action_ledger, execution_ledger, submit_ledger,
+        action_ledger,
+        execution_ledger,
+        submit_ledger,
     )
 
     # -- Decision summary -------------------------------------------------- #
     decision = build_decision_summary(
-        action_ledger, execution_ledger, submit_ledger,
+        action_ledger,
+        execution_ledger,
+        submit_ledger,
     )
 
     # -- Decision card (visualization) ------------------------------------- #
@@ -123,12 +128,16 @@ def build_four_tier_board(
 
     # -- REVIEW volume observation ----------------------------------------- #
     review_volume = build_review_volume(
-        action_ledger, execution_ledger, submit_ledger,
+        action_ledger,
+        execution_ledger,
+        submit_ledger,
     )
 
     # -- WATCH volume observation ----------------------------------------- #
     watch_volume = build_watch_volume(
-        action_ledger, execution_ledger, submit_ledger,
+        action_ledger,
+        execution_ledger,
+        submit_ledger,
     )
 
     # -- Pipeline blockage summary ---------------------------------------- #
@@ -139,7 +148,10 @@ def build_four_tier_board(
 
     # -- Latency observation (v1: per-tier only) ------------------------- #
     latency_observation = build_latency_observation(
-        action_ledger, execution_ledger, submit_ledger, order_executor,
+        action_ledger,
+        execution_ledger,
+        submit_ledger,
+        order_executor,
     )
 
     # -- Trend observation (v1: two-window count comparison) ------------- #
@@ -155,14 +167,17 @@ def build_four_tier_board(
         recent_lineage=recent_lineage,
         cross_tier_orphan_count=orphan_report.total_cross_tier_orphan_count,
         cross_tier_orphan_detail=[
-            OrphanDetail(**o) for o in
-            (orphan_report.execution_orphans + orphan_report.submit_orphans)
+            OrphanDetail(**o)
+            for o in (orphan_report.execution_orphans + orphan_report.submit_orphans)
         ],
         cleanup_candidate_count=cleanup_report.total_candidates,
-        cleanup_action_summary=CleanupActionSummary(**{
-            k: v for k, v in cleanup_report.by_action_class.items()
-            if k in CleanupActionSummary.model_fields
-        }),
+        cleanup_action_summary=CleanupActionSummary(
+            **{
+                k: v
+                for k, v in cleanup_report.by_action_class.items()
+                if k in CleanupActionSummary.model_fields
+            }
+        ),
         observation_summary=obs_summary.to_schema(),
         decision_summary=decision.to_schema(),
         decision_card=decision_card,
@@ -179,6 +194,7 @@ def build_four_tier_board(
 
 
 # -- Tier builders --------------------------------------------------------- #
+
 
 def _build_agent_tier(ledger: Optional[ActionLedger]) -> TierSummary:
     if ledger is None:
@@ -327,14 +343,16 @@ def _build_recent_lineage(
             if order is not None:
                 order_id = order.order_id
 
-        entries.append(LineageEntry(
-            agent_proposal_id=p.get("agent_proposal_id"),
-            execution_proposal_id=p.get("execution_proposal_id"),
-            submit_proposal_id=sp_id,
-            order_id=order_id,
-            status=p.get("status"),
-            submit_ready=p.get("submit_ready"),
-            execution_ready=None,  # would need cross-ledger lookup
-        ))
+        entries.append(
+            LineageEntry(
+                agent_proposal_id=p.get("agent_proposal_id"),
+                execution_proposal_id=p.get("execution_proposal_id"),
+                submit_proposal_id=sp_id,
+                order_id=order_id,
+                status=p.get("status"),
+                submit_ready=p.get("submit_ready"),
+                execution_ready=None,  # would need cross-ledger lookup
+            )
+        )
 
     return entries

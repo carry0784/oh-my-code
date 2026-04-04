@@ -32,6 +32,7 @@ def collect_ohlcv(symbol: str = "BTC/USDT", timeframe: str = "1h", limit: int = 
     """Collect real OHLCV data from Binance via CCXT."""
     try:
         import ccxt
+
         exchange = ccxt.binance({"enableRateLimit": True})
         ohlcv = exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
         print(f"[DATA] Collected {len(ohlcv)} bars for {symbol} {timeframe}")
@@ -41,10 +42,17 @@ def collect_ohlcv(symbol: str = "BTC/USDT", timeframe: str = "1h", limit: int = 
         print("[DATA] Falling back to synthetic data for shadow cycle")
         # Synthetic fallback — still valid for shadow infrastructure testing
         import time
+
         base_ts = int(time.time() * 1000) - limit * 3600000  # CR-047: 1h bars
         return [
-            [base_ts + i * 3600000, 65000 + i * 10, 65100 + i * 10,
-             64900 + i * 10, 65050 + i * 10, 100 + i]
+            [
+                base_ts + i * 3600000,
+                65000 + i * 10,
+                65100 + i * 10,
+                64900 + i * 10,
+                65050 + i * 10,
+                100 + i,
+            ]
             for i in range(limit)
         ]
 
@@ -83,9 +91,9 @@ def run_shadow_cycle(day: int, ohlcv: list[list]) -> dict:
     # ── 1. Evolution ──
     try:
         evo_config = AdvancedRunnerConfig(
-            n_islands=5,                    # CR-045: 3→5 (기본값 복원)
-            population_per_island=10,       # CR-045: 6→10 (기본값 복원)
-            max_generations=10,             # CR-045: 3→10 (수렴 기회 확대)
+            n_islands=5,  # CR-045: 3→5 (기본값 복원)
+            population_per_island=10,  # CR-045: 6→10 (기본값 복원)
+            max_generations=10,  # CR-045: 3→10 (수렴 기회 확대)
             migration_interval=2,
             seed=42 + day,
             backtest_config=BacktestConfig(),
@@ -104,13 +112,13 @@ def run_shadow_cycle(day: int, ohlcv: list[list]) -> dict:
             "mutation_rate": round(evo_result.final_mutation_rate, 4),
             "status": "OK",
         }
-        evolved_ids = [
-            e.genome.id for e in runner.registry.get_top_n(5)
-        ]
+        evolved_ids = [e.genome.id for e in runner.registry.get_top_n(5)]
 
         # CR-045: per-strategy metrics (A 지시 — 전략별 4개 필드)
-        strategy_breakdown = {"SMA": {"count": 0, "best_fitness": 0.0, "registry": 0},
-                              "RSI": {"count": 0, "best_fitness": 0.0, "registry": 0}}
+        strategy_breakdown = {
+            "SMA": {"count": 0, "best_fitness": 0.0, "registry": 0},
+            "RSI": {"count": 0, "best_fitness": 0.0, "registry": 0},
+        }
         # Count genomes by strategy_type across all islands
         for island in runner.island_model.islands:
             for genome in island.population:
@@ -128,9 +136,15 @@ def run_shadow_cycle(day: int, ohlcv: list[list]) -> dict:
             label = "RSI" if st == 1 else "SMA"
             strategy_breakdown[label]["registry"] += 1
         metrics["strategy_breakdown"] = strategy_breakdown
-        metrics["candidate_generation_by_strategy"] = {k: v["count"] for k, v in strategy_breakdown.items()}
-        metrics["fitness_by_strategy"] = {k: v["best_fitness"] for k, v in strategy_breakdown.items()}
-        metrics["registry_entries_by_strategy"] = {k: v["registry"] for k, v in strategy_breakdown.items()}
+        metrics["candidate_generation_by_strategy"] = {
+            k: v["count"] for k, v in strategy_breakdown.items()
+        }
+        metrics["fitness_by_strategy"] = {
+            k: v["best_fitness"] for k, v in strategy_breakdown.items()
+        }
+        metrics["registry_entries_by_strategy"] = {
+            k: v["registry"] for k, v in strategy_breakdown.items()
+        }
 
         # CR-047: CG-2B-1/2 split judgment
         metrics["cg2b_1_candidate_generation"] = (
@@ -151,8 +165,7 @@ def run_shadow_cycle(day: int, ohlcv: list[list]) -> dict:
                 gid = entry.genome.id
                 # Simulate equity from fitness (simplified for shadow)
                 equity_curves[gid] = [
-                    10000 * (1 + entry.lifetime_fitness * 0.01 * i)
-                    for i in range(50)
+                    10000 * (1 + entry.lifetime_fitness * 0.01 * i) for i in range(50)
                 ]
 
             port_result = constructor.construct(
@@ -162,13 +175,21 @@ def run_shadow_cycle(day: int, ohlcv: list[list]) -> dict:
                 "strategies": port_result.strategy_count,
                 "method": port_result.optimization_method,
                 "sharpe": round(port_result.performance.portfolio_sharpe, 4)
-                    if port_result.performance else 0.0,
+                if port_result.performance
+                else 0.0,
                 "max_dd": round(port_result.performance.portfolio_max_drawdown_pct, 2)
-                    if port_result.performance else 0.0,
+                if port_result.performance
+                else 0.0,
                 "status": "OK",
             }
-            portfolio_sharpe = port_result.performance.portfolio_sharpe if port_result.performance else 0.0
-            portfolio_dd = port_result.performance.portfolio_max_drawdown_pct if port_result.performance else 0.0
+            portfolio_sharpe = (
+                port_result.performance.portfolio_sharpe if port_result.performance else 0.0
+            )
+            portfolio_dd = (
+                port_result.performance.portfolio_max_drawdown_pct
+                if port_result.performance
+                else 0.0
+            )
         else:
             metrics["portfolio"] = {"status": "SKIP (registry < 2)"}
             portfolio_sharpe = 0.0
@@ -189,7 +210,7 @@ def run_shadow_cycle(day: int, ohlcv: list[list]) -> dict:
         cycle_result = orch.run_cycle(
             evolved_genome_ids=evolved_ids,
             validated_genome_ids=evolved_ids[:2] if len(evolved_ids) >= 2 else [],
-            registry_size=evo_result.registry_size if 'evo_result' in dir() else 0,
+            registry_size=evo_result.registry_size if "evo_result" in dir() else 0,
             portfolio_sharpe=portfolio_sharpe,
             portfolio_drawdown_pct=portfolio_dd,
         )
@@ -201,12 +222,10 @@ def run_shadow_cycle(day: int, ohlcv: list[list]) -> dict:
             "transitions": cycle_result.transitions,
             "governance_decisions": len(cycle_result.governance_decisions),
             "pending_operator": sum(
-                1 for d in cycle_result.governance_decisions
-                if d.decision == "PENDING_OPERATOR"
+                1 for d in cycle_result.governance_decisions if d.decision == "PENDING_OPERATOR"
             ),
             "auto_approved": sum(
-                1 for d in cycle_result.governance_decisions
-                if d.decision == "APPROVED"
+                1 for d in cycle_result.governance_decisions if d.decision == "APPROVED"
             ),
             "is_healthy": cycle_result.is_healthy,
             "warnings": cycle_result.health.warnings if cycle_result.health else [],
@@ -215,7 +234,9 @@ def run_shadow_cycle(day: int, ohlcv: list[list]) -> dict:
 
         # Governance block ratio
         total_decisions = len(cycle_result.governance_decisions)
-        pending = sum(1 for d in cycle_result.governance_decisions if d.decision == "PENDING_OPERATOR")
+        pending = sum(
+            1 for d in cycle_result.governance_decisions if d.decision == "PENDING_OPERATOR"
+        )
         block_ratio = (pending / total_decisions * 100) if total_decisions > 0 else 0.0
         metrics["governance_block_ratio_pct"] = round(block_ratio, 1)
 
@@ -239,7 +260,14 @@ def run_shadow_cycle(day: int, ohlcv: list[list]) -> dict:
     try:
         # Check lifecycle states
         for gid, record in orch.lifecycle.records.items():
-            valid_states = {"candidate", "validated", "paper_trading", "promoted", "demoted", "retired"}
+            valid_states = {
+                "candidate",
+                "validated",
+                "paper_trading",
+                "promoted",
+                "demoted",
+                "retired",
+            }
             if record.current_state.value not in valid_states:
                 reconciliation["lifecycle_states_valid"] = False
 

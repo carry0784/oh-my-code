@@ -19,13 +19,26 @@ from unittest.mock import MagicMock
 import pytest
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services", "app.services.order_service",
-    "app.services.position_service", "app.services.signal_service",
-    "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -49,7 +62,6 @@ CONFIG_PATH = PROJECT_ROOT / "app" / "core" / "config.py"
 # C19-1: config.py receipt_file_path
 # ===========================================================================
 class TestC19Config:
-
     def test_receipt_file_path_setting_exists(self):
         content = CONFIG_PATH.read_text(encoding="utf-8")
         assert "receipt_file_path" in content
@@ -68,7 +80,6 @@ class TestC19Config:
 # C19-2: main.py wiring 로직
 # ===========================================================================
 class TestC19MainWiring:
-
     def test_receipt_store_initialized(self):
         content = MAIN_PATH.read_text(encoding="utf-8")
         assert "app.state.receipt_store" in content
@@ -100,13 +111,12 @@ class TestC19MainWiring:
 # C19-3: fail-closed fallback
 # ===========================================================================
 class TestC19FailClosed:
-
     def test_exception_fallback_to_memory(self):
         """file backend init 실패 시 memory-only fallback."""
         content = MAIN_PATH.read_text(encoding="utf-8")
         # Find the wiring section
         wiring_start = content.index("receipt_file_backend = None")
-        wiring_section = content[wiring_start:wiring_start + 500]
+        wiring_section = content[wiring_start : wiring_start + 500]
         assert "except" in wiring_section
         assert "receipt_file_backend = None" in wiring_section
 
@@ -114,7 +124,7 @@ class TestC19FailClosed:
         """빈 경로 → IN_MEMORY 유지."""
         content = MAIN_PATH.read_text(encoding="utf-8")
         wiring_start = content.index("receipt_file_backend = None")
-        wiring_section = content[wiring_start:wiring_start + 500]
+        wiring_section = content[wiring_start : wiring_start + 500]
         assert "if settings.receipt_file_path" in wiring_section
 
 
@@ -122,7 +132,6 @@ class TestC19FailClosed:
 # C19-4: 기존 동작 보존
 # ===========================================================================
 class TestC19ExistingPreserved:
-
     def test_c01_slots_preserved(self):
         content = MAIN_PATH.read_text(encoding="utf-8")
         assert "app.state.loop_monitor" in content
@@ -149,15 +158,18 @@ class TestC19ExistingPreserved:
 # C19-5: 금지 조항
 # ===========================================================================
 class TestC19Forbidden:
-
     def test_no_forbidden_strings(self):
         content = MAIN_PATH.read_text(encoding="utf-8")
         # Check only the wiring section
         wiring_start = content.index("receipt_file_backend = None")
-        wiring_section = content[wiring_start:wiring_start + 600]
+        wiring_section = content[wiring_start : wiring_start + 600]
         forbidden = [
-            'agent_analysis', 'raw_prompt', 'chain_of_thought',
-            'internal_reasoning', 'debug_trace', 'error_class',
+            "agent_analysis",
+            "raw_prompt",
+            "chain_of_thought",
+            "internal_reasoning",
+            "debug_trace",
+            "error_class",
         ]
         for f in forbidden:
             assert f not in wiring_section, f"Forbidden string '{f}'"
@@ -166,6 +178,6 @@ class TestC19Forbidden:
         """파일 영속화가 강제되지 않는다 (선택적)."""
         content = MAIN_PATH.read_text(encoding="utf-8")
         wiring_start = content.index("receipt_file_backend = None")
-        wiring_section = content[wiring_start:wiring_start + 500]
+        wiring_section = content[wiring_start : wiring_start + 500]
         # Default is None (memory-only), file only if path configured
         assert wiring_section.startswith("receipt_file_backend = None")

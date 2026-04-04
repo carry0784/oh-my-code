@@ -5,6 +5,7 @@ K-Dexter AOS — TCL Spec v1
 Common implementation for Binance, Bitget, Upbit.
 Handles lazy client init, order placement, and rate limiting.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -37,18 +38,18 @@ class CcxtMixin:
         try:
             import ccxt  # type: ignore
         except ImportError:
-            raise RuntimeError(
-                "ccxt not installed. Run: pip install ccxt"
-            )
+            raise RuntimeError("ccxt not installed. Run: pip install ccxt")
         cls = getattr(ccxt, self._ccxt_exchange_cls, None)
         if cls is None:
             raise RuntimeError(f"ccxt has no exchange '{self._ccxt_exchange_cls}'")
-        self._client = cls({
-            "apiKey": self._api_key,
-            "secret": self._api_secret,
-            "enableRateLimit": True,
-            "options": {"defaultType": "spot"},
-        })
+        self._client = cls(
+            {
+                "apiKey": self._api_key,
+                "secret": self._api_secret,
+                "enableRateLimit": True,
+                "options": {"defaultType": "spot"},
+            }
+        )
         if getattr(self, "_testnet", False):
             self._client.set_sandbox_mode(True)
         return self._client
@@ -120,7 +121,8 @@ class CcxtMixin:
         await self._rate_limiter.acquire()
         client = self._get_ccxt_client()
         raw = await asyncio.get_event_loop().run_in_executor(
-            None, client.fetch_balance,
+            None,
+            client.fetch_balance,
         )
         free = raw.get("free", {})
         parsed = {k: v for k, v in free.items() if v and float(v) > 0}
@@ -134,13 +136,12 @@ class CcxtMixin:
         await self._rate_limiter.acquire()
         client = self._get_ccxt_client()
         raw = await asyncio.get_event_loop().run_in_executor(
-            None, client.fetch_balance,
+            None,
+            client.fetch_balance,
         )
         total = raw.get("total", {})
         positions = [
-            {"asset": k, "amount": float(v)}
-            for k, v in total.items()
-            if v and float(v) > 0
+            {"asset": k, "amount": float(v)} for k, v in total.items() if v and float(v) > 0
         ]
         parsed = {"positions": positions}
         t.complete(raw={"positions": positions}, parsed=parsed)

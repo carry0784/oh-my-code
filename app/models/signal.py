@@ -34,8 +34,12 @@ class Signal(Base):
     stop_loss: Mapped[float | None] = mapped_column(Float, nullable=True)
     take_profit: Mapped[float | None] = mapped_column(Float, nullable=True)
     confidence: Mapped[float] = mapped_column(Float, default=0.0)
-    status: Mapped[SignalStatus] = mapped_column(SQLEnum(SignalStatus), default=SignalStatus.PENDING)
+    status: Mapped[SignalStatus] = mapped_column(
+        SQLEnum(SignalStatus), default=SignalStatus.PENDING
+    )
     signal_metadata: Mapped[dict] = mapped_column(JSON, default=dict, name="metadata")
     agent_analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

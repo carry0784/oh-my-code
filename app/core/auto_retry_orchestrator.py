@@ -20,6 +20,7 @@ Design:
 Flow:
   caller → gate.evaluate() → budget.check() → executor → metrics → result
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
@@ -33,6 +34,7 @@ DEFAULT_MAX_EXECUTIONS = 5
 @dataclass
 class AutoRetryResult:
     """Result of a gated auto-retry pass."""
+
     executed_at: str = ""
     gate_allowed: bool = False
     gate_reason: str = ""
@@ -76,8 +78,7 @@ def run_auto_retry(
     result = AutoRetryResult(executed_at=now.isoformat())
 
     try:
-        return _run_impl(plan_store, gate, budget, metrics,
-                         snapshot, max_executions, now, result)
+        return _run_impl(plan_store, gate, budget, metrics, snapshot, max_executions, now, result)
     except Exception as e:
         result.errors.append(f"orchestrator_error: {str(e)[:100]}")
         return result
@@ -180,6 +181,7 @@ def _run_impl(
 
             # Execute single retry via C-31 shared helper
             from app.core.retry_executor import execute_single_plan
+
             attempt = execute_single_plan(
                 plan_store=plan_store,
                 plan=plan,

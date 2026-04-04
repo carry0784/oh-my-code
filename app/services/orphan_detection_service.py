@@ -21,6 +21,7 @@ Safety:
   - Missing/None Ledger → skip that tier (fail-safe)
   - Sentinel values ("NONE", "UNKNOWN", "") treated as missing parent
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
@@ -39,10 +40,11 @@ _SENTINEL_IDS = frozenset({"", "NONE", "UNKNOWN", None})
 @dataclass
 class OrphanEntry:
     """Single orphan proposal record."""
+
     proposal_id: str
-    tier: str                          # "execution" | "submit"
-    missing_parent_type: str           # "agent_proposal_id" | "execution_proposal_id"
-    missing_parent_id: Optional[str]   # the ID that was not found
+    tier: str  # "execution" | "submit"
+    missing_parent_type: str  # "agent_proposal_id" | "execution_proposal_id"
+    missing_parent_id: Optional[str]  # the ID that was not found
     current_status: str
     created_at: str = ""
 
@@ -53,6 +55,7 @@ class OrphanEntry:
 @dataclass
 class OrphanReport:
     """Cross-tier orphan detection result."""
+
     execution_orphan_count: int = 0
     submit_orphan_count: int = 0
     total_cross_tier_orphan_count: int = 0

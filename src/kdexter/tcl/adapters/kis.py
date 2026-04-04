@@ -18,6 +18,7 @@ B1 Doctrine compliance:
   - All exceptions wrapped into CommandTranscript.fail()
   - DRY_RUN uses 모의투자 서버 (KIS provides virtual trading server)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -30,9 +31,7 @@ from typing import Optional
 
 from kdexter.tcl.adapters import ExchangeAdapter
 from kdexter.tcl.adapters.rate_limiter import AsyncRateLimiter
-from kdexter.tcl.commands import (
-    CommandTranscript, CommandType, ExecutionMode, TCLCommand
-)
+from kdexter.tcl.commands import CommandTranscript, CommandType, ExecutionMode, TCLCommand
 
 logger = logging.getLogger(__name__)
 
@@ -109,13 +108,16 @@ class KISAdapter(ExchangeAdapter):
         if not self._appkey or not self._appsecret:
             raise RuntimeError("KIS appkey/appsecret not configured")
         url = f"{self._base_url}/oauth2/tokenP"
-        body = json.dumps({
-            "grant_type": "client_credentials",
-            "appkey": self._appkey,
-            "appsecret": self._appsecret,
-        }).encode("utf-8")
+        body = json.dumps(
+            {
+                "grant_type": "client_credentials",
+                "appkey": self._appkey,
+                "appsecret": self._appsecret,
+            }
+        ).encode("utf-8")
         raw = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: self._http_post(url, body),
+            None,
+            lambda: self._http_post(url, body),
         )
         self._access_token = raw.get("access_token", "")
         expires_in = raw.get("expires_in", 86400)
@@ -182,8 +184,11 @@ class KISAdapter(ExchangeAdapter):
         """
         t = self._base_transcript(command)
         try:
-            if command.command_type in {CommandType.ORDER_BUY, CommandType.ORDER_SELL,
-                                        CommandType.ORDER_DRY_RUN}:
+            if command.command_type in {
+                CommandType.ORDER_BUY,
+                CommandType.ORDER_SELL,
+                CommandType.ORDER_DRY_RUN,
+            }:
                 sim_order_id = f"DRY-{command.idempotency_key[:8].upper()}"
                 side = "buy" if command.command_type == CommandType.ORDER_BUY else "sell"
 
@@ -191,7 +196,7 @@ class KISAdapter(ExchangeAdapter):
                 stock_code = self._to_kis_code(command.symbol)
 
                 raw = {
-                    "rt_cd": "0",           # 성공
+                    "rt_cd": "0",  # 성공
                     "msg_cd": "APBK0013",
                     "msg1": "주문 접수 완료 (모의)",
                     "output": {
@@ -335,17 +340,20 @@ class KISAdapter(ExchangeAdapter):
         tr_id = self._get_tr_id(side, self._is_virtual)
         headers = self._build_headers(tr_id)
         stock_code = self._to_kis_code(command.symbol)
-        body = json.dumps({
-            "CANO": self._account_prefix,
-            "ACNT_PRDT_CD": self._account_suffix,
-            "PDNO": stock_code,
-            "ORD_DVSN": "00",  # 지정가
-            "ORD_QTY": str(int(command.quantity or 0)),
-            "ORD_UNPR": str(int(command.price or 0)),
-        }).encode("utf-8")
+        body = json.dumps(
+            {
+                "CANO": self._account_prefix,
+                "ACNT_PRDT_CD": self._account_suffix,
+                "PDNO": stock_code,
+                "ORD_DVSN": "00",  # 지정가
+                "ORD_QTY": str(int(command.quantity or 0)),
+                "ORD_UNPR": str(int(command.price or 0)),
+            }
+        ).encode("utf-8")
         url = f"{self._base_url}/uapi/domestic-stock/v1/trading/order-cash"
         raw = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: self._http_post(url, body, headers),
+            None,
+            lambda: self._http_post(url, body, headers),
         )
         if raw.get("rt_cd") != "0":
             t.fail(f"KIS order failed: {raw.get('msg1', 'unknown')}")
@@ -356,27 +364,28 @@ class KISAdapter(ExchangeAdapter):
         t.complete(raw=raw, parsed=parsed, order_id=order_id)
         return t
 
-    async def _cancel_order(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _cancel_order(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         await self._rate_limiter.acquire()
         await self._ensure_token()
         tr_id = "VTTC0803U" if self._is_virtual else "TTTC0803U"
         headers = self._build_headers(tr_id)
-        body = json.dumps({
-            "CANO": self._account_prefix,
-            "ACNT_PRDT_CD": self._account_suffix,
-            "KRX_FWDG_ORD_ORGNO": "",
-            "ORGN_ODNO": command.exchange_order_id or "",
-            "ORD_DVSN": "00",
-            "RVSE_CNCL_DVSN_CD": "02",  # 취소
-            "ORD_QTY": "0",
-            "ORD_UNPR": "0",
-            "QTY_ALL_ORD_YN": "Y",
-        }).encode("utf-8")
+        body = json.dumps(
+            {
+                "CANO": self._account_prefix,
+                "ACNT_PRDT_CD": self._account_suffix,
+                "KRX_FWDG_ORD_ORGNO": "",
+                "ORGN_ODNO": command.exchange_order_id or "",
+                "ORD_DVSN": "00",
+                "RVSE_CNCL_DVSN_CD": "02",  # 취소
+                "ORD_QTY": "0",
+                "ORD_UNPR": "0",
+                "QTY_ALL_ORD_YN": "Y",
+            }
+        ).encode("utf-8")
         url = f"{self._base_url}/uapi/domestic-stock/v1/trading/order-rvsecncl"
         raw = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: self._http_post(url, body, headers),
+            None,
+            lambda: self._http_post(url, body, headers),
         )
         if raw.get("rt_cd") != "0":
             t.fail(f"KIS cancel failed: {raw.get('msg1', 'unknown')}")
@@ -385,9 +394,7 @@ class KISAdapter(ExchangeAdapter):
         t.complete(raw=raw, parsed=parsed, order_id=command.exchange_order_id)
         return t
 
-    async def _verify_order(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _verify_order(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         await self._rate_limiter.acquire()
         await self._ensure_token()
         tr_id = "VTTC8001R" if self._is_virtual else "TTTC8001R"
@@ -402,7 +409,8 @@ class KISAdapter(ExchangeAdapter):
         )
         url = f"{self._base_url}/uapi/domestic-stock/v1/trading/inquire-daily-ccld?{params}"
         raw = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: self._http_get(url, headers),
+            None,
+            lambda: self._http_get(url, headers),
         )
         filled = False
         if raw.get("rt_cd") == "0":
@@ -415,9 +423,7 @@ class KISAdapter(ExchangeAdapter):
         t.verification_result = filled
         return t
 
-    async def _query_position(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _query_position(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         await self._rate_limiter.acquire()
         await self._ensure_token()
         tr_id = "VTTC8434R" if self._is_virtual else "TTTC8434R"
@@ -430,24 +436,25 @@ class KISAdapter(ExchangeAdapter):
         )
         url = f"{self._base_url}/uapi/domestic-stock/v1/trading/inquire-balance?{params}"
         raw = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: self._http_get(url, headers),
+            None,
+            lambda: self._http_get(url, headers),
         )
         positions = []
         for item in raw.get("output1", []):
             if int(item.get("hldg_qty", "0")) > 0:
-                positions.append({
-                    "stock_code": item.get("pdno", ""),
-                    "name": item.get("prdt_name", ""),
-                    "quantity": int(item.get("hldg_qty", "0")),
-                    "avg_price": float(item.get("pchs_avg_pric", "0")),
-                })
+                positions.append(
+                    {
+                        "stock_code": item.get("pdno", ""),
+                        "name": item.get("prdt_name", ""),
+                        "quantity": int(item.get("hldg_qty", "0")),
+                        "avg_price": float(item.get("pchs_avg_pric", "0")),
+                    }
+                )
         parsed = {"positions": positions}
         t.complete(raw=raw, parsed=parsed)
         return t
 
-    async def _query_balance(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _query_balance(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         await self._rate_limiter.acquire()
         await self._ensure_token()
         tr_id = "VTTC8908R" if self._is_virtual else "TTTC8908R"
@@ -459,7 +466,8 @@ class KISAdapter(ExchangeAdapter):
         )
         url = f"{self._base_url}/uapi/domestic-stock/v1/trading/inquire-psbl-order?{params}"
         raw = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: self._http_get(url, headers),
+            None,
+            lambda: self._http_get(url, headers),
         )
         output = raw.get("output", {})
         free = float(output.get("ord_psbl_cash", "0"))
@@ -467,9 +475,7 @@ class KISAdapter(ExchangeAdapter):
         t.complete(raw=raw, parsed=parsed)
         return t
 
-    def _risk_check(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    def _risk_check(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         """Risk check with KIS KRW constraints."""
         qty = command.quantity or 0.0
         price = command.price or 0.0

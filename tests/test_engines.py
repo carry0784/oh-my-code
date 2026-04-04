@@ -11,6 +11,7 @@ Tests for the 5 priority engines:
 
 Run: python -X utf8 tests/test_engines.py
 """
+
 from __future__ import annotations
 
 import sys
@@ -41,6 +42,7 @@ from kdexter.loops.concurrency import LoopCounter
 # ======================================================================== #
 # 1. L16 Rule Conflict Engine
 # ======================================================================== #
+
 
 def test_no_conflicts():
     engine = RuleConflictEngine()
@@ -117,6 +119,7 @@ def test_conflict_history():
 # ======================================================================== #
 # 2. L19 Trust Decay Engine
 # ======================================================================== #
+
 
 def test_trust_register_and_check():
     engine = TrustDecayEngine()
@@ -198,6 +201,7 @@ def test_trust_unregister():
 # ======================================================================== #
 # 3. L21 Completion Engine
 # ======================================================================== #
+
 
 def test_completion_no_criteria():
     engine = CompletionEngine(threshold=0.8)
@@ -283,6 +287,7 @@ def test_completion_remove_criterion():
 # 4. L29 Cost Controller
 # ======================================================================== #
 
+
 def test_cost_no_budgets():
     cc = CostController()
     result = cc.check()
@@ -317,8 +322,8 @@ def test_cost_multiple_resources():
     cc = CostController()
     cc.set_budget("API_CALLS", limit=1000)
     cc.set_budget("USD_COST", limit=10.0)
-    cc.record_usage("API_CALLS", 500)   # 0.5
-    cc.record_usage("USD_COST", 8.0)    # 0.8
+    cc.record_usage("API_CALLS", 500)  # 0.5
+    cc.record_usage("USD_COST", 8.0)  # 0.8
     result = cc.check()
     assert result.resource_usage_ratio == 0.8  # max of the two
     assert result.passed_gate is True
@@ -360,6 +365,7 @@ def test_cost_additive_usage():
 # ======================================================================== #
 # 5. L28 Loop Monitor
 # ======================================================================== #
+
 
 def test_monitor_healthy():
     counter = LoopCounter()
@@ -433,49 +439,64 @@ if __name__ == "__main__":
     print("=" * 60)
 
     tests = [
-        ("L16 Rule Conflict Engine", [
-            test_no_conflicts,
-            test_conflicting_rules,
-            test_actions_contradict_helper,
-            test_conditions_overlap_helper,
-            test_empty_rules,
-            test_multiple_conflicts,
-            test_conflict_history,
-        ]),
-        ("L19 Trust Decay Engine", [
-            test_trust_register_and_check,
-            test_trust_failure_decay,
-            test_trust_gate_fail,
-            test_trust_success_recovery,
-            test_trust_check_all,
-            test_trust_lowest,
-            test_trust_unregister,
-        ]),
-        ("L21 Completion Engine", [
-            test_completion_no_criteria,
-            test_completion_all_satisfied,
-            test_completion_partial,
-            test_completion_weighted,
-            test_completion_reset,
-            test_completion_reset_all,
-            test_completion_remove_criterion,
-        ]),
-        ("L29 Cost Controller", [
-            test_cost_no_budgets,
-            test_cost_within_budget,
-            test_cost_exceeded,
-            test_cost_multiple_resources,
-            test_cost_reset_usage,
-            test_cost_reset_all,
-            test_cost_additive_usage,
-        ]),
-        ("L28 Loop Monitor", [
-            test_monitor_healthy,
-            test_monitor_warning,
-            test_monitor_warning_threshold,
-            test_monitor_any_exceeded,
-            test_monitor_single,
-        ]),
+        (
+            "L16 Rule Conflict Engine",
+            [
+                test_no_conflicts,
+                test_conflicting_rules,
+                test_actions_contradict_helper,
+                test_conditions_overlap_helper,
+                test_empty_rules,
+                test_multiple_conflicts,
+                test_conflict_history,
+            ],
+        ),
+        (
+            "L19 Trust Decay Engine",
+            [
+                test_trust_register_and_check,
+                test_trust_failure_decay,
+                test_trust_gate_fail,
+                test_trust_success_recovery,
+                test_trust_check_all,
+                test_trust_lowest,
+                test_trust_unregister,
+            ],
+        ),
+        (
+            "L21 Completion Engine",
+            [
+                test_completion_no_criteria,
+                test_completion_all_satisfied,
+                test_completion_partial,
+                test_completion_weighted,
+                test_completion_reset,
+                test_completion_reset_all,
+                test_completion_remove_criterion,
+            ],
+        ),
+        (
+            "L29 Cost Controller",
+            [
+                test_cost_no_budgets,
+                test_cost_within_budget,
+                test_cost_exceeded,
+                test_cost_multiple_resources,
+                test_cost_reset_usage,
+                test_cost_reset_all,
+                test_cost_additive_usage,
+            ],
+        ),
+        (
+            "L28 Loop Monitor",
+            [
+                test_monitor_healthy,
+                test_monitor_warning,
+                test_monitor_warning_threshold,
+                test_monitor_any_exceeded,
+                test_monitor_single,
+            ],
+        ),
     ]
 
     total = 0

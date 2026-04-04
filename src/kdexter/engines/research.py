@@ -7,6 +7,7 @@ M-18: research_complete flag must be True before PLANNING state can proceed.
 Governance: B2 (governance_layer_map.md -- L23)
 Mandatory: M-18 (research_complete required at PLANNING)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -18,19 +19,22 @@ from typing import Optional
 # Data models
 # ------------------------------------------------------------------ #
 
+
 @dataclass
 class ResearchResult:
     """Result of a research operation."""
+
     topic: str
-    findings: list[str]          # ordered list of finding strings
-    confidence: float            # 0.0 ~ 1.0
-    research_complete: bool      # M-18: must be True to pass PLANNING gate
+    findings: list[str]  # ordered list of finding strings
+    confidence: float  # 0.0 ~ 1.0
+    research_complete: bool  # M-18: must be True to pass PLANNING gate
     researched_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ------------------------------------------------------------------ #
 # L23 Research Engine
 # ------------------------------------------------------------------ #
+
 
 class ResearchEngine:
     """

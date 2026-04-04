@@ -11,6 +11,7 @@ Tests:
 Run: python -m pytest tests/test_gate_system.py -v
   or: python tests/test_gate_system.py  (standalone)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -18,12 +19,30 @@ import sys
 
 from kdexter.gates.criteria import EvaluationContext, PassCriteria
 from kdexter.gates.gate_registry import (
-    ALL_GATES, GATE_MAP, GATES_BY_CHECK,
-    GatePhase, GateStatus,
-    _eval_g01, _eval_g02, _eval_g03, _eval_g04, _eval_g05,
-    _eval_g06, _eval_g07, _eval_g08,
-    _eval_g16, _eval_g18, _eval_g19, _eval_g20, _eval_g21,
-    _eval_g22, _eval_g23, _eval_g24, _eval_g25, _eval_g26, _eval_g27,
+    ALL_GATES,
+    GATE_MAP,
+    GATES_BY_CHECK,
+    GatePhase,
+    GateStatus,
+    _eval_g01,
+    _eval_g02,
+    _eval_g03,
+    _eval_g04,
+    _eval_g05,
+    _eval_g06,
+    _eval_g07,
+    _eval_g08,
+    _eval_g16,
+    _eval_g18,
+    _eval_g19,
+    _eval_g20,
+    _eval_g21,
+    _eval_g22,
+    _eval_g23,
+    _eval_g24,
+    _eval_g25,
+    _eval_g26,
+    _eval_g27,
 )
 from kdexter.gates.gate_evaluator import GateEvaluator
 from kdexter.state_machine.work_state import WorkStateContext, WorkStateEnum, ValidatingCheck
@@ -31,6 +50,7 @@ from kdexter.state_machine.work_state import WorkStateContext, WorkStateEnum, Va
 # ─────────────────────────────────────────────────────────────────────────── #
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 def _base_ctx(**overrides) -> EvaluationContext:
     """Build an EvaluationContext with sensible defaults (all gates pass)."""
@@ -69,15 +89,34 @@ def _base_ctx(**overrides) -> EvaluationContext:
 # 1. Registry tests
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 def test_all_gates_instantiated():
     """All expected gate IDs are present."""
     expected_ids = {
-        "G-01", "G-02", "G-03", "G-04", "G-05", "G-06", "G-07", "G-08",
-        "G-16", "G-18", "G-19", "G-20", "G-21", "G-22", "G-23",
-        "G-24", "G-25", "G-26", "G-27",
+        "G-01",
+        "G-02",
+        "G-03",
+        "G-04",
+        "G-05",
+        "G-06",
+        "G-07",
+        "G-08",
+        "G-16",
+        "G-18",
+        "G-19",
+        "G-20",
+        "G-21",
+        "G-22",
+        "G-23",
+        "G-24",
+        "G-25",
+        "G-26",
+        "G-27",
     }
     actual_ids = {g.gate_id for g in ALL_GATES}
-    assert expected_ids == actual_ids, f"Missing: {expected_ids - actual_ids}, Extra: {actual_ids - expected_ids}"
+    assert expected_ids == actual_ids, (
+        f"Missing: {expected_ids - actual_ids}, Extra: {actual_ids - expected_ids}"
+    )
     print("  [1] All 19 gates instantiated  OK")
 
 
@@ -91,14 +130,14 @@ def test_gate_map_lookup():
 def test_validating_check_mapping():
     """Gates with validating_check are in GATES_BY_CHECK."""
     mapped_checks = {
-        ValidatingCheck.COMPLIANCE_CHECK,   # G-16
-        ValidatingCheck.DRIFT_CHECK,        # G-19
-        ValidatingCheck.CONFLICT_CHECK,     # G-20
-        ValidatingCheck.PATTERN_CHECK,      # G-21
-        ValidatingCheck.BUDGET_CHECK,       # G-22
-        ValidatingCheck.TRUST_CHECK,        # G-23
-        ValidatingCheck.LOOP_CHECK,         # G-24
-        ValidatingCheck.LOCK_CHECK,         # G-26
+        ValidatingCheck.COMPLIANCE_CHECK,  # G-16
+        ValidatingCheck.DRIFT_CHECK,  # G-19
+        ValidatingCheck.CONFLICT_CHECK,  # G-20
+        ValidatingCheck.PATTERN_CHECK,  # G-21
+        ValidatingCheck.BUDGET_CHECK,  # G-22
+        ValidatingCheck.TRUST_CHECK,  # G-23
+        ValidatingCheck.LOOP_CHECK,  # G-24
+        ValidatingCheck.LOCK_CHECK,  # G-26
     }
     assert set(GATES_BY_CHECK.keys()) == mapped_checks
     print("  [3] ValidatingCheck mapping  OK")
@@ -116,6 +155,7 @@ def test_mandatory_items():
 # ─────────────────────────────────────────────────────────────────────────── #
 # 2. Individual gate boundary tests
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 def test_g01_shadow_mode():
     """G-01: shadow_mode True → PASS, False → FAIL."""
@@ -141,16 +181,16 @@ def test_g02_state_recovery():
 
 def test_g19_drift_boundary():
     """G-19: drift_score at exact threshold (0.35) → PASS, above → FAIL."""
-    assert _eval_g19(_base_ctx(drift_score=0.35)).passed     # exact boundary
-    assert _eval_g19(_base_ctx(drift_score=0.34)).passed     # below
+    assert _eval_g19(_base_ctx(drift_score=0.35)).passed  # exact boundary
+    assert _eval_g19(_base_ctx(drift_score=0.34)).passed  # below
     assert not _eval_g19(_base_ctx(drift_score=0.351)).passed  # above
     print("  [7] G-19 Drift Gate boundary  OK")
 
 
 def test_g23_trust_boundary():
     """G-23: trust_score at 0.60 → PASS, below → FAIL."""
-    assert _eval_g23(_base_ctx(trust_score=0.60)).passed     # exact boundary
-    assert _eval_g23(_base_ctx(trust_score=0.80)).passed     # TRUSTED
+    assert _eval_g23(_base_ctx(trust_score=0.60)).passed  # exact boundary
+    assert _eval_g23(_base_ctx(trust_score=0.80)).passed  # TRUSTED
     assert not _eval_g23(_base_ctx(trust_score=0.59)).passed  # below DEGRADED
     print("  [8] G-23 Trust Gate boundary  OK")
 
@@ -213,6 +253,7 @@ def test_g21_pattern():
 # 3. GateEvaluator tests
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 def test_evaluator_all_pass():
     """GateEvaluator.evaluate_all — all gates pass with good context."""
     evaluator = GateEvaluator(ALL_GATES)
@@ -239,12 +280,14 @@ def test_evaluator_by_check():
     evaluator = GateEvaluator(ALL_GATES)
 
     passed, reason = evaluator.evaluate_by_check(
-        ValidatingCheck.DRIFT_CHECK, _base_ctx(drift_score=0.10))
+        ValidatingCheck.DRIFT_CHECK, _base_ctx(drift_score=0.10)
+    )
     assert passed
     assert reason == ""
 
     passed2, reason2 = evaluator.evaluate_by_check(
-        ValidatingCheck.DRIFT_CHECK, _base_ctx(drift_score=0.50))
+        ValidatingCheck.DRIFT_CHECK, _base_ctx(drift_score=0.50)
+    )
     assert not passed2
     assert "G-19" in reason2
     print("  [17] GateEvaluator by-check  OK")
@@ -254,8 +297,7 @@ def test_evaluator_unmapped_check_passes():
     """Checks with no mapped gates pass by default."""
     evaluator = GateEvaluator(ALL_GATES)
     # FORBIDDEN_CHECK and MANDATORY_CHECK have no gates in GATES_BY_CHECK
-    passed, reason = evaluator.evaluate_by_check(
-        ValidatingCheck.FORBIDDEN_CHECK, _base_ctx())
+    passed, reason = evaluator.evaluate_by_check(ValidatingCheck.FORBIDDEN_CHECK, _base_ctx())
     assert passed
     print("  [18] Unmapped check auto-pass  OK")
 
@@ -275,6 +317,7 @@ def test_evaluator_shadow_mode():
 # ─────────────────────────────────────────────────────────────────────────── #
 # 4. PassCriteria.evaluate tests
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 def test_pass_criteria_operators():
     """PassCriteria.evaluate works for all operators."""
@@ -302,6 +345,7 @@ def test_pass_criteria_operators():
 # ─────────────────────────────────────────────────────────────────────────── #
 # 5. Gate hooks integration test
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 def test_gate_hooks_integration():
     """create_gate_hooks produces MainLoopHooks that work with WorkStateContext."""
@@ -339,6 +383,7 @@ def test_gate_hooks_integration():
 # 6. Evidence production test
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 def test_evidence_produced():
     """Every gate verdict includes an EvidenceBundle."""
     evaluator = GateEvaluator(ALL_GATES)
@@ -360,40 +405,58 @@ if __name__ == "__main__":
     print("=" * 60)
 
     tests = [
-        ("Registry", [
-            test_all_gates_instantiated,
-            test_gate_map_lookup,
-            test_validating_check_mapping,
-            test_mandatory_items,
-        ]),
-        ("Gate Boundaries", [
-            test_g01_shadow_mode,
-            test_g02_state_recovery,
-            test_g19_drift_boundary,
-            test_g23_trust_boundary,
-            test_g22_budget,
-            test_g25_completion,
-            test_g24_loop_gate,
-            test_g26_spec_lock,
-            test_g20_conflict,
-            test_g21_pattern,
-        ]),
-        ("GateEvaluator", [
-            test_evaluator_all_pass,
-            test_evaluator_single_gate,
-            test_evaluator_by_check,
-            test_evaluator_unmapped_check_passes,
-            test_evaluator_shadow_mode,
-        ]),
-        ("PassCriteria", [
-            test_pass_criteria_operators,
-        ]),
-        ("Gate Hooks", [
-            test_gate_hooks_integration,
-        ]),
-        ("Evidence", [
-            test_evidence_produced,
-        ]),
+        (
+            "Registry",
+            [
+                test_all_gates_instantiated,
+                test_gate_map_lookup,
+                test_validating_check_mapping,
+                test_mandatory_items,
+            ],
+        ),
+        (
+            "Gate Boundaries",
+            [
+                test_g01_shadow_mode,
+                test_g02_state_recovery,
+                test_g19_drift_boundary,
+                test_g23_trust_boundary,
+                test_g22_budget,
+                test_g25_completion,
+                test_g24_loop_gate,
+                test_g26_spec_lock,
+                test_g20_conflict,
+                test_g21_pattern,
+            ],
+        ),
+        (
+            "GateEvaluator",
+            [
+                test_evaluator_all_pass,
+                test_evaluator_single_gate,
+                test_evaluator_by_check,
+                test_evaluator_unmapped_check_passes,
+                test_evaluator_shadow_mode,
+            ],
+        ),
+        (
+            "PassCriteria",
+            [
+                test_pass_criteria_operators,
+            ],
+        ),
+        (
+            "Gate Hooks",
+            [
+                test_gate_hooks_integration,
+            ],
+        ),
+        (
+            "Evidence",
+            [
+                test_evidence_produced,
+            ],
+        ),
     ]
 
     total = 0

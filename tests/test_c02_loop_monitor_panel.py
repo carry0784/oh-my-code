@@ -85,10 +85,7 @@ class TestC02APIFields:
 
     def _get_fn_body(self):
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        fn_match = re.search(
-            r'def _get_loop_monitor_info.*?(?=\ndef |\Z)',
-            content, re.DOTALL
-        )
+        fn_match = re.search(r"def _get_loop_monitor_info.*?(?=\ndef |\Z)", content, re.DOTALL)
         assert fn_match, "_get_loop_monitor_info not found"
         return fn_match.group()
 
@@ -124,8 +121,12 @@ class TestC02APIFields:
         """C02-1g: 금지 필드가 API 헬퍼에 포함되지 않는다."""
         fn_body = self._get_fn_body()
         forbidden = [
-            'agent_analysis', 'raw_prompt', 'chain_of_thought',
-            'internal_reasoning', 'debug_trace', 'error_class',
+            "agent_analysis",
+            "raw_prompt",
+            "chain_of_thought",
+            "internal_reasoning",
+            "debug_trace",
+            "error_class",
         ]
         for f in forbidden:
             assert f not in fn_body, f"Forbidden field '{f}' in loop monitor helper"
@@ -166,7 +167,7 @@ class TestC02OperatorPanel:
         fn_start = content.index("function renderLoopCeilingMonitor")
         fn_end = content.index("function renderKeyFacts")
         fn_body = content[fn_start:fn_end]
-        for name in ['RECOVERY', 'MAIN', 'SELF_IMPROVEMENT', 'EVOLUTION']:
+        for name in ["RECOVERY", "MAIN", "SELF_IMPROVEMENT", "EVOLUTION"]:
             assert name in fn_body, f"Loop name {name} must be referenced"
 
     def test_not_available_fallback(self):
@@ -184,9 +185,16 @@ class TestC02OperatorPanel:
         fn_end = content.index("function renderKeyFacts")
         fn_body = content[fn_start:fn_end]
         forbidden = [
-            'agent_analysis', 'raw_prompt', 'chain_of_thought',
-            'internal_reasoning', 'debug_trace', 'error_class',
-            'traceback', 'exception_type', 'stack', 'internal_state_dump',
+            "agent_analysis",
+            "raw_prompt",
+            "chain_of_thought",
+            "internal_reasoning",
+            "debug_trace",
+            "error_class",
+            "traceback",
+            "exception_type",
+            "stack",
+            "internal_state_dump",
         ]
         for f in forbidden:
             assert f not in fn_body, f"Forbidden string '{f}' in loop ceiling render"
@@ -231,7 +239,7 @@ class TestC02GaugeCSS:
     def test_health_color_classes(self):
         """C02-3c: 4단계 health 색상 클래스가 존재한다."""
         content = CSS_PATH.read_text(encoding="utf-8")
-        for cls in ['--healthy', '--warning', '--critical', '--exceeded']:
+        for cls in ["--healthy", "--warning", "--critical", "--exceeded"]:
             assert f".loop-gauge-fill{cls}" in content, f"Color class {cls} must exist"
 
     def test_exceeded_has_blink(self):
@@ -239,7 +247,7 @@ class TestC02GaugeCSS:
         content = CSS_PATH.read_text(encoding="utf-8")
         # Find the exceeded rule
         exceeded_idx = content.index(".loop-gauge-fill--exceeded")
-        exceeded_section = content[exceeded_idx:exceeded_idx + 200]
+        exceeded_section = content[exceeded_idx : exceeded_idx + 200]
         assert "blink" in exceeded_section or "animation" in exceeded_section
 
 
@@ -261,20 +269,26 @@ class TestC02Integration:
         kf_pos = content.index('id="key-facts-block"')
         lc_pos = content.index('id="loop-ceiling-block"')
         el_pos = content.index('id="event-log-block"')
-        assert kf_pos < lc_pos < el_pos, "Loop ceiling block must be between key-facts and event-log"
+        assert kf_pos < lc_pos < el_pos, (
+            "Loop ceiling block must be between key-facts and event-log"
+        )
 
     def test_existing_tab2_blocks_preserved(self):
         """C02-4c: 기존 Tab 2 블록이 보존된다."""
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        for block_id in ['key-facts-block', 'event-log-block', 'checkpoint-block']:
+        for block_id in ["key-facts-block", "event-log-block", "checkpoint-block"]:
             assert f'id="{block_id}"' in content, f"Existing block {block_id} must be preserved"
 
     def test_ai_workspace_functions_unchanged(self):
         """C02-4d: AI Workspace 함수 이름이 보존된다."""
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        for fn_name in ['renderConfirmedFacts', 'renderDetectedAnomalies',
-                        'renderPossibleCauses', 'renderRiskWarnings',
-                        'renderRecommendedChecks']:
+        for fn_name in [
+            "renderConfirmedFacts",
+            "renderDetectedAnomalies",
+            "renderPossibleCauses",
+            "renderRiskWarnings",
+            "renderRecommendedChecks",
+        ]:
             assert f"function {fn_name}" in content, f"{fn_name} must be preserved"
 
     def test_block_title_correct(self):

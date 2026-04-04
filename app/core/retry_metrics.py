@@ -12,6 +12,7 @@ Design:
   - Fail-closed: metric errors → safe defaults
   - No daemon, scheduler, background worker
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict, field
@@ -23,6 +24,7 @@ from collections import defaultdict
 @dataclass
 class RetryMetricsSummary:
     """Compact retry metrics summary."""
+
     total_attempts: int = 0
     total_succeeded: int = 0
     total_failed: int = 0
@@ -104,9 +106,11 @@ class RetryMetrics:
         """Get current metrics summary. Fail-closed."""
         try:
             channels = {}
-            for ch in set(list(self._channel_attempts.keys())
-                          + list(self._channel_succeeded.keys())
-                          + list(self._channel_failed.keys())):
+            for ch in set(
+                list(self._channel_attempts.keys())
+                + list(self._channel_succeeded.keys())
+                + list(self._channel_failed.keys())
+            ):
                 channels[ch] = {
                     "attempts": self._channel_attempts.get(ch, 0),
                     "succeeded": self._channel_succeeded.get(ch, 0),

@@ -8,6 +8,7 @@ sys.path hacks are forbidden — import must work via installed package.
 NOTE: Requires `pip install -e .` — skipped in CI test job where
       only requirements.txt is installed. build job covers packaging smoke.
 """
+
 from __future__ import annotations
 
 import os
@@ -18,13 +19,16 @@ import pytest
 # but metadata/packaging tests require actual pip install -e .)
 try:
     from importlib.metadata import metadata as _meta
+
     _meta("kdexter")
     _KDEXTER_PIP_INSTALLED = True
 except Exception:
     _KDEXTER_PIP_INSTALLED = False
 
 
-@pytest.mark.skipif(not _KDEXTER_PIP_INSTALLED, reason="kdexter not pip-installed (use pip install -e .)")
+@pytest.mark.skipif(
+    not _KDEXTER_PIP_INSTALLED, reason="kdexter not pip-installed (use pip install -e .)"
+)
 class TestKdexterPackaging:
     """B-04: kdexter pip packaging verification."""
 
@@ -62,13 +66,13 @@ class TestKdexterPackaging:
     def test_no_sys_path_hack_in_new_tests(self):
         """B-01~B-07 new test files do not use sys.path.insert hack."""
         new_test_files = [
-            "test_position_symbol_name.py",      # B-01
-            "test_historical_stats.py",           # B-02
-            "test_operational_logging.py",        # B-03
-            "test_kdexter_packaging.py",          # B-04
-            "test_idempotent_registration.py",    # B-05
-            "test_agent_governance.py",           # B-06
-            "test_evidence_persistence.py",       # B-07
+            "test_position_symbol_name.py",  # B-01
+            "test_historical_stats.py",  # B-02
+            "test_operational_logging.py",  # B-03
+            "test_kdexter_packaging.py",  # B-04
+            "test_idempotent_registration.py",  # B-05
+            "test_agent_governance.py",  # B-06
+            "test_evidence_persistence.py",  # B-07
         ]
 
         tests_dir = os.path.dirname(__file__)
@@ -81,5 +85,6 @@ class TestKdexterPackaging:
                 continue
             with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read()
-            assert "sys.path.insert" not in content, \
+            assert "sys.path.insert" not in content, (
                 f"{filename} must not contain sys.path hack — use pip install instead"
+            )

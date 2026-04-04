@@ -16,15 +16,17 @@ logger = get_logger(__name__)
 class BitgetExchange(BaseExchange):
     def __init__(self):
         super().__init__(settings.bitget_api_key, settings.bitget_api_secret)
-        self.client = ccxt.bitget({
-            "apiKey": self.api_key,
-            "secret": self.api_secret,
-            "password": settings.bitget_passphrase,
-            "enableRateLimit": True,
-            "options": {
-                "defaultType": "swap",
-            },
-        })
+        self.client = ccxt.bitget(
+            {
+                "apiKey": self.api_key,
+                "secret": self.api_secret,
+                "password": settings.bitget_passphrase,
+                "enableRateLimit": True,
+                "options": {
+                    "defaultType": "swap",
+                },
+            }
+        )
         if settings.bitget_sandbox:
             self.client.set_sandbox_mode(True)
 

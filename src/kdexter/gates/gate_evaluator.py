@@ -10,6 +10,7 @@ Usage:
     if not suite.all_passed:
         print(suite.failed_gate_ids)
 """
+
 from __future__ import annotations
 
 import logging
@@ -94,12 +95,14 @@ class GateEvaluator:
         if gate.evaluate is None:
             logger.debug(f"Gate {gate.gate_id} has no evaluate function — auto-pass")
             from kdexter.gates.criteria import PassCriteria
+
             return GateVerdict(
                 gate_id=gate.gate_id,
                 passed=True,
                 measured_value=None,
-                criteria=PassCriteria("noop", "is_true", True,
-                                      description="No evaluate function defined"),
+                criteria=PassCriteria(
+                    "noop", "is_true", True, description="No evaluate function defined"
+                ),
                 evidence=EvidenceBundle(
                     trigger=f"Gate.{gate.gate_id}",
                     actor="GateEvaluator",
@@ -120,12 +123,14 @@ class GateEvaluator:
         except Exception as exc:
             logger.exception(f"Gate {gate.gate_id} evaluation error: {exc}")
             from kdexter.gates.criteria import PassCriteria
+
             return GateVerdict(
                 gate_id=gate.gate_id,
                 passed=False,
                 measured_value=None,
-                criteria=PassCriteria("error", "==", "no_error",
-                                      description="Gate must not raise exceptions"),
+                criteria=PassCriteria(
+                    "error", "==", "no_error", description="Gate must not raise exceptions"
+                ),
                 evidence=EvidenceBundle(
                     trigger=f"Gate.{gate.gate_id}",
                     actor="GateEvaluator",

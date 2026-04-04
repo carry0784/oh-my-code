@@ -6,6 +6,7 @@ Proposes limit changes for downstream approval without executing them directly.
 
 Governance: B2 (governance_layer_map.md -- L18)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -17,28 +18,32 @@ from typing import Optional
 # Data models
 # ------------------------------------------------------------------ #
 
+
 @dataclass
 class BudgetAdjustment:
     """Proposed adjustment to a single resource budget."""
-    resource_type: str       # e.g. "API_CALLS", "USD_COST"
+
+    resource_type: str  # e.g. "API_CALLS", "USD_COST"
     current_limit: float
     proposed_limit: float
     reason: str
-    confidence: float        # 0.0 ~ 1.0
+    confidence: float  # 0.0 ~ 1.0
 
 
 @dataclass
 class PerformanceData:
     """Snapshot of recent performance used to drive adjustment proposals."""
+
     resource_type: str
-    average_usage: float     # average usage over the observation window
-    peak_usage: float        # highest observed usage
+    average_usage: float  # average usage over the observation window
+    peak_usage: float  # highest observed usage
     observation_window: int  # number of periods observed
 
 
 # ------------------------------------------------------------------ #
 # L18 Budget Evolution Engine
 # ------------------------------------------------------------------ #
+
 
 class BudgetEvolutionEngine:
     """

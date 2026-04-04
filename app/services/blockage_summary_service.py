@@ -17,6 +17,7 @@ Safety:
   - Simulation-only: no cleanup executed
   - No future estimation or scoring
 """
+
 from __future__ import annotations
 
 from collections import Counter
@@ -45,12 +46,10 @@ _HIGH_BLOCKAGE_THRESHOLD = 0.5
 _TEMPLATE_NONE = "No blocked proposals."
 _TEMPLATE_BASIC = "{total} blocked proposal(s) across {tier_count} tier(s)."
 _TEMPLATE_CONCENTRATED = (
-    "{total} blocked proposal(s). "
-    "Concentrated in {tier} tier ({count}/{total}, {ratio})."
+    "{total} blocked proposal(s). Concentrated in {tier} tier ({count}/{total}, {ratio})."
 )
 _TEMPLATE_HIGH_RATE = (
-    "{total} blocked proposal(s). "
-    "{tier} tier has high blockage rate ({rate} of proposals)."
+    "{total} blocked proposal(s). {tier} tier has high blockage rate ({rate} of proposals)."
 )
 _TEMPLATE_BOTH = (
     "{total} blocked proposal(s). "
@@ -88,12 +87,14 @@ def build_blockage_summary(
         total = tier.total if tier.connected else 0
         rate = (blocked / total) if total > 0 else 0.0
 
-        by_tier.append(TierBlockage(
-            tier_name=name,
-            blocked_count=blocked,
-            total_count=total,
-            blockage_rate=round(rate, 3),
-        ))
+        by_tier.append(
+            TierBlockage(
+                tier_name=name,
+                blocked_count=blocked,
+                total_count=total,
+                blockage_rate=round(rate, 3),
+            )
+        )
         total_blocked += blocked
         total_proposals += total
 
@@ -123,7 +124,8 @@ def build_blockage_summary(
     tier_blocks = {name: tier.blocked_count for name, tier in tiers if tier.connected}
     tier_rates = {
         name: (tier.blocked_count / tier.total if tier.total > 0 else 0.0)
-        for name, tier in tiers if tier.connected
+        for name, tier in tiers
+        if tier.connected
     }
     density = _build_density_signal(total_blocked, tier_blocks, tier_rates)
 

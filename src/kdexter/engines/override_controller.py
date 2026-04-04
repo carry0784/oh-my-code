@@ -8,6 +8,7 @@ B1Constitution.release_lockdown(authorized_by="L27_HUMAN").
 
 Governance: B1 (governance_layer_map.md -- L27)
 """
+
 from __future__ import annotations
 
 import uuid
@@ -21,42 +22,46 @@ from typing import Optional
 # Enumerations
 # ------------------------------------------------------------------ #
 
+
 class OverrideType(str, Enum):
     LOCKDOWN_RELEASE = "LOCKDOWN_RELEASE"
     CEILING_OVERRIDE = "CEILING_OVERRIDE"
-    FORCE_STOP       = "FORCE_STOP"
+    FORCE_STOP = "FORCE_STOP"
 
 
 class OverrideStatus(str, Enum):
-    PENDING  = "PENDING"
+    PENDING = "PENDING"
     APPROVED = "APPROVED"
-    DENIED   = "DENIED"
-    EXPIRED  = "EXPIRED"
+    DENIED = "DENIED"
+    EXPIRED = "EXPIRED"
 
 
 # ------------------------------------------------------------------ #
 # Data model
 # ------------------------------------------------------------------ #
 
+
 @dataclass
 class OverrideRequest:
     """A single human override request and its current lifecycle state."""
-    request_id:    str
-    requester:     str
+
+    request_id: str
+    requester: str
     override_type: OverrideType
-    reason:        str
-    status:        OverrideStatus = OverrideStatus.PENDING
-    created_at:    datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    reason: str
+    status: OverrideStatus = OverrideStatus.PENDING
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Set when the request is resolved
-    resolved_by:     Optional[str] = field(default=None, repr=False)
-    resolved_at:     Optional[datetime] = field(default=None, repr=False)
-    denial_reason:   Optional[str] = field(default=None, repr=False)
+    resolved_by: Optional[str] = field(default=None, repr=False)
+    resolved_at: Optional[datetime] = field(default=None, repr=False)
+    denial_reason: Optional[str] = field(default=None, repr=False)
 
 
 # ------------------------------------------------------------------ #
 # L27 Override Controller
 # ------------------------------------------------------------------ #
+
 
 class OverrideController:
     """
@@ -115,10 +120,8 @@ class OverrideController:
         """
         req = self._get_or_raise(request_id)
         if req.status is not OverrideStatus.PENDING:
-            raise ValueError(
-                f"Cannot approve request {request_id}: status is {req.status.value}"
-            )
-        req.status      = OverrideStatus.APPROVED
+            raise ValueError(f"Cannot approve request {request_id}: status is {req.status.value}")
+        req.status = OverrideStatus.APPROVED
         req.resolved_by = approver
         req.resolved_at = datetime.now(timezone.utc)
         return req
@@ -133,12 +136,10 @@ class OverrideController:
         """
         req = self._get_or_raise(request_id)
         if req.status is not OverrideStatus.PENDING:
-            raise ValueError(
-                f"Cannot deny request {request_id}: status is {req.status.value}"
-            )
-        req.status        = OverrideStatus.DENIED
-        req.resolved_by   = approver
-        req.resolved_at   = datetime.now(timezone.utc)
+            raise ValueError(f"Cannot deny request {request_id}: status is {req.status.value}")
+        req.status = OverrideStatus.DENIED
+        req.resolved_by = approver
+        req.resolved_at = datetime.now(timezone.utc)
         req.denial_reason = reason
         return req
 
@@ -152,10 +153,8 @@ class OverrideController:
         """
         req = self._get_or_raise(request_id)
         if req.status is not OverrideStatus.PENDING:
-            raise ValueError(
-                f"Cannot expire request {request_id}: status is {req.status.value}"
-            )
-        req.status      = OverrideStatus.EXPIRED
+            raise ValueError(f"Cannot expire request {request_id}: status is {req.status.value}")
+        req.status = OverrideStatus.EXPIRED
         req.resolved_at = datetime.now(timezone.utc)
         return req
 

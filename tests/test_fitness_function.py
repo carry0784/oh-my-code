@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -113,15 +122,19 @@ def test_fitness_penalty_excessive_losses():
 
 
 def test_fitness_total_weighted_sum():
-    fn = FitnessFunction(target_sharpe=2.0, max_acceptable_drawdown=30.0,
-                         target_win_rate=0.55, target_profit_factor=1.5)
+    fn = FitnessFunction(
+        target_sharpe=2.0,
+        max_acceptable_drawdown=30.0,
+        target_win_rate=0.55,
+        target_profit_factor=1.5,
+    )
     # Construct a report that should yield a high fitness
     perf = _make_report(
         total_trades=30,
-        sharpe_ratio=2.0,           # return_score = 1.0
-        max_drawdown_pct=0.0,       # stability_score = 1.0
-        win_rate=0.55,              # wr_score = 1.0
-        profit_factor=1.5,          # pf_score = 1.0 → consistency_score = 1.0
+        sharpe_ratio=2.0,  # return_score = 1.0
+        max_drawdown_pct=0.0,  # stability_score = 1.0
+        win_rate=0.55,  # wr_score = 1.0
+        profit_factor=1.5,  # pf_score = 1.0 → consistency_score = 1.0
         max_consecutive_losses=2,
     )
     result = fn.evaluate(perf)

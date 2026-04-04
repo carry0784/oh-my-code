@@ -24,6 +24,7 @@ B1 Doctrine compliance:
   - All exceptions wrapped into CommandTranscript.fail()
   - DRY_RUN uses 키움 모의투자 서버
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -31,9 +32,7 @@ from typing import Optional
 
 from kdexter.tcl.adapters import ExchangeAdapter
 from kdexter.tcl.adapters.rate_limiter import AsyncRateLimiter
-from kdexter.tcl.commands import (
-    CommandTranscript, CommandType, ExecutionMode, TCLCommand
-)
+from kdexter.tcl.commands import CommandTranscript, CommandType, ExecutionMode, TCLCommand
 
 
 class KiwoomAdapter(ExchangeAdapter):
@@ -59,14 +58,14 @@ class KiwoomAdapter(ExchangeAdapter):
     ORDER_RATE_LIMIT_PER_SEC = 5
     # 키움 주문 유형 코드
     ORDER_TYPE_MAP = {
-        "MARKET": 1,   # 시장가
-        "LIMIT": 0,    # 지정가
-        "STOP": 2,     # 조건부지정가
+        "MARKET": 1,  # 시장가
+        "LIMIT": 0,  # 지정가
+        "STOP": 2,  # 조건부지정가
     }
     # 매매 구분
     SIDE_MAP = {
-        "buy": 1,     # 신규매수
-        "sell": 2,    # 신규매도
+        "buy": 1,  # 신규매수
+        "sell": 2,  # 신규매도
     }
     # 시장 구분
     MARKET_KOSPI = "0"
@@ -81,7 +80,7 @@ class KiwoomAdapter(ExchangeAdapter):
         self._account_no = account_no
         self._is_virtual = is_virtual
         self._auto_login = auto_login
-        self._api = None      # pykiwoom.Kiwoom instance or COM wrapper
+        self._api = None  # pykiwoom.Kiwoom instance or COM wrapper
         self._connected = False
         self._rate_limiter = AsyncRateLimiter(max_calls=5, period=1.0)
 
@@ -97,6 +96,7 @@ class KiwoomAdapter(ExchangeAdapter):
         if self._api is None:
             try:
                 from pykiwoom.kiwoom import Kiwoom  # type: ignore
+
                 self._api = Kiwoom()
                 self._api.CommConnect(block=True)
                 self._connected = True
@@ -147,8 +147,11 @@ class KiwoomAdapter(ExchangeAdapter):
         """
         t = self._base_transcript(command)
         try:
-            if command.command_type in {CommandType.ORDER_BUY, CommandType.ORDER_SELL,
-                                        CommandType.ORDER_DRY_RUN}:
+            if command.command_type in {
+                CommandType.ORDER_BUY,
+                CommandType.ORDER_SELL,
+                CommandType.ORDER_DRY_RUN,
+            }:
                 sim_order_id = f"DRY-{command.idempotency_key[:8].upper()}"
                 side = "buy" if command.command_type == CommandType.ORDER_BUY else "sell"
                 stock_code = self._to_kiwoom_code(command.symbol)
@@ -161,8 +164,7 @@ class KiwoomAdapter(ExchangeAdapter):
                     "sCode": stock_code,
                     "nQty": int(command.quantity or 0),
                     "nPrice": int(command.price or 0),
-                    "sHogaGb": str(self.ORDER_TYPE_MAP.get(
-                        command.order_type.value, 0)),
+                    "sHogaGb": str(self.ORDER_TYPE_MAP.get(command.order_type.value, 0)),
                     "status": "SIMULATED",
                 }
                 parsed = {
@@ -295,38 +297,49 @@ class KiwoomAdapter(ExchangeAdapter):
         price = int(command.price or 0)
         raw = await asyncio.to_thread(
             api.SendOrder,
-            "주문요청", "0101", self._account_no,
-            order_type, stock_code, qty, price, str(hoga), "",
+            "주문요청",
+            "0101",
+            self._account_no,
+            order_type,
+            stock_code,
+            qty,
+            price,
+            str(hoga),
+            "",
         )
         order_id = str(raw) if raw else ""
         parsed = {"order_id": order_id, "stock_code": stock_code, "side": side}
         t.complete(raw={"result": raw}, parsed=parsed, order_id=order_id)
         return t
 
-    async def _cancel_order(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _cancel_order(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         await self._rate_limiter.acquire()
         api = self._get_api()
         # nOrderType 3=매수취소, 4=매도취소 (default to 3)
         cancel_type = command.extra.get("cancel_order_type", 3)
         raw = await asyncio.to_thread(
             api.SendOrder,
-            "취소요청", "0101", self._account_no,
-            cancel_type, "", 0, 0, "", command.exchange_order_id or "",
+            "취소요청",
+            "0101",
+            self._account_no,
+            cancel_type,
+            "",
+            0,
+            0,
+            "",
+            command.exchange_order_id or "",
         )
         parsed = {"order_id": command.exchange_order_id, "cancelled": True}
         t.complete(raw={"result": raw}, parsed=parsed, order_id=command.exchange_order_id)
         return t
 
-    async def _verify_order(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _verify_order(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         await self._rate_limiter.acquire()
         api = self._get_api()
         # opw00007: 계좌별주문체결내역상세
         raw = await asyncio.to_thread(
-            api.block_request, "opw00007",
+            api.block_request,
+            "opw00007",
             계좌번호=self._account_no,
             주문번호=command.exchange_order_id or "",
             output="주문체결",
@@ -341,14 +354,13 @@ class KiwoomAdapter(ExchangeAdapter):
         t.verification_result = filled
         return t
 
-    async def _query_position(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _query_position(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         await self._rate_limiter.acquire()
         api = self._get_api()
         # opw00018: 계좌평가잔고내역요청
         raw = await asyncio.to_thread(
-            api.block_request, "opw00018",
+            api.block_request,
+            "opw00018",
             계좌번호=self._account_no,
             비밀번호="",
             비밀번호입력매체구분="00",
@@ -361,24 +373,25 @@ class KiwoomAdapter(ExchangeAdapter):
             for item in raw:
                 qty = int(item.get("보유수량", "0"))
                 if qty > 0:
-                    positions.append({
-                        "stock_code": item.get("종목번호", "").strip(),
-                        "name": item.get("종목명", "").strip(),
-                        "quantity": qty,
-                        "avg_price": float(item.get("매입가", "0")),
-                    })
+                    positions.append(
+                        {
+                            "stock_code": item.get("종목번호", "").strip(),
+                            "name": item.get("종목명", "").strip(),
+                            "quantity": qty,
+                            "avg_price": float(item.get("매입가", "0")),
+                        }
+                    )
         parsed = {"positions": positions}
         t.complete(raw={"data": raw}, parsed=parsed)
         return t
 
-    async def _query_balance(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _query_balance(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         await self._rate_limiter.acquire()
         api = self._get_api()
         # opw00001: 예수금상세현황요청
         raw = await asyncio.to_thread(
-            api.block_request, "opw00001",
+            api.block_request,
+            "opw00001",
             계좌번호=self._account_no,
             비밀번호="",
             비밀번호입력매체구분="00",
@@ -393,9 +406,7 @@ class KiwoomAdapter(ExchangeAdapter):
         t.complete(raw={"data": raw}, parsed=parsed)
         return t
 
-    def _risk_check(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    def _risk_check(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         """Risk check with Kiwoom KRW constraints."""
         qty = command.quantity or 0.0
         price = command.price or 0.0

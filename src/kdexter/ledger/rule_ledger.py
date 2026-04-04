@@ -10,6 +10,7 @@ Features:
   - Rule change count tracking (for IntentDriftEngine.rule_change_count)
   - Full change history with before/after snapshots
 """
+
 from __future__ import annotations
 
 import uuid
@@ -24,25 +25,28 @@ from kdexter.loops.concurrency import LoopPriority, RuleLedgerLock
 # Data models
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass
 class RuleProvenance:
     """
     M-10: provenance record for a rule change.
     Required for every create/update/delete operation.
     """
-    source_incident: str        # incident ID that caused this rule
-    author_layer: str           # "L5", "L13", "RecoveryLoop", etc.
+
+    source_incident: str  # incident ID that caused this rule
+    author_layer: str  # "L5", "L13", "RecoveryLoop", etc.
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    rationale: str = ""         # why this rule was created/changed
+    rationale: str = ""  # why this rule was created/changed
 
 
 @dataclass
 class Rule:
     """A single rule in the Rule Ledger."""
+
     rule_id: str = field(default_factory=lambda: f"R-{uuid.uuid4().hex[:8].upper()}")
     name: str = ""
-    condition: str = ""         # rule condition (DSL or text)
-    action: str = ""            # rule action
+    condition: str = ""  # rule condition (DSL or text)
+    action: str = ""  # rule action
     priority: int = 0
     enabled: bool = True
     provenance: Optional[RuleProvenance] = None
@@ -66,9 +70,10 @@ class Rule:
 @dataclass
 class RuleChangeRecord:
     """Audit record for a single rule change."""
+
     change_id: str = field(default_factory=lambda: f"RC-{uuid.uuid4().hex[:8].upper()}")
     rule_id: str = ""
-    change_type: str = ""       # "CREATE" | "UPDATE" | "DELETE"
+    change_type: str = ""  # "CREATE" | "UPDATE" | "DELETE"
     provenance: Optional[RuleProvenance] = None
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     before_snapshot: Optional[dict] = None
@@ -79,19 +84,23 @@ class RuleChangeRecord:
 # Exceptions
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 class ProvenanceRequiredError(Exception):
     """M-10: provenance is required for all Rule Ledger writes."""
+
     pass
 
 
 class RuleNotFoundError(Exception):
     """Rule not found in the ledger."""
+
     pass
 
 
 # ─────────────────────────────────────────────────────────────────────────── #
 # Rule Ledger
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 class RuleLedger:
     """
@@ -264,10 +273,12 @@ class RuleLedger:
         after_snapshot: Optional[dict] = None,
     ) -> None:
         """Record a change in the change history."""
-        self._changes.append(RuleChangeRecord(
-            rule_id=rule_id,
-            change_type=change_type,
-            provenance=provenance,
-            before_snapshot=before_snapshot,
-            after_snapshot=after_snapshot,
-        ))
+        self._changes.append(
+            RuleChangeRecord(
+                rule_id=rule_id,
+                change_type=change_type,
+                provenance=provenance,
+                before_snapshot=before_snapshot,
+                after_snapshot=after_snapshot,
+            )
+        )

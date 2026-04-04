@@ -14,6 +14,7 @@ Tests the cleanup simulation & operator action policy:
 
 Run: pytest tests/test_cleanup_simulation.py -v
 """
+
 import sys
 import inspect
 from pathlib import Path
@@ -65,6 +66,7 @@ for mod_name in _STUB_MODULES:
 
 # -- Helpers ---------------------------------------------------------------- #
 
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -75,6 +77,7 @@ def _past_iso(seconds_ago: float) -> str:
 
 class _FakeLedger:
     """Minimal ledger mock returning proposals from get_proposals()."""
+
     def __init__(self, proposals: list[dict]):
         self._data = proposals
 
@@ -83,9 +86,14 @@ class _FakeLedger:
 
     def get_board(self) -> dict:
         return {
-            "total": len(self._data), "receipted_count": 0, "blocked_count": 0,
-            "failed_count": 0, "orphan_count": 0, "stale_count": 0,
-            "stale_threshold_seconds": 600.0, "guard_reason_top": [],
+            "total": len(self._data),
+            "receipted_count": 0,
+            "blocked_count": 0,
+            "failed_count": 0,
+            "orphan_count": 0,
+            "stale_count": 0,
+            "stale_threshold_seconds": 600.0,
+            "guard_reason_top": [],
         }
 
 
@@ -118,15 +126,16 @@ from app.services.cleanup_simulation_service import (
 # AXIS 1: Candidate Classification Accuracy                                    #
 # =========================================================================== #
 
+
 class TestCandidateClassification:
     """stale/orphan proposals correctly classified."""
 
     def test_stale_only_becomes_watch_or_review(self):
         """Stale-only proposal gets WATCH (< 1.5x threshold) or REVIEW (>= 1.5x)."""
         # Agent with 700s age (threshold 600 → < 1.5x=900 → WATCH)
-        action = _FakeLedger([
-            {"proposal_id": "AP-stale", "status": "GUARDED", "created_at": _past_iso(700)}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-stale", "status": "GUARDED", "created_at": _past_iso(700)}]
+        )
         report = simulate_cleanup(action_ledger=action)
         assert report.total_candidates == 1
         assert report.candidates[0]["action_class"] == ACTION_WATCH
@@ -134,9 +143,9 @@ class TestCandidateClassification:
     def test_very_stale_becomes_review(self):
         """Stale proposal with age >= 1.5x threshold gets REVIEW."""
         # Agent with 1300s age (threshold 600 → >= 1.5x=900 → REVIEW)
-        action = _FakeLedger([
-            {"proposal_id": "AP-very-stale", "status": "GUARDED", "created_at": _past_iso(1300)}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-very-stale", "status": "GUARDED", "created_at": _past_iso(1300)}]
+        )
         report = simulate_cleanup(action_ledger=action)
         assert report.total_candidates == 1
         assert report.candidates[0]["action_class"] == ACTION_REVIEW
@@ -144,11 +153,19 @@ class TestCandidateClassification:
     def test_orphan_only_becomes_review(self):
         """Orphan-only proposal gets REVIEW."""
         # Execution orphan: parent AP-GONE doesn't exist in action
-        action = _FakeLedger([{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}])
-        execution = _FakeLedger([
-            {"proposal_id": "EP-orphan", "agent_proposal_id": "AP-GONE",
-             "status": "EXEC_GUARDED", "created_at": _now_iso()}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}]
+        )
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-orphan",
+                    "agent_proposal_id": "AP-GONE",
+                    "status": "EXEC_GUARDED",
+                    "created_at": _now_iso(),
+                }
+            ]
+        )
         report = simulate_cleanup(action_ledger=action, execution_ledger=execution)
         orphan_candidates = [c for c in report.candidates if c["is_orphan"]]
         assert len(orphan_candidates) >= 1
@@ -156,14 +173,23 @@ class TestCandidateClassification:
 
     def test_stale_and_orphan_becomes_manual(self):
         """Both stale + orphan → MANUAL_CLEANUP_CANDIDATE."""
-        action = _FakeLedger([{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}]
+        )
         # EP-both: old (stale) + parent missing (orphan)
-        execution = _FakeLedger([
-            {"proposal_id": "EP-both", "agent_proposal_id": "AP-GONE",
-             "status": "EXEC_GUARDED", "created_at": _past_iso(400)}
-        ])
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-both",
+                    "agent_proposal_id": "AP-GONE",
+                    "status": "EXEC_GUARDED",
+                    "created_at": _past_iso(400),
+                }
+            ]
+        )
         report = simulate_cleanup(
-            action_ledger=action, execution_ledger=execution,
+            action_ledger=action,
+            execution_ledger=execution,
             execution_stale_threshold=300.0,
         )
         both_candidates = [c for c in report.candidates if c["proposal_id"] == "EP-both"]
@@ -174,13 +200,19 @@ class TestCandidateClassification:
 
     def test_normal_proposal_not_candidate(self):
         """Fresh proposal with valid lineage → not a candidate."""
-        action = _FakeLedger([
-            {"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}
-        ])
-        execution = _FakeLedger([
-            {"proposal_id": "EP-1", "agent_proposal_id": "AP-1",
-             "status": "EXEC_RECEIPTED", "created_at": _now_iso()}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}]
+        )
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-1",
+                    "agent_proposal_id": "AP-1",
+                    "status": "EXEC_RECEIPTED",
+                    "created_at": _now_iso(),
+                }
+            ]
+        )
         report = simulate_cleanup(action_ledger=action, execution_ledger=execution)
         assert report.total_candidates == 0
 
@@ -189,59 +221,98 @@ class TestCandidateClassification:
 # AXIS 2: Reason Code Accuracy                                                #
 # =========================================================================== #
 
+
 class TestReasonCodeAccuracy:
     """6 standard reason codes correctly assigned."""
 
     def test_stale_agent_reason(self):
-        action = _FakeLedger([
-            {"proposal_id": "AP-s", "status": "GUARDED", "created_at": _past_iso(700)}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-s", "status": "GUARDED", "created_at": _past_iso(700)}]
+        )
         report = simulate_cleanup(action_ledger=action)
         assert report.candidates[0]["reason_code"] == REASON_STALE_AGENT
 
     def test_stale_execution_reason(self):
-        action = _FakeLedger([{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}])
-        execution = _FakeLedger([
-            {"proposal_id": "EP-s", "agent_proposal_id": "AP-1",
-             "status": "EXEC_GUARDED", "created_at": _past_iso(400)}
-        ])
-        report = simulate_cleanup(action_ledger=action, execution_ledger=execution,
-                                  execution_stale_threshold=300.0)
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}]
+        )
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-s",
+                    "agent_proposal_id": "AP-1",
+                    "status": "EXEC_GUARDED",
+                    "created_at": _past_iso(400),
+                }
+            ]
+        )
+        report = simulate_cleanup(
+            action_ledger=action, execution_ledger=execution, execution_stale_threshold=300.0
+        )
         stale_exec = [c for c in report.candidates if c["proposal_id"] == "EP-s"]
         assert len(stale_exec) == 1
         assert stale_exec[0]["reason_code"] == REASON_STALE_EXECUTION
 
     def test_orphan_exec_parent_reason(self):
-        action = _FakeLedger([{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}])
-        execution = _FakeLedger([
-            {"proposal_id": "EP-o", "agent_proposal_id": "AP-MISSING",
-             "status": "EXEC_GUARDED", "created_at": _now_iso()}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}]
+        )
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-o",
+                    "agent_proposal_id": "AP-MISSING",
+                    "status": "EXEC_GUARDED",
+                    "created_at": _now_iso(),
+                }
+            ]
+        )
         report = simulate_cleanup(action_ledger=action, execution_ledger=execution)
         orphans = [c for c in report.candidates if c["is_orphan"]]
         assert any(c["reason_code"] == REASON_ORPHAN_EXEC_PARENT for c in orphans)
 
     def test_orphan_submit_parent_reason(self):
-        execution = _FakeLedger([
-            {"proposal_id": "EP-1", "agent_proposal_id": "AP-1",
-             "status": "EXEC_RECEIPTED", "created_at": _now_iso()}
-        ])
-        submit = _FakeLedger([
-            {"proposal_id": "SP-o", "execution_proposal_id": "EP-MISSING",
-             "status": "SUBMIT_GUARDED", "created_at": _now_iso()}
-        ])
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-1",
+                    "agent_proposal_id": "AP-1",
+                    "status": "EXEC_RECEIPTED",
+                    "created_at": _now_iso(),
+                }
+            ]
+        )
+        submit = _FakeLedger(
+            [
+                {
+                    "proposal_id": "SP-o",
+                    "execution_proposal_id": "EP-MISSING",
+                    "status": "SUBMIT_GUARDED",
+                    "created_at": _now_iso(),
+                }
+            ]
+        )
         report = simulate_cleanup(execution_ledger=execution, submit_ledger=submit)
         orphans = [c for c in report.candidates if c["is_orphan"]]
         assert any(c["reason_code"] == REASON_ORPHAN_SUBMIT_PARENT for c in orphans)
 
     def test_stale_and_orphan_reason(self):
-        action = _FakeLedger([{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}])
-        execution = _FakeLedger([
-            {"proposal_id": "EP-so", "agent_proposal_id": "AP-GONE",
-             "status": "EXEC_GUARDED", "created_at": _past_iso(400)}
-        ])
-        report = simulate_cleanup(action_ledger=action, execution_ledger=execution,
-                                  execution_stale_threshold=300.0)
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}]
+        )
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-so",
+                    "agent_proposal_id": "AP-GONE",
+                    "status": "EXEC_GUARDED",
+                    "created_at": _past_iso(400),
+                }
+            ]
+        )
+        report = simulate_cleanup(
+            action_ledger=action, execution_ledger=execution, execution_stale_threshold=300.0
+        )
         both = [c for c in report.candidates if c["proposal_id"] == "EP-so"]
         assert both[0]["reason_code"] == REASON_STALE_AND_ORPHAN
 
@@ -253,6 +324,7 @@ class TestReasonCodeAccuracy:
 # =========================================================================== #
 # AXIS 3: Action Class Decision Logic                                          #
 # =========================================================================== #
+
 
 class TestActionClassDecisionLogic:
     """4-tier boundary value tests for _determine_action_class."""
@@ -288,48 +360,64 @@ class TestActionClassDecisionLogic:
 # AXIS 4: Impact Simulation                                                    #
 # =========================================================================== #
 
+
 class TestImpactSimulation:
     """by_tier, by_action_class, by_reason aggregation accuracy."""
 
     def test_by_tier_aggregation(self):
         """Candidates from multiple tiers → correct tier counts."""
-        action = _FakeLedger([
-            {"proposal_id": "AP-s1", "status": "GUARDED", "created_at": _past_iso(700)},
-            {"proposal_id": "AP-s2", "status": "GUARDED", "created_at": _past_iso(800)},
-        ])
-        execution = _FakeLedger([
-            {"proposal_id": "EP-s1", "agent_proposal_id": "AP-s1",
-             "status": "EXEC_GUARDED", "created_at": _past_iso(400)}
-        ])
-        report = simulate_cleanup(action_ledger=action, execution_ledger=execution,
-                                  execution_stale_threshold=300.0)
+        action = _FakeLedger(
+            [
+                {"proposal_id": "AP-s1", "status": "GUARDED", "created_at": _past_iso(700)},
+                {"proposal_id": "AP-s2", "status": "GUARDED", "created_at": _past_iso(800)},
+            ]
+        )
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-s1",
+                    "agent_proposal_id": "AP-s1",
+                    "status": "EXEC_GUARDED",
+                    "created_at": _past_iso(400),
+                }
+            ]
+        )
+        report = simulate_cleanup(
+            action_ledger=action, execution_ledger=execution, execution_stale_threshold=300.0
+        )
         assert report.by_tier.get("agent", 0) == 2
         assert report.by_tier.get("execution", 0) >= 1
 
     def test_by_action_class_aggregation(self):
         """Action class counts sum to total_candidates."""
-        action = _FakeLedger([
-            {"proposal_id": "AP-s1", "status": "GUARDED", "created_at": _past_iso(700)},
-            {"proposal_id": "AP-s2", "status": "GUARDED", "created_at": _past_iso(1300)},
-        ])
+        action = _FakeLedger(
+            [
+                {"proposal_id": "AP-s1", "status": "GUARDED", "created_at": _past_iso(700)},
+                {"proposal_id": "AP-s2", "status": "GUARDED", "created_at": _past_iso(1300)},
+            ]
+        )
         report = simulate_cleanup(action_ledger=action)
         total_from_actions = sum(report.by_action_class.values())
         assert total_from_actions == report.total_candidates
 
     def test_by_reason_aggregation(self):
         """Reason counts sum to total_candidates."""
-        action = _FakeLedger([
-            {"proposal_id": "AP-s1", "status": "GUARDED", "created_at": _past_iso(700)},
-        ])
+        action = _FakeLedger(
+            [
+                {"proposal_id": "AP-s1", "status": "GUARDED", "created_at": _past_iso(700)},
+            ]
+        )
         report = simulate_cleanup(action_ledger=action)
         total_from_reasons = sum(report.by_reason.values())
         assert total_from_reasons == report.total_candidates
 
     def test_write_impact_always_zero(self):
         """write_impact is always 0 regardless of candidates."""
-        action = _FakeLedger([
-            {"proposal_id": "AP-s1", "status": "GUARDED", "created_at": _past_iso(9999)},
-        ])
+        action = _FakeLedger(
+            [
+                {"proposal_id": "AP-s1", "status": "GUARDED", "created_at": _past_iso(9999)},
+            ]
+        )
         report = simulate_cleanup(action_ledger=action)
         assert report.write_impact == 0
         assert report.terminal_impact == 0
@@ -340,21 +428,25 @@ class TestImpactSimulation:
 # AXIS 5: Read-Only Guarantee                                                  #
 # =========================================================================== #
 
+
 class TestReadOnlyGuarantee:
     """Cleanup simulation service is strictly read-only."""
 
     def test_source_has_no_propose_and_guard(self):
         import app.services.cleanup_simulation_service as mod
+
         source = inspect.getsource(mod)
         assert ".propose_and_guard(" not in source
 
     def test_source_has_no_record_receipt(self):
         import app.services.cleanup_simulation_service as mod
+
         source = inspect.getsource(mod)
         assert ".record_receipt(" not in source
 
     def test_source_has_no_transition_to(self):
         import app.services.cleanup_simulation_service as mod
+
         source = inspect.getsource(mod)
         assert ".transition_to(" not in source
 
@@ -370,11 +462,13 @@ class TestReadOnlyGuarantee:
 # AXIS 6: Dashboard Integration                                                #
 # =========================================================================== #
 
+
 class TestDashboardIntegration:
     """Cleanup results appear in 4-Tier Board."""
 
     def test_board_schema_has_cleanup_fields(self):
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         fields = FourTierBoardResponse.model_fields
         assert "cleanup_candidate_count" in fields
         assert "cleanup_action_summary" in fields
@@ -384,9 +478,14 @@ class TestDashboardIntegration:
 
         al = MagicMock()
         al.get_board.return_value = {
-            "total": 1, "receipted_count": 0, "blocked_count": 0,
-            "failed_count": 0, "orphan_count": 0, "stale_count": 1,
-            "stale_threshold_seconds": 600.0, "guard_reason_top": [],
+            "total": 1,
+            "receipted_count": 0,
+            "blocked_count": 0,
+            "failed_count": 0,
+            "orphan_count": 0,
+            "stale_count": 1,
+            "stale_threshold_seconds": 600.0,
+            "guard_reason_top": [],
         }
         al.get_proposals.return_value = [
             {"proposal_id": "AP-s", "status": "GUARDED", "created_at": _past_iso(700)}
@@ -403,9 +502,14 @@ class TestDashboardIntegration:
 
         al = MagicMock()
         al.get_board.return_value = {
-            "total": 2, "receipted_count": 0, "blocked_count": 0,
-            "failed_count": 0, "orphan_count": 0, "stale_count": 2,
-            "stale_threshold_seconds": 600.0, "guard_reason_top": [],
+            "total": 2,
+            "receipted_count": 0,
+            "blocked_count": 0,
+            "failed_count": 0,
+            "orphan_count": 0,
+            "stale_count": 2,
+            "stale_threshold_seconds": 600.0,
+            "guard_reason_top": [],
         }
         al.get_proposals.return_value = [
             {"proposal_id": "AP-s1", "status": "GUARDED", "created_at": _past_iso(700)},
@@ -421,6 +525,7 @@ class TestDashboardIntegration:
 # AXIS 7: Edge Cases                                                           #
 # =========================================================================== #
 
+
 class TestEdgeCases:
     """Empty ledgers, all normal, partial observation."""
 
@@ -432,23 +537,36 @@ class TestEdgeCases:
 
     def test_all_fresh_no_orphan_zero_candidates(self):
         """All proposals fresh + valid lineage → zero candidates."""
-        action = _FakeLedger([
-            {"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}
-        ])
-        execution = _FakeLedger([
-            {"proposal_id": "EP-1", "agent_proposal_id": "AP-1",
-             "status": "EXEC_RECEIPTED", "created_at": _now_iso()}
-        ])
-        submit = _FakeLedger([
-            {"proposal_id": "SP-1", "execution_proposal_id": "EP-1",
-             "status": "SUBMIT_RECEIPTED", "created_at": _now_iso()}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}]
+        )
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-1",
+                    "agent_proposal_id": "AP-1",
+                    "status": "EXEC_RECEIPTED",
+                    "created_at": _now_iso(),
+                }
+            ]
+        )
+        submit = _FakeLedger(
+            [
+                {
+                    "proposal_id": "SP-1",
+                    "execution_proposal_id": "EP-1",
+                    "status": "SUBMIT_RECEIPTED",
+                    "created_at": _now_iso(),
+                }
+            ]
+        )
         report = simulate_cleanup(action, execution, submit)
         assert report.total_candidates == 0
 
     def test_report_to_dict_serializable(self):
         """Report.to_dict() returns JSON-serializable dict."""
         import json
+
         report = simulate_cleanup()
         d = report.to_dict()
         assert isinstance(d, dict)
@@ -456,10 +574,14 @@ class TestEdgeCases:
 
     def test_candidate_to_dict(self):
         c = CleanupCandidate(
-            proposal_id="AP-1", tier="agent",
-            action_class=ACTION_WATCH, reason_code=REASON_STALE_AGENT,
-            is_stale=True, is_orphan=False,
-            stale_age_seconds=700.0, current_status="GUARDED",
+            proposal_id="AP-1",
+            tier="agent",
+            action_class=ACTION_WATCH,
+            reason_code=REASON_STALE_AGENT,
+            is_stale=True,
+            is_orphan=False,
+            stale_age_seconds=700.0,
+            current_status="GUARDED",
         )
         d = c.to_dict()
         assert d["proposal_id"] == "AP-1"
@@ -467,9 +589,9 @@ class TestEdgeCases:
 
     def test_custom_thresholds_respected(self):
         """Custom stale thresholds override defaults."""
-        action = _FakeLedger([
-            {"proposal_id": "AP-1", "status": "GUARDED", "created_at": _past_iso(100)}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "GUARDED", "created_at": _past_iso(100)}]
+        )
         # Default threshold 600 → not stale; custom 50 → stale
         report_default = simulate_cleanup(action_ledger=action, agent_stale_threshold=600.0)
         report_custom = simulate_cleanup(action_ledger=action, agent_stale_threshold=50.0)
@@ -478,35 +600,55 @@ class TestEdgeCases:
 
     def test_terminal_agent_not_stale_candidate(self):
         """RECEIPTED agent proposal is never a stale candidate (terminal exclusion)."""
-        action = _FakeLedger([
-            {"proposal_id": "AP-done", "status": "RECEIPTED", "created_at": _past_iso(9999)}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-done", "status": "RECEIPTED", "created_at": _past_iso(9999)}]
+        )
         report = simulate_cleanup(action_ledger=action)
-        stale_candidates = [c for c in report.candidates if c["is_stale"] and c["proposal_id"] == "AP-done"]
+        stale_candidates = [
+            c for c in report.candidates if c["is_stale"] and c["proposal_id"] == "AP-done"
+        ]
         assert len(stale_candidates) == 0
 
     def test_terminal_exec_blocked_not_stale_candidate(self):
         """EXEC_BLOCKED execution proposal is never a stale candidate."""
-        action = _FakeLedger([{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}])
-        execution = _FakeLedger([
-            {"proposal_id": "EP-blocked", "agent_proposal_id": "AP-1",
-             "status": "EXEC_BLOCKED", "created_at": _past_iso(9999)}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}]
+        )
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-blocked",
+                    "agent_proposal_id": "AP-1",
+                    "status": "EXEC_BLOCKED",
+                    "created_at": _past_iso(9999),
+                }
+            ]
+        )
         report = simulate_cleanup(action_ledger=action, execution_ledger=execution)
-        stale_execs = [c for c in report.candidates if c["is_stale"] and c["proposal_id"] == "EP-blocked"]
+        stale_execs = [
+            c for c in report.candidates if c["is_stale"] and c["proposal_id"] == "EP-blocked"
+        ]
         assert len(stale_execs) == 0
 
     def test_terminal_submit_failed_not_stale_candidate(self):
         """SUBMIT_FAILED submit proposal is never a stale candidate."""
-        execution = _FakeLedger([
-            {"proposal_id": "EP-1", "status": "EXEC_RECEIPTED", "created_at": _now_iso()}
-        ])
-        submit = _FakeLedger([
-            {"proposal_id": "SP-fail", "execution_proposal_id": "EP-1",
-             "status": "SUBMIT_FAILED", "created_at": _past_iso(9999)}
-        ])
+        execution = _FakeLedger(
+            [{"proposal_id": "EP-1", "status": "EXEC_RECEIPTED", "created_at": _now_iso()}]
+        )
+        submit = _FakeLedger(
+            [
+                {
+                    "proposal_id": "SP-fail",
+                    "execution_proposal_id": "EP-1",
+                    "status": "SUBMIT_FAILED",
+                    "created_at": _past_iso(9999),
+                }
+            ]
+        )
         report = simulate_cleanup(execution_ledger=execution, submit_ledger=submit)
-        stale_submits = [c for c in report.candidates if c["is_stale"] and c["proposal_id"] == "SP-fail"]
+        stale_submits = [
+            c for c in report.candidates if c["is_stale"] and c["proposal_id"] == "SP-fail"
+        ]
         assert len(stale_submits) == 0
 
 
@@ -514,35 +656,47 @@ class TestEdgeCases:
 # AXIS 8: Explanation & Posture (C inspector recommendation)                   #
 # =========================================================================== #
 
+
 class TestExplanationAndPosture:
     """Explanation field and operator posture for interpretability."""
 
     def test_stale_candidate_has_explanation(self):
         """Stale candidate includes human-readable explanation."""
-        action = _FakeLedger([
-            {"proposal_id": "AP-s", "status": "GUARDED", "created_at": _past_iso(700)}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-s", "status": "GUARDED", "created_at": _past_iso(700)}]
+        )
         report = simulate_cleanup(action_ledger=action)
         assert report.candidates[0]["explanation"] != ""
         assert "Stale" in report.candidates[0]["explanation"]
 
     def test_orphan_candidate_has_explanation(self):
         """Orphan candidate explanation mentions missing parent."""
-        action = _FakeLedger([{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}])
-        execution = _FakeLedger([
-            {"proposal_id": "EP-o", "agent_proposal_id": "AP-GONE",
-             "status": "EXEC_GUARDED", "created_at": _now_iso()}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}]
+        )
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-o",
+                    "agent_proposal_id": "AP-GONE",
+                    "status": "EXEC_GUARDED",
+                    "created_at": _now_iso(),
+                }
+            ]
+        )
         report = simulate_cleanup(action_ledger=action, execution_ledger=execution)
         orphans = [c for c in report.candidates if c["is_orphan"]]
         assert len(orphans) >= 1
-        assert "parent" in orphans[0]["explanation"].lower() or "orphan" in orphans[0]["explanation"].lower()
+        assert (
+            "parent" in orphans[0]["explanation"].lower()
+            or "orphan" in orphans[0]["explanation"].lower()
+        )
 
     def test_explanation_includes_posture(self):
         """Explanation includes the operator posture guidance."""
-        action = _FakeLedger([
-            {"proposal_id": "AP-s", "status": "GUARDED", "created_at": _past_iso(700)}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-s", "status": "GUARDED", "created_at": _past_iso(700)}]
+        )
         report = simulate_cleanup(action_ledger=action)
         assert "Posture:" in report.candidates[0]["explanation"]
 
@@ -556,12 +710,17 @@ class TestExplanationAndPosture:
     def test_terminal_states_by_tier_matches_ledgers(self):
         """_TERMINAL_STATES_BY_TIER mirrors actual Ledger terminal states."""
         assert _TERMINAL_STATES_BY_TIER["agent"] == frozenset({"BLOCKED", "RECEIPTED", "FAILED"})
-        assert _TERMINAL_STATES_BY_TIER["execution"] == frozenset({"EXEC_BLOCKED", "EXEC_RECEIPTED", "EXEC_FAILED"})
-        assert _TERMINAL_STATES_BY_TIER["submit"] == frozenset({"SUBMIT_BLOCKED", "SUBMIT_RECEIPTED", "SUBMIT_FAILED"})
+        assert _TERMINAL_STATES_BY_TIER["execution"] == frozenset(
+            {"EXEC_BLOCKED", "EXEC_RECEIPTED", "EXEC_FAILED"}
+        )
+        assert _TERMINAL_STATES_BY_TIER["submit"] == frozenset(
+            {"SUBMIT_BLOCKED", "SUBMIT_RECEIPTED", "SUBMIT_FAILED"}
+        )
 
     def test_board_schema_has_simulation_only_label(self):
         """Board schema includes cleanup_simulation_only=True for UI clarity."""
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         fields = FourTierBoardResponse.model_fields
         assert "cleanup_simulation_only" in fields
         # Default must be True

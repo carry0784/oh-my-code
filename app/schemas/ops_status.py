@@ -44,9 +44,7 @@ class GlobalStatusBar(BaseModel):
     last_successful_api_poll: Optional[str] = Field(
         default=None, description="Last Successful API Poll (ISO 8601)"
     )
-    link_lost_since: Optional[str] = Field(
-        default=None, description="Link Lost Since (ISO 8601)"
-    )
+    link_lost_since: Optional[str] = Field(default=None, description="Link Lost Since (ISO 8601)")
     prod_lock: bool = Field(description="PROD_LOCK")
 
 
@@ -57,9 +55,7 @@ class IntegrityPanel(BaseModel):
     exchange_db_consistency: str = Field(
         description="Exchange ↔ DB ↔ Engine ↔ Cache 정합성 (ok/mismatch/unknown)"
     )
-    snapshot_age_seconds: Optional[int] = Field(
-        default=None, description="Snapshot age (seconds)"
-    )
+    snapshot_age_seconds: Optional[int] = Field(default=None, description="Snapshot age (seconds)")
     position_mismatch: bool = Field(description="Position mismatch")
     open_orders_mismatch: bool = Field(description="Open orders mismatch")
     balance_mismatch: bool = Field(description="Balance mismatch")
@@ -70,22 +66,14 @@ class IntegrityPanel(BaseModel):
 # 제9조: 거래 안전 패널
 # ---------------------------------------------------------------------------
 class TradingSafetyPanel(BaseModel):
-    allowed_capital_ratio: Optional[float] = Field(
-        default=None, description="허용 자본 비율"
-    )
-    order_success_rate: Optional[float] = Field(
-        default=None, description="주문 성공률"
-    )
+    allowed_capital_ratio: Optional[float] = Field(default=None, description="허용 자본 비율")
+    order_success_rate: Optional[float] = Field(default=None, description="주문 성공률")
     reject_count: int = Field(default=0, description="Reject 건수")
     cancel_residual: bool = Field(default=False, description="Cancel residual 여부")
     latency_status: str = Field(default="unknown", description="Latency 상태")
     kill_switch_active: bool = Field(default=False, description="Kill switch 상태")
-    current_trading_mode: str = Field(
-        default="observation", description="현재 거래 모드"
-    )
-    trading_block_reason: Optional[str] = Field(
-        default=None, description="거래 차단 사유"
-    )
+    current_trading_mode: str = Field(default="observation", description="현재 거래 모드")
+    trading_block_reason: Optional[str] = Field(default=None, description="거래 차단 사유")
 
 
 # ---------------------------------------------------------------------------
@@ -94,22 +82,14 @@ class TradingSafetyPanel(BaseModel):
 class IncidentEvidencePanel(BaseModel):
     incident_title: Optional[str] = Field(default=None, description="Incident title")
     severity: Optional[str] = Field(default=None, description="Severity")
-    first_occurred_at: Optional[str] = Field(
-        default=None, description="최초 발생 시각 (ISO 8601)"
-    )
+    first_occurred_at: Optional[str] = Field(default=None, description="최초 발생 시각 (ISO 8601)")
     last_confirmed_at: Optional[str] = Field(
         default=None, description="마지막 확인 시각 (ISO 8601)"
     )
     impact_scope: Optional[str] = Field(default=None, description="영향 범위")
-    auto_action_result: Optional[str] = Field(
-        default=None, description="자동 조치 결과"
-    )
-    operator_action_required: bool = Field(
-        default=False, description="운영자 조치 필요 여부"
-    )
-    evidence_receipt_id: Optional[str] = Field(
-        default=None, description="Evidence/Receipt ID"
-    )
+    auto_action_result: Optional[str] = Field(default=None, description="자동 조치 결과")
+    operator_action_required: bool = Field(default=False, description="운영자 조치 필요 여부")
+    evidence_receipt_id: Optional[str] = Field(default=None, description="Evidence/Receipt ID")
 
 
 # ---------------------------------------------------------------------------
@@ -135,9 +115,7 @@ class OpsScore(BaseModel):
     integrity: float = Field(ge=0.0, le=1.0, description="Integrity")
     connectivity: float = Field(ge=0.0, le=1.0, description="Connectivity")
     execution_safety: float = Field(ge=0.0, le=1.0, description="Execution Safety")
-    evidence_completeness: float = Field(
-        ge=0.0, le=1.0, description="Evidence Completeness"
-    )
+    evidence_completeness: float = Field(ge=0.0, le=1.0, description="Evidence Completeness")
     note: str = Field(
         default="보조 지표. 단독 권한 없음.",
         description="Ops Score는 보조 지표이며 단독으로 권한을 생성하지 않는다.",
@@ -156,12 +134,8 @@ class OpsStatusResponse(BaseModel):
 
     global_status_bar: GlobalStatusBar = Field(description="제7조: 전역 상태 바")
     integrity_panel: IntegrityPanel = Field(description="제8조: 무결성 패널")
-    trading_safety_panel: TradingSafetyPanel = Field(
-        description="제9조: 거래 안전 패널"
-    )
-    incident_evidence_panel: IncidentEvidencePanel = Field(
-        description="제10조: 사고·증거 패널"
-    )
+    trading_safety_panel: TradingSafetyPanel = Field(description="제9조: 거래 안전 패널")
+    incident_evidence_panel: IncidentEvidencePanel = Field(description="제10조: 사고·증거 패널")
     system_status: SystemStatus = Field(description="제12조: 시스템 상태")
     dual_lock: DualLock = Field(description="제42조: 이중 잠금")
     ops_score: OpsScore = Field(description="제41조: Ops Score (보조 지표)")

@@ -5,10 +5,19 @@ from unittest.mock import MagicMock
 
 # Stub external dependencies before imports
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp",
-    "celery", "redis", "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -31,14 +40,16 @@ def _make_bars(closes: list[float], volume: float = 1000.0) -> list[OHLCVBar]:
     """Generate OHLCVBars from close prices with synthetic OHLV."""
     bars = []
     for i, c in enumerate(closes):
-        bars.append(OHLCVBar(
-            timestamp=1000000 + i * 3600,
-            open=c * 0.999,
-            high=c * 1.005,
-            low=c * 0.995,
-            close=c,
-            volume=volume,
-        ))
+        bars.append(
+            OHLCVBar(
+                timestamp=1000000 + i * 3600,
+                open=c * 0.999,
+                high=c * 1.005,
+                low=c * 0.995,
+                close=c,
+                volume=volume,
+            )
+        )
     return bars
 
 

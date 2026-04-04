@@ -27,7 +27,6 @@ METRICS_PATH = PROJECT_ROOT / "app" / "core" / "retry_metrics.py"
 # C37-1: 모듈 구조
 # ===========================================================================
 class TestC37ModuleStructure:
-
     def test_module_exists(self):
         assert METRICS_PATH.exists()
 
@@ -49,7 +48,6 @@ class TestC37ModuleStructure:
 # C37-2: attempt 기록
 # ===========================================================================
 class TestC37Attempts:
-
     def test_record_success(self):
         m = RetryMetrics()
         m.record_attempt("ext", success=True)
@@ -81,7 +79,6 @@ class TestC37Attempts:
 # C37-3: skip / budget / gate
 # ===========================================================================
 class TestC37SpecialRecords:
-
     def test_record_skip(self):
         m = RetryMetrics()
         m.record_skip("not eligible")
@@ -109,7 +106,6 @@ class TestC37SpecialRecords:
 # C37-4: channel별 추적
 # ===========================================================================
 class TestC37ChannelTracking:
-
     def test_per_channel_counts(self):
         m = RetryMetrics()
         m.record_attempt("ext", True)
@@ -134,7 +130,6 @@ class TestC37ChannelTracking:
 # C37-5: summary
 # ===========================================================================
 class TestC37Summary:
-
     def test_fresh_summary(self):
         m = RetryMetrics()
         s = m.summary()
@@ -156,7 +151,6 @@ class TestC37Summary:
 # C37-6: fail-closed
 # ===========================================================================
 class TestC37FailClosed:
-
     def test_corrupted_state_summary_safe(self):
         m = RetryMetrics()
         m._channel_attempts = "corrupted"
@@ -174,13 +168,14 @@ class TestC37FailClosed:
 # C37-7: 금지 조항
 # ===========================================================================
 class TestC37Forbidden:
-
     def test_no_forbidden_strings(self):
         content = METRICS_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

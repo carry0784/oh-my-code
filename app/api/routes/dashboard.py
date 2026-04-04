@@ -109,8 +109,7 @@ async def dashboard_data_v2(db: AsyncSession = Depends(get_db)):
     if any_connected:
         total_pnl = sum(p.get("unrealized_pnl", 0) or 0 for p in all_positions)
         total_value = sum(
-            (p.get("entry_price", 0) or 0) * (p.get("quantity", 0) or 0)
-            for p in all_positions
+            (p.get("entry_price", 0) or 0) * (p.get("quantity", 0) or 0) for p in all_positions
         )
 
     trade_count_result = await db.execute(select(func.count(Trade.id)))
@@ -154,6 +153,7 @@ async def dashboard_data_v2(db: AsyncSession = Depends(get_db)):
     # B-08: AI Assist data sources (read-only, ops summary)
     try:
         from app.core.ai_assist_source import collect_ai_assist_sources
+
         ai_sources = collect_ai_assist_sources()
         # Enrich with async-only data from v2 payload
         sig = signal_summary or {}
@@ -178,6 +178,7 @@ async def dashboard_data_v2(db: AsyncSession = Depends(get_db)):
     # B-09: Market feed summary (read-only, from existing quote_data)
     try:
         from app.core.market_feed_service import build_market_feed_from_quote_data
+
         mf = build_market_feed_from_quote_data(result.get("quote_data"))
         result["market_feed"] = mf.model_dump()
     except Exception:
@@ -186,6 +187,7 @@ async def dashboard_data_v2(db: AsyncSession = Depends(get_db)):
     # B-10: Ops health lightweight summary (4 fields only)
     try:
         from app.core.ops_aggregate_service import build_ops_health
+
         result["ops_health"] = build_ops_health().model_dump()
     except Exception:
         result["ops_health"] = None
@@ -193,6 +195,7 @@ async def dashboard_data_v2(db: AsyncSession = Depends(get_db)):
     # B-11: Governance health lightweight summary
     try:
         from app.core.governance_summary_service import build_governance_health
+
         result["governance_health"] = build_governance_health().model_dump()
     except Exception:
         result["governance_health"] = None
@@ -200,6 +203,7 @@ async def dashboard_data_v2(db: AsyncSession = Depends(get_db)):
     # B-13: Alert health lightweight summary
     try:
         from app.core.alert_summary_service import build_alert_health
+
         result["alert_health"] = build_alert_health().model_dump()
     except Exception:
         result["alert_health"] = None
@@ -211,6 +215,7 @@ async def dashboard_data_v2(db: AsyncSession = Depends(get_db)):
     try:
         import app.main as main_module
         from app.services.four_tier_board_service import build_four_tier_board
+
         app_inst = main_module.app
         board = build_four_tier_board(
             action_ledger=getattr(app_inst.state, "action_ledger", None),
@@ -242,9 +247,14 @@ async def incident_snapshot(db: AsyncSession = Depends(get_db)):
     # C-14: Attach routing decision
     try:
         from app.core.alert_router import route_snapshot
+
         snapshot["routing"] = route_snapshot(snapshot)
     except Exception:
-        snapshot["routing"] = {"channels": [], "severity_tier": "unknown", "reason": "router_unavailable"}
+        snapshot["routing"] = {
+            "channels": [],
+            "severity_tier": "unknown",
+            "reason": "router_unavailable",
+        }
 
     return snapshot
 
@@ -259,6 +269,7 @@ async def receipt_review(limit: int = 10):
     """
     try:
         import app.main as main_module
+
         app_instance = main_module.app
         store = getattr(app_instance.state, "receipt_store", None)
         if store is None:
@@ -282,6 +293,7 @@ async def flow_log_review(limit: int = 10):
     """
     try:
         import app.main as main_module
+
         app_instance = main_module.app
         flow_log = getattr(app_instance.state, "flow_log", None)
         if flow_log is None:
@@ -324,6 +336,7 @@ async def audit_export(limit: int = 20):
 
     try:
         import app.main as main_module
+
         app_instance = main_module.app
 
         # Flow log
@@ -403,6 +416,7 @@ async def audit_replay(limit: int = 10):
 
     try:
         import app.main as main_module
+
         app_instance = main_module.app
 
         flow_log = getattr(app_instance.state, "flow_log", None)
@@ -524,12 +538,9 @@ async def dashboard_data(db: AsyncSession = Depends(get_db)):
     total_pnl = None
     total_value = None
     if any_connected:
-        total_pnl = sum(
-            p.get("unrealized_pnl", 0) or 0 for p in all_positions
-        )
+        total_pnl = sum(p.get("unrealized_pnl", 0) or 0 for p in all_positions)
         total_value = sum(
-            (p.get("entry_price", 0) or 0) * (p.get("quantity", 0) or 0)
-            for p in all_positions
+            (p.get("entry_price", 0) or 0) * (p.get("quantity", 0) or 0) for p in all_positions
         )
 
     # Trade count across all exchanges
@@ -577,9 +588,7 @@ async def _get_exchange_panel_data(db: AsyncSession, exchange: str) -> dict:
 
         # Aggregate PnL
         unrealized_pnl = sum(p.unrealized_pnl or 0 for p in positions)
-        total_value = sum(
-            (p.entry_price or 0) * (p.quantity or 0) for p in positions
-        )
+        total_value = sum((p.entry_price or 0) * (p.quantity or 0) for p in positions)
 
         position_list = [
             {
@@ -622,7 +631,7 @@ async def _get_exchange_panel_data(db: AsyncSession, exchange: str) -> dict:
 
 # Time-window definitions: (label, timedelta, min_samples)
 _TIME_WINDOWS = [
-    ("실시간", None, 0),           # live — no snapshot needed
+    ("실시간", None, 0),  # live — no snapshot needed
     ("12시간", timedelta(hours=12), 2),
     ("24시간", timedelta(hours=24), 4),
     ("60시간", timedelta(hours=60), 10),
@@ -646,36 +655,39 @@ async def _get_time_window_stats(db: AsyncSession) -> list[dict]:
     for label, delta, min_samples in _TIME_WINDOWS:
         if delta is None:
             # "실시간" row is filled from live aggregation, not snapshots
-            results.append({
-                "label": label,
-                "total_value": None,  # filled by JS from stats.total_value
-                "trade_count": None,
-                "balance": None,
-                "pnl": None,
-                "status": "live",
-            })
+            results.append(
+                {
+                    "label": label,
+                    "total_value": None,  # filled by JS from stats.total_value
+                    "trade_count": None,
+                    "balance": None,
+                    "pnl": None,
+                    "status": "live",
+                }
+            )
             continue
 
         cutoff = now_naive - delta
         try:
             # Count snapshots in window
             count_result = await db.execute(
-                select(func.count(AssetSnapshot.id))
-                .where(AssetSnapshot.snapshot_at >= cutoff)
+                select(func.count(AssetSnapshot.id)).where(AssetSnapshot.snapshot_at >= cutoff)
             )
             sample_count = count_result.scalar() or 0
 
             if sample_count < min_samples:
-                results.append({
-                    "label": label,
-                    "total_value": None,
-                    "trade_count": None,
-                    "balance": None,
-                    "pnl": None,
-                    "status": "insufficient",
-                    "samples": sample_count,
-                    "min_samples": min_samples,
-                })
+                results.append(
+                    {
+                        "label": label,
+                        "total_value": None,
+                        "trade_count": None,
+                        "balance": None,
+                        "pnl": None,
+                        "status": "insufficient",
+                        "samples": sample_count,
+                        "min_samples": min_samples,
+                    }
+                )
                 continue
 
             # Get latest snapshot in window (most recent)
@@ -700,37 +712,43 @@ async def _get_time_window_stats(db: AsyncSession) -> list[dict]:
                 # PnL semantics: unrealized PnL delta (미실현 손익 변동).
                 # NOT realized PnL. Measures open position value change over the window.
                 pnl_change = (latest.unrealized_pnl or 0) - (earliest.unrealized_pnl or 0)
-                results.append({
-                    "label": label,
-                    "total_value": latest.total_value,
-                    "trade_count": latest.trade_count,
-                    "balance": latest.total_balance,
-                    "pnl": pnl_change,
-                    "status": "ready",
-                    "samples": sample_count,
-                })
+                results.append(
+                    {
+                        "label": label,
+                        "total_value": latest.total_value,
+                        "trade_count": latest.trade_count,
+                        "balance": latest.total_balance,
+                        "pnl": pnl_change,
+                        "status": "ready",
+                        "samples": sample_count,
+                    }
+                )
             else:
-                results.append({
+                results.append(
+                    {
+                        "label": label,
+                        "total_value": None,
+                        "trade_count": None,
+                        "balance": None,
+                        "pnl": None,
+                        "status": "insufficient",
+                        "samples": sample_count,
+                        "min_samples": min_samples,
+                    }
+                )
+
+        except Exception as e:
+            logger.warning("time_window_query_failed", label=label, error=str(e))
+            results.append(
+                {
                     "label": label,
                     "total_value": None,
                     "trade_count": None,
                     "balance": None,
                     "pnl": None,
-                    "status": "insufficient",
-                    "samples": sample_count,
-                    "min_samples": min_samples,
-                })
-
-        except Exception as e:
-            logger.warning("time_window_query_failed", label=label, error=str(e))
-            results.append({
-                "label": label,
-                "total_value": None,
-                "trade_count": None,
-                "balance": None,
-                "pnl": None,
-                "status": "error",
-            })
+                    "status": "error",
+                }
+            )
 
     return results
 
@@ -761,9 +779,13 @@ def _get_governance_info() -> dict:
         if hasattr(gate, "security_ctx"):
             ctx = gate.security_ctx
             if hasattr(ctx, "current"):
-                security_state = str(ctx.current.value) if hasattr(ctx.current, "value") else str(ctx.current)
+                security_state = (
+                    str(ctx.current.value) if hasattr(ctx.current, "value") else str(ctx.current)
+                )
             elif hasattr(ctx, "state"):
-                security_state = str(ctx.state.value) if hasattr(ctx.state, "value") else str(ctx.state)
+                security_state = (
+                    str(ctx.state.value) if hasattr(ctx.state, "value") else str(ctx.state)
+                )
 
         # Evidence summary (counts only, no raw data)
         orphan_count = None
@@ -784,11 +806,19 @@ def _get_governance_info() -> dict:
                 for b in recent:
                     artifacts = b.artifacts if hasattr(b, "artifacts") else []
                     for art in artifacts:
-                        phase = art.get("phase", "") if isinstance(art, dict) else getattr(art, "phase", "")
+                        phase = (
+                            art.get("phase", "")
+                            if isinstance(art, dict)
+                            else getattr(art, "phase", "")
+                        )
                         if phase == "PRE":
                             pre_ids.add(b.bundle_id)
                         elif phase in ("POST", "ERROR"):
-                            linked = art.get("pre_evidence_id", "") if isinstance(art, dict) else getattr(art, "pre_evidence_id", "")
+                            linked = (
+                                art.get("pre_evidence_id", "")
+                                if isinstance(art, dict)
+                                else getattr(art, "pre_evidence_id", "")
+                            )
                             if linked:
                                 linked_pre_ids.add(linked)
                 orphan_count = len(pre_ids - linked_pre_ids)
@@ -836,13 +866,15 @@ async def _get_recent_events(db: AsyncSession, limit: int = 5) -> list[dict]:
             select(Trade).order_by(desc(Trade.executed_at)).limit(limit)
         )
         for t in trade_result.scalars().all():
-            events.append({
-                "ts": t.executed_at.isoformat() if t.executed_at else None,
-                "exchange": t.exchange,
-                "event_type": "trade",
-                "summary": f"{t.symbol} {t.side} {t.quantity} @ {t.price}",
-                "severity": "info",
-            })
+            events.append(
+                {
+                    "ts": t.executed_at.isoformat() if t.executed_at else None,
+                    "exchange": t.exchange,
+                    "event_type": "trade",
+                    "summary": f"{t.symbol} {t.side} {t.quantity} @ {t.price}",
+                    "severity": "info",
+                }
+            )
     except Exception:
         pass
 
@@ -858,13 +890,15 @@ async def _get_recent_events(db: AsyncSession, limit: int = 5) -> list[dict]:
         for s in sig_result.scalars().all():
             status_val = s.status.value if hasattr(s.status, "value") else str(s.status)
             severity = "warning" if status_val == "rejected" else "info"
-            events.append({
-                "ts": s.created_at.isoformat() if s.created_at else None,
-                "exchange": s.exchange,
-                "event_type": "signal",
-                "summary": f"{s.symbol} {s.signal_type.value if hasattr(s.signal_type, 'value') else s.signal_type} [{status_val}]",
-                "severity": severity,
-            })
+            events.append(
+                {
+                    "ts": s.created_at.isoformat() if s.created_at else None,
+                    "exchange": s.exchange,
+                    "event_type": "signal",
+                    "summary": f"{s.symbol} {s.signal_type.value if hasattr(s.signal_type, 'value') else s.signal_type} [{status_val}]",
+                    "severity": severity,
+                }
+            )
     except Exception:
         pass
 
@@ -872,22 +906,30 @@ async def _get_recent_events(db: AsyncSession, limit: int = 5) -> list[dict]:
         # Recent order status changes (filled/cancelled/rejected)
         ord_result = await db.execute(
             select(Order)
-            .where(Order.status.in_([
-                OrderStatus.FILLED, OrderStatus.CANCELLED, OrderStatus.REJECTED,
-            ]))
+            .where(
+                Order.status.in_(
+                    [
+                        OrderStatus.FILLED,
+                        OrderStatus.CANCELLED,
+                        OrderStatus.REJECTED,
+                    ]
+                )
+            )
             .order_by(desc(Order.updated_at))
             .limit(limit)
         )
         for o in ord_result.scalars().all():
             status_val = o.status.value if hasattr(o.status, "value") else str(o.status)
             severity = "warning" if status_val in ("cancelled", "rejected") else "info"
-            events.append({
-                "ts": o.updated_at.isoformat() if o.updated_at else None,
-                "exchange": o.exchange,
-                "event_type": "order_status",
-                "summary": f"{o.symbol} {o.side.value if hasattr(o.side, 'value') else o.side} [{status_val}]",
-                "severity": severity,
-            })
+            events.append(
+                {
+                    "ts": o.updated_at.isoformat() if o.updated_at else None,
+                    "exchange": o.exchange,
+                    "event_type": "order_status",
+                    "summary": f"{o.symbol} {o.side.value if hasattr(o.side, 'value') else o.side} [{status_val}]",
+                    "severity": severity,
+                }
+            )
     except Exception:
         pass
 
@@ -904,16 +946,23 @@ async def _get_open_orders_by_exchange(db: AsyncSession) -> dict:
     result = {ex: [] for ex in _EXCHANGES}
     try:
         ord_result = await db.execute(
-            select(Order).where(Order.status.in_([
-                OrderStatus.PENDING, OrderStatus.SUBMITTED,
-                OrderStatus.PARTIALLY_FILLED,
-            ]))
+            select(Order).where(
+                Order.status.in_(
+                    [
+                        OrderStatus.PENDING,
+                        OrderStatus.SUBMITTED,
+                        OrderStatus.PARTIALLY_FILLED,
+                    ]
+                )
+            )
         )
         for o in ord_result.scalars().all():
             entry = {
                 "symbol": o.symbol,
                 "side": o.side.value if hasattr(o.side, "value") else str(o.side),
-                "order_type": o.order_type.value if hasattr(o.order_type, "value") else str(o.order_type),
+                "order_type": o.order_type.value
+                if hasattr(o.order_type, "value")
+                else str(o.order_type),
                 "status": o.status.value if hasattr(o.status, "value") else str(o.status),
                 "quantity": o.quantity,
                 "price": o.price,
@@ -957,20 +1006,20 @@ async def _get_signal_summary(db: AsyncSession) -> dict:
                 summary[status_val] = cnt
 
         # Recent 5 signals — NO agent_analysis
-        recent_result = await db.execute(
-            select(Signal)
-            .order_by(desc(Signal.created_at))
-            .limit(5)
-        )
+        recent_result = await db.execute(select(Signal).order_by(desc(Signal.created_at)).limit(5))
         for s in recent_result.scalars().all():
-            summary["recent"].append({
-                "exchange": s.exchange,
-                "symbol": s.symbol,
-                "signal_type": s.signal_type.value if hasattr(s.signal_type, "value") else str(s.signal_type),
-                "confidence": s.confidence,
-                "status": s.status.value if hasattr(s.status, "value") else str(s.status),
-                "created_at": s.created_at.isoformat() if s.created_at else None,
-            })
+            summary["recent"].append(
+                {
+                    "exchange": s.exchange,
+                    "symbol": s.symbol,
+                    "signal_type": s.signal_type.value
+                    if hasattr(s.signal_type, "value")
+                    else str(s.signal_type),
+                    "confidence": s.confidence,
+                    "status": s.status.value if hasattr(s.status, "value") else str(s.status),
+                    "created_at": s.created_at.isoformat() if s.created_at else None,
+                }
+            )
     except Exception as e:
         logger.warning("signal_summary_query_failed", error=str(e))
     return summary
@@ -990,8 +1039,7 @@ async def _get_venue_freshness(db: AsyncSession) -> dict:
     for ex in _EXCHANGES:
         try:
             max_result = await db.execute(
-                select(func.max(Position.updated_at))
-                .where(Position.exchange == ex)
+                select(func.max(Position.updated_at)).where(Position.exchange == ex)
             )
             last_updated = max_result.scalar()
             if last_updated is not None:
@@ -1166,7 +1214,13 @@ async def _fetch_single_quote(exchange: str, symbol: str, now: datetime) -> dict
             last_trust = "UNAVAILABLE"
 
         # Pick worst state
-        state_priority = {"LIVE": 0, "STALE": 1, "NOT_AVAILABLE": 2, "UNAVAILABLE": 3, "DISCONNECTED": 4}
+        state_priority = {
+            "LIVE": 0,
+            "STALE": 1,
+            "NOT_AVAILABLE": 2,
+            "UNAVAILABLE": 3,
+            "DISCONNECTED": 4,
+        }
         overall = max([trust_for_bidask, last_trust], key=lambda s: state_priority.get(s, 5))
 
         return {
@@ -1217,7 +1271,9 @@ def _get_loop_monitor_info() -> dict:
         loops = {}
         for name, status in result.loop_statuses.items():
             loop_entry = {
-                "health": status.health.value if hasattr(status.health, "value") else str(status.health),
+                "health": status.health.value
+                if hasattr(status.health, "value")
+                else str(status.health),
                 "max_usage_ratio": float(status.max_usage_ratio),
                 "incident_count": int(status.incident_count),
                 "incident_ceiling": int(status.incident_ceiling),
@@ -1235,7 +1291,9 @@ def _get_loop_monitor_info() -> dict:
 
         return {
             "available": True,
-            "overall_health": result.overall_health.value if hasattr(result.overall_health, "value") else str(result.overall_health),
+            "overall_health": result.overall_health.value
+            if hasattr(result.overall_health, "value")
+            else str(result.overall_health),
             "any_exceeded": bool(result.any_exceeded),
             "checked_at": result.checked_at.isoformat() if hasattr(result, "checked_at") else None,
             "loops": loops,
@@ -1261,18 +1319,26 @@ def _get_work_state_info() -> dict:
 
         validation_results = []
         for r in getattr(ctx, "validation_results", []):
-            validation_results.append({
-                "check": r.check.name if hasattr(r.check, "name") else str(r.check),
-                "passed": bool(r.passed),
-            })
+            validation_results.append(
+                {
+                    "check": r.check.name if hasattr(r.check, "name") else str(r.check),
+                    "passed": bool(r.passed),
+                }
+            )
 
         return {
             "available": True,
             "current": ctx.current.value if hasattr(ctx.current, "value") else str(ctx.current),
-            "previous": ctx.previous.value if ctx.previous and hasattr(ctx.previous, "value") else None,
-            "failed_check": ctx.failed_check.name if ctx.failed_check and hasattr(ctx.failed_check, "name") else None,
+            "previous": ctx.previous.value
+            if ctx.previous and hasattr(ctx.previous, "value")
+            else None,
+            "failed_check": ctx.failed_check.name
+            if ctx.failed_check and hasattr(ctx.failed_check, "name")
+            else None,
             "validation_results": validation_results,
-            "last_transition": ctx.last_transition.isoformat() if hasattr(ctx, "last_transition") else None,
+            "last_transition": ctx.last_transition.isoformat()
+            if hasattr(ctx, "last_transition")
+            else None,
         }
     except Exception as e:
         logger.warning("work_state_info_read_failed", error=str(e))
@@ -1301,11 +1367,21 @@ def _get_trust_state_info() -> dict:
 
             current = getattr(ctx, "current", None)
             components[str(cid)] = {
-                "state": current.value if current and hasattr(current, "value") else str(current) if current else None,
+                "state": current.value
+                if current and hasattr(current, "value")
+                else str(current)
+                if current
+                else None,
                 "score": float(score) if score is not None else None,
-                "allows_execution": bool(current.allows_execution()) if current and hasattr(current, "allows_execution") else None,
-                "requires_monitoring": bool(current.requires_monitoring()) if current and hasattr(current, "requires_monitoring") else None,
-                "last_refreshed": ctx.last_refreshed.isoformat() if hasattr(ctx, "last_refreshed") else None,
+                "allows_execution": bool(current.allows_execution())
+                if current and hasattr(current, "allows_execution")
+                else None,
+                "requires_monitoring": bool(current.requires_monitoring())
+                if current and hasattr(current, "requires_monitoring")
+                else None,
+                "last_refreshed": ctx.last_refreshed.isoformat()
+                if hasattr(ctx, "last_refreshed")
+                else None,
             }
 
         return {
@@ -1332,6 +1408,7 @@ def _get_doctrine_info() -> dict:
         if registry is None:
             # Fallback: load static doctrine definitions only
             from kdexter.governance.doctrine import DoctrineRegistry
+
             registry = DoctrineRegistry()
             is_live = False
         else:
@@ -1339,21 +1416,29 @@ def _get_doctrine_info() -> dict:
 
         doctrines = []
         for d in registry.list_all():
-            doctrines.append({
-                "id": d.doctrine_id,
-                "name": d.name,
-                "severity": d.severity.value if hasattr(d.severity, "value") else str(d.severity),
-                "status": d.status.value if hasattr(d.status, "value") else str(d.status),
-            })
+            doctrines.append(
+                {
+                    "id": d.doctrine_id,
+                    "name": d.name,
+                    "severity": d.severity.value
+                    if hasattr(d.severity, "value")
+                    else str(d.severity),
+                    "status": d.status.value if hasattr(d.status, "value") else str(d.status),
+                }
+            )
 
         recent_violations = []
         for v in registry.list_violations()[-5:]:
-            recent_violations.append({
-                "violation_id": v.violation_id,
-                "doctrine_id": v.doctrine_id,
-                "severity": v.severity.value if hasattr(v.severity, "value") else str(v.severity),
-                "detected_at": v.detected_at.isoformat() if hasattr(v, "detected_at") else None,
-            })
+            recent_violations.append(
+                {
+                    "violation_id": v.violation_id,
+                    "doctrine_id": v.doctrine_id,
+                    "severity": v.severity.value
+                    if hasattr(v.severity, "value")
+                    else str(v.severity),
+                    "detected_at": v.detected_at.isoformat() if hasattr(v, "detected_at") else None,
+                }
+            )
 
         return {
             "available": is_live,
@@ -1364,7 +1449,13 @@ def _get_doctrine_info() -> dict:
         }
     except Exception as e:
         logger.warning("doctrine_info_read_failed", error=str(e))
-        return {"available": False, "total": None, "violation_count": None, "doctrines": [], "recent_violations": []}
+        return {
+            "available": False,
+            "total": None,
+            "violation_count": None,
+            "doctrines": [],
+            "recent_violations": [],
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -1400,13 +1491,15 @@ def _get_source_freshness_summary(v2_result: dict) -> dict:
         else:
             status = "fresh"
 
-        sources.append({
-            "name": f"venue:{ex}",
-            "source_type": "position_proxy",
-            "status": status,
-            "last_updated": last_updated,
-            "age_seconds": age,
-        })
+        sources.append(
+            {
+                "name": f"venue:{ex}",
+                "source_type": "position_proxy",
+                "status": status,
+                "last_updated": last_updated,
+                "age_seconds": age,
+            }
+        )
 
     # 2. Quote feed freshness — per exchange (from quote_data venue_summary)
     quote_data = v2_result.get("quote_data", {})
@@ -1426,83 +1519,101 @@ def _get_source_freshness_summary(v2_result: dict) -> dict:
         else:
             status = "unknown"
 
-        sources.append({
-            "name": f"quote:{ex}",
-            "source_type": "quote_feed",
-            "status": status,
-            "last_updated": None,
-            "age_seconds": None,
-        })
+        sources.append(
+            {
+                "name": f"quote:{ex}",
+                "source_type": "quote_feed",
+                "status": status,
+                "last_updated": None,
+                "age_seconds": None,
+            }
+        )
 
     # 3. Loop monitor freshness
     lm = v2_result.get("loop_monitor", {})
     if lm.get("available"):
         checked_at = lm.get("checked_at")
-        sources.append({
-            "name": "loop_monitor",
-            "source_type": "runtime",
-            "status": "fresh" if checked_at else "unknown",
-            "last_updated": checked_at,
-            "age_seconds": None,
-        })
+        sources.append(
+            {
+                "name": "loop_monitor",
+                "source_type": "runtime",
+                "status": "fresh" if checked_at else "unknown",
+                "last_updated": checked_at,
+                "age_seconds": None,
+            }
+        )
     else:
-        sources.append({
-            "name": "loop_monitor",
-            "source_type": "runtime",
-            "status": "unknown",
-            "last_updated": None,
-            "age_seconds": None,
-        })
+        sources.append(
+            {
+                "name": "loop_monitor",
+                "source_type": "runtime",
+                "status": "unknown",
+                "last_updated": None,
+                "age_seconds": None,
+            }
+        )
 
     # 4. Work state freshness
     ws = v2_result.get("work_state", {})
     if ws.get("available"):
         last_transition = ws.get("last_transition")
-        sources.append({
-            "name": "work_state",
-            "source_type": "runtime",
-            "status": "fresh" if last_transition else "unknown",
-            "last_updated": last_transition,
-            "age_seconds": None,
-        })
+        sources.append(
+            {
+                "name": "work_state",
+                "source_type": "runtime",
+                "status": "fresh" if last_transition else "unknown",
+                "last_updated": last_transition,
+                "age_seconds": None,
+            }
+        )
     else:
-        sources.append({
-            "name": "work_state",
-            "source_type": "runtime",
-            "status": "unknown",
-            "last_updated": None,
-            "age_seconds": None,
-        })
+        sources.append(
+            {
+                "name": "work_state",
+                "source_type": "runtime",
+                "status": "unknown",
+                "last_updated": None,
+                "age_seconds": None,
+            }
+        )
 
     # 5. Trust state freshness (earliest refresh across components)
     ts = v2_result.get("trust_state", {})
     if ts.get("available") and ts.get("components"):
-        refreshes = [c.get("last_refreshed") for c in ts["components"].values() if c.get("last_refreshed")]
-        sources.append({
-            "name": "trust_state",
-            "source_type": "runtime",
-            "status": "fresh" if refreshes else "unknown",
-            "last_updated": min(refreshes) if refreshes else None,
-            "age_seconds": None,
-        })
+        refreshes = [
+            c.get("last_refreshed") for c in ts["components"].values() if c.get("last_refreshed")
+        ]
+        sources.append(
+            {
+                "name": "trust_state",
+                "source_type": "runtime",
+                "status": "fresh" if refreshes else "unknown",
+                "last_updated": min(refreshes) if refreshes else None,
+                "age_seconds": None,
+            }
+        )
     else:
-        sources.append({
-            "name": "trust_state",
-            "source_type": "runtime",
-            "status": "unknown",
-            "last_updated": None,
-            "age_seconds": None,
-        })
+        sources.append(
+            {
+                "name": "trust_state",
+                "source_type": "runtime",
+                "status": "unknown",
+                "last_updated": None,
+                "age_seconds": None,
+            }
+        )
 
     # 6. Doctrine freshness
     doc = v2_result.get("doctrine", {})
-    sources.append({
-        "name": "doctrine",
-        "source_type": "runtime",
-        "status": "fresh" if doc.get("available") else "unknown",
-        "last_updated": None,
-        "age_seconds": None,
-    })
+    sources.append(
+        {
+            "name": "doctrine",
+            "source_type": "runtime",
+            "status": "fresh" if doc.get("available") else "unknown",
+            "last_updated": None,
+            "age_seconds": None,
+        }
+    )
 
     # Summary counts
     fresh_count = sum(1 for s in sources if s["status"] == "fresh")
@@ -1540,66 +1651,83 @@ def _get_provenance_metadata(v2_result: dict) -> dict:
 
     # 1. Governance state provenance
     gov = v2_result.get("governance", {})
-    entries.append({
-        "state": "governance",
-        "display_value": gov.get("security_state", "UNKNOWN"),
-        "source": "GovernanceGate._security_ctx",
-        "basis": "SecurityStateContext.current",
-        "data_origin": "app.state.governance_gate" if gov.get("enabled") else "not_initialized",
-    })
+    entries.append(
+        {
+            "state": "governance",
+            "display_value": gov.get("security_state", "UNKNOWN"),
+            "source": "GovernanceGate._security_ctx",
+            "basis": "SecurityStateContext.current",
+            "data_origin": "app.state.governance_gate" if gov.get("enabled") else "not_initialized",
+        }
+    )
 
     # 2. Loop monitor provenance
     lm = v2_result.get("loop_monitor", {})
-    entries.append({
-        "state": "loop_health",
-        "display_value": lm.get("overall_health", "N/A"),
-        "source": "LoopMonitor.last_result",
-        "basis": "LoopCounter incident/daily/weekly vs ceilings",
-        "data_origin": "app.state.loop_monitor" if lm.get("available") else "not_connected",
-    })
+    entries.append(
+        {
+            "state": "loop_health",
+            "display_value": lm.get("overall_health", "N/A"),
+            "source": "LoopMonitor.last_result",
+            "basis": "LoopCounter incident/daily/weekly vs ceilings",
+            "data_origin": "app.state.loop_monitor" if lm.get("available") else "not_connected",
+        }
+    )
 
     # 3. Work state provenance
     ws = v2_result.get("work_state", {})
-    entries.append({
-        "state": "work_state",
-        "display_value": ws.get("current", "N/A"),
-        "source": "WorkStateContext.current",
-        "basis": "WorkStateMachine transition + guard checks",
-        "data_origin": "app.state.work_state_ctx" if ws.get("available") else "not_connected",
-    })
+    entries.append(
+        {
+            "state": "work_state",
+            "display_value": ws.get("current", "N/A"),
+            "source": "WorkStateContext.current",
+            "basis": "WorkStateMachine transition + guard checks",
+            "data_origin": "app.state.work_state_ctx" if ws.get("available") else "not_connected",
+        }
+    )
 
     # 4. Trust state provenance
     ts = v2_result.get("trust_state", {})
     comp_count = len(ts.get("components", {})) if ts.get("available") else 0
-    entries.append({
-        "state": "trust_state",
-        "display_value": str(comp_count) + " component(s)" if ts.get("available") else "N/A",
-        "source": "TrustStateContext per component",
-        "basis": "score decay + event-based step-down/up",
-        "data_origin": "app.state.trust_registry" if ts.get("available") else "not_connected",
-    })
+    entries.append(
+        {
+            "state": "trust_state",
+            "display_value": str(comp_count) + " component(s)" if ts.get("available") else "N/A",
+            "source": "TrustStateContext per component",
+            "basis": "score decay + event-based step-down/up",
+            "data_origin": "app.state.trust_registry" if ts.get("available") else "not_connected",
+        }
+    )
 
     # 5. Doctrine provenance
     doc = v2_result.get("doctrine", {})
-    entries.append({
-        "state": "doctrine",
-        "display_value": str(doc.get("total", 0)) + " articles, " + str(doc.get("violation_count", 0)) + " violation(s)",
-        "source": "DoctrineRegistry",
-        "basis": "D-001~D-010 core doctrines + runtime violations",
-        "data_origin": "app.state.doctrine_registry" if doc.get("available") else "fallback_static",
-    })
+    entries.append(
+        {
+            "state": "doctrine",
+            "display_value": str(doc.get("total", 0))
+            + " articles, "
+            + str(doc.get("violation_count", 0))
+            + " violation(s)",
+            "source": "DoctrineRegistry",
+            "basis": "D-001~D-010 core doctrines + runtime violations",
+            "data_origin": "app.state.doctrine_registry"
+            if doc.get("available")
+            else "fallback_static",
+        }
+    )
 
     # 6. Venue freshness provenance (aggregate)
     vf = v2_result.get("venue_freshness", {})
     venue_count = len(vf)
     with_data = sum(1 for v in vf.values() if v.get("last_updated_at") is not None)
-    entries.append({
-        "state": "venue_freshness",
-        "display_value": str(with_data) + "/" + str(venue_count) + " venues with data",
-        "source": "Position.updated_at (DB proxy)",
-        "basis": "max(Position.updated_at) per exchange",
-        "data_origin": "database_query",
-    })
+    entries.append(
+        {
+            "state": "venue_freshness",
+            "display_value": str(with_data) + "/" + str(venue_count) + " venues with data",
+            "source": "Position.updated_at (DB proxy)",
+            "basis": "max(Position.updated_at) per exchange",
+            "data_origin": "database_query",
+        }
+    )
 
     # 7. Quote feed provenance (aggregate)
     qd = v2_result.get("quote_data", {})
@@ -1607,13 +1735,15 @@ def _get_provenance_metadata(v2_result: dict) -> dict:
     for vq in qd.values():
         if vq.get("_venue_summary", {}).get("trust_state") == "LIVE":
             live_venues += 1
-    entries.append({
-        "state": "quote_feed",
-        "display_value": str(live_venues) + "/" + str(len(qd)) + " venues LIVE",
-        "source": "ExchangeFactory.fetch_ticker()",
-        "basis": "bid/ask/last + venue timestamp vs stale threshold",
-        "data_origin": "exchange_api_call",
-    })
+    entries.append(
+        {
+            "state": "quote_feed",
+            "display_value": str(live_venues) + "/" + str(len(qd)) + " venues LIVE",
+            "source": "ExchangeFactory.fetch_ticker()",
+            "basis": "bid/ask/last + venue timestamp vs stale threshold",
+            "data_origin": "exchange_api_call",
+        }
+    )
 
     return {"entries": entries}
 
@@ -1804,6 +1934,7 @@ async def ops_alerts(limit: int = 10):
     """
     try:
         import app.main as main_module
+
         app_instance = main_module.app
 
         alerts = []
@@ -1831,13 +1962,13 @@ async def ops_alerts(limit: int = 10):
 
             # If receipt store was empty, fall back to flow entries
             if not alerts:
-                for e in entries[:min(limit, 10)]:
+                for e in entries[: min(limit, 10)]:
                     if e.get("policy_action") != "suppress":
                         alert = convert_flow_entry_to_alert(e)
                         alerts.append(alert)
 
         return AlertSummaryResponse(
-            alerts=alerts[:min(limit, 10)],
+            alerts=alerts[: min(limit, 10)],
             total_count=len(alerts),
             suppressed_count=suppressed_count,
             recovery_count=recovery_count,
@@ -1884,10 +2015,12 @@ async def ops_checks(limit: int = 20):
         try:
             ops_data = await ops_status(db)
             if hasattr(ops_data, "integrity_panel"):
-                ops_dict = {"integrity_panel": {
-                    "stale_data": ops_data.integrity_panel.stale_data,
-                    "snapshot_age_seconds": ops_data.integrity_panel.snapshot_age_seconds,
-                }}
+                ops_dict = {
+                    "integrity_panel": {
+                        "stale_data": ops_data.integrity_panel.stale_data,
+                        "snapshot_age_seconds": ops_data.integrity_panel.snapshot_age_seconds,
+                    }
+                }
                 latest_hourly = enrich_hourly_from_ops_status(latest_hourly, ops_dict)
         except Exception:
             pass  # fail-closed: enrichment is optional
@@ -1901,6 +2034,7 @@ async def ops_checks(limit: int = 20):
         # Also pull historical results from evidence store
         try:
             import app.main as main_module
+
             gate = getattr(main_module.app.state, "governance_gate", None)
             if gate is not None and hasattr(gate, "evidence_store"):
                 store = gate.evidence_store
@@ -1950,12 +2084,9 @@ async def ops_checks(limit: int = 20):
                                 summary=after.get("summary", "Historical check"),
                                 items=[],
                                 failures=sorted(after.get("failures", [])),
-                                evidence_id=b.bundle_id
-                                if hasattr(b, "bundle_id")
-                                else "unknown",
+                                evidence_id=b.bundle_id if hasattr(b, "bundle_id") else "unknown",
                                 rule_refs=after.get("rule_refs", ["Art23-Art31"]),
-                                operator_action_required=after.get("result")
-                                in ("FAIL", "BLOCK"),
+                                operator_action_required=after.get("result") in ("FAIL", "BLOCK"),
                             )
                         )
         except Exception:
@@ -1970,7 +2101,7 @@ async def ops_checks(limit: int = 20):
                 seen_ids.add(eid)
                 deduped.append(c)
 
-        deduped = deduped[:min(limit, 20)]
+        deduped = deduped[: min(limit, 20)]
 
         # Compute by-type grouping
         by_type = {}
@@ -2014,6 +2145,7 @@ async def ops_preflight():
     """
     try:
         from app.core.recovery_preflight import run_recovery_preflight
+
         return run_recovery_preflight()
     except Exception as e:
         logger.warning("ops_preflight_failed", error=str(e))
@@ -2034,6 +2166,7 @@ async def ops_playback():
     """
     try:
         from app.core.incident_playback import build_incident_playback
+
         return build_incident_playback()
     except Exception as e:
         logger.warning("ops_playback_failed", error=str(e))
@@ -2062,6 +2195,7 @@ async def ops_gate():
     """
     try:
         from app.core.execution_gate import evaluate_execution_gate
+
         return evaluate_execution_gate()
     except Exception as e:
         logger.warning("ops_gate_failed", error=str(e))
@@ -2091,6 +2225,7 @@ async def ops_approval():
     try:
         from app.core.operator_approval import issue_approval
         from app.schemas.operator_approval_schema import ApprovalScope
+
         return issue_approval(
             approved_by="operator",
             approval_scope=ApprovalScope.NO_EXECUTION,
@@ -2150,6 +2285,7 @@ async def ops_safety_summary():
     pf_reasons: list[str] = []
     try:
         from app.core.recovery_preflight import run_recovery_preflight
+
         pf = run_recovery_preflight()
         pf_decision = pf.decision.value
         pf_eid = pf.evidence_id
@@ -2177,6 +2313,7 @@ async def ops_safety_summary():
     ext_lockdown = "UNKNOWN"
     try:
         from app.core.execution_gate import evaluate_execution_gate
+
         gate = evaluate_execution_gate()
         gate_decision = gate.decision.value
         gate_eid = gate.evidence_id
@@ -2201,6 +2338,7 @@ async def ops_safety_summary():
     try:
         from app.core.operator_approval import issue_approval
         from app.schemas.operator_approval_schema import ApprovalScope
+
         apr = issue_approval(
             approved_by="operator",
             approval_scope=ApprovalScope.NO_EXECUTION,
@@ -2218,14 +2356,20 @@ async def ops_safety_summary():
     ext_check = "UNKNOWN"
     try:
         from app.core.execution_policy import evaluate_execution_policy
+
         pol = evaluate_execution_policy()
-        ext_policy = pol.decision if isinstance(pol.decision, str) else getattr(pol.decision, 'value', 'UNKNOWN')
+        ext_policy = (
+            pol.decision
+            if isinstance(pol.decision, str)
+            else getattr(pol.decision, "value", "UNKNOWN")
+        )
     except Exception:
         pass
     try:
         from app.core.constitution_check_runner import run_daily_check
+
         chk = run_daily_check()
-        ext_check = chk.result.value if hasattr(chk.result, 'value') else str(chk.result)
+        ext_check = chk.result.value if hasattr(chk.result, "value") else str(chk.result)
     except Exception:
         pass
 
@@ -2296,6 +2440,7 @@ async def ops_policy():
     """
     try:
         from app.core.execution_policy import evaluate_execution_policy
+
         return evaluate_execution_policy()
     except Exception as e:
         logger.warning("ops_policy_failed", error=str(e))
@@ -2325,6 +2470,7 @@ async def ops_executor():
     try:
         from app.core.executor_design import validate_execution_preconditions
         from app.schemas.executor_schema import ExecutionScope
+
         return validate_execution_preconditions(
             execution_scope=ExecutionScope.NO_EXECUTION,
         )
@@ -2335,9 +2481,12 @@ async def ops_executor():
             state="PRECONDITION_FAILED",
             execution_scope="NO_EXECUTION",
             evidence_chain={
-                "check_id": "err", "preflight_id": "err",
-                "gate_snapshot_id": "err", "approval_id": "err",
-                "approval_receipt_hash": "err", "policy_snapshot_id": "err",
+                "check_id": "err",
+                "preflight_id": "err",
+                "gate_snapshot_id": "err",
+                "approval_id": "err",
+                "approval_receipt_hash": "err",
+                "policy_snapshot_id": "err",
                 "policy_decision": "err",
             },
             timestamp=datetime.now(timezone.utc).isoformat(),
@@ -2360,6 +2509,7 @@ async def ops_activation():
     """
     try:
         from app.core.executor_activation import evaluate_activation
+
         return evaluate_activation()
     except Exception as e:
         logger.warning("ops_activation_failed", error=str(e))
@@ -2383,6 +2533,7 @@ async def ops_dispatch():
     """E-03: Dispatch guard check. No execution. No order send."""
     try:
         from app.core.micro_executor import evaluate_dispatch
+
         return evaluate_dispatch()
     except Exception as e:
         logger.warning("ops_dispatch_failed", error=str(e))
@@ -2405,6 +2556,7 @@ async def ai_sources():
     """B-08: AI Assist data sources (read-only, no execution/recommendation)."""
     try:
         from app.core.ai_assist_source import collect_ai_assist_sources
+
         return collect_ai_assist_sources()
     except Exception as e:
         logger.warning("ai_sources_failed", error=str(e))
@@ -2424,6 +2576,7 @@ async def market_feed(db: AsyncSession = Depends(get_db)):
             build_market_feed_from_quote_data,
             build_empty_market_feed,
         )
+
         # Reuse existing quote fetch
         exchange_data = {}
         for ex in _EXCHANGES:
@@ -2433,6 +2586,7 @@ async def market_feed(db: AsyncSession = Depends(get_db)):
     except Exception as e:
         logger.warning("market_feed_failed", error=str(e))
         from app.core.market_feed_service import build_empty_market_feed
+
         return build_empty_market_feed()
 
 
@@ -2446,6 +2600,7 @@ async def ops_aggregate():
     """B-10: Ops aggregate (read-only, health/availability/stale summary)."""
     try:
         from app.core.ops_aggregate_service import build_ops_aggregate
+
         return build_ops_aggregate()
     except Exception as e:
         logger.warning("ops_aggregate_failed", error=str(e))
@@ -2462,6 +2617,7 @@ async def governance_summary():
     """B-11: Governance summary (read-only, no enforcement change)."""
     try:
         from app.core.governance_summary_service import build_governance_summary
+
         return build_governance_summary()
     except Exception as e:
         logger.warning("governance_summary_failed", error=str(e))
@@ -2478,6 +2634,7 @@ async def alert_summary_detail():
     """B-13: Alert priority summary (read-only, no ack/write/mute)."""
     try:
         from app.core.alert_summary_service import build_alert_summary
+
         return build_alert_summary()
     except Exception as e:
         logger.warning("alert_summary_failed", error=str(e))
@@ -2487,6 +2644,7 @@ async def alert_summary_detail():
 # ---------------------------------------------------------------------------
 # 4-Tier Seal Chain Board — read-only unified view
 # ---------------------------------------------------------------------------
+
 
 @router.get("/api/four-tier-board", include_in_schema=False)
 async def four_tier_board():
@@ -2528,6 +2686,7 @@ async def four_tier_board():
 # ---------------------------------------------------------------------------
 # AutoFix / Evaluation Status — read-only (Skill Loop integration)
 # ---------------------------------------------------------------------------
+
 
 @router.get("/api/evaluation-status", include_in_schema=False)
 async def evaluation_status():
@@ -2594,9 +2753,15 @@ async def evaluation_status():
             return "STABLE"
         grade_rank = {"GREEN": 0, "YELLOW": 1, "RED": 2}
         grades = [grade_rank.get(e.get("grade", "RED"), 2) for e in recent[-3:]]
-        if all(grades[i] >= grades[i + 1] for i in range(len(grades) - 1)) and grades[0] > grades[-1]:
+        if (
+            all(grades[i] >= grades[i + 1] for i in range(len(grades) - 1))
+            and grades[0] > grades[-1]
+        ):
             return "IMPROVING"
-        if all(grades[i] <= grades[i + 1] for i in range(len(grades) - 1)) and grades[0] < grades[-1]:
+        if (
+            all(grades[i] <= grades[i + 1] for i in range(len(grades) - 1))
+            and grades[0] < grades[-1]
+        ):
             return "DECLINING"
         return "STABLE"
 
@@ -2657,8 +2822,7 @@ async def evaluation_status():
                 failure_type_counter[str(failure_type)] += 1
         recurrence_distribution = dict(recurrence_counter)
         top_failure_types = [
-            {"failure_type": ft, "count": cnt}
-            for ft, cnt in failure_type_counter.most_common(5)
+            {"failure_type": ft, "count": cnt} for ft, cnt in failure_type_counter.most_common(5)
         ]
 
     # Green / Red timestamps — prefer history, fall back to current evaluation
@@ -2684,7 +2848,9 @@ async def evaluation_status():
     governance_blocked = False
     blocked_at = None
     gov_summary = evaluation.get("governance_summary", {}) if isinstance(evaluation, dict) else {}
-    if gov_summary.get("status") == "BLOCK" or (isinstance(evaluation, dict) and evaluation.get("blocked")):
+    if gov_summary.get("status") == "BLOCK" or (
+        isinstance(evaluation, dict) and evaluation.get("blocked")
+    ):
         governance_blocked = True
         # blocked_at: find most recent history entry where governance_status == "BLOCK"
         for entry in reversed(grade_history):
@@ -2707,7 +2873,11 @@ async def evaluation_status():
 
     # Recent grades (last 7) and trend
     recent_grades = [
-        {"timestamp": e.get("timestamp"), "grade": e.get("grade"), "risk_score": e.get("risk_score")}
+        {
+            "timestamp": e.get("timestamp"),
+            "grade": e.get("grade"),
+            "risk_score": e.get("risk_score"),
+        }
         for e in grade_history[-7:]
         if isinstance(e, dict)
     ]
@@ -2832,6 +3002,7 @@ async def manual_action_execute(request: Request):
     """
     try:
         from app.core.manual_action_handler import validate_and_execute
+
         # Rebuild safety data server-side — never trust client
         safety_data = await _build_ops_safety_summary()
         receipt = validate_and_execute(
@@ -2844,6 +3015,7 @@ async def manual_action_execute(request: Request):
         from app.schemas.manual_action_schema import ManualActionReceipt, ManualActionDecision
         import uuid
         from datetime import timezone as tz
+
         return ManualActionReceipt(
             receipt_id=f"RCP-{uuid.uuid4().hex[:12]}",
             action_id=f"MA-ERR-{uuid.uuid4().hex[:8]}",
@@ -2864,6 +3036,7 @@ async def _build_ops_safety_summary() -> dict:
         from app.core.execution_gate import evaluate_execution_gate
         from app.core.operator_approval import issue_approval
         from app.core.execution_policy import evaluate_execution_policy
+
         pf = run_recovery_preflight()
         gate = evaluate_execution_gate()
         apr = issue_approval()
@@ -2903,10 +3076,17 @@ async def manual_action_rollback(request: Request):
     """C-04 Phase 7: Manual rollback — 9-stage chain revalidation required."""
     try:
         from app.core.manual_recovery_handler import manual_rollback
-        body = await request.json() if request.headers.get("content-type") == "application/json" else {}
+
+        body = (
+            await request.json()
+            if request.headers.get("content-type") == "application/json"
+            else {}
+        )
         safety_data = await _build_ops_safety_summary()
         op = _get_operator_id(request)
-        receipt = manual_rollback(safety_data, original_receipt_id=body.get("original_receipt_id", ""), operator_id=op)
+        receipt = manual_rollback(
+            safety_data, original_receipt_id=body.get("original_receipt_id", ""), operator_id=op
+        )
         return receipt.model_dump()
     except Exception as e:
         logger.error("manual_rollback_failed", error=str(e))
@@ -2918,10 +3098,17 @@ async def manual_action_retry(request: Request):
     """C-04 Phase 7: Manual retry — 9-stage chain revalidation required."""
     try:
         from app.core.manual_recovery_handler import manual_retry
-        body = await request.json() if request.headers.get("content-type") == "application/json" else {}
+
+        body = (
+            await request.json()
+            if request.headers.get("content-type") == "application/json"
+            else {}
+        )
         safety_data = await _build_ops_safety_summary()
         op = _get_operator_id(request)
-        receipt = manual_retry(safety_data, original_receipt_id=body.get("original_receipt_id", ""), operator_id=op)
+        receipt = manual_retry(
+            safety_data, original_receipt_id=body.get("original_receipt_id", ""), operator_id=op
+        )
         return receipt.model_dump()
     except Exception as e:
         logger.error("manual_retry_failed", error=str(e))
@@ -2933,6 +3120,7 @@ async def manual_action_simulate(request: Request):
     """C-04 Phase 7: Simulation — read-only chain check. No mutation."""
     try:
         from app.core.manual_recovery_handler import simulate_action
+
         safety_data = await _build_ops_safety_summary()
         op = _get_operator_id(request)
         receipt = simulate_action(safety_data, operator_id=op)
@@ -2947,6 +3135,7 @@ async def manual_action_preview(request: Request):
     """C-04 Phase 7: Preview — text-based action description. No computation."""
     try:
         from app.core.manual_recovery_handler import preview_action
+
         safety_data = await _build_ops_safety_summary()
         op = _get_operator_id(request)
         result = preview_action(safety_data, operator_id=op)
@@ -2960,6 +3149,7 @@ def _compute_global_status_bar(now: datetime) -> GlobalStatusBar:
     """제7조: 전역 상태 바 계산. 표시 전용."""
     try:
         import app.main as main_module
+
         app_instance = main_module.app
         gate = getattr(app_instance.state, "governance_gate", None)
 
@@ -2969,16 +3159,12 @@ def _compute_global_status_bar(now: datetime) -> GlobalStatusBar:
             ctx = gate.security_ctx
             if hasattr(ctx, "current"):
                 enforcement_state = (
-                    ctx.current.value
-                    if hasattr(ctx.current, "value")
-                    else str(ctx.current)
+                    ctx.current.value if hasattr(ctx.current, "value") else str(ctx.current)
                 )
 
         # Trading permission: conservative — only True when governance active
         # and security state is NORMAL. Display value only, not authority.
-        trading_permission = (
-            gate is not None and enforcement_state == "NORMAL"
-        )
+        trading_permission = gate is not None and enforcement_state == "NORMAL"
 
         return GlobalStatusBar(
             app_env=settings.app_env,
@@ -3004,26 +3190,24 @@ def _compute_global_status_bar(now: datetime) -> GlobalStatusBar:
         )
 
 
-async def _compute_integrity_panel(
-    db: AsyncSession, now: datetime
-) -> IntegrityPanel:
+async def _compute_integrity_panel(db: AsyncSession, now: datetime) -> IntegrityPanel:
     """제8조: 무결성 패널 계산. 표시용 계산만, 자동 점검 엔진 아님."""
     # CR-026: Mode 1 awareness — distinguish "no trades yet" from "data stale".
     from app.core.config import settings as _cfg
+
     is_testnet = getattr(_cfg, "binance_testnet", True)
 
     try:
         # Snapshot age: newest position update (primary)
         latest_pos = await db.execute(
-            select(Position.updated_at)
-            .order_by(Position.updated_at.desc())
-            .limit(1)
+            select(Position.updated_at).order_by(Position.updated_at.desc()).limit(1)
         )
         latest_ts = latest_pos.scalar()
 
         # Fallback: newest AssetSnapshot.snapshot_at (when no positions exist)
         if latest_ts is None:
             from app.models.asset_snapshot import AssetSnapshot
+
             latest_snap = await db.execute(
                 select(AssetSnapshot.snapshot_at)
                 .order_by(AssetSnapshot.snapshot_at.desc())
@@ -3072,6 +3256,7 @@ async def _compute_trading_safety_panel(db: AsyncSession) -> TradingSafetyPanel:
     # CR-026: Fail-soft per field. One query failure must not collapse entire panel.
     # CR-026: Mode 1 steady-state awareness — testnet observation is the default mode.
     from app.core.config import settings as _cfg
+
     is_testnet = getattr(_cfg, "binance_testnet", True)
 
     # --- Order metrics (fail-soft: isolated try/except) ---
@@ -3097,9 +3282,7 @@ async def _compute_trading_safety_panel(db: AsyncSession) -> TradingSafetyPanel:
         reject_count = rejected_result.scalar() or 0
 
         success_rate = (
-            round((total_orders - reject_count) / total_orders, 4)
-            if total_orders > 0
-            else None
+            round((total_orders - reject_count) / total_orders, 4) if total_orders > 0 else None
         )
 
         cancelled_result = await db.execute(
@@ -3118,14 +3301,11 @@ async def _compute_trading_safety_panel(db: AsyncSession) -> TradingSafetyPanel:
     enforcement = "NORMAL"
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate is not None and hasattr(gate, "security_ctx"):
             ctx = gate.security_ctx
-            state_val = (
-                ctx.current.value
-                if hasattr(ctx.current, "value")
-                else str(ctx.current)
-            )
+            state_val = ctx.current.value if hasattr(ctx.current, "value") else str(ctx.current)
             enforcement = state_val
             kill_switch = state_val in ("LOCKDOWN", "QUARANTINED")
     except Exception:
@@ -3170,6 +3350,7 @@ def _compute_incident_panel() -> IncidentEvidencePanel:
     """제10조: 사고·증거 패널. 현재/최근 요약만 표시. Playback/Recovery 금지."""
     try:
         import app.main as main_module
+
         app_instance = main_module.app
 
         # Check receipt store for most recent incident
@@ -3185,9 +3366,7 @@ def _compute_incident_panel() -> IncidentEvidencePanel:
                     last_confirmed_at=latest.get("stored_at"),
                     impact_scope=None,
                     auto_action_result=latest.get("policy_action"),
-                    operator_action_required=latest.get("severity_tier") in (
-                        "critical", "high"
-                    ),
+                    operator_action_required=latest.get("severity_tier") in ("critical", "high"),
                     evidence_receipt_id=latest.get("receipt_id"),
                 )
 
@@ -3279,9 +3458,7 @@ def _compute_system_status(
     )
 
 
-def _compute_dual_lock(
-    system_status: SystemStatus, trading_safety: TradingSafetyPanel
-) -> DualLock:
+def _compute_dual_lock(system_status: SystemStatus, trading_safety: TradingSafetyPanel) -> DualLock:
     """
     제42조: System Healthy / Trading Authorized 분리 표기.
     두 상태는 독립적. 시스템 정상이어도 거래 금지 가능.
@@ -3330,6 +3507,7 @@ def _compute_ops_score(
         # CR-026: Cold-start — no snapshot data. Check if workers are alive.
         try:
             import app.main as main_module
+
             gate = getattr(main_module.app.state, "governance_gate", None)
             if gate is not None:
                 connectivity_score = 0.6  # workers up, no snapshot yet

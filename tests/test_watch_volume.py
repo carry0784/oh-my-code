@@ -15,6 +15,7 @@ Tests the WATCH volume observation card (symmetric to REVIEW Volume):
 
 Run: pytest tests/test_watch_volume.py -v
 """
+
 import sys
 import json
 from pathlib import Path
@@ -28,16 +29,32 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services.order_service", "app.services.position_service",
-    "app.services.signal_service", "ccxt", "ccxt.async_support",
-    "redis", "celery", "asyncpg",
-    "kdexter", "kdexter.ledger", "kdexter.ledger.forbidden_ledger",
-    "kdexter.audit", "kdexter.audit.evidence_store",
-    "kdexter.state_machine", "kdexter.state_machine.security_state",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
+    "kdexter",
+    "kdexter.ledger",
+    "kdexter.ledger.forbidden_ledger",
+    "kdexter.audit",
+    "kdexter.audit.evidence_store",
+    "kdexter.state_machine",
+    "kdexter.state_machine.security_state",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -59,31 +76,40 @@ from app.schemas.watch_volume_schema import (
 
 # -- Helpers ---------------------------------------------------------------- #
 
+
 def _now_iso():
     return datetime.now(timezone.utc).isoformat()
 
+
 def _past_iso(seconds_ago):
     return (datetime.now(timezone.utc) - timedelta(seconds=seconds_ago)).isoformat()
+
 
 class _FakeLedger:
     def __init__(self, proposals=None, stale_count=0):
         self._data = proposals or []
         self._stale_count = stale_count
+
     def get_proposals(self):
         return self._data
+
     def get_board(self):
         return {
-            "total": len(self._data), "receipted_count": 0, "blocked_count": 0,
-            "failed_count": 0, "orphan_count": 0, "stale_count": self._stale_count,
-            "stale_threshold_seconds": 600.0, "guard_reason_top": [],
+            "total": len(self._data),
+            "receipted_count": 0,
+            "blocked_count": 0,
+            "failed_count": 0,
+            "orphan_count": 0,
+            "stale_count": self._stale_count,
+            "stale_threshold_seconds": 600.0,
+            "guard_reason_top": [],
         }
 
 
 def _agent_ledger_with_stale(count, age_seconds=700):
     """Create agent ledger with stale proposals. Default 700s = 1.17x → WATCH band."""
     proposals = [
-        {"proposal_id": f"AP-{i}", "status": "GUARDED",
-         "created_at": _past_iso(age_seconds)}
+        {"proposal_id": f"AP-{i}", "status": "GUARDED", "created_at": _past_iso(age_seconds)}
         for i in range(count)
     ]
     return _FakeLedger(proposals, stale_count=count)
@@ -92,9 +118,12 @@ def _agent_ledger_with_stale(count, age_seconds=700):
 def _exec_ledger_with_stale(count, age_seconds=350):
     """Create execution ledger with stale proposals (threshold=300s). 350s=1.17x → WATCH."""
     proposals = [
-        {"proposal_id": f"EP-{i}", "status": "EXEC_GUARDED",
-         "created_at": _past_iso(age_seconds),
-         "agent_proposal_id": f"AP-{i}"}
+        {
+            "proposal_id": f"EP-{i}",
+            "status": "EXEC_GUARDED",
+            "created_at": _past_iso(age_seconds),
+            "agent_proposal_id": f"AP-{i}",
+        }
         for i in range(count)
     ]
     return _FakeLedger(proposals, stale_count=count)
@@ -104,8 +133,8 @@ def _exec_ledger_with_stale(count, age_seconds=350):
 # AXIS 1: Volume Accuracy                                                     #
 # =========================================================================== #
 
-class TestWatchVolumeAccuracy:
 
+class TestWatchVolumeAccuracy:
     def test_zero_candidates_zero_watch(self):
         vol = build_watch_volume()
         assert vol.watch_total == 0
@@ -142,8 +171,8 @@ class TestWatchVolumeAccuracy:
 # AXIS 2: Tier Distribution                                                    #
 # =========================================================================== #
 
-class TestWatchTierDistribution:
 
+class TestWatchTierDistribution:
     def test_agent_tier_counted(self):
         action = _agent_ledger_with_stale(2, age_seconds=700)
         vol = build_watch_volume(action_ledger=action)
@@ -176,8 +205,8 @@ class TestWatchTierDistribution:
 # AXIS 3: Reason Distribution                                                  #
 # =========================================================================== #
 
-class TestWatchReasonDistribution:
 
+class TestWatchReasonDistribution:
     def test_stale_agent_reason_counted(self):
         action = _agent_ledger_with_stale(2, age_seconds=700)
         vol = build_watch_volume(action_ledger=action)
@@ -193,9 +222,12 @@ class TestWatchReasonDistribution:
         action = _agent_ledger_with_stale(3, age_seconds=700)
         vol = build_watch_volume(action_ledger=action)
         reason_sum = (
-            vol.by_reason.stale_agent + vol.by_reason.stale_execution
-            + vol.by_reason.stale_submit + vol.by_reason.orphan_exec_parent
-            + vol.by_reason.orphan_submit_parent + vol.by_reason.stale_and_orphan
+            vol.by_reason.stale_agent
+            + vol.by_reason.stale_execution
+            + vol.by_reason.stale_submit
+            + vol.by_reason.orphan_exec_parent
+            + vol.by_reason.orphan_submit_parent
+            + vol.by_reason.stale_and_orphan
         )
         assert reason_sum == vol.watch_total
 
@@ -208,8 +240,8 @@ class TestWatchReasonDistribution:
 # AXIS 4: Band Distribution                                                    #
 # =========================================================================== #
 
-class TestWatchBandDistribution:
 
+class TestWatchBandDistribution:
     def test_early_band_at_1_17x(self):
         """700s / 600s = 1.17x → early band."""
         action = _agent_ledger_with_stale(1, age_seconds=700)
@@ -231,7 +263,9 @@ class TestWatchBandDistribution:
         action = _agent_ledger_with_stale(3, age_seconds=700)
         vol = build_watch_volume(action_ledger=action)
         band_sum = vol.by_band.early + vol.by_band.review + vol.by_band.prolonged
-        stale_watch = vol.by_reason.stale_agent + vol.by_reason.stale_execution + vol.by_reason.stale_submit
+        stale_watch = (
+            vol.by_reason.stale_agent + vol.by_reason.stale_execution + vol.by_reason.stale_submit
+        )
         assert band_sum == stale_watch
 
 
@@ -239,8 +273,8 @@ class TestWatchBandDistribution:
 # AXIS 5: Density Signal                                                       #
 # =========================================================================== #
 
-class TestWatchDensitySignal:
 
+class TestWatchDensitySignal:
     def test_no_candidates_description(self):
         vol = build_watch_volume()
         assert vol.density.description == "No WATCH candidates."
@@ -281,8 +315,8 @@ class TestWatchDensitySignal:
 # AXIS 6: Safety Invariants                                                    #
 # =========================================================================== #
 
-class TestWatchSafetyInvariants:
 
+class TestWatchSafetyInvariants:
     def test_safety_all_true_empty(self):
         vol = build_watch_volume()
         assert vol.safety.read_only is True
@@ -303,18 +337,25 @@ class TestWatchSafetyInvariants:
     def test_source_has_no_write_methods(self):
         import inspect
         import app.services.watch_volume_service as mod
+
         source = inspect.getsource(mod)
-        forbidden = ["propose_and_guard", "record_receipt", "transition_to",
-                      ".delete(", ".remove(", ".write("]
+        forbidden = [
+            "propose_and_guard",
+            "record_receipt",
+            "transition_to",
+            ".delete(",
+            ".remove(",
+            ".write(",
+        ]
         for keyword in forbidden:
             assert keyword not in source, f"Forbidden keyword '{keyword}' in source"
 
     def test_source_has_no_prediction_keywords(self):
         import inspect
         import app.services.watch_volume_service as mod
+
         source = inspect.getsource(mod)
-        forbidden = ["predict", "forecast", "score(", "auto_promote",
-                      "auto_escalate", "auto_judge"]
+        forbidden = ["predict", "forecast", "score(", "auto_promote", "auto_escalate", "auto_judge"]
         for keyword in forbidden:
             assert keyword not in source, f"Prediction keyword '{keyword}' in source"
 
@@ -331,15 +372,21 @@ class TestWatchSafetyInvariants:
 # AXIS 7: Schema Drift Sentinel                                                #
 # =========================================================================== #
 
-class TestWatchSchemaDriftSentinel:
 
+class TestWatchSchemaDriftSentinel:
     def test_watch_volume_field_count(self):
         assert len(WatchVolumeSchema.model_fields) == 8
 
     def test_watch_volume_field_names(self):
         expected = {
-            "watch_total", "candidate_total", "watch_ratio",
-            "by_tier", "by_reason", "by_band", "density", "safety",
+            "watch_total",
+            "candidate_total",
+            "watch_ratio",
+            "by_tier",
+            "by_reason",
+            "by_band",
+            "density",
+            "safety",
         }
         assert set(WatchVolumeSchema.model_fields.keys()) == expected
 
@@ -363,36 +410,42 @@ class TestWatchSchemaDriftSentinel:
 # AXIS 8: Board Integration                                                    #
 # =========================================================================== #
 
-class TestWatchBoardIntegration:
 
+class TestWatchBoardIntegration:
     def test_board_schema_has_watch_volume(self):
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         assert "watch_volume" in FourTierBoardResponse.model_fields
 
     def test_board_schema_watch_volume_is_typed(self):
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         field_info = FourTierBoardResponse.model_fields["watch_volume"]
         assert field_info.annotation is WatchVolumeSchema
 
     def test_board_service_returns_typed_watch_volume(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert isinstance(board.watch_volume, WatchVolumeSchema)
 
     def test_board_watch_volume_safety_intact(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.watch_volume.safety.read_only is True
         assert board.watch_volume.safety.no_prediction is True
 
     def test_board_watch_volume_with_data(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         action = _agent_ledger_with_stale(2, age_seconds=700)
         board = build_four_tier_board(action_ledger=action)
         assert board.watch_volume.watch_total >= 2
 
     def test_board_serializes_watch_volume_to_json(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         j = json.loads(board.model_dump_json())
         assert "watch_volume" in j
@@ -401,6 +454,7 @@ class TestWatchBoardIntegration:
 
     def test_board_watch_volume_empty_is_zero_safe(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.watch_volume.watch_total == 0
         assert board.watch_volume.candidate_total == 0

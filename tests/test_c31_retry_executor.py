@@ -40,8 +40,8 @@ EXECUTOR_PATH = PROJECT_ROOT / "app" / "core" / "retry_executor.py"
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _make_store_with_plan(channel="external", incident="inc_001",
-                          eligible_seconds=0):
+
+def _make_store_with_plan(channel="external", incident="inc_001", eligible_seconds=0):
     """Create a store with one immediately-eligible pending plan."""
     store = RetryPlanStore(ttl_seconds=9999)
     store.enqueue(
@@ -67,7 +67,6 @@ class FakeChannelResult:
 # C31-1: 모듈 구조
 # ===========================================================================
 class TestC31ModuleStructure:
-
     def test_module_exists(self):
         assert EXECUTOR_PATH.exists()
 
@@ -97,7 +96,6 @@ class TestC31ModuleStructure:
 # C31-2: Single-pass execution
 # ===========================================================================
 class TestC31SinglePass:
-
     def test_empty_store_returns_zero(self):
         store = RetryPlanStore()
         result = execute_retry_pass(store)
@@ -127,7 +125,6 @@ class TestC31SinglePass:
 # C31-3: Eligibility filtering
 # ===========================================================================
 class TestC31EligibilityFiltering:
-
     def test_future_plan_not_eligible(self):
         store = RetryPlanStore(ttl_seconds=9999)
         store.enqueue(
@@ -159,14 +156,15 @@ class TestC31EligibilityFiltering:
 # C31-4: Bounded execution (max_executions)
 # ===========================================================================
 class TestC31BoundedExecution:
-
     def test_respects_max_executions(self):
         store = RetryPlanStore(ttl_seconds=9999)
         for i in range(10):
             store.enqueue(
-                channel=f"ch{i}", reason="timeout",
+                channel=f"ch{i}",
+                reason="timeout",
                 reliability_tier="transient_failure",
-                retryable=True, retry_after_seconds=0,
+                retryable=True,
+                retry_after_seconds=0,
                 incident=f"inc_{i}",
             )
         fake_result = FakeChannelResult(channel="ext", delivered=True)
@@ -181,9 +179,11 @@ class TestC31BoundedExecution:
         store = RetryPlanStore(ttl_seconds=9999)
         for i in range(10):
             store.enqueue(
-                channel=f"ch{i}", reason="timeout",
+                channel=f"ch{i}",
+                reason="timeout",
                 reliability_tier="transient_failure",
-                retryable=True, retry_after_seconds=0,
+                retryable=True,
+                retry_after_seconds=0,
                 incident=f"inc_{i}",
             )
         fake_result = FakeChannelResult(channel="ext", delivered=True)
@@ -199,7 +199,6 @@ class TestC31BoundedExecution:
 # C31-5: Success → mark_executed
 # ===========================================================================
 class TestC31Success:
-
     def test_success_marks_executed(self):
         store = _make_store_with_plan()
         fake_result = FakeChannelResult(channel="external", delivered=True, detail="ok")
@@ -228,7 +227,6 @@ class TestC31Success:
 # C31-6: Failure → mark_expired
 # ===========================================================================
 class TestC31Failure:
-
     def test_failure_marks_expired(self):
         store = _make_store_with_plan()
         fake_result = FakeChannelResult(channel="external", delivered=False, detail="timeout")
@@ -255,7 +253,6 @@ class TestC31Failure:
 # C31-7: No sender → mark_expired
 # ===========================================================================
 class TestC31NoSender:
-
     def test_no_sender_marks_expired(self):
         store = _make_store_with_plan(channel="nonexistent")
 
@@ -271,7 +268,6 @@ class TestC31NoSender:
 # C31-8: Fail-closed
 # ===========================================================================
 class TestC31FailClosed:
-
     def test_sender_exception_handled(self):
         store = _make_store_with_plan()
         mock_sender = MagicMock(side_effect=RuntimeError("boom"))
@@ -296,10 +292,22 @@ class TestC31FailClosed:
 
     def test_partial_success_failure_mix(self):
         store = RetryPlanStore(ttl_seconds=9999)
-        store.enqueue(channel="ext", reason="a", reliability_tier="t",
-                      retryable=True, retry_after_seconds=0, incident="1")
-        store.enqueue(channel="slack", reason="b", reliability_tier="t",
-                      retryable=True, retry_after_seconds=0, incident="2")
+        store.enqueue(
+            channel="ext",
+            reason="a",
+            reliability_tier="t",
+            retryable=True,
+            retry_after_seconds=0,
+            incident="1",
+        )
+        store.enqueue(
+            channel="slack",
+            reason="b",
+            reliability_tier="t",
+            retryable=True,
+            retry_after_seconds=0,
+            incident="2",
+        )
 
         call_count = 0
 
@@ -321,7 +329,6 @@ class TestC31FailClosed:
 # C31-9: Summary helper
 # ===========================================================================
 class TestC31Summary:
-
     def test_summary_from_store(self):
         store = _make_store_with_plan()
         summary = get_retry_summary(store)
@@ -339,13 +346,16 @@ class TestC31Summary:
 # C31-10: 금지 조항
 # ===========================================================================
 class TestC31Forbidden:
-
     def test_no_forbidden_strings(self):
         content = EXECUTOR_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace', 'agent_analysis', 'error_class',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
+            "agent_analysis",
+            "error_class",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

@@ -101,6 +101,7 @@ TEMPLATES = {
 
 # ── Injection Logic ──────────────────────────────────────────────────────── #
 
+
 def inject(modes: list[str]) -> dict:
     """Inject synthetic failures. Returns injection report."""
     content = _HEADER
@@ -183,6 +184,7 @@ def _log_injection(report: dict) -> None:
 
 # ── Scenario Runners ─────────────────────────────────────────────────────── #
 
+
 def scenario_green() -> dict:
     """Verify GREEN: clean state, all pass."""
     clean()
@@ -216,20 +218,33 @@ def scenario_block() -> dict:
 
 # ── CLI ───────────────────────────────────────────────────────────────────── #
 
+
 def main():
     parser = argparse.ArgumentParser(description="K-Dexter Synthetic Failure Injector")
-    parser.add_argument("--mode", required=True,
-                        choices=["clean", "import", "test", "governance", "lint",
-                                 "multi", "scenario-green", "scenario-yellow",
-                                 "scenario-red", "scenario-block", "scenario-all"])
-    parser.add_argument("--count", type=int, default=1,
-                        help="Repetition count for multi mode")
+    parser.add_argument(
+        "--mode",
+        required=True,
+        choices=[
+            "clean",
+            "import",
+            "test",
+            "governance",
+            "lint",
+            "multi",
+            "scenario-green",
+            "scenario-yellow",
+            "scenario-red",
+            "scenario-block",
+            "scenario-all",
+        ],
+    )
+    parser.add_argument("--count", type=int, default=1, help="Repetition count for multi mode")
     args = parser.parse_args()
 
     if args.mode == "clean":
         clean()
     elif args.mode == "multi":
-        modes = list(TEMPLATES.keys())[:args.count]
+        modes = list(TEMPLATES.keys())[: args.count]
         inject(modes)
     elif args.mode == "scenario-green":
         scenario_green()
@@ -267,11 +282,22 @@ def _run_4state_verification():
     clean()
     r = subprocess.run(
         [sys.executable, "scripts/autofix_loop.py", "--scope", "governance", "--dry-run"],
-        capture_output=True, text=True, timeout=180, env=env, errors="replace",
+        capture_output=True,
+        text=True,
+        timeout=180,
+        env=env,
+        errors="replace",
     )
     grade1 = _extract_grade(r.stdout)
-    results.append({"state": "GREEN", "expected": "GREEN", "actual": grade1,
-                     "pass": grade1 == "GREEN", "exit_code": r.returncode})
+    results.append(
+        {
+            "state": "GREEN",
+            "expected": "GREEN",
+            "actual": grade1,
+            "pass": grade1 == "GREEN",
+            "exit_code": r.returncode,
+        }
+    )
     print(f"  Result: {grade1} (expected GREEN) {'PASS' if grade1 == 'GREEN' else 'FAIL'}")
 
     # ── State 2: YELLOW (single test fail) ──────────────────────── #
@@ -282,25 +308,43 @@ def _run_4state_verification():
     # Run pytest on synthetic file to confirm failures exist
     r = subprocess.run(
         [sys.executable, "-m", "pytest", str(INJECT_FILE), "--tb=short", "-q"],
-        capture_output=True, text=True, timeout=60, env=env, errors="replace",
+        capture_output=True,
+        text=True,
+        timeout=60,
+        env=env,
+        errors="replace",
     )
     # Write test result: 1 failed + 1 error = risk 1+2 = 3 (YELLOW)
     synth_result = {
-        "scope": "synthetic", "status": "FAIL",
-        "passed": 0, "failed": 1, "errors": 1, "total": 2,
+        "scope": "synthetic",
+        "status": "FAIL",
+        "passed": 0,
+        "failed": 1,
+        "errors": 1,
+        "total": 2,
         "failures": [
-            {"test_id": "tests/test_synthetic_failures.py::TestSyntheticAssertionFailure::test_always_fails",
-             "detail": "assert 0 == 42"},
-            {"test_id": "tests/test_synthetic_failures.py::TestSyntheticImportFailure::test_bad_import",
-             "detail": "ModuleNotFoundError: nonexistent_module", "kind": "error"},
+            {
+                "test_id": "tests/test_synthetic_failures.py::TestSyntheticAssertionFailure::test_always_fails",
+                "detail": "assert 0 == 42",
+            },
+            {
+                "test_id": "tests/test_synthetic_failures.py::TestSyntheticImportFailure::test_bad_import",
+                "detail": "ModuleNotFoundError: nonexistent_module",
+                "kind": "error",
+            },
         ],
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
     Path("data/test_results.json").write_text(
-        json.dumps(synth_result, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(synth_result, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     r2 = subprocess.run(
         [sys.executable, "scripts/evaluate_results.py", "--format", "json"],
-        capture_output=True, text=True, timeout=30, env=env, errors="replace",
+        capture_output=True,
+        text=True,
+        timeout=30,
+        env=env,
+        errors="replace",
     )
     try:
         eval_data = json.loads(r2.stdout.split("\nEvaluation")[0])
@@ -310,9 +354,16 @@ def _run_4state_verification():
         grade2 = "UNKNOWN"
         risk2 = "?"
     is_non_green = grade2 in ("YELLOW", "RED")
-    results.append({"state": "YELLOW", "expected": "YELLOW", "actual": grade2,
-                     "pass": is_non_green, "exit_code": r.returncode,
-                     "risk_score": risk2})
+    results.append(
+        {
+            "state": "YELLOW",
+            "expected": "YELLOW",
+            "actual": grade2,
+            "pass": is_non_green,
+            "exit_code": r.returncode,
+            "risk_score": risk2,
+        }
+    )
     print(f"  Result: {grade2} risk={risk2} (expected YELLOW) {'PASS' if is_non_green else 'FAIL'}")
 
     # ── State 3: RED (multiple failures) ──────────────────────── #
@@ -322,27 +373,46 @@ def _run_4state_verification():
     inject(["import", "test", "governance"])
     r = subprocess.run(
         [sys.executable, "-m", "pytest", str(INJECT_FILE), "--tb=short", "-q"],
-        capture_output=True, text=True, timeout=60, env=env, errors="replace",
+        capture_output=True,
+        text=True,
+        timeout=60,
+        env=env,
+        errors="replace",
     )
     # Construct multi-failure test data
     synth_result = {
-        "scope": "synthetic", "status": "FAIL",
-        "passed": 0, "failed": 2, "errors": 1, "total": 3,
+        "scope": "synthetic",
+        "status": "FAIL",
+        "passed": 0,
+        "failed": 2,
+        "errors": 1,
+        "total": 3,
         "failures": [
-            {"test_id": "tests/test_synthetic_failures.py::TestSyntheticImportFailure::test_bad_import",
-             "detail": "ModuleNotFoundError"},
-            {"test_id": "tests/test_synthetic_failures.py::TestSyntheticAssertionFailure::test_always_fails",
-             "detail": "assert 0 == 42"},
-            {"test_id": "tests/test_synthetic_failures.py::TestSyntheticGovernanceProximity::test_governance_gate_bypass_attempt",
-             "detail": "AssertionError: governance gate"},
+            {
+                "test_id": "tests/test_synthetic_failures.py::TestSyntheticImportFailure::test_bad_import",
+                "detail": "ModuleNotFoundError",
+            },
+            {
+                "test_id": "tests/test_synthetic_failures.py::TestSyntheticAssertionFailure::test_always_fails",
+                "detail": "assert 0 == 42",
+            },
+            {
+                "test_id": "tests/test_synthetic_failures.py::TestSyntheticGovernanceProximity::test_governance_gate_bypass_attempt",
+                "detail": "AssertionError: governance gate",
+            },
         ],
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
     Path("data/test_results.json").write_text(
-        json.dumps(synth_result, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(synth_result, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     r2 = subprocess.run(
         [sys.executable, "scripts/evaluate_results.py", "--format", "json"],
-        capture_output=True, text=True, timeout=30, env=env, errors="replace",
+        capture_output=True,
+        text=True,
+        timeout=30,
+        env=env,
+        errors="replace",
     )
     try:
         eval_data = json.loads(r2.stdout.split("\nEvaluation")[0])
@@ -352,10 +422,19 @@ def _run_4state_verification():
         grade3 = "UNKNOWN"
         risk3 = "?"
     is_red_ish = grade3 in ("YELLOW", "RED")
-    results.append({"state": "RED", "expected": "YELLOW/RED", "actual": grade3,
-                     "pass": is_red_ish, "exit_code": r.returncode,
-                     "risk_score": risk3})
-    print(f"  Result: {grade3} risk={risk3} (expected YELLOW/RED) {'PASS' if is_red_ish else 'FAIL'}")
+    results.append(
+        {
+            "state": "RED",
+            "expected": "YELLOW/RED",
+            "actual": grade3,
+            "pass": is_red_ish,
+            "exit_code": r.returncode,
+            "risk_score": risk3,
+        }
+    )
+    print(
+        f"  Result: {grade3} risk={risk3} (expected YELLOW/RED) {'PASS' if is_red_ish else 'FAIL'}"
+    )
 
     # ── State 4: BLOCK (governance check) ──────────────────────── #
     print("\n" + "-" * 50)
@@ -363,9 +442,18 @@ def _run_4state_verification():
     print("-" * 50)
     clean()
     r = subprocess.run(
-        [sys.executable, "scripts/governance_check.py", "--files",
-         "app/agents/governance_gate.py", "--json"],
-        capture_output=True, text=True, timeout=30, env=env, errors="replace",
+        [
+            sys.executable,
+            "scripts/governance_check.py",
+            "--files",
+            "app/agents/governance_gate.py",
+            "--json",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        env=env,
+        errors="replace",
     )
     output = (r.stdout + r.stderr).strip()
     try:
@@ -384,8 +472,15 @@ def _run_4state_verification():
         else:
             judgment = f"PARSE_ERROR"
     is_block = judgment == "BLOCK"
-    results.append({"state": "BLOCK", "expected": "BLOCK", "actual": judgment,
-                     "pass": is_block, "exit_code": r.returncode})
+    results.append(
+        {
+            "state": "BLOCK",
+            "expected": "BLOCK",
+            "actual": judgment,
+            "pass": is_block,
+            "exit_code": r.returncode,
+        }
+    )
     print(f"  Result: {judgment} (expected BLOCK) {'PASS' if is_block else 'FAIL'}")
 
     # ── Cleanup ─────────────────────────────────────────────────── #

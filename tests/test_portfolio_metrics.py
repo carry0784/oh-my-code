@@ -4,10 +4,20 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config", "structlog",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
+    "structlog",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -24,6 +34,7 @@ from app.services.portfolio_metrics import PortfolioMetricsCalculator
 
 INITIAL = 10_000.0
 
+
 @pytest.fixture
 def calc():
     return PortfolioMetricsCalculator()
@@ -37,6 +48,7 @@ def _curve(n=100, start=10_000.0, step=10.0):
 # ---------------------------------------------------------------------------
 # test_portfolio_equity_weighted
 # ---------------------------------------------------------------------------
+
 
 def test_portfolio_equity_weighted(calc):
     """Combined portfolio equity reflects the weighted blend of components."""
@@ -56,6 +68,7 @@ def test_portfolio_equity_weighted(calc):
 # test_portfolio_return_pct
 # ---------------------------------------------------------------------------
 
+
 def test_portfolio_return_pct(calc):
     """Return percentage is (end - start) / start * 100."""
     curve = _curve(101, start=10_000.0, step=10.0)  # ends at 11_000 → +10 %
@@ -71,12 +84,13 @@ def test_portfolio_return_pct(calc):
 # test_portfolio_max_drawdown
 # ---------------------------------------------------------------------------
 
+
 def test_portfolio_max_drawdown(calc):
     """Max drawdown is detected when equity falls from a peak."""
     # Rises then falls: peak at index 50 = 10_500, trough at index 100 = 10_000
     # drawdown ≈ 500/10_500 * 100 ≈ 4.76 %
-    rise  = [10_000.0 + i * 10.0 for i in range(51)]   # 10_000 → 10_500
-    fall  = [10_500.0 - i * 10.0 for i in range(1, 51)] # 10_490 → 10_010
+    rise = [10_000.0 + i * 10.0 for i in range(51)]  # 10_000 → 10_500
+    fall = [10_500.0 - i * 10.0 for i in range(1, 51)]  # 10_490 → 10_010
     curve = rise + fall
     weights = {"s1": 1.0}
     equity_curves = {"s1": curve}
@@ -92,6 +106,7 @@ def test_portfolio_max_drawdown(calc):
 # ---------------------------------------------------------------------------
 # test_portfolio_sharpe_positive
 # ---------------------------------------------------------------------------
+
 
 def test_portfolio_sharpe_positive(calc):
     """A consistently profitable portfolio yields a positive Sharpe ratio."""
@@ -109,6 +124,7 @@ def test_portfolio_sharpe_positive(calc):
 # test_effective_n_equal_weights
 # ---------------------------------------------------------------------------
 
+
 def test_effective_n_equal_weights(calc):
     """Equal weights across N strategies yield effective_n_strategies = N."""
     n = 4
@@ -123,6 +139,7 @@ def test_effective_n_equal_weights(calc):
 # ---------------------------------------------------------------------------
 # test_diversification_benefit
 # ---------------------------------------------------------------------------
+
 
 def test_diversification_benefit(calc):
     """Diversification benefit > 0 when component correlations are below 1."""

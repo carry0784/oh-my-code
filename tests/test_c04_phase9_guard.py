@@ -25,7 +25,6 @@ def _route():
 # P9-1: Phase 9 UI elements exist
 # ===========================================================================
 class TestP9UIExists:
-
     def test_p9_container(self):
         assert 'id="t3sc-c04-p9"' in _html()
 
@@ -42,50 +41,48 @@ class TestP9UIExists:
         assert 'id="t3sc-c04-p9-stale"' in _html()
 
     def test_no_exec_label(self):
-        assert 't3sc-c04-p9-label-noexec' in _html()
+        assert "t3sc-c04-p9-label-noexec" in _html()
 
     def test_no_auto_label(self):
-        assert 't3sc-c04-p9-label-noauto' in _html()
+        assert "t3sc-c04-p9-label-noauto" in _html()
 
     def test_readonly_label(self):
-        assert 't3sc-c04-p9-label-readonly' in _html()
+        assert "t3sc-c04-p9-label-readonly" in _html()
 
     def test_phase_explain(self):
         assert 'id="t3sc-c04-p9-explain"' in _html()
 
     def test_render_function(self):
-        assert '_renderC04Phase9' in _html()
+        assert "_renderC04Phase9" in _html()
 
 
 # ===========================================================================
 # P9-2: Label content
 # ===========================================================================
 class TestP9LabelContent:
-
     def test_no_execution_text(self):
-        assert 'NO EXECUTION' in _html()
+        assert "NO EXECUTION" in _html()
 
     def test_no_auto_text(self):
-        assert 'NO AUTO' in _html()
+        assert "NO AUTO" in _html()
 
     def test_readonly_text(self):
-        assert 'READ-ONLY' in _html()
+        assert "READ-ONLY" in _html()
 
     def test_phase_explanation(self):
         html = _html()
-        assert 'Boundary refinement' in html
-        assert 'No execution authority' in html
+        assert "Boundary refinement" in html
+        assert "No execution authority" in html
 
     def test_prerequisite_matrix_title(self):
         html = _html()
-        assert 'Prerequisite Matrix' in html
+        assert "Prerequisite Matrix" in html
 
 
 # ===========================================================================
 # P9-3: No new endpoint
 # ===========================================================================
 class TestP9NoNewEndpoint:
-
     def test_post_count_5(self):
         assert _route().count("@router.post") == 5
 
@@ -108,13 +105,16 @@ class TestP9NoNewEndpoint:
 # P9-4: No execution semantics in Phase 9 renderer
 # ===========================================================================
 class TestP9NoExecution:
-
     def _get_p9_body(self):
         html = _html()
         start = html.find("function _renderC04Phase9")
         assert start != -1
-        rest = html[start + 30:]
-        end = rest.find("\nfunction ") if rest.find("\nfunction ") != -1 else rest.find("\n// Phase 7")
+        rest = html[start + 30 :]
+        end = (
+            rest.find("\nfunction ")
+            if rest.find("\nfunction ") != -1
+            else rest.find("\n// Phase 7")
+        )
         return rest[:end].lower() if end != -1 else rest[:2000].lower()
 
     def test_no_fetch(self):
@@ -143,9 +143,8 @@ class TestP9NoExecution:
 # P9-5: Phase isolation
 # ===========================================================================
 class TestP9PhaseIsolation:
-
     def test_c04_still_sealed(self):
-        assert 't3sc-sealed' in _html()
+        assert "t3sc-sealed" in _html()
 
     def test_phase5_exec_btn(self):
         assert 'id="t3sc-c04-exec-btn"' in _html()
@@ -160,7 +159,7 @@ class TestP9PhaseIsolation:
 
     def test_safe_cards_intact(self):
         html = _html()
-        for n in ['01', '02', '03', '05', '06', '07', '08', '09']:
+        for n in ["01", "02", "03", "05", "06", "07", "08", "09"]:
             assert f'id="t3sc-c{n}"' in html
 
 
@@ -168,7 +167,6 @@ class TestP9PhaseIsolation:
 # P9-6: Blocked dominance
 # ===========================================================================
 class TestP9BlockedDominance:
-
     def test_blocked_class_in_labels(self):
         """Block detail should use blocked class."""
         html = _html()
@@ -179,9 +177,13 @@ class TestP9BlockedDominance:
         """Phase 9 area must not have any execution-like control."""
         html = _html()
         p9_start = html.find('id="t3sc-c04-p9"')
-        p9_end = html.find('</div>\n    </div>\n    <!-- C-05', p9_start)
-        p9 = html[p9_start:p9_end].lower() if p9_end != -1 else html[p9_start:p9_start + 2000].lower()
-        assert '<button' not in p9
-        assert 'onclick' not in p9
-        assert '<form' not in p9
-        assert '<input' not in p9
+        p9_end = html.find("</div>\n    </div>\n    <!-- C-05", p9_start)
+        p9 = (
+            html[p9_start:p9_end].lower()
+            if p9_end != -1
+            else html[p9_start : p9_start + 2000].lower()
+        )
+        assert "<button" not in p9
+        assert "onclick" not in p9
+        assert "<form" not in p9
+        assert "<input" not in p9

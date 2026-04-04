@@ -11,6 +11,7 @@ Responsibilities:
   3. Track execution results
   4. Produce evidence bundles (M-07)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -33,9 +34,11 @@ from kdexter.tcl.commands import (
 # Data models
 # ------------------------------------------------------------------ #
 
+
 @dataclass
 class ExecutionResult:
     """Result of executing a signal through TCL."""
+
     signal_id: str
     transcript: Optional[CommandTranscript] = None
     success: bool = False
@@ -46,6 +49,7 @@ class ExecutionResult:
 # ------------------------------------------------------------------ #
 # L8 Execution Cell
 # ------------------------------------------------------------------ #
+
 
 class ExecutionCell:
     """
@@ -138,12 +142,14 @@ class ExecutionCell:
             action=f"{signal.direction.value} {signal.symbol} qty={signal.quantity}",
             before_state=SignalStatus.SIZED.value,
             after_state=signal.status.value,
-            artifacts=[{
-                "signal_id": signal.signal_id,
-                "transcript_id": transcript.transcript_id,
-                "succeeded": transcript.succeeded,
-                "mode": exec_mode.value,
-            }],
+            artifacts=[
+                {
+                    "signal_id": signal.signal_id,
+                    "transcript_id": transcript.transcript_id,
+                    "succeeded": transcript.succeeded,
+                    "mode": exec_mode.value,
+                }
+            ],
         )
         self._evidence.store(bundle)
 

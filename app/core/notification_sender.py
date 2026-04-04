@@ -19,6 +19,7 @@ Sender contract:
   Input:  snapshot dict (from C-13) + routing dict (from C-14)
   Output: NotificationReceipt with per-channel results
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -30,9 +31,11 @@ from typing import Any, Callable
 # Data models
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ChannelResult:
     """Result of a single channel send attempt."""
+
     channel: str
     delivered: bool
     detail: str = ""
@@ -41,6 +44,7 @@ class ChannelResult:
 @dataclass
 class NotificationReceipt:
     """Aggregate receipt for all channel send attempts."""
+
     attempted_at: str = ""
     severity_tier: str = ""
     channels_attempted: int = 0
@@ -72,6 +76,7 @@ def get_sender(channel: str) -> SenderFn | None:
 # Built-in senders (stubs — real implementations in future cards)
 # ---------------------------------------------------------------------------
 
+
 def _send_console(snapshot: dict, routing: dict) -> ChannelResult:
     """Console sender — logs to stdout. Always succeeds."""
     highest = snapshot.get("highest_incident", "NONE")
@@ -101,6 +106,7 @@ def _send_external(snapshot: dict, routing: dict) -> ChannelResult:
     """
     try:
         from app.core.config import settings
+
         webhook_url = getattr(settings, "notifier_webhook_url", "")
     except Exception:
         webhook_url = ""
@@ -114,6 +120,7 @@ def _send_external(snapshot: dict, routing: dict) -> ChannelResult:
 
     try:
         from app.core.real_notifier_adapter import send_webhook, format_discord_payload
+
         payload = format_discord_payload(snapshot)
         success = send_webhook(webhook_url, payload)
         return ChannelResult(
@@ -137,6 +144,7 @@ register_sender("external", _send_external)
 # C-27: Register multi-notifier adapters
 try:
     from app.core.notifier_adapters import send_file, send_slack
+
     register_sender("file", send_file)
     register_sender("slack", send_slack)
 except Exception:
@@ -146,6 +154,7 @@ except Exception:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def send_notifications(snapshot: dict[str, Any], routing: dict[str, Any]) -> NotificationReceipt:
     """
@@ -174,11 +183,13 @@ def send_notifications(snapshot: dict[str, Any], routing: dict[str, Any]) -> Not
     for channel in channels:
         sender = get_sender(channel)
         if sender is None:
-            receipt.results.append(ChannelResult(
-                channel=channel,
-                delivered=False,
-                detail=f"no sender registered for channel: {channel}",
-            ))
+            receipt.results.append(
+                ChannelResult(
+                    channel=channel,
+                    delivered=False,
+                    detail=f"no sender registered for channel: {channel}",
+                )
+            )
             continue
 
         try:
@@ -187,10 +198,12 @@ def send_notifications(snapshot: dict[str, Any], routing: dict[str, Any]) -> Not
             if result.delivered:
                 receipt.channels_delivered += 1
         except Exception as e:
-            receipt.results.append(ChannelResult(
-                channel=channel,
-                delivered=False,
-                detail=f"sender error: {str(e)[:100]}",
-            ))
+            receipt.results.append(
+                ChannelResult(
+                    channel=channel,
+                    delivered=False,
+                    detail=f"sender error: {str(e)[:100]}",
+                )
+            )
 
     return receipt

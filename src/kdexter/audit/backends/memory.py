@@ -7,6 +7,7 @@ Used by all tests and as the default when no backend is specified.
 Append-only: duplicate bundle_id raises DuplicateEvidenceError.
 NOT_DURABLE: evidence is lost on process restart.
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -43,8 +44,7 @@ class InMemoryBackend(EvidenceBackend):
         return sum(1 for b in self._bundles.values() if b.actor == actor)
 
     def list_by_trigger(self, trigger: str) -> list[EvidenceBundle]:
-        return [b for b in self._bundles.values()
-                if b.trigger and b.trigger.startswith(trigger)]
+        return [b for b in self._bundles.values() if b.trigger and b.trigger.startswith(trigger)]
 
     def list_by_actor(self, actor: str) -> list[EvidenceBundle]:
         return [b for b in self._bundles.values() if b.actor == actor]
@@ -72,7 +72,11 @@ class InMemoryBackend(EvidenceBackend):
                 if phase == "PRE":
                     pre_ids.add(b.bundle_id if hasattr(b, "bundle_id") else "")
                 elif phase in ("POST", "ERROR"):
-                    lid = art.get("pre_evidence_id", "") if isinstance(art, dict) else getattr(art, "pre_evidence_id", "")
+                    lid = (
+                        art.get("pre_evidence_id", "")
+                        if isinstance(art, dict)
+                        else getattr(art, "pre_evidence_id", "")
+                    )
                     if lid:
                         linked.add(lid)
         return len(pre_ids - linked)

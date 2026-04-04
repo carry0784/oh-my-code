@@ -8,6 +8,7 @@ submit decisions, approvals, and overrides.
 
 Machine code MUST NOT modify decisions stored here.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -79,8 +80,7 @@ class HumanDecisionInterface:
         return self._decisions.get(decision_id)
 
     def list_pending(self) -> list[HumanDecision]:
-        return [d for d in self._decisions.values()
-                if d.status == DecisionStatus.PENDING]
+        return [d for d in self._decisions.values() if d.status == DecisionStatus.PENDING]
 
     def list_all(self) -> list[HumanDecision]:
         return list(self._decisions.values())

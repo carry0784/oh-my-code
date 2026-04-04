@@ -15,7 +15,9 @@ class SignalCreate(BaseModel):
     stop_loss: float | None = None
     take_profit: float | None = None
     confidence: float = Field(0.0, ge=0.0, le=1.0)
-    signal_metadata: dict = Field(default_factory=dict, alias="metadata", serialization_alias="metadata")
+    signal_metadata: dict = Field(
+        default_factory=dict, alias="metadata", serialization_alias="metadata"
+    )
 
 
 class SignalResponse(BaseModel):

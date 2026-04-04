@@ -43,7 +43,6 @@ def _make_snapshot(**overrides):
 # C22-1: 모듈 구조
 # ===========================================================================
 class TestC22ModuleStructure:
-
     def test_module_exists(self):
         assert FLOW_PATH.exists()
 
@@ -69,7 +68,6 @@ class TestC22ModuleStructure:
 # C22-2: Full flow execution
 # ===========================================================================
 class TestC22FullFlow:
-
     def test_full_flow_with_incident(self):
         """Incident snapshot → route → policy → send → persist."""
         policy = AlertPolicy()
@@ -108,7 +106,6 @@ class TestC22FullFlow:
 # C22-3: Policy suppression
 # ===========================================================================
 class TestC22PolicySuppression:
-
     def test_duplicate_suppressed(self):
         policy = AlertPolicy()
         store = ReceiptStore()
@@ -140,7 +137,6 @@ class TestC22PolicySuppression:
 # C22-4: Policy escalation
 # ===========================================================================
 class TestC22PolicyEscalation:
-
     def test_degraded_escalation(self):
         policy = AlertPolicy(escalation_threshold=2, cooldown_seconds=0)
         store = ReceiptStore()
@@ -159,7 +155,6 @@ class TestC22PolicyEscalation:
 # C22-5: Fail-closed at each step
 # ===========================================================================
 class TestC22FailClosed:
-
     def test_routing_failure_captured(self):
         with patch("app.core.alert_router.route_snapshot", side_effect=RuntimeError("boom")):
             result = execute_notification_flow(_make_snapshot())
@@ -167,7 +162,9 @@ class TestC22FailClosed:
             assert any("routing" in e for e in result.errors)
 
     def test_send_failure_captured(self):
-        with patch("app.core.notification_sender.send_notifications", side_effect=RuntimeError("boom")):
+        with patch(
+            "app.core.notification_sender.send_notifications", side_effect=RuntimeError("boom")
+        ):
             snapshot = _make_snapshot(
                 highest_incident="LOCKDOWN",
                 active_incidents=["LOCKDOWN"],
@@ -196,7 +193,6 @@ class TestC22FailClosed:
 # C22-6: No-policy passthrough
 # ===========================================================================
 class TestC22NoPolicyPassthrough:
-
     def test_no_policy_sends_directly(self):
         """policy=None → routing 결과 그대로 전송."""
         snapshot = _make_snapshot(
@@ -222,13 +218,16 @@ class TestC22NoPolicyPassthrough:
 # C22-7: 금지 조항
 # ===========================================================================
 class TestC22Forbidden:
-
     def test_no_forbidden_strings(self):
         content = FLOW_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace', 'agent_analysis', 'error_class',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
+            "agent_analysis",
+            "error_class",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

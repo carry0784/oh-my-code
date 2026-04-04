@@ -21,14 +21,16 @@ logger = get_logger(__name__)
 class UpBitExchange(BaseExchange):
     def __init__(self):
         super().__init__(settings.upbit_api_key, settings.upbit_api_secret)
-        self.client = ccxt.upbit({
-            "apiKey": self.api_key,
-            "secret": self.api_secret,
-            "enableRateLimit": True,
-            "options": {
-                "defaultType": "spot",
-            },
-        })
+        self.client = ccxt.upbit(
+            {
+                "apiKey": self.api_key,
+                "secret": self.api_secret,
+                "enableRateLimit": True,
+                "options": {
+                    "defaultType": "spot",
+                },
+            }
+        )
 
     async def create_order(
         self,
@@ -79,16 +81,18 @@ class UpBitExchange(BaseExchange):
                     mark_price = ticker.get("last", 0)
                 except Exception:
                     mark_price = 0
-                positions.append({
-                    "symbol": symbol,
-                    "contracts": total,
-                    "side": "long",
-                    "entryPrice": 0,  # UpBit API에서 평균 매수가 미제공
-                    "markPrice": mark_price,
-                    "unrealizedPnl": 0,  # 진입가 미확인으로 계산 불가
-                    "leverage": 1,
-                    "liquidationPrice": None,  # 현물은 청산가 없음
-                })
+                positions.append(
+                    {
+                        "symbol": symbol,
+                        "contracts": total,
+                        "side": "long",
+                        "entryPrice": 0,  # UpBit API에서 평균 매수가 미제공
+                        "markPrice": mark_price,
+                        "unrealizedPnl": 0,  # 진입가 미확인으로 계산 불가
+                        "leverage": 1,
+                        "liquidationPrice": None,  # 현물은 청산가 없음
+                    }
+                )
             return positions
         except Exception as e:
             logger.error("UpBit fetch_positions failed", error=str(e))

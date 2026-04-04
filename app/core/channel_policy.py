@@ -29,6 +29,7 @@ Matrix:
   │ clear        │        │          │          │      │       │
   └─────────────┴────────┴──────────┴──────────┴──────┴───────┘
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -39,12 +40,12 @@ from typing import Any
 # ---------------------------------------------------------------------------
 
 _DEFAULT_MATRIX: dict[str, list[str]] = {
-    "critical":  ["console", "snapshot", "external", "file", "slack"],
-    "high":      ["console", "snapshot", "external", "file"],
-    "low":       ["snapshot", "file"],
-    "escalate":  ["console", "snapshot", "external", "file", "slack"],
-    "resolve":   ["console", "snapshot", "file"],
-    "clear":     [],
+    "critical": ["console", "snapshot", "external", "file", "slack"],
+    "high": ["console", "snapshot", "external", "file"],
+    "low": ["snapshot", "file"],
+    "escalate": ["console", "snapshot", "external", "file", "slack"],
+    "resolve": ["console", "snapshot", "file"],
+    "clear": [],
 }
 
 # Fallback for unknown tiers/actions
@@ -54,6 +55,7 @@ _FALLBACK_CHANNELS = ["snapshot"]
 # ---------------------------------------------------------------------------
 # Channel Policy
 # ---------------------------------------------------------------------------
+
 
 class ChannelPolicy:
     """

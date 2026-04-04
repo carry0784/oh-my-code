@@ -21,13 +21,26 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services", "app.services.order_service",
-    "app.services.position_service", "app.services.signal_service",
-    "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -55,7 +68,6 @@ from app.core.notification_sender import send_notifications, ChannelResult
 # C20-1: 모듈 구조
 # ===========================================================================
 class TestC20ModuleStructure:
-
     def test_adapter_module_exists(self):
         assert ADAPTER_PATH.exists()
 
@@ -78,7 +90,6 @@ class TestC20ModuleStructure:
 # C20-2: send_webhook()
 # ===========================================================================
 class TestC20SendWebhook:
-
     def test_empty_url_returns_false(self):
         assert send_webhook("", {"test": True}) is False
 
@@ -105,7 +116,6 @@ class TestC20SendWebhook:
 # C20-3: format_discord_payload()
 # ===========================================================================
 class TestC20DiscordPayload:
-
     def test_returns_dict_with_content(self):
         snapshot = {"overall_status": "NORMAL", "highest_incident": "NONE"}
         payload = format_discord_payload(snapshot)
@@ -113,19 +123,25 @@ class TestC20DiscordPayload:
         assert "content" in payload
 
     def test_includes_status(self):
-        payload = format_discord_payload({"overall_status": "LOCKDOWN", "highest_incident": "LOCKDOWN"})
+        payload = format_discord_payload(
+            {"overall_status": "LOCKDOWN", "highest_incident": "LOCKDOWN"}
+        )
         assert "LOCKDOWN" in payload["content"]
 
     def test_includes_incident(self):
-        payload = format_discord_payload({"overall_status": "NORMAL", "highest_incident": "LOOP_EXCEEDED"})
+        payload = format_discord_payload(
+            {"overall_status": "NORMAL", "highest_incident": "LOOP_EXCEEDED"}
+        )
         assert "LOOP_EXCEEDED" in payload["content"]
 
     def test_includes_triage_if_present(self):
-        payload = format_discord_payload({
-            "overall_status": "NORMAL",
-            "highest_incident": "NONE",
-            "triage_top": "Check loop ceilings",
-        })
+        payload = format_discord_payload(
+            {
+                "overall_status": "NORMAL",
+                "highest_incident": "NONE",
+                "triage_top": "Check loop ceilings",
+            }
+        )
         assert "Check loop ceilings" in payload["content"]
 
     def test_handles_empty_snapshot(self):
@@ -137,12 +153,12 @@ class TestC20DiscordPayload:
 # C20-4: _send_external() 통합
 # ===========================================================================
 class TestC20ExternalIntegration:
-
     def test_no_webhook_returns_not_configured(self):
         """webhook URL 미설정 시 not configured."""
         mock_settings = MagicMock(notifier_webhook_url="")
         with patch("app.core.config.settings", mock_settings):
             from app.core.notification_sender import _send_external
+
             result = _send_external({"overall_status": "NORMAL"}, {})
             assert result.delivered is False
             assert "not configured" in result.detail
@@ -161,7 +177,6 @@ class TestC20ExternalIntegration:
 # C20-5: Config
 # ===========================================================================
 class TestC20Config:
-
     def test_notifier_webhook_url_setting(self):
         content = CONFIG_PATH.read_text(encoding="utf-8")
         assert "notifier_webhook_url" in content
@@ -175,10 +190,11 @@ class TestC20Config:
 # C20-6: 기존 sender 보존
 # ===========================================================================
 class TestC20ExistingSendersPreserved:
-
     def test_console_sender_still_works(self):
         routing = {"channels": ["console"], "severity_tier": "high"}
-        receipt = send_notifications({"overall_status": "NORMAL", "highest_incident": "NONE"}, routing)
+        receipt = send_notifications(
+            {"overall_status": "NORMAL", "highest_incident": "NONE"}, routing
+        )
         assert receipt.channels_delivered >= 1
         console = [r for r in receipt.results if r.channel == "console"]
         assert len(console) == 1
@@ -196,13 +212,16 @@ class TestC20ExistingSendersPreserved:
 # C20-7: 금지 조항
 # ===========================================================================
 class TestC20Forbidden:
-
     def test_no_forbidden_strings_in_adapter(self):
         content = ADAPTER_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace', 'agent_analysis', 'error_class',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
+            "agent_analysis",
+            "error_class",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

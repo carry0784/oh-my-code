@@ -44,6 +44,7 @@ def _create_governance_gate():
     # Evidence backend selection based on configuration
     if settings.evidence_db_path:
         from kdexter.audit.backends.sqlite import SQLiteBackend
+
         backend = SQLiteBackend(settings.evidence_db_path)
         evidence_mode = "SQLITE_PERSISTED"
     else:
@@ -55,7 +56,7 @@ def _create_governance_gate():
 
     # L29 Cost Controller — budget limits for agent LLM calls
     cost_ctrl = CostController()
-    cost_ctrl.set_budget("API_CALLS", limit=1000)     # max 1000 LLM calls per cycle
+    cost_ctrl.set_budget("API_CALLS", limit=1000)  # max 1000 LLM calls per cycle
     cost_ctrl.set_budget("LLM_TOKENS", limit=500000)  # max 500k tokens per cycle
 
     # L17 Failure Pattern Memory — tracks agent execution failures
@@ -82,6 +83,7 @@ async def lifespan(app: FastAPI):
     setup_logging()
 
     from app.core.logging import log_mode
+
     logger.info(
         "Starting trading system",
         env=settings.app_env,
@@ -109,11 +111,13 @@ async def lifespan(app: FastAPI):
 
     # C-17/C-19: Receipt store with optional file persistence
     from app.core.notification_receipt_store import ReceiptStore
+
     receipt_file_backend = None
     receipt_mode = "IN_MEMORY"
     if settings.receipt_file_path:
         try:
             from app.core.notification_receipt_file_backend import ReceiptFileBackend
+
             receipt_file_backend = ReceiptFileBackend(settings.receipt_file_path)
             receipt_mode = "FILE_PERSISTED"
         except Exception:
@@ -128,6 +132,7 @@ async def lifespan(app: FastAPI):
 
     # C-23: Flow execution log
     from app.core.notification_flow_log import FlowLog
+
     app.state.flow_log = FlowLog()
 
     if gate is not None:
@@ -181,6 +186,7 @@ async def health_check():
 
 
 # C-03: Readiness and Startup probes (read-only introspection)
+
 
 @app.get("/ready")
 async def readiness_probe():
@@ -239,6 +245,7 @@ async def startup_probe():
     governance_enabled = True
     try:
         from app.core.config import settings as _settings
+
         governance_enabled = _settings.governance_enabled
     except Exception:
         pass
@@ -264,6 +271,7 @@ async def startup_probe():
 
 
 # C-04: Degraded status endpoint (observation + judgment only, no recovery)
+
 
 @app.get("/status")
 async def degraded_status():
@@ -292,6 +300,7 @@ async def degraded_status():
     governance_enabled = True
     try:
         from app.core.config import settings as _settings
+
         governance_enabled = _settings.governance_enabled
     except Exception:
         pass
@@ -328,7 +337,13 @@ async def degraded_status():
             degraded_reasons.append("loop_monitor: no result available")
         else:
             overall_health = getattr(last_result, "overall_health", None)
-            health_val = overall_health.value if hasattr(overall_health, "value") else str(overall_health) if overall_health else None
+            health_val = (
+                overall_health.value
+                if hasattr(overall_health, "value")
+                else str(overall_health)
+                if overall_health
+                else None
+            )
             if health_val == "EXCEEDED" or health_val == "CRITICAL":
                 sources["loop_monitor"] = "critical"
                 degraded_reasons.append("loop_monitor: " + health_val)
@@ -345,7 +360,9 @@ async def degraded_status():
         degraded_reasons.append("work_state: source unavailable")
     else:
         current = getattr(work_state_ctx, "current", None)
-        current_val = current.value if hasattr(current, "value") else str(current) if current else None
+        current_val = (
+            current.value if hasattr(current, "value") else str(current) if current else None
+        )
         if current_val in ("FAILED", "BLOCKED", "ISOLATED"):
             sources["work_state"] = "critical"
             degraded_reasons.append("work_state: " + current_val)
@@ -365,7 +382,9 @@ async def degraded_status():
                 non_exec += 1
         if non_exec > 0:
             sources["trust_state"] = "warning"
-            degraded_reasons.append("trust_state: " + str(non_exec) + " component(s) non-executable")
+            degraded_reasons.append(
+                "trust_state: " + str(non_exec) + " component(s) non-executable"
+            )
         else:
             sources["trust_state"] = "available"
 

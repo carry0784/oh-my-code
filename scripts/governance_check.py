@@ -29,6 +29,7 @@ sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 # ── Protected Paths & Rules ─────────────────────────────────────────────── #
 
+
 @dataclass
 class Rule:
     code: str
@@ -145,7 +146,10 @@ class CheckResult:
 
 # ── Core Logic ───────────────────────────────────────────────────────────── #
 
-def get_changed_files(diff_ref: str | None = None, explicit_files: list[str] | None = None) -> list[str]:
+
+def get_changed_files(
+    diff_ref: str | None = None, explicit_files: list[str] | None = None
+) -> list[str]:
     """Get list of changed files from git or explicit list."""
     if explicit_files:
         return explicit_files
@@ -238,23 +242,27 @@ def check_rules(changed_files: list[str], diff_content: str) -> CheckResult:
         if f.startswith("docs/aos-constitution/"):
             # Check if file was deleted
             if "deleted file" in diff_content and f in diff_content:
-                violations.append(Violation(
-                    rule_code="GC-06",
-                    file=f,
-                    severity="BLOCK",
-                    description=f"헌법 문서 삭제 감지: {f}",
-                    risk_score=3,
-                ))
+                violations.append(
+                    Violation(
+                        rule_code="GC-06",
+                        file=f,
+                        severity="BLOCK",
+                        description=f"헌법 문서 삭제 감지: {f}",
+                        risk_score=3,
+                    )
+                )
 
     # Live execution path warning
     if live_touches:
-        warnings.append(Violation(
-            rule_code="LIVE-EXEC",
-            file=", ".join(live_touches),
-            severity="WARN",
-            description=f"실거래 경로 수정 감지: {len(live_touches)} files -추가 검증 필수",
-            risk_score=2,
-        ))
+        warnings.append(
+            Violation(
+                rule_code="LIVE-EXEC",
+                file=", ".join(live_touches),
+                severity="WARN",
+                description=f"실거래 경로 수정 감지: {len(live_touches)} files -추가 검증 필수",
+                risk_score=2,
+            )
+        )
 
     # Determine judgment
     total_risk = sum(v.risk_score for v in violations) + sum(w.risk_score for w in warnings)
@@ -310,6 +318,7 @@ def result_to_dict(result: CheckResult) -> dict:
 
 
 # ── Main ─────────────────────────────────────────────────────────────────── #
+
 
 def main():
     parser = argparse.ArgumentParser(description="K-Dexter Governance Checker")

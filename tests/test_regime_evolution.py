@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -22,8 +31,10 @@ import pytest
 from app.services.regime_evolution import RegimeEvolutionManager, RegimeSegment
 
 # Small OHLCV dataset (100 bars)
-_OHLCV = [[1_000_000 + i * 60_000, 100 + i * 0.1, 101 + i * 0.1,
-           99 + i * 0.1, 100.5 + i * 0.1, 1000] for i in range(100)]
+_OHLCV = [
+    [1_000_000 + i * 60_000, 100 + i * 0.1, 101 + i * 0.1, 99 + i * 0.1, 100.5 + i * 0.1, 1000]
+    for i in range(100)
+]
 
 
 def test_regime_tags_list():

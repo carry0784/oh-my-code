@@ -32,7 +32,6 @@ SENDER_PATH = PROJECT_ROOT / "app" / "core" / "notification_sender.py"
 # C15-1: 모듈 구조 및 데이터 모델
 # ===========================================================================
 class TestC15ModuleStructure:
-
     def test_module_exists(self):
         assert SENDER_PATH.exists()
 
@@ -57,7 +56,6 @@ class TestC15ModuleStructure:
 # C15-2: Sender Registry
 # ===========================================================================
 class TestC15Registry:
-
     def test_console_sender_registered(self):
         assert get_sender("console") is not None
 
@@ -82,7 +80,6 @@ class TestC15Registry:
 # C15-3: send_notifications() 디스패치
 # ===========================================================================
 class TestC15Dispatch:
-
     def _make_snapshot(self):
         return {
             "snapshot_version": "C-13",
@@ -132,7 +129,6 @@ class TestC15Dispatch:
 # C15-4: Built-in senders
 # ===========================================================================
 class TestC15BuiltinSenders:
-
     def _make_snapshot(self):
         return {
             "snapshot_version": "C-13",
@@ -170,9 +166,9 @@ class TestC15BuiltinSenders:
 # C15-5: Fail-closed 동작
 # ===========================================================================
 class TestC15FailClosed:
-
     def test_sender_exception_captured(self):
         """Sender가 예외를 발생시켜도 receipt에 기록된다."""
+
         def failing_sender(snapshot, routing):
             raise RuntimeError("test error")
 
@@ -185,6 +181,7 @@ class TestC15FailClosed:
 
     def test_no_exception_propagated(self):
         """send_notifications는 절대 예외를 전파하지 않는다."""
+
         def bad_sender(snapshot, routing):
             raise ValueError("boom")
 
@@ -199,13 +196,16 @@ class TestC15FailClosed:
 # C15-6: 금지 조항 확인
 # ===========================================================================
 class TestC15Forbidden:
-
     def test_no_forbidden_strings(self):
         content = SENDER_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace', 'agent_analysis', 'error_class',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
+            "agent_analysis",
+            "error_class",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"
@@ -213,8 +213,13 @@ class TestC15Forbidden:
     def test_no_hardcoded_transport(self):
         """실제 외부 전송 라이브러리 하드코딩 없음."""
         content = SENDER_PATH.read_text(encoding="utf-8")
-        transport_libs = ['import requests', 'import httpx', 'import smtplib',
-                          'import discord', 'import slack']
+        transport_libs = [
+            "import requests",
+            "import httpx",
+            "import smtplib",
+            "import discord",
+            "import slack",
+        ]
         for lib in transport_libs:
             assert lib not in content, f"Transport lib '{lib}' hardcoded"
 

@@ -5,10 +5,19 @@ from unittest.mock import MagicMock, AsyncMock
 
 # Stub external dependencies before imports
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp",
-    "celery", "redis", "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -97,9 +106,7 @@ class TestMarketDataCollector:
 
     @pytest.mark.asyncio
     async def test_collect_with_funding_rate(self):
-        client = _make_mock_client(
-            funding_rate={"fundingRate": 0.0001}
-        )
+        client = _make_mock_client(funding_rate={"fundingRate": 0.0001})
         collector = MarketDataCollector(client)
         result = await collector.collect("BTC/USDT")
 
@@ -107,9 +114,7 @@ class TestMarketDataCollector:
 
     @pytest.mark.asyncio
     async def test_collect_with_open_interest(self):
-        client = _make_mock_client(
-            open_interest={"openInterest": 15000.0}
-        )
+        client = _make_mock_client(open_interest={"openInterest": 15000.0})
         collector = MarketDataCollector(client)
         result = await collector.collect("BTC/USDT")
 
@@ -137,8 +142,12 @@ class TestMarketDataCollector:
     async def test_unsupported_feature_returns_none(self):
         client = _make_mock_client()
         # No fetchOrderBook capability
-        client.has = {"fetchOrderBook": False, "fetchTrades": False,
-                      "fetchFundingRate": False, "fetchOpenInterest": False}
+        client.has = {
+            "fetchOrderBook": False,
+            "fetchTrades": False,
+            "fetchFundingRate": False,
+            "fetchOpenInterest": False,
+        }
         collector = MarketDataCollector(client)
         result = await collector.collect("BTC/USDT")
 

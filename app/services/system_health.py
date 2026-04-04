@@ -71,9 +71,7 @@ class SystemHealthMonitor:
         report.warnings = warnings
         report.is_healthy = len(warnings) == 0
 
-        logger.info("system_health_collected",
-                     healthy=report.is_healthy,
-                     warnings=len(warnings))
+        logger.info("system_health_collected", healthy=report.is_healthy, warnings=len(warnings))
         return report
 
     def check_circuit_breakers(self, report: SystemHealthReport) -> list[str]:

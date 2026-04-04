@@ -58,6 +58,7 @@ if settings.debug and not settings.is_production:
         Read-only. No state modification.
         """
         from app.core.governance_monitor import run_governance_monitor
+
         report = run_governance_monitor()
         return report.to_dict()
 

@@ -6,6 +6,7 @@ functional concern, attributed to governance tiers B1/B2/A.
 
 See: docs/architecture/governance_layer_map.md
 """
+
 from kdexter.layers.registry import (
     HealthStatus,
     LayerDescriptor,

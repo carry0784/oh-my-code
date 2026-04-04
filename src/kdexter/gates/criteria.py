@@ -7,6 +7,7 @@ Data models for quantitative gate evaluation:
   GateSuiteResult:    aggregated result of evaluating all gates
   EvaluationContext:  facade over WorkStateContext + runtime engine outputs
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -19,6 +20,7 @@ from kdexter.audit.evidence_store import EvidenceBundle
 # ─────────────────────────────────────────────────────────────────────────── #
 # Pass criteria
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 @dataclass(frozen=True)
 class PassCriteria:
@@ -33,6 +35,7 @@ class PassCriteria:
       "is_true"  — measured_value is truthy
       "is_false" — measured_value is falsy
     """
+
     metric_name: str
     operator: str
     threshold: Any
@@ -60,9 +63,11 @@ class PassCriteria:
 # Gate verdict
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass
 class GateVerdict:
     """Result of evaluating a single gate."""
+
     gate_id: str
     passed: bool
     measured_value: Any
@@ -75,6 +80,7 @@ class GateVerdict:
 @dataclass
 class GateSuiteResult:
     """Aggregated result from evaluating multiple gates."""
+
     all_passed: bool
     verdicts: list[GateVerdict] = field(default_factory=list)
     failed_gates: list[GateVerdict] = field(default_factory=list)
@@ -88,6 +94,7 @@ class GateSuiteResult:
 # Evaluation context
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass
 class EvaluationContext:
     """
@@ -96,8 +103,10 @@ class EvaluationContext:
     Assembled once at VALIDATING entry and shared across all 10 checks.
     Gate evaluate functions read from this — they never mutate it.
     """
+
     # Import here to avoid circular import at module level
     from kdexter.state_machine.work_state import WorkStateContext
+
     work: WorkStateContext
 
     # L15 Intent Drift Engine output

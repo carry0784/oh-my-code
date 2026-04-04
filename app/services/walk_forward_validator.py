@@ -18,6 +18,7 @@ logger = get_logger(__name__)
 @dataclass
 class WalkForwardWindow:
     """Single walk-forward window result."""
+
     window_index: int
     in_sample_bars: int
     out_sample_bars: int
@@ -32,6 +33,7 @@ class WalkForwardWindow:
 @dataclass
 class WalkForwardResult:
     """Aggregated walk-forward analysis result."""
+
     strategy_name: str = ""
     total_windows: int = 0
     windows: list[WalkForwardWindow] = field(default_factory=list)
@@ -43,8 +45,8 @@ class WalkForwardResult:
     avg_out_sample_sharpe: float = 0.0
 
     # Overfitting detection
-    efficiency_ratio: float = 0.0   # OOS return / IS return (>0.5 = good)
-    consistency: float = 0.0        # % of windows where OOS is profitable
+    efficiency_ratio: float = 0.0  # OOS return / IS return (>0.5 = good)
+    consistency: float = 0.0  # % of windows where OOS is profitable
     is_overfit: bool = False
 
 
@@ -78,8 +80,9 @@ class WalkForwardValidator:
         total_bars = len(ohlcv)
         window_size = total_bars // self.n_windows
         if window_size < lookback * 2:
-            logger.warning("insufficient_data_for_walk_forward",
-                           bars=total_bars, windows=self.n_windows)
+            logger.warning(
+                "insufficient_data_for_walk_forward", bars=total_bars, windows=self.n_windows
+            )
             return result
 
         engine = BacktestingEngine(self.config)
@@ -139,7 +142,9 @@ class WalkForwardValidator:
 
         # Efficiency: how much of IS performance carries to OOS
         if result.avg_in_sample_return != 0:
-            result.efficiency_ratio = result.avg_out_sample_return / abs(result.avg_in_sample_return)
+            result.efficiency_ratio = result.avg_out_sample_return / abs(
+                result.avg_in_sample_return
+            )
         else:
             result.efficiency_ratio = 0.0
 
@@ -149,8 +154,7 @@ class WalkForwardValidator:
 
         # Overfitting: IS good but OOS bad, or efficiency < 0.3
         result.is_overfit = (
-            result.avg_in_sample_return > 0
-            and result.avg_out_sample_return <= 0
+            result.avg_in_sample_return > 0 and result.avg_out_sample_return <= 0
         ) or (
             result.efficiency_ratio < 0.3
             and result.avg_in_sample_return > 5.0  # IS showed decent return

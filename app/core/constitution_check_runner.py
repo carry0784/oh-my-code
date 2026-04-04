@@ -99,42 +99,65 @@ def enrich_hourly_from_ops_status(
             stale = integrity.get("stale_data", None)
             if stale is not None:
                 grade = CheckResultGrade.OK if not stale else CheckResultGrade.WARN
-                enriched_items.append(_make_item(
-                    item.name, grade, str(stale), item.expected, item.rule_refs,
-                    message=f"S-01C: enriched from ops-status (stale={stale})",
-                ))
+                enriched_items.append(
+                    _make_item(
+                        item.name,
+                        grade,
+                        str(stale),
+                        item.expected,
+                        item.rule_refs,
+                        message=f"S-01C: enriched from ops-status (stale={stale})",
+                    )
+                )
                 continue
 
         if item.name == "snapshot_age" and item.observed == "unknown":
             age = integrity.get("snapshot_age_seconds", None)
             if age is not None:
                 grade = CheckResultGrade.OK if age < 300 else CheckResultGrade.WARN
-                enriched_items.append(_make_item(
-                    item.name, grade, f"{age}s", item.expected, item.rule_refs,
-                    message=f"S-01C: enriched from ops-status (age={age}s)",
-                ))
+                enriched_items.append(
+                    _make_item(
+                        item.name,
+                        grade,
+                        f"{age}s",
+                        item.expected,
+                        item.rule_refs,
+                        message=f"S-01C: enriched from ops-status (age={age}s)",
+                    )
+                )
                 continue
 
         if item.name == "recent_warning_critical" and item.observed == "unknown":
             observed = _check_recent_warnings()
             if observed != "unknown":
                 grade = CheckResultGrade.OK if observed == "stable" else CheckResultGrade.WARN
-                enriched_items.append(_make_item(
-                    item.name, grade, observed, item.expected, item.rule_refs,
-                    message=f"S-01C: enriched from flow_log",
-                ))
+                enriched_items.append(
+                    _make_item(
+                        item.name,
+                        grade,
+                        observed,
+                        item.expected,
+                        item.rule_refs,
+                        message=f"S-01C: enriched from flow_log",
+                    )
+                )
                 continue
 
         enriched_items.append(item)
 
     # Rebuild result with enriched items
     new_grade = _determine_grade(enriched_items)
-    failures = sorted([
-        i.name for i in enriched_items
-        if i.grade in (CheckResultGrade.FAIL, CheckResultGrade.BLOCK, CheckResultGrade.WARN)
-    ])
+    failures = sorted(
+        [
+            i.name
+            for i in enriched_items
+            if i.grade in (CheckResultGrade.FAIL, CheckResultGrade.BLOCK, CheckResultGrade.WARN)
+        ]
+    )
     passed = sum(1 for i in enriched_items if i.grade == CheckResultGrade.OK)
-    summary = f"HOURLY: {passed}/{len(enriched_items)} passed, grade={new_grade.value} [S-01C enriched]"
+    summary = (
+        f"HOURLY: {passed}/{len(enriched_items)} passed, grade={new_grade.value} [S-01C enriched]"
+    )
 
     return ConstitutionCheckResult(
         check_type=hourly_result.check_type,
@@ -155,7 +178,9 @@ def run_daily_check() -> ConstitutionCheckResult:
     Read-only observation. No state modification.
     """
     items = [_observe_daily_item(defn) for defn in _DAILY_ITEMS]
-    return _build_result(CheckType.DAILY, items, rule_refs=["Art23", "Art24", "Art26", "Art29", "Art30"])
+    return _build_result(
+        CheckType.DAILY, items, rule_refs=["Art23", "Art24", "Art26", "Art29", "Art30"]
+    )
 
 
 def run_hourly_check() -> ConstitutionCheckResult:
@@ -164,7 +189,9 @@ def run_hourly_check() -> ConstitutionCheckResult:
     Read-only observation. No state modification.
     """
     items = [_observe_hourly_item(defn) for defn in _HOURLY_ITEMS]
-    return _build_result(CheckType.HOURLY, items, rule_refs=["Art23", "Art24", "Art27", "Art29", "Art30"])
+    return _build_result(
+        CheckType.HOURLY, items, rule_refs=["Art23", "Art24", "Art27", "Art29", "Art30"]
+    )
 
 
 def run_event_check(trigger: EventTrigger) -> ConstitutionCheckResult:
@@ -185,6 +212,7 @@ def run_event_check(trigger: EventTrigger) -> ConstitutionCheckResult:
 # ---------------------------------------------------------------------------
 # Observation helpers (read-only, fail-closed)
 # ---------------------------------------------------------------------------
+
 
 def _observe_daily_item(defn: dict) -> CheckItem:
     """Observe a single daily check item. Read-only. Fail-closed."""
@@ -224,8 +252,14 @@ def _observe_daily_item(defn: dict) -> CheckItem:
         if name == "log_growth":
             observed = "assumed_growing"
             grade = CheckResultGrade.OK
-            return _make_item(name, grade, observed, expected, rule_refs,
-                              message="Log growth assumed; detailed check requires log file analysis")
+            return _make_item(
+                name,
+                grade,
+                observed,
+                expected,
+                rule_refs,
+                message="Log growth assumed; detailed check requires log file analysis",
+            )
 
         if name == "evidence_generation":
             observed = _check_evidence_active()
@@ -243,11 +277,18 @@ def _observe_daily_item(defn: dict) -> CheckItem:
             return _make_item(name, grade, observed, expected, rule_refs)
 
     except Exception as e:
-        return _make_item(name, CheckResultGrade.WARN, f"error:{e}", expected, rule_refs,
-                          message=f"Observation failed: {e}")
+        return _make_item(
+            name,
+            CheckResultGrade.WARN,
+            f"error:{e}",
+            expected,
+            rule_refs,
+            message=f"Observation failed: {e}",
+        )
 
-    return _make_item(name, CheckResultGrade.WARN, "unknown", expected, rule_refs,
-                      message="Unknown item")
+    return _make_item(
+        name, CheckResultGrade.WARN, "unknown", expected, rule_refs, message="Unknown item"
+    )
 
 
 def _observe_hourly_item(defn: dict) -> CheckItem:
@@ -267,29 +308,54 @@ def _observe_hourly_item(defn: dict) -> CheckItem:
                 stale = age > 300
                 observed = str(stale).lower()
                 grade = CheckResultGrade.OK if not stale else CheckResultGrade.WARN
-                return _make_item(name, grade, observed, expected, rule_refs,
-                                  message=f"Snapshot age={age}s, stale={stale}")
+                return _make_item(
+                    name,
+                    grade,
+                    observed,
+                    expected,
+                    rule_refs,
+                    message=f"Snapshot age={age}s, stale={stale}",
+                )
             observed = "unknown"
-            return _make_item(name, CheckResultGrade.WARN, observed, expected, rule_refs,
-                              message="No snapshot data available")
+            return _make_item(
+                name,
+                CheckResultGrade.WARN,
+                observed,
+                expected,
+                rule_refs,
+                message="No snapshot data available",
+            )
 
         if name == "snapshot_age":
             age = _get_snapshot_age_sync()
             if age is not None:
                 observed = f"{age}s"
                 grade = CheckResultGrade.OK if age < 300 else CheckResultGrade.WARN
-                return _make_item(name, grade, observed, expected, rule_refs,
-                                  message=f"Snapshot age={age}s")
+                return _make_item(
+                    name, grade, observed, expected, rule_refs, message=f"Snapshot age={age}s"
+                )
             observed = "unknown"
-            return _make_item(name, CheckResultGrade.WARN, observed, expected, rule_refs,
-                              message="No snapshot data available")
+            return _make_item(
+                name,
+                CheckResultGrade.WARN,
+                observed,
+                expected,
+                rule_refs,
+                message="No snapshot data available",
+            )
 
         if name == "latency_status":
             # CR-026: "not measured" is not a warning. Measurement requires
             # active order flow (Mode 2+). Mode 1 has no latency to measure.
             observed = "not_measured"
-            return _make_item(name, CheckResultGrade.OK, observed, expected, rule_refs,
-                              message="Latency not measured (no active order flow)")
+            return _make_item(
+                name,
+                CheckResultGrade.OK,
+                observed,
+                expected,
+                rule_refs,
+                message="Latency not measured (no active order flow)",
+            )
 
         if name == "alert_backlog":
             observed = _check_alert_backlog()
@@ -306,8 +372,14 @@ def _observe_hourly_item(defn: dict) -> CheckItem:
             return _make_item(name, grade, observed, expected, rule_refs)
 
     except Exception as e:
-        return _make_item(name, CheckResultGrade.WARN, f"error:{e}", expected, rule_refs,
-                          message=f"Observation failed: {e}")
+        return _make_item(
+            name,
+            CheckResultGrade.WARN,
+            f"error:{e}",
+            expected,
+            rule_refs,
+            message=f"Observation failed: {e}",
+        )
 
     return _make_item(name, CheckResultGrade.WARN, "unknown", expected, rule_refs)
 
@@ -320,6 +392,7 @@ def _observe_event_item(defn: dict) -> CheckItem:
 
     try:
         import app.main as main_module
+
         app_instance = main_module.app
         gate = getattr(app_instance.state, "governance_gate", None)
 
@@ -353,14 +426,26 @@ def _observe_event_item(defn: dict) -> CheckItem:
         if name == "db_connection":
             observed = "assumed_ok"
             grade = CheckResultGrade.OK
-            return _make_item(name, grade, observed, expected, rule_refs,
-                              message="DB connectivity assumed from app running")
+            return _make_item(
+                name,
+                grade,
+                observed,
+                expected,
+                rule_refs,
+                message="DB connectivity assumed from app running",
+            )
 
         if name == "exchange_snapshot":
             observed = "unknown"
             grade = CheckResultGrade.WARN
-            return _make_item(name, grade, observed, expected, rule_refs,
-                              message="Exchange snapshot check requires async DB query")
+            return _make_item(
+                name,
+                grade,
+                observed,
+                expected,
+                rule_refs,
+                message="Exchange snapshot check requires async DB query",
+            )
 
         if name == "last_evidence_exists":
             if gate and hasattr(gate, "evidence_store"):
@@ -373,8 +458,14 @@ def _observe_event_item(defn: dict) -> CheckItem:
             return _make_item(name, grade, observed, expected, rule_refs)
 
     except Exception as e:
-        return _make_item(name, CheckResultGrade.WARN, f"error:{e}", expected, rule_refs,
-                          message=f"Observation failed: {e}")
+        return _make_item(
+            name,
+            CheckResultGrade.WARN,
+            f"error:{e}",
+            expected,
+            rule_refs,
+            message=f"Observation failed: {e}",
+        )
 
     return _make_item(name, CheckResultGrade.WARN, "unknown", expected, rule_refs)
 
@@ -382,6 +473,7 @@ def _observe_event_item(defn: dict) -> CheckItem:
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_item(
     name: str,
@@ -436,10 +528,13 @@ def _build_result(
     grade = _determine_grade(items)
 
     # Collect failures (sorted by item name, 제29조)
-    failures = sorted([
-        item.name for item in items
-        if item.grade in (CheckResultGrade.FAIL, CheckResultGrade.BLOCK, CheckResultGrade.WARN)
-    ])
+    failures = sorted(
+        [
+            item.name
+            for item in items
+            if item.grade in (CheckResultGrade.FAIL, CheckResultGrade.BLOCK, CheckResultGrade.WARN)
+        ]
+    )
 
     # Build summary
     passed = sum(1 for i in items if i.grade == CheckResultGrade.OK)
@@ -486,6 +581,7 @@ def _store_evidence(
     """
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate is None or not hasattr(gate, "evidence_store"):
             return f"fallback-{uuid.uuid4().hex[:8]}"
@@ -532,10 +628,12 @@ def _store_evidence(
 # State observation helpers (read-only, no side effects)
 # ---------------------------------------------------------------------------
 
+
 def _check_evidence_active() -> str:
     """Check if evidence store has recent entries."""
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate and hasattr(gate, "evidence_store"):
             return "active" if gate.evidence_store.count() > 0 else "empty"
@@ -545,6 +643,7 @@ def _check_evidence_active() -> str:
             from sqlalchemy.orm import Session as SyncSession
             from app.core.config import settings as _cfg
             from app.models.asset_snapshot import AssetSnapshot
+
             _engine = create_engine(_cfg.database_url_sync)
             try:
                 with SyncSession(_engine) as _sess:
@@ -568,16 +667,27 @@ def _get_snapshot_age_sync() -> int | None:
         from app.models.position import Position
         from app.models.asset_snapshot import AssetSnapshot
         from datetime import datetime, timezone
+
         _engine = create_engine(_cfg.database_url_sync)
         try:
             with SyncSession(_engine) as _sess:
-                latest = _sess.query(Position.updated_at).order_by(Position.updated_at.desc()).first()
+                latest = (
+                    _sess.query(Position.updated_at).order_by(Position.updated_at.desc()).first()
+                )
                 ts = latest[0] if latest else None
                 if ts is None:
-                    snap = _sess.query(AssetSnapshot.snapshot_at).order_by(AssetSnapshot.snapshot_at.desc()).first()
+                    snap = (
+                        _sess.query(AssetSnapshot.snapshot_at)
+                        .order_by(AssetSnapshot.snapshot_at.desc())
+                        .first()
+                    )
                     ts = snap[0] if snap else None
                 if ts:
-                    return int((datetime.now(timezone.utc) - ts.replace(tzinfo=timezone.utc)).total_seconds())
+                    return int(
+                        (
+                            datetime.now(timezone.utc) - ts.replace(tzinfo=timezone.utc)
+                        ).total_seconds()
+                    )
         finally:
             _engine.dispose()  # CR-035: prevent connection leak
     except Exception:
@@ -594,6 +704,7 @@ def _check_monitoring_active() -> str:
     """
     try:
         import app.main as main_module
+
         has_gate = getattr(main_module.app.state, "governance_gate", None) is not None
         if has_gate:
             return "true"
@@ -601,6 +712,7 @@ def _check_monitoring_active() -> str:
         try:
             from app.agents.governance_gate import GovernanceGate
             import urllib.request
+
             resp = urllib.request.urlopen("http://localhost:8000/health", timeout=3)
             if resp.status == 200:
                 return "true"  # Server running with governance module available
@@ -615,6 +727,7 @@ def _check_alert_backlog() -> str:
     """Check receipt store count as alert backlog indicator."""
     try:
         import app.main as main_module
+
         store = getattr(main_module.app.state, "receipt_store", None)
         if store:
             return str(store.count())
@@ -627,6 +740,7 @@ def _check_recent_warnings() -> str:
     """Check for recent warning/critical changes."""
     try:
         import app.main as main_module
+
         flow_log = getattr(main_module.app.state, "flow_log", None)
         if flow_log is None:
             return "unknown"

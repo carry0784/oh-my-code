@@ -12,6 +12,7 @@ Usage:
     hooks = create_gate_hooks(evaluator)
     loop = MainLoop(..., hooks=hooks)
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -99,6 +100,7 @@ def create_gate_hooks(
                 shadow_mode=shadow_mode,
             )
             return evaluator.evaluate_by_check(check, eval_ctx)
+
         return _check
 
     return MainLoopHooks(

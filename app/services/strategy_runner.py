@@ -17,7 +17,11 @@ from app.services.fitness_function import FitnessFunction
 from app.services.performance_metrics import PerformanceCalculator, PerformanceReport
 from app.services.strategy_genome import GenomeFactory, StrategyGenome
 from app.services.strategy_tournament import StrategyTournament, TournamentResult
-from app.services.validation_pipeline import ValidationPipeline, ValidationResult, ValidationThresholds
+from app.services.validation_pipeline import (
+    ValidationPipeline,
+    ValidationResult,
+    ValidationThresholds,
+)
 from strategies.base import BaseStrategy
 from strategies.example_strategy import SimpleMAStrategy
 from strategies.rsi_strategy import RSICrossStrategy
@@ -28,6 +32,7 @@ logger = get_logger(__name__)
 @dataclass
 class RunnerConfig:
     """Configuration for the strategy runner."""
+
     population_size: int = 20
     max_generations: int = 10
     tournament_seed: int = 42
@@ -40,6 +45,7 @@ class RunnerConfig:
 @dataclass
 class EvolutionRecord:
     """Record of a single generation in the evolution."""
+
     generation: int = 0
     best_fitness: float = 0.0
     avg_fitness: float = 0.0
@@ -51,6 +57,7 @@ class EvolutionRecord:
 @dataclass
 class RunnerResult:
     """Complete strategy runner result."""
+
     generations_run: int = 0
     evolution_history: list[EvolutionRecord] = field(default_factory=list)
     best_genome: StrategyGenome | None = None
@@ -147,7 +154,9 @@ class StrategyRunner:
             "evolution_complete",
             generations=result.generations_run,
             best_fitness=round(result.best_fitness, 4),
-            validated=result.validation_result.overall_status.value if result.validation_result else "N/A",
+            validated=result.validation_result.overall_status.value
+            if result.validation_result
+            else "N/A",
         )
         return result
 

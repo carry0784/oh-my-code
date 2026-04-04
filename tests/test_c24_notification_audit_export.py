@@ -19,13 +19,26 @@ from unittest.mock import MagicMock
 import pytest
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services", "app.services.order_service",
-    "app.services.position_service", "app.services.signal_service",
-    "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -47,8 +60,7 @@ DASHBOARD_ROUTE_PATH = PROJECT_ROOT / "app" / "api" / "routes" / "dashboard.py"
 def _get_fn_body():
     content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
     fn_match = re.search(
-        r'async def audit_export.*?(?=\n@router\.|\nasync def dashboard_data)',
-        content, re.DOTALL
+        r"async def audit_export.*?(?=\n@router\.|\nasync def dashboard_data)", content, re.DOTALL
     )
     assert fn_match, "audit_export not found"
     return fn_match.group()
@@ -58,7 +70,6 @@ def _get_fn_body():
 # C24-1: /api/audit-export 엔드포인트
 # ===========================================================================
 class TestC24Endpoint:
-
     def test_endpoint_exists(self):
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         assert '"/api/audit-export"' in content
@@ -66,7 +77,7 @@ class TestC24Endpoint:
     def test_endpoint_is_get(self):
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         idx = content.index("async def audit_export")
-        preceding = content[max(0, idx - 100):idx]
+        preceding = content[max(0, idx - 100) : idx]
         assert "@router.get" in preceding
 
     def test_fail_closed(self):
@@ -78,7 +89,6 @@ class TestC24Endpoint:
 # C24-2: Bundle 구조
 # ===========================================================================
 class TestC24BundleStructure:
-
     def test_has_bundle_version(self):
         assert '"bundle_version"' in _get_fn_body()
 
@@ -107,7 +117,6 @@ class TestC24BundleStructure:
 # C24-3: Summary 집계
 # ===========================================================================
 class TestC24Summary:
-
     def test_summary_has_total_flows(self):
         assert '"total_flows"' in _get_fn_body()
 
@@ -140,7 +149,6 @@ class TestC24Summary:
 # C24-4: 기존 엔드포인트 보존
 # ===========================================================================
 class TestC24ExistingPreserved:
-
     def test_v2_endpoint_preserved(self):
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         assert '"/api/data/v2"' in content
@@ -162,14 +170,17 @@ class TestC24ExistingPreserved:
 # C24-5: 금지 조항
 # ===========================================================================
 class TestC24Forbidden:
-
     def test_no_forbidden_strings(self):
         fn_body = _get_fn_body()
         # Strip docstring
         body = fn_body.split('"""', 2)[-1] if '"""' in fn_body else fn_body
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace', 'agent_analysis', 'error_class',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
+            "agent_analysis",
+            "error_class",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

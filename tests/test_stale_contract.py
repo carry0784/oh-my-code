@@ -13,6 +13,7 @@ Tests the centralized stale contract module:
 
 Run: pytest tests/test_stale_contract.py -v
 """
+
 import sys
 import inspect
 from pathlib import Path
@@ -25,16 +26,32 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services.order_service", "app.services.position_service",
-    "app.services.signal_service", "ccxt", "ccxt.async_support",
-    "redis", "celery", "asyncpg",
-    "kdexter", "kdexter.ledger", "kdexter.ledger.forbidden_ledger",
-    "kdexter.audit", "kdexter.audit.evidence_store",
-    "kdexter.state_machine", "kdexter.state_machine.security_state",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
+    "kdexter",
+    "kdexter.ledger",
+    "kdexter.ledger.forbidden_ledger",
+    "kdexter.audit",
+    "kdexter.audit.evidence_store",
+    "kdexter.state_machine",
+    "kdexter.state_machine.security_state",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -58,8 +75,8 @@ from app.core.stale_contract import (
 # AXIS 1: Constant Correctness                                                #
 # =========================================================================== #
 
-class TestConstantCorrectness:
 
+class TestConstantCorrectness:
     def test_agent_threshold_default(self):
         assert STALE_THRESHOLD_DEFAULTS["agent"] == 600.0
 
@@ -92,8 +109,8 @@ class TestConstantCorrectness:
 # AXIS 2: Band Classification                                                 #
 # =========================================================================== #
 
-class TestBandClassification:
 
+class TestBandClassification:
     def test_below_watch_upper_is_early(self):
         assert classify_stale_band(1.0) == "early"
         assert classify_stale_band(1.49) == "early"
@@ -125,8 +142,8 @@ class TestBandClassification:
 # AXIS 3: Terminal State Lookup                                                #
 # =========================================================================== #
 
-class TestTerminalStateLookup:
 
+class TestTerminalStateLookup:
     def test_agent_blocked_is_terminal(self):
         assert is_terminal_state("BLOCKED", "agent") is True
 
@@ -184,6 +201,7 @@ class TestTerminalStateLookup:
 # AXIS 4: Drift Detection                                                     #
 # =========================================================================== #
 
+
 class TestDriftDetection:
     """Verify stale_contract values match what cleanup_simulation_service uses."""
 
@@ -192,6 +210,7 @@ class TestDriftDetection:
         from app.services.cleanup_simulation_service import (
             THRESHOLD_WATCH_UPPER as sim_watch,
         )
+
         assert sim_watch == THRESHOLD_WATCH_UPPER
 
     def test_simulation_imports_prolonged_from_contract(self):
@@ -199,6 +218,7 @@ class TestDriftDetection:
         from app.services.cleanup_simulation_service import (
             THRESHOLD_PROLONGED as sim_prolonged,
         )
+
         assert sim_prolonged == THRESHOLD_PROLONGED
 
     def test_simulation_terminal_states_match_contract(self):
@@ -206,6 +226,7 @@ class TestDriftDetection:
         from app.services.cleanup_simulation_service import (
             _TERMINAL_STATES_BY_TIER as sim_terminal,
         )
+
         assert sim_terminal == TERMINAL_STATES_BY_TIER
 
     def test_simulation_classify_band_matches_contract(self):
@@ -213,10 +234,10 @@ class TestDriftDetection:
         from app.services.cleanup_simulation_service import (
             _classify_stale_band as sim_band,
         )
+
         test_values = [0.5, 1.0, 1.49, 1.5, 2.0, 2.99, 3.0, 5.0]
         for val in test_values:
-            assert sim_band(val) == classify_stale_band(val), \
-                f"Drift at multiplier={val}"
+            assert sim_band(val) == classify_stale_band(val), f"Drift at multiplier={val}"
 
     def test_terminal_states_three_tiers_match(self):
         """Contract covers exactly the same 3 tiers."""
@@ -224,9 +245,7 @@ class TestDriftDetection:
 
     def test_agent_terminal_states_content(self):
         """Agent terminal states match sealed Ledger definition."""
-        assert TERMINAL_STATES_BY_TIER["agent"] == frozenset(
-            {"BLOCKED", "RECEIPTED", "FAILED"}
-        )
+        assert TERMINAL_STATES_BY_TIER["agent"] == frozenset({"BLOCKED", "RECEIPTED", "FAILED"})
 
     def test_execution_terminal_states_content(self):
         assert TERMINAL_STATES_BY_TIER["execution"] == frozenset(
@@ -243,46 +262,49 @@ class TestDriftDetection:
 # AXIS 5: Import Consolidation                                                 #
 # =========================================================================== #
 
+
 class TestImportConsolidation:
     """Verify cleanup_simulation_service imports from stale_contract (not local)."""
 
     def test_simulation_module_source_code_imports_contract(self):
         """The source of cleanup_simulation_service imports from stale_contract."""
         import app.services.cleanup_simulation_service as sim_mod
+
         source = inspect.getsource(sim_mod)
         assert "from app.core.stale_contract import" in source
 
     def test_no_local_classify_stale_band_definition(self):
         """cleanup_simulation_service has no locally-defined _classify_stale_band."""
         import app.services.cleanup_simulation_service as sim_mod
+
         source = inspect.getsource(sim_mod)
         # Should not have a 'def _classify_stale_band' — it's imported
         lines = source.split("\n")
         local_defs = [l for l in lines if l.strip().startswith("def _classify_stale_band")]
-        assert len(local_defs) == 0, \
-            "_classify_stale_band should be imported, not locally defined"
+        assert len(local_defs) == 0, "_classify_stale_band should be imported, not locally defined"
 
     def test_no_local_threshold_constants(self):
         """THRESHOLD_WATCH_UPPER and THRESHOLD_PROLONGED are not locally defined."""
         import app.services.cleanup_simulation_service as sim_mod
+
         source = inspect.getsource(sim_mod)
         lines = source.split("\n")
         # Should not have 'THRESHOLD_WATCH_UPPER = ' as a direct assignment
         local_assigns = [
-            l for l in lines
+            l
+            for l in lines
             if l.strip().startswith("THRESHOLD_WATCH_UPPER =")
             or l.strip().startswith("THRESHOLD_PROLONGED =")
         ]
-        assert len(local_assigns) == 0, \
-            "Threshold constants should be imported from stale_contract"
+        assert len(local_assigns) == 0, "Threshold constants should be imported from stale_contract"
 
 
 # =========================================================================== #
 # AXIS 6: Safety Invariants                                                    #
 # =========================================================================== #
 
-class TestSafetyInvariants:
 
+class TestSafetyInvariants:
     def test_terminal_states_immutable(self):
         """TERMINAL_STATES_BY_TIER values are frozensets (immutable)."""
         for tier, states in TERMINAL_STATES_BY_TIER.items():
@@ -293,13 +315,20 @@ class TestSafetyInvariants:
     def test_contract_module_has_no_write_functions(self):
         """stale_contract has no functions that write or mutate state."""
         import app.core.stale_contract as mod
+
         source = inspect.getsource(mod)
         # No write/mutation keywords in function bodies
-        dangerous = ["propose_and_guard", "record_receipt", "transition_to",
-                      "delete", "remove", ".write(", ".update("]
+        dangerous = [
+            "propose_and_guard",
+            "record_receipt",
+            "transition_to",
+            "delete",
+            "remove",
+            ".write(",
+            ".update(",
+        ]
         for keyword in dangerous:
-            assert keyword not in source, \
-                f"stale_contract should not contain '{keyword}'"
+            assert keyword not in source, f"stale_contract should not contain '{keyword}'"
 
     def test_classify_stale_band_is_pure(self):
         """classify_stale_band returns consistent results (pure function)."""

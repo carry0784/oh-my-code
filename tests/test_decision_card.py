@@ -13,6 +13,7 @@ Tests the decision card visualization layer:
 
 Run: pytest tests/test_decision_card.py -v
 """
+
 import sys
 import json
 import inspect
@@ -27,16 +28,32 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services.order_service", "app.services.position_service",
-    "app.services.signal_service", "ccxt", "ccxt.async_support",
-    "redis", "celery", "asyncpg",
-    "kdexter", "kdexter.ledger", "kdexter.ledger.forbidden_ledger",
-    "kdexter.audit", "kdexter.audit.evidence_store",
-    "kdexter.state_machine", "kdexter.state_machine.security_state",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
+    "kdexter",
+    "kdexter.ledger",
+    "kdexter.ledger.forbidden_ledger",
+    "kdexter.audit",
+    "kdexter.audit.evidence_store",
+    "kdexter.state_machine",
+    "kdexter.state_machine.security_state",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -77,6 +94,7 @@ from app.services.operator_decision_service import (
 
 # -- Helpers ---------------------------------------------------------------- #
 
+
 def _make_decision(**kwargs) -> DecisionSummary:
     """Create a DecisionSummary with overrides."""
     defaults = dict(
@@ -108,13 +126,20 @@ class _FakeLedger:
     def __init__(self, proposals=None, stale_count=0):
         self._data = proposals or []
         self._stale_count = stale_count
+
     def get_proposals(self):
         return self._data
+
     def get_board(self):
         return {
-            "total": len(self._data), "receipted_count": 0, "blocked_count": 0,
-            "failed_count": 0, "orphan_count": 0, "stale_count": self._stale_count,
-            "stale_threshold_seconds": 600.0, "guard_reason_top": [],
+            "total": len(self._data),
+            "receipted_count": 0,
+            "blocked_count": 0,
+            "failed_count": 0,
+            "orphan_count": 0,
+            "stale_count": self._stale_count,
+            "stale_threshold_seconds": 600.0,
+            "guard_reason_top": [],
         }
 
 
@@ -122,8 +147,8 @@ class _FakeLedger:
 # AXIS 1: PostureBadge Accuracy                                                #
 # =========================================================================== #
 
-class TestPostureBadge:
 
+class TestPostureBadge:
     def test_monitor_severity_info(self):
         decision = _make_decision(recommended_posture=POSTURE_MONITOR)
         card = build_decision_card(decision)
@@ -172,8 +197,8 @@ class TestPostureBadge:
 # AXIS 2: RiskBadge Accuracy                                                   #
 # =========================================================================== #
 
-class TestRiskBadge:
 
+class TestRiskBadge:
     def test_low_risk_info(self):
         decision = _make_decision(risk_level=RISK_LOW)
         card = build_decision_card(decision)
@@ -210,8 +235,8 @@ class TestRiskBadge:
 # AXIS 3: ReasonCompact (3-line limit, truncation, content)                    #
 # =========================================================================== #
 
-class TestReasonCompact:
 
+class TestReasonCompact:
     def test_empty_chain(self):
         compact = _build_reason_compact([])
         assert compact.lines == []
@@ -232,8 +257,14 @@ class TestReasonCompact:
         assert compact.truncated is False
 
     def test_over_limit_truncated(self):
-        chain = ["pressure=HIGH", "candidate_total=5", "orphan_total=2",
-                 "stale_total=3", "stale_agent=2", "stale_submit=1"]
+        chain = [
+            "pressure=HIGH",
+            "candidate_total=5",
+            "orphan_total=2",
+            "stale_total=3",
+            "stale_agent=2",
+            "stale_submit=1",
+        ]
         compact = _build_reason_compact(chain)
         assert len(compact.lines) == _REASON_COMPACT_LIMIT
         assert compact.total_reasons == 6
@@ -253,8 +284,8 @@ class TestReasonCompact:
 # AXIS 4: SafetyBar Fixed Values                                               #
 # =========================================================================== #
 
-class TestSafetyBar:
 
+class TestSafetyBar:
     def test_action_allowed_always_false(self):
         decision = _make_decision()
         card = build_decision_card(decision)
@@ -291,6 +322,7 @@ class TestSafetyBar:
     def test_source_no_action_allowed_true(self):
         """Service source must never set action_allowed=True."""
         import app.services.decision_card_service as mod
+
         source = inspect.getsource(mod)
         assert "action_allowed=True" not in source
         assert "action_allowed = True" not in source
@@ -298,6 +330,7 @@ class TestSafetyBar:
     def test_source_no_write_methods(self):
         """Service source must not call any write methods."""
         import app.services.decision_card_service as mod
+
         source = inspect.getsource(mod)
         assert ".propose_and_guard(" not in source
         assert ".record_receipt(" not in source
@@ -308,8 +341,8 @@ class TestSafetyBar:
 # AXIS 5: DecisionCard Integration + Serialization                             #
 # =========================================================================== #
 
-class TestDecisionCardIntegration:
 
+class TestDecisionCardIntegration:
     def test_card_from_monitor_low(self):
         decision = _make_decision()
         card = build_decision_card(decision)
@@ -321,8 +354,13 @@ class TestDecisionCardIntegration:
         decision = _make_decision(
             recommended_posture=POSTURE_URGENT_REVIEW,
             risk_level=RISK_HIGH,
-            reason_chain=["pressure=CRITICAL", "candidate_total=15",
-                          "orphan_total=3", "stale_total=8", "stale_submit=5"],
+            reason_chain=[
+                "pressure=CRITICAL",
+                "candidate_total=15",
+                "orphan_total=3",
+                "stale_total=8",
+                "stale_submit=5",
+            ],
             candidate_total=15,
             orphan_total=3,
             stale_total=8,
@@ -359,12 +397,16 @@ class TestDecisionCardIntegration:
 
     def test_full_pipeline_with_stale(self):
         """End-to-end with stale data → elevated card."""
-        action = _FakeLedger([
-            {"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}]
+        )
         exec_proposals = [
-            {"proposal_id": f"EP-{i}", "agent_proposal_id": f"AP-GONE-{i}",
-             "status": "EXEC_GUARDED", "created_at": _past_iso(500)}
+            {
+                "proposal_id": f"EP-{i}",
+                "agent_proposal_id": f"AP-GONE-{i}",
+                "status": "EXEC_GUARDED",
+                "created_at": _past_iso(500),
+            }
             for i in range(12)
         ]
         execution = _FakeLedger(exec_proposals, stale_count=12)
@@ -379,21 +421,24 @@ class TestDecisionCardIntegration:
 # AXIS 6: Board Integration + Backward Compatibility                           #
 # =========================================================================== #
 
-class TestBoardIntegration:
 
+class TestBoardIntegration:
     def test_board_schema_has_decision_card(self):
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         fields = FourTierBoardResponse.model_fields
         assert "decision_card" in fields
 
     def test_board_still_has_decision_summary_dict(self):
         """Backward compatibility: decision_summary dict still present."""
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         fields = FourTierBoardResponse.model_fields
         assert "decision_summary" in fields
 
     def test_board_populates_decision_card(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.decision_card is not None
         assert board.decision_card.posture_badge.posture == POSTURE_MONITOR
@@ -403,12 +448,16 @@ class TestBoardIntegration:
     def test_board_decision_card_and_summary_consistent(self):
         """decision_card and decision_summary must agree on posture/risk."""
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
-        assert board.decision_card.posture_badge.posture == board.decision_summary.recommended_posture
+        assert (
+            board.decision_card.posture_badge.posture == board.decision_summary.recommended_posture
+        )
         assert board.decision_card.risk_badge.risk_level == board.decision_summary.risk_level
 
     def test_board_decision_card_serializable(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         d = board.model_dump()
         s = json.dumps(d)

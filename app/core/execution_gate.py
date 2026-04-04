@@ -44,47 +44,55 @@ def evaluate_execution_gate(
 
     # --- Condition 1: preflight.decision == READY (제43조) ---
     pf_met, pf_observed = _check_preflight()
-    conditions.append(GateCondition(
-        name="preflight_ready",
-        met=pf_met,
-        observed=pf_observed,
-        required="READY",
-        source="I-04",
-        rule_ref="Art43",
-    ))
+    conditions.append(
+        GateCondition(
+            name="preflight_ready",
+            met=pf_met,
+            observed=pf_observed,
+            required="READY",
+            source="I-04",
+            rule_ref="Art43",
+        )
+    )
 
     # --- Condition 2: ops_score >= threshold (제41조) ---
     score_avg, score_met, score_observed = _check_ops_score(ops_score_threshold)
-    conditions.append(GateCondition(
-        name="ops_score_above_threshold",
-        met=score_met,
-        observed=score_observed,
-        required=f">={ops_score_threshold}",
-        source="I-01",
-        rule_ref="Art41",
-    ))
+    conditions.append(
+        GateCondition(
+            name="ops_score_above_threshold",
+            met=score_met,
+            observed=score_observed,
+            required=f">={ops_score_threshold}",
+            source="I-01",
+            rule_ref="Art41",
+        )
+    )
 
     # --- Condition 3: trading_authorized == true (제42조) ---
     ta_met, ta_observed = _check_trading_authorized()
-    conditions.append(GateCondition(
-        name="trading_authorized",
-        met=ta_met,
-        observed=ta_observed,
-        required="true",
-        source="I-01",
-        rule_ref="Art42",
-    ))
+    conditions.append(
+        GateCondition(
+            name="trading_authorized",
+            met=ta_met,
+            observed=ta_observed,
+            required="true",
+            source="I-01",
+            rule_ref="Art42",
+        )
+    )
 
     # --- Condition 4: lockdown == false (제7조) ---
     ld_met, ld_observed = _check_lockdown()
-    conditions.append(GateCondition(
-        name="lockdown_inactive",
-        met=ld_met,
-        observed=ld_observed,
-        required="false",
-        source="I-01",
-        rule_ref="Art7",
-    ))
+    conditions.append(
+        GateCondition(
+            name="lockdown_inactive",
+            met=ld_met,
+            observed=ld_observed,
+            required="false",
+            source="I-01",
+            rule_ref="Art7",
+        )
+    )
 
     # --- Decision ---
     met_count = sum(1 for c in conditions if c.met)
@@ -119,10 +127,12 @@ def evaluate_execution_gate(
 # Condition checkers (read-only, fail-closed)
 # ---------------------------------------------------------------------------
 
+
 def _check_preflight() -> tuple[bool, str]:
     """Check preflight decision. Reuse I-04 runner."""
     try:
         from app.core.recovery_preflight import run_recovery_preflight
+
         result = run_recovery_preflight()
         decision = result.decision.value
         return decision == "READY", decision
@@ -144,24 +154,34 @@ def _check_ops_score(threshold: float) -> tuple[float, bool, str]:
         # We need lightweight read-only computation without DB session
         # Use ops_score from app state if available, else compute minimal
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
 
         # Compute real snapshot_age from DB (sync) for accurate connectivity score
         from app.schemas.ops_status import IntegrityPanel, TradingSafetyPanel, IncidentEvidencePanel
+
         snapshot_age = None
         try:
             from sqlalchemy import create_engine, select, desc
             from sqlalchemy.orm import Session
             from app.core.config import settings as _cfg
             from app.models.position import Position
+
             engine = create_engine(_cfg.database_url_sync)
             try:
                 with Session(engine) as sess:
-                    latest = sess.query(Position.updated_at).order_by(Position.updated_at.desc()).first()
+                    latest = (
+                        sess.query(Position.updated_at).order_by(Position.updated_at.desc()).first()
+                    )
                     ts = latest[0] if latest else None
                     if ts is None:
                         from app.models.asset_snapshot import AssetSnapshot
-                        snap = sess.query(AssetSnapshot.snapshot_at).order_by(AssetSnapshot.snapshot_at.desc()).first()
+
+                        snap = (
+                            sess.query(AssetSnapshot.snapshot_at)
+                            .order_by(AssetSnapshot.snapshot_at.desc())
+                            .first()
+                        )
                         ts = snap[0] if snap else None
                     if ts:
                         now = datetime.now(timezone.utc)
@@ -183,7 +203,12 @@ def _check_ops_score(threshold: float) -> tuple[float, bool, str]:
         incident = IncidentEvidencePanel()
 
         score = _compute_ops_score(integrity, trading, incident)
-        avg = (score.integrity + score.connectivity + score.execution_safety + score.evidence_completeness) / 4
+        avg = (
+            score.integrity
+            + score.connectivity
+            + score.execution_safety
+            + score.evidence_completeness
+        ) / 4
         return avg, avg >= threshold, f"{avg:.4f}"
     except Exception as e:
         return 0.0, False, f"error:{e}"
@@ -193,6 +218,7 @@ def _check_trading_authorized() -> tuple[bool, str]:
     """Check trading_authorized from dual lock. Reuse I-01 computation."""
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
 
         if gate is None:
@@ -214,6 +240,7 @@ def _check_lockdown() -> tuple[bool, str]:
     """Check lockdown is inactive."""
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
 
         if gate is None:
@@ -238,11 +265,13 @@ def _store_gate_evidence(
     """Store gate evaluation to evidence store. Append-only."""
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate is None or not hasattr(gate, "evidence_store"):
             return f"fallback-gate-{uuid.uuid4().hex[:8]}"
 
         from kdexter.audit.evidence_store import EvidenceBundle
+
         bundle = EvidenceBundle(
             bundle_id=str(uuid.uuid4()),
             created_at=now,

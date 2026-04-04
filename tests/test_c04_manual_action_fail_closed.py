@@ -59,9 +59,15 @@ _order_mock.OrderStatus = MagicMock()
 # ===========================================================================
 
 CHAIN_STAGES = (
-    "pipeline_ready", "preflight_ready", "gate_open",
-    "approval_ok", "policy_ok", "risk_ok",
-    "auth_ok", "scope_ok", "evidence_present",
+    "pipeline_ready",
+    "preflight_ready",
+    "gate_open",
+    "approval_ok",
+    "policy_ok",
+    "risk_ok",
+    "auth_ok",
+    "scope_ok",
+    "evidence_present",
 )
 
 STAGE_TO_BLOCK = {
@@ -111,6 +117,7 @@ class TestC04FailClosedUnknownState:
     def test_unknown_preflight_state_blocks(self):
         """preflight_ready가 unknown이면 blocked."""
         from app.schemas.preflight_schema import PreflightDecision
+
         # NOT_READY or BLOCKED => blocked
         assert PreflightDecision.READY.value == "READY"
         state = {s: True for s in CHAIN_STAGES}
@@ -122,6 +129,7 @@ class TestC04FailClosedUnknownState:
     def test_unknown_gate_state_blocks(self):
         """gate_open이 unknown이면 blocked."""
         from app.schemas.execution_gate_schema import GateDecision
+
         assert GateDecision.CLOSED.value == "CLOSED"
         state = {s: True for s in CHAIN_STAGES}
         state["gate_open"] = None
@@ -132,6 +140,7 @@ class TestC04FailClosedUnknownState:
     def test_unknown_approval_state_blocks(self):
         """approval_ok가 unknown이면 blocked."""
         from app.schemas.operator_approval_schema import ApprovalDecision
+
         assert ApprovalDecision.REJECTED.value == "REJECTED"
         state = {s: True for s in CHAIN_STAGES}
         state["approval_ok"] = None
@@ -221,11 +230,13 @@ class TestC04FailClosedHTMLState:
         # No input/select/textarea should exist
         c04_start = html.find('id="t3sc-c04"')
         next_card = html.find('id="t3sc-c05"', c04_start)
-        c04_section = html[c04_start:next_card] if next_card != -1 else html[c04_start:c04_start + 2000]
+        c04_section = (
+            html[c04_start:next_card] if next_card != -1 else html[c04_start : c04_start + 2000]
+        )
         c04_lower = c04_section.lower()
-        assert '<input' not in c04_lower
-        assert '<select' not in c04_lower
-        assert '<textarea' not in c04_lower
+        assert "<input" not in c04_lower
+        assert "<select" not in c04_lower
+        assert "<textarea" not in c04_lower
 
     def test_post_endpoints_are_chain_gated(self):
         """C-04 POST endpoints가 존재하되 chain-gated이어야 한다.
@@ -254,9 +265,9 @@ class TestC04FailClosedHTMLState:
     def test_no_action_wiring_in_template(self):
         """템플릿에서 C-04 action 관련 JS wiring 없어야 한다."""
         html = _read_template()
-        assert 'c04Action' not in html
-        assert 'c04Submit' not in html
-        assert 'manualActionTrigger' not in html
+        assert "c04Action" not in html
+        assert "c04Submit" not in html
+        assert "manualActionTrigger" not in html
 
     def test_no_optimistic_wording_in_c04(self):
         """C-04 영역에 낙관적 실행 문구가 없어야 한다."""

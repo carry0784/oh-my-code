@@ -18,13 +18,26 @@ from unittest.mock import MagicMock
 import pytest
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services", "app.services.order_service",
-    "app.services.position_service", "app.services.signal_service",
-    "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -55,14 +68,13 @@ def _get_fn_body():
 # C07-1: HTML 블록
 # ===========================================================================
 class TestC07IncidentOverlayBlock:
-
     def test_incident_overlay_element_exists(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert 'id="incident-overlay"' in content
 
     def test_starts_hidden(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        assert 'io-hidden' in content
+        assert "io-hidden" in content
 
     def test_positioned_before_workspace(self):
         """Overlay는 t2-workspace 앞에 위치한다."""
@@ -76,7 +88,6 @@ class TestC07IncidentOverlayBlock:
 # C07-2: JS 렌더링 함수 — 우선순위 판정
 # ===========================================================================
 class TestC07RenderFunction:
-
     def test_function_exists(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert "function renderIncidentOverlay" in content
@@ -146,9 +157,16 @@ class TestC07RenderFunction:
     def test_no_forbidden_strings(self):
         fn_body = _get_fn_body()
         forbidden = [
-            'agent_analysis', 'raw_prompt', 'chain_of_thought',
-            'internal_reasoning', 'debug_trace', 'error_class',
-            'traceback', 'exception_type', 'stack', 'internal_state_dump',
+            "agent_analysis",
+            "raw_prompt",
+            "chain_of_thought",
+            "internal_reasoning",
+            "debug_trace",
+            "error_class",
+            "traceback",
+            "exception_type",
+            "stack",
+            "internal_state_dump",
         ]
         for f in forbidden:
             assert f not in fn_body, f"Forbidden string '{f}' in incident overlay"
@@ -158,7 +176,6 @@ class TestC07RenderFunction:
 # C07-3: CSS
 # ===========================================================================
 class TestC07CSS:
-
     def test_container_class(self):
         content = CSS_PATH.read_text(encoding="utf-8")
         assert ".io-container" in content
@@ -169,13 +186,13 @@ class TestC07CSS:
 
     def test_severity_classes(self):
         content = CSS_PATH.read_text(encoding="utf-8")
-        for cls in ['.io-critical', '.io-warning', '.io-caution']:
+        for cls in [".io-critical", ".io-warning", ".io-caution"]:
             assert cls in content, f"Severity class {cls} must exist"
 
     def test_critical_has_blink(self):
         content = CSS_PATH.read_text(encoding="utf-8")
         idx = content.index(".io-critical")
-        section = content[idx:idx + 200]
+        section = content[idx : idx + 200]
         assert "blink" in section or "animation" in section
 
     def test_primary_and_secondary_classes(self):
@@ -188,7 +205,6 @@ class TestC07CSS:
 # C07-4: Tab 2 통합
 # ===========================================================================
 class TestC07Integration:
-
     def test_called_from_render_tab2(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert "renderIncidentOverlay(data, venueStates)" in content
@@ -197,19 +213,28 @@ class TestC07Integration:
         """Incident overlay가 renderKeyFacts보다 먼저 호출된다."""
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         fn_start = content.index("function renderTab2")
-        fn_section = content[fn_start:fn_start + 500]
+        fn_section = content[fn_start : fn_start + 500]
         io_pos = fn_section.index("renderIncidentOverlay")
         kf_pos = fn_section.index("renderKeyFacts")
         assert io_pos < kf_pos
 
     def test_existing_blocks_preserved(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        for bid in ['key-facts-block', 'loop-ceiling-block', 'quote-feed-block',
-                     'venue-status-block', 'event-log-block']:
+        for bid in [
+            "key-facts-block",
+            "loop-ceiling-block",
+            "quote-feed-block",
+            "venue-status-block",
+            "event-log-block",
+        ]:
             assert f'id="{bid}"' in content, f"Block {bid} must be preserved"
 
     def test_existing_functions_preserved(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        for fn in ['renderLoopCeilingMonitor', 'renderQuoteFeedMonitor',
-                    'renderVenueStatusMonitor', 'renderAIWorkspace']:
+        for fn in [
+            "renderLoopCeilingMonitor",
+            "renderQuoteFeedMonitor",
+            "renderVenueStatusMonitor",
+            "renderAIWorkspace",
+        ]:
             assert f"function {fn}" in content, f"{fn} must be preserved"

@@ -10,6 +10,7 @@ B1 Doctrine (Execution Interface Doctrine):
   - Every command must be replayable (idempotency_key)
   - Every execution produces a CommandTranscript (Evidence Pack)
 """
+
 from __future__ import annotations
 
 import uuid
@@ -26,33 +27,35 @@ if TYPE_CHECKING:
 # Enums
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 class CommandType(Enum):
-    ORDER_BUY       = "ORDER.BUY"
-    ORDER_SELL      = "ORDER.SELL"
-    ORDER_CANCEL    = "ORDER.CANCEL"
-    POSITION_QUERY  = "POSITION.QUERY"
-    BALANCE_QUERY   = "BALANCE.QUERY"
-    RISK_CHECK      = "RISK.CHECK"
-    ORDER_DRY_RUN   = "ORDER.DRY_RUN"
-    ORDER_VERIFY    = "ORDER.VERIFY"
-    ORDER_REPLAY    = "ORDER.REPLAY"
-    ORDER_ROLLBACK  = "ORDER.ROLLBACK"
+    ORDER_BUY = "ORDER.BUY"
+    ORDER_SELL = "ORDER.SELL"
+    ORDER_CANCEL = "ORDER.CANCEL"
+    POSITION_QUERY = "POSITION.QUERY"
+    BALANCE_QUERY = "BALANCE.QUERY"
+    RISK_CHECK = "RISK.CHECK"
+    ORDER_DRY_RUN = "ORDER.DRY_RUN"
+    ORDER_VERIFY = "ORDER.VERIFY"
+    ORDER_REPLAY = "ORDER.REPLAY"
+    ORDER_ROLLBACK = "ORDER.ROLLBACK"
 
 
 class OrderType(Enum):
     MARKET = "MARKET"
-    LIMIT  = "LIMIT"
-    STOP   = "STOP"
+    LIMIT = "LIMIT"
+    STOP = "STOP"
 
 
 class ExecutionMode(Enum):
-    DRY_RUN = "DRY_RUN"   # simulation — no real orders placed
-    LIVE    = "LIVE"       # real execution (FINAL_GO required)
+    DRY_RUN = "DRY_RUN"  # simulation — no real orders placed
+    LIVE = "LIVE"  # real execution (FINAL_GO required)
 
 
 # ─────────────────────────────────────────────────────────────────────────── #
 # Command
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 @dataclass
 class TCLCommand:
@@ -61,14 +64,15 @@ class TCLCommand:
     Upper layers must set idempotency_key once and reuse it on retries —
     never generate a new key for a retry of the same logical operation.
     """
+
     command_type: CommandType
-    exchange: str                                   # "binance" | "bitget" | "upbit" | "kis" | "kiwoom"
-    mode: ExecutionMode = ExecutionMode.DRY_RUN     # default SAFE — explicit LIVE required
+    exchange: str  # "binance" | "bitget" | "upbit" | "kis" | "kiwoom"
+    mode: ExecutionMode = ExecutionMode.DRY_RUN  # default SAFE — explicit LIVE required
 
     # Order params (BUY / SELL / DRY_RUN)
-    symbol: Optional[str] = None                    # e.g. "BTC/KRW", "ETH/USDT"
+    symbol: Optional[str] = None  # e.g. "BTC/KRW", "ETH/USDT"
     quantity: Optional[float] = None
-    price: Optional[float] = None                   # None = market order
+    price: Optional[float] = None  # None = market order
     order_type: OrderType = OrderType.MARKET
 
     # Cancel / Verify
@@ -99,6 +103,7 @@ class TCLCommand:
 # Transcript — audit record (M-07 Evidence Pack)
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass
 class CommandTranscript:
     """
@@ -106,6 +111,7 @@ class CommandTranscript:
     Must be attached to EvidenceBundle (M-07) for every execution.
     See docs/specs/tcl_spec_v1.md Section 5 for field definitions.
     """
+
     transcript_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     required_command: str = ""
     normalized_command: str = ""
@@ -163,6 +169,7 @@ class CommandTranscript:
 # Dispatcher
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 class TCLDispatcher:
     """
     Routes TCLCommand to the registered ExchangeAdapter.
@@ -182,10 +189,12 @@ class TCLDispatcher:
         transcript = await dispatcher.dispatch(command)
     """
 
-    _RISK_CHECK_REQUIRED: frozenset[CommandType] = frozenset({
-        CommandType.ORDER_BUY,
-        CommandType.ORDER_SELL,
-    })
+    _RISK_CHECK_REQUIRED: frozenset[CommandType] = frozenset(
+        {
+            CommandType.ORDER_BUY,
+            CommandType.ORDER_SELL,
+        }
+    )
 
     def __init__(self) -> None:
         self._adapters: dict[str, "ExchangeAdapter"] = {}
@@ -270,9 +279,7 @@ class TCLDispatcher:
 
         return transcript
 
-    async def _run(
-        self, adapter: "ExchangeAdapter", command: TCLCommand
-    ) -> CommandTranscript:
+    async def _run(self, adapter: "ExchangeAdapter", command: TCLCommand) -> CommandTranscript:
         if command.mode == ExecutionMode.DRY_RUN:
             return await adapter.dry_run(command)
         return await adapter.execute(command)

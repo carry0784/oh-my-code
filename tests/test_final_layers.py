@@ -4,28 +4,35 @@ K-Dexter AOS v4
 
 Run: python -X utf8 tests/test_final_layers.py
 """
+
 from __future__ import annotations
 
 import sys
 
 from kdexter.engines.human_decision import (
-    HumanDecisionInterface, DecisionType, DecisionStatus,
+    HumanDecisionInterface,
+    DecisionType,
+    DecisionStatus,
 )
 from kdexter.engines.clarify_spec import (
-    ClarifySpecEngine, SpecStatus,
+    ClarifySpecEngine,
+    SpecStatus,
 )
 from kdexter.engines.harness import HarnessEngine, HarnessStatus
 from kdexter.engines.parallel_agent import (
-    ParallelAgentManager, AgentStatus,
+    ParallelAgentManager,
+    AgentStatus,
 )
 from kdexter.engines.evaluation import (
-    EvaluationEngine, EvaluationMetric,
+    EvaluationEngine,
+    EvaluationMetric,
 )
 
 
 # ======================================================================== #
 # 1. L1 Human Decision
 # ======================================================================== #
+
 
 def test_human_submit():
     h = HumanDecisionInterface()
@@ -66,6 +73,7 @@ def test_human_list_pending():
 # 2. L4 Clarify & Spec
 # ======================================================================== #
 
+
 def test_spec_create():
     e = ClarifySpecEngine()
     spec = e.create("SPEC-001", "Test intent", ["obj1"], ["constraint1"])
@@ -105,6 +113,7 @@ def test_spec_list_all():
 # 3. L5 Harness
 # ======================================================================== #
 
+
 def test_harness_lifecycle():
     e = HarnessEngine()
     run = e.create("RUN-001", "strat_1")
@@ -140,6 +149,7 @@ def test_harness_list_running():
 # ======================================================================== #
 # 4. L6 Parallel Agent
 # ======================================================================== #
+
 
 def test_agent_spawn_start():
     m = ParallelAgentManager(max_agents=5)
@@ -197,6 +207,7 @@ def test_agent_active_count():
 # 5. L7 Evaluation
 # ======================================================================== #
 
+
 def test_eval_basic():
     e = EvaluationEngine()
     metrics = [
@@ -248,36 +259,51 @@ if __name__ == "__main__":
     print("=" * 60)
 
     tests = [
-        ("L1 Human Decision", [
-            test_human_submit,
-            test_human_apply,
-            test_human_apply_nonexistent,
-            test_human_list_pending,
-        ]),
-        ("L4 Clarify & Spec", [
-            test_spec_create,
-            test_spec_clarify_approve,
-            test_spec_approve_without_clarify_fails,
-            test_spec_list_all,
-        ]),
-        ("L5 Harness", [
-            test_harness_lifecycle,
-            test_harness_fail,
-            test_harness_list_running,
-        ]),
-        ("L6 Parallel Agent", [
-            test_agent_spawn_start,
-            test_agent_max_limit,
-            test_agent_pause_resume,
-            test_agent_record_cycle,
-            test_agent_active_count,
-        ]),
-        ("L7 Evaluation", [
-            test_eval_basic,
-            test_eval_failed_metric,
-            test_eval_average_score,
-            test_eval_list_for_strategy,
-        ]),
+        (
+            "L1 Human Decision",
+            [
+                test_human_submit,
+                test_human_apply,
+                test_human_apply_nonexistent,
+                test_human_list_pending,
+            ],
+        ),
+        (
+            "L4 Clarify & Spec",
+            [
+                test_spec_create,
+                test_spec_clarify_approve,
+                test_spec_approve_without_clarify_fails,
+                test_spec_list_all,
+            ],
+        ),
+        (
+            "L5 Harness",
+            [
+                test_harness_lifecycle,
+                test_harness_fail,
+                test_harness_list_running,
+            ],
+        ),
+        (
+            "L6 Parallel Agent",
+            [
+                test_agent_spawn_start,
+                test_agent_max_limit,
+                test_agent_pause_resume,
+                test_agent_record_cycle,
+                test_agent_active_count,
+            ],
+        ),
+        (
+            "L7 Evaluation",
+            [
+                test_eval_basic,
+                test_eval_failed_metric,
+                test_eval_average_score,
+                test_eval_list_for_strategy,
+            ],
+        ),
     ]
 
     total = 0

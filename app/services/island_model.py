@@ -31,6 +31,7 @@ logger = get_logger(__name__)
 @dataclass
 class Island:
     """Single island with its own population."""
+
     island_id: str = field(default_factory=lambda: str(uuid4())[:8])
     population: list[StrategyGenome] = field(default_factory=list)
     regime_tag: str = ""
@@ -42,6 +43,7 @@ class Island:
 @dataclass
 class MigrationEvent:
     """Record of a single migration."""
+
     from_island: str
     to_island: str
     genome_id: str
@@ -51,14 +53,16 @@ class MigrationEvent:
 @dataclass
 class MigrationPolicy:
     """Controls how and when migration occurs."""
-    interval: int = 5              # migrate every N generations
+
+    interval: int = 5  # migrate every N generations
     migrant_fraction: float = 0.1  # top 10% migrate
-    topology: str = "ring"         # "ring", "star", "random"
+    topology: str = "ring"  # "ring", "star", "random"
 
 
 @dataclass
 class IslandModelConfig:
     """Configuration for the island model."""
+
     n_islands: int = 5
     population_per_island: int = 10
     migration: MigrationPolicy = field(default_factory=MigrationPolicy)
@@ -87,19 +91,22 @@ class IslandModel:
                 regime_tag="",
             )
             self.islands.append(island)
-        logger.info("islands_initialized", count=len(self.islands),
-                     pop_per_island=self.config.population_per_island)
+        logger.info(
+            "islands_initialized",
+            count=len(self.islands),
+            pop_per_island=self.config.population_per_island,
+        )
 
     def evolve_generation(self, ohlcv: list[list], lookback: int = 50) -> list[Island]:
         """Run one generation of evolution on all islands."""
         from app.services.strategy_runner import StrategyRunner
-        
+
         for island in self.islands:
             if len(island.population) < 4:
                 # Replenish if too small
                 while len(island.population) < self.config.population_per_island:
                     island.population.append(self.factory.create_random())
-            
+
             # Backtest all genomes on this island
             performances: dict[str, PerformanceReport] = {}
             for genome in island.population:
@@ -121,10 +128,12 @@ class IslandModel:
         if gen > 0 and gen % self.config.migration.interval == 0:
             self.migrate()
 
-        logger.info("island_generation_complete",
-                     gen=gen,
-                     islands=len(self.islands),
-                     best_per_island=[round(i.best_fitness, 4) for i in self.islands])
+        logger.info(
+            "island_generation_complete",
+            gen=gen,
+            islands=len(self.islands),
+            best_per_island=[round(i.best_fitness, 4) for i in self.islands],
+        )
         return self.islands
 
     def migrate(self) -> list[MigrationEvent]:
@@ -200,5 +209,6 @@ class IslandModel:
         consistent SMA/RSI branching based on strategy_type gene.
         """
         from app.services.strategy_runner import StrategyRunner, RunnerConfig
+
         runner = StrategyRunner(RunnerConfig())
         return runner._genome_to_strategy(genome)

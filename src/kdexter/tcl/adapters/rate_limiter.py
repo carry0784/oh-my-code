@@ -5,6 +5,7 @@ K-Dexter AOS — TCL Spec v1
 Token bucket algorithm for exchange API call throttling.
 Each adapter instantiates its own AsyncRateLimiter with exchange-specific limits.
 """
+
 from __future__ import annotations
 
 import asyncio

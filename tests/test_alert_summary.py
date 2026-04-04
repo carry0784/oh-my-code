@@ -4,8 +4,11 @@ B-13: Alert Priority / Escalation Summary Tests
 
 import pytest
 from app.schemas.alert_summary_schema import (
-    AlertSummaryDetailResponse, AlertHealth,
-    PriorityLevel, EscalationState, PriorityBreakdown,
+    AlertSummaryDetailResponse,
+    AlertHealth,
+    PriorityLevel,
+    EscalationState,
+    PriorityBreakdown,
 )
 
 
@@ -35,6 +38,7 @@ class TestPriorityRules:
     def test_p1_on_blocked(self):
         """governance BLOCKED → P1 / critical."""
         from app.core.alert_summary_service import build_alert_summary
+
         s = build_alert_summary()
         # In dev env, actual priority depends on runtime state
         assert s.top_priority.value in ("P1", "P2", "P3", "INFO")
@@ -79,11 +83,13 @@ class TestEscalation:
 class TestTopReason:
     def test_top_reason_generated(self):
         from app.core.alert_summary_service import build_alert_summary
+
         s = build_alert_summary()
         assert len(s.top_reason) > 0  # always has a reason
 
     def test_breakdown_populated(self):
         from app.core.alert_summary_service import build_alert_summary
+
         s = build_alert_summary()
         bd = s.breakdown
         assert bd.p1_count >= 0
@@ -94,11 +100,13 @@ class TestV2:
     def test_v2_references_alert_health(self):
         import inspect
         from app.api.routes.dashboard import dashboard_data_v2
+
         src = inspect.getsource(dashboard_data_v2)
         assert "alert_health" in src
 
     def test_endpoint_exists(self):
         from app.api.routes.dashboard import alert_summary_detail
+
         assert alert_summary_detail is not None
 
 
@@ -106,6 +114,7 @@ class TestReadOnly:
     def test_no_write_in_service(self):
         import inspect
         from app.core import alert_summary_service
+
         src = inspect.getsource(alert_summary_service)
         forbidden = ["db.add", "db.delete", "session.commit", "submit_order", "send_notification"]
         for f in forbidden:

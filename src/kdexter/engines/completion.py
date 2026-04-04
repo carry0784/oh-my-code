@@ -10,6 +10,7 @@ Governance: B2 (governance_layer_map.md -- L21)
 Gate: G-25 COMPLETION_CHECK at VERIFY state
 Mandatory: M-16 (completion criteria must be met before promotion)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -21,14 +22,16 @@ from typing import Optional
 # Data models
 # ------------------------------------------------------------------ #
 
+
 @dataclass
 class CompletionCriterion:
     """A single criterion that must be satisfied for completion."""
+
     criterion_id: str
     description: str
-    weight: float = 1.0        # relative weight in score calculation
+    weight: float = 1.0  # relative weight in score calculation
     satisfied: bool = False
-    evidence: str = ""         # what proved this criterion was met
+    evidence: str = ""  # what proved this criterion was met
 
     def satisfy(self, evidence: str = "") -> None:
         self.satisfied = True
@@ -38,11 +41,12 @@ class CompletionCriterion:
 @dataclass
 class CompletionCheckResult:
     """Result of a completion evaluation."""
-    completion_score: float    # 0.0 ~ 1.0 weighted score
+
+    completion_score: float  # 0.0 ~ 1.0 weighted score
     total_criteria: int
     satisfied_criteria: int
-    unsatisfied: list[str]     # IDs of unsatisfied criteria
-    passed_gate: bool          # score >= threshold
+    unsatisfied: list[str]  # IDs of unsatisfied criteria
+    passed_gate: bool  # score >= threshold
     threshold: float
     checked_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -50,6 +54,7 @@ class CompletionCheckResult:
 # ------------------------------------------------------------------ #
 # L21 Completion Engine
 # ------------------------------------------------------------------ #
+
 
 class CompletionEngine:
     """
@@ -139,14 +144,10 @@ class CompletionEngine:
             return result
 
         total_weight = sum(c.weight for c in self._criteria.values())
-        satisfied_weight = sum(
-            c.weight for c in self._criteria.values() if c.satisfied
-        )
+        satisfied_weight = sum(c.weight for c in self._criteria.values() if c.satisfied)
 
         score = satisfied_weight / total_weight if total_weight > 0 else 0.0
-        unsatisfied = [
-            c.criterion_id for c in self._criteria.values() if not c.satisfied
-        ]
+        unsatisfied = [c.criterion_id for c in self._criteria.values() if not c.satisfied]
 
         result = CompletionCheckResult(
             completion_score=round(score, 4),

@@ -4,6 +4,7 @@ Constitution Document Verification Script
 Checks 25 documents in docs/aos-constitution/ for structural integrity.
 Exit code 0 only when BLOCKER=0 and MAJOR=0.
 """
+
 import os
 import re
 import sys
@@ -12,9 +13,16 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent.parent / "docs" / "aos-constitution"
 
 REQUIRED_FIELDS = [
-    "document_id", "title", "level", "authority_mode",
-    "parent", "version", "last_updated",
-    "defines", "may_reference", "may_not_define",
+    "document_id",
+    "title",
+    "level",
+    "authority_mode",
+    "parent",
+    "version",
+    "last_updated",
+    "defines",
+    "may_reference",
+    "may_not_define",
 ]
 
 LEVEL_AUTHORITY_MAP = {
@@ -28,8 +36,12 @@ LEVEL_AUTHORITY_MAP = {
 NO_CODE_BLOCK_FILES = ["constitution.md", "invariant-lens-spec.md", "external-api-governance.md"]
 
 INVARIANT_LENS_REQUIRED = [
-    "sprints/sprint-3a.md", "sprints/sprint-3b1.md", "sprints/sprint-3b2.md",
-    "sprints/sprint-5.md", "sprints/sprint-6-gate.md", "sprints/sprint-6.md",
+    "sprints/sprint-3a.md",
+    "sprints/sprint-3b1.md",
+    "sprints/sprint-3b2.md",
+    "sprints/sprint-5.md",
+    "sprints/sprint-6-gate.md",
+    "sprints/sprint-6.md",
     "operator-runbook.md",
 ]
 
@@ -142,7 +154,9 @@ def main():
         mode = fm.get("authority_mode", "")
         allowed = LEVEL_AUTHORITY_MAP.get(level, [])
         if mode not in allowed:
-            blockers.append(f"[3] {rel}: level={level} but authority_mode={mode}, expected one of {allowed}")
+            blockers.append(
+                f"[3] {rel}: level={level} but authority_mode={mode}, expected one of {allowed}"
+            )
 
     # Check 4: Code block prohibition
     for fname in NO_CODE_BLOCK_FILES:
@@ -240,12 +254,18 @@ def main():
         fm = parsed["invariant-lens-spec.md"]["fm"]
         if fm:
             if fm.get("authority_mode") != "POLICY":
-                blockers.append(f"[10] invariant-lens-spec.md: authority_mode={fm.get('authority_mode')}, expected POLICY")
+                blockers.append(
+                    f"[10] invariant-lens-spec.md: authority_mode={fm.get('authority_mode')}, expected POLICY"
+                )
             if fm.get("authority_scope") != "policy_rules_only":
-                blockers.append(f"[10] invariant-lens-spec.md: authority_scope={fm.get('authority_scope')}, expected policy_rules_only")
+                blockers.append(
+                    f"[10] invariant-lens-spec.md: authority_scope={fm.get('authority_scope')}, expected policy_rules_only"
+                )
         code_blocks = parsed["invariant-lens-spec.md"]["text"].count("```")
         if code_blocks > 0:
-            blockers.append(f"[10] invariant-lens-spec.md: {code_blocks} code block markers (must be 0)")
+            blockers.append(
+                f"[10] invariant-lens-spec.md: {code_blocks} code block markers (must be 0)"
+            )
 
     # Report
     print("=" * 60)

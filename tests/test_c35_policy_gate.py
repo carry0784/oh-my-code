@@ -26,10 +26,14 @@ GATE_PATH = PROJECT_ROOT / "app" / "core" / "retry_policy_gate.py"
 def _store_with_plans(n=3):
     store = RetryPlanStore(ttl_seconds=9999)
     for i in range(n):
-        store.enqueue(channel=f"ch{i}", reason="timeout",
-                      reliability_tier="transient_failure",
-                      retryable=True, retry_after_seconds=0,
-                      incident=f"inc_{i}")
+        store.enqueue(
+            channel=f"ch{i}",
+            reason="timeout",
+            reliability_tier="transient_failure",
+            retryable=True,
+            retry_after_seconds=0,
+            incident=f"inc_{i}",
+        )
     return store
 
 
@@ -37,7 +41,6 @@ def _store_with_plans(n=3):
 # C35-1: 모듈 구조
 # ===========================================================================
 class TestC35ModuleStructure:
-
     def test_module_exists(self):
         assert GATE_PATH.exists()
 
@@ -58,7 +61,6 @@ class TestC35ModuleStructure:
 # C35-2: gate 통과
 # ===========================================================================
 class TestC35GatePass:
-
     def test_all_gates_pass(self):
         gate = RetryPolicyGate()
         store = _store_with_plans(3)
@@ -78,7 +80,6 @@ class TestC35GatePass:
 # C35-3: gate 차단
 # ===========================================================================
 class TestC35GateBlock:
-
     def test_disabled_blocks(self):
         gate = RetryPolicyGate(enabled=False)
         store = _store_with_plans()
@@ -126,7 +127,6 @@ class TestC35GateBlock:
 # C35-4: pass 동시성 제어
 # ===========================================================================
 class TestC35PassControl:
-
     def test_acquire_pass(self):
         gate = RetryPolicyGate()
         assert gate.acquire_pass() is True
@@ -158,7 +158,6 @@ class TestC35PassControl:
 # C35-5: fail-closed
 # ===========================================================================
 class TestC35FailClosed:
-
     def test_corrupted_store_denied(self):
         gate = RetryPolicyGate()
         decision = gate.evaluate("not_a_store")
@@ -176,13 +175,14 @@ class TestC35FailClosed:
 # C35-6: 금지 조항
 # ===========================================================================
 class TestC35Forbidden:
-
     def test_no_forbidden_strings(self):
         content = GATE_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

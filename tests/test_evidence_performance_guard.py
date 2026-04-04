@@ -18,6 +18,7 @@ Principles:
   - No dashboard feature addition
   - No cache layer introduction
 """
+
 from __future__ import annotations
 
 import ast
@@ -33,15 +34,31 @@ import pytest
 
 # ── Stub modules that may not be available in test env ──────────────────
 _STUB_MODULES = [
-    "celery", "celery.schedules", "celery.result",
-    "redis", "ccxt", "ccxt.async_support", "ccxt.pro",
-    "sqlalchemy", "sqlalchemy.orm", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.ext.declarative", "sqlalchemy.future",
-    "alembic", "fastapi", "uvicorn",
-    "anthropic", "openai", "google.generativeai",
-    "app.core.config", "app.core.database",
-    "app.models.order", "app.models.signal", "app.models.position",
-    "app.models.trade", "app.models.asset_snapshot",
+    "celery",
+    "celery.schedules",
+    "celery.result",
+    "redis",
+    "ccxt",
+    "ccxt.async_support",
+    "ccxt.pro",
+    "sqlalchemy",
+    "sqlalchemy.orm",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.ext.declarative",
+    "sqlalchemy.future",
+    "alembic",
+    "fastapi",
+    "uvicorn",
+    "anthropic",
+    "openai",
+    "google.generativeai",
+    "app.core.config",
+    "app.core.database",
+    "app.models.order",
+    "app.models.signal",
+    "app.models.position",
+    "app.models.trade",
+    "app.models.asset_snapshot",
     "app.exchanges.okx",
 ]
 for name in _STUB_MODULES:
@@ -58,6 +75,7 @@ from kdexter.audit.evidence_store import EvidenceBundle, EvidenceStore
 # ═══════════════════════════════════════════════════════════════════════
 # Fixtures
 # ═══════════════════════════════════════════════════════════════════════
+
 
 def _make_bundle(
     actor: str = "test_actor",
@@ -85,18 +103,24 @@ def _make_orphan_bundles(store: EvidenceStore, count: int) -> int:
     for i in range(count):
         if i % 3 == 0:
             # PRE without POST = orphan
-            store.store(_make_bundle(
-                actor="orphan_test", idx=i,
-                artifacts=[{"phase": "PRE", "detail": f"pre-{i}"}],
-            ))
+            store.store(
+                _make_bundle(
+                    actor="orphan_test",
+                    idx=i,
+                    artifacts=[{"phase": "PRE", "detail": f"pre-{i}"}],
+                )
+            )
             orphans += 1
         elif i % 3 == 1:
             # PRE with matching POST = linked
-            pre_id = f"TEST-orphan_test-{(i-1):06d}"
-            store.store(_make_bundle(
-                actor="orphan_test", idx=i,
-                artifacts=[{"phase": "POST", "pre_evidence_id": pre_id}],
-            ))
+            pre_id = f"TEST-orphan_test-{(i - 1):06d}"
+            store.store(
+                _make_bundle(
+                    actor="orphan_test",
+                    idx=i,
+                    artifacts=[{"phase": "POST", "pre_evidence_id": pre_id}],
+                )
+            )
             orphans -= 1  # previous PRE is now linked
         else:
             # Regular bundle (no phase)
@@ -115,6 +139,7 @@ def _populate_store(backend, count: int, actor: str = "perf_test") -> EvidenceSt
 # ═══════════════════════════════════════════════════════════════════════
 # AXIS 1: Synthetic Scale Correctness
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TestSyntheticScale:
     """Verify store operations work correctly at 10K / 100K / 500K scale."""
@@ -171,7 +196,7 @@ class TestSyntheticScale:
         result = store.list_by_actor_recent("perf_test", 20)
         assert len(result) == 20
         # Must be the 20 most recent bundles
-        assert result[-1].bundle_id == f"TEST-perf_test-{scale-1:06d}"
+        assert result[-1].bundle_id == f"TEST-perf_test-{scale - 1:06d}"
 
     @pytest.mark.parametrize("scale", [500_000])
     def test_count_at_scale_500k(self, scale: int):
@@ -185,12 +210,13 @@ class TestSyntheticScale:
         store = _populate_store(InMemoryBackend(), scale)
         result = store.list_by_actor_recent("perf_test", 20)
         assert len(result) == 20
-        assert result[-1].bundle_id == f"TEST-perf_test-{scale-1:06d}"
+        assert result[-1].bundle_id == f"TEST-perf_test-{scale - 1:06d}"
 
 
 # ═══════════════════════════════════════════════════════════════════════
 # AXIS 2: Hot Path Budget Enforcement
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TestHotPathBudget:
     """Verify bounded queries meet time budget at scale."""
@@ -282,8 +308,8 @@ class TestSQLiteProductionSmoke:
     def test_sqlite_list_by_actor_recent_correctness(self):
         """SQLite 20K: recent returns the 20 latest bundles."""
         result = self.store.list_by_actor_recent("sqlite_smoke", 20)
-        assert result[-1].bundle_id == f"TEST-sqlite_smoke-{_SQLITE_SMOKE_SCALE-1:06d}"
-        assert result[0].bundle_id == f"TEST-sqlite_smoke-{_SQLITE_SMOKE_SCALE-20:06d}"
+        assert result[-1].bundle_id == f"TEST-sqlite_smoke-{_SQLITE_SMOKE_SCALE - 1:06d}"
+        assert result[0].bundle_id == f"TEST-sqlite_smoke-{_SQLITE_SMOKE_SCALE - 20:06d}"
 
     def test_sqlite_deterministic_ordering(self):
         """SQLite 20K: recent results in created_at ASC order."""
@@ -326,8 +352,8 @@ _HOT_PATH_MODULES = [
 
 # Non-hot-path modules where list_all() is acceptable
 _NON_HOT_PATH_MODULES = [
-    "app/api/routes/agents.py",          # debug-only endpoint
-    "app/core/governance_monitor.py",     # batch/background
+    "app/api/routes/agents.py",  # debug-only endpoint
+    "app/core/governance_monitor.py",  # batch/background
 ]
 
 
@@ -413,6 +439,7 @@ class TestForbiddenPatterns:
 # AXIS 4: Deterministic Ordering Contract
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestDeterministicOrdering:
     """PERF-03: Verify recent queries return deterministic ordering."""
 
@@ -423,7 +450,7 @@ class TestDeterministicOrdering:
         for i in range(len(result) - 1):
             assert result[i].created_at <= result[i + 1].created_at, (
                 f"Result[{i}].created_at ({result[i].created_at}) > "
-                f"Result[{i+1}].created_at ({result[i+1].created_at})"
+                f"Result[{i + 1}].created_at ({result[i + 1].created_at})"
             )
 
     def test_recent_returns_latest_bundles(self):
@@ -471,6 +498,7 @@ class TestDeterministicOrdering:
 # AXIS 5: Backend Abstraction Boundary
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestBackendAbstraction:
     """Verify all public facade methods work identically on both backends."""
 
@@ -507,7 +535,7 @@ class TestBackendAbstraction:
             if i % 3 == 0:
                 arts = [{"phase": "PRE"}]
             elif i % 3 == 1:
-                pre_id = f"TEST-parity-{(i-1):06d}"
+                pre_id = f"TEST-parity-{(i - 1):06d}"
                 arts = [{"phase": "POST", "pre_evidence_id": pre_id}]
             else:
                 arts = []

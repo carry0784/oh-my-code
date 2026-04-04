@@ -16,10 +16,19 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -203,10 +212,14 @@ class TestR4MassDemotion:
         lm = StrategyLifecycleManager()
         lm.register("g1")  # CANDIDATE
         lm.register("g2")
-        lm.request_transition(TransitionRequest(
-            genome_id="g2", from_state=StrategyState.CANDIDATE,
-            to_state=StrategyState.VALIDATED, reason="test",
-        ))  # g2 is VALIDATED
+        lm.request_transition(
+            TransitionRequest(
+                genome_id="g2",
+                from_state=StrategyState.CANDIDATE,
+                to_state=StrategyState.VALIDATED,
+                reason="test",
+            )
+        )  # g2 is VALIDATED
 
         retired = lm.auto_retire(["g1", "g2"], reason="emergency")
         assert len(retired) == 2
@@ -217,12 +230,14 @@ class TestR4MassDemotion:
         lm.register("g1")
         lm.auto_retire(["g1"], reason="test")
 
-        result = lm.request_transition(TransitionRequest(
-            genome_id="g1",
-            from_state=StrategyState.RETIRED,
-            to_state=StrategyState.CANDIDATE,
-            reason="attempt_revival",
-        ))
+        result = lm.request_transition(
+            TransitionRequest(
+                genome_id="g1",
+                from_state=StrategyState.RETIRED,
+                to_state=StrategyState.CANDIDATE,
+                reason="attempt_revival",
+            )
+        )
         assert result is False
         assert lm.get_state("g1").current_state == StrategyState.RETIRED
 
@@ -238,8 +253,10 @@ class TestR5PaperTradingHalt:
         bridge = PaperTradingBridge()
         sid = bridge.start_session("g1")
         trade = TradeRecord(
-            entry_price=100.0, exit_price=102.0,
-            quantity=1.0, side="long",
+            entry_price=100.0,
+            exit_price=102.0,
+            quantity=1.0,
+            side="long",
         )
 
         assert bridge.record_trade(sid, trade) is True
@@ -260,8 +277,10 @@ class TestR5PaperTradingHalt:
 
         # Verify all closed
         trade = TradeRecord(
-            entry_price=100.0, exit_price=102.0,
-            quantity=1.0, side="long",
+            entry_price=100.0,
+            exit_price=102.0,
+            quantity=1.0,
+            side="long",
         )
         for sid in sids:
             assert bridge.record_trade(sid, trade) is False
@@ -271,6 +290,7 @@ class TestR5PaperTradingHalt:
         bridge = PaperTradingBridge()
         sid = bridge.start_session("g1")
         from app.services.performance_metrics import PerformanceReport
+
         bridge.close_session(sid)
         result = bridge.evaluate_session(sid, PerformanceReport())
         assert result.genome_id == "g1"
@@ -285,6 +305,7 @@ class TestR6CodeRollback:
     def test_phase7_no_external_dependencies_on_phase1_4(self):
         """Phase 7 orchestrator only depends on Phase 7 modules (not Phase 1-4 directly)."""
         import ast
+
         with open("app/services/autonomous_orchestrator.py", encoding="utf-8") as f:
             tree = ast.parse(f.read())
         imports = []
@@ -294,18 +315,28 @@ class TestR6CodeRollback:
 
         # Should only import from Phase 7 + core
         phase1_4_modules = [
-            "backtesting_engine", "performance_metrics", "validation_pipeline",
-            "strategy_runner", "strategy_tournament", "fitness_function",
-            "market_data_collector", "sentiment_collector", "indicator_calculator",
-            "market_state_builder", "regime_detector", "market_scorer",
+            "backtesting_engine",
+            "performance_metrics",
+            "validation_pipeline",
+            "strategy_runner",
+            "strategy_tournament",
+            "fitness_function",
+            "market_data_collector",
+            "sentiment_collector",
+            "indicator_calculator",
+            "market_state_builder",
+            "regime_detector",
+            "market_scorer",
         ]
         for mod in phase1_4_modules:
-            assert not any(mod in imp for imp in imports), \
+            assert not any(mod in imp for imp in imports), (
                 f"Orchestrator imports Phase 1-4 module: {mod}"
+            )
 
     def test_phase5_7_do_not_modify_phase1_4_interfaces(self):
         """Phase 1-4 modules have no imports from Phase 5-7."""
         import ast
+
         phase1_4_files = [
             "app/services/strategy_runner.py",
             "app/services/strategy_genome.py",
@@ -315,12 +346,22 @@ class TestR6CodeRollback:
             "app/services/validation_pipeline.py",
         ]
         phase5_7 = [
-            "adaptive_mutation", "island_model", "regime_evolution",
-            "evolution_state", "strategy_registry", "advanced_runner",
-            "correlation_analyzer", "portfolio_optimizer", "risk_budget_allocator",
-            "portfolio_metrics", "portfolio_constructor",
-            "paper_trading_bridge", "strategy_lifecycle", "governance_gate",
-            "system_health", "autonomous_orchestrator",
+            "adaptive_mutation",
+            "island_model",
+            "regime_evolution",
+            "evolution_state",
+            "strategy_registry",
+            "advanced_runner",
+            "correlation_analyzer",
+            "portfolio_optimizer",
+            "risk_budget_allocator",
+            "portfolio_metrics",
+            "portfolio_constructor",
+            "paper_trading_bridge",
+            "strategy_lifecycle",
+            "governance_gate",
+            "system_health",
+            "autonomous_orchestrator",
         ]
 
         for filepath in phase1_4_files:
@@ -329,8 +370,7 @@ class TestR6CodeRollback:
             for node in ast.walk(tree):
                 if isinstance(node, ast.ImportFrom) and node.module:
                     for mod in phase5_7:
-                        assert mod not in node.module, \
-                            f"{filepath} imports Phase 5-7 module: {mod}"
+                        assert mod not in node.module, f"{filepath} imports Phase 5-7 module: {mod}"
 
 
 # ===========================================================================

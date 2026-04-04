@@ -49,15 +49,18 @@ class DispatchReason(str, Enum):
     LIVE_SCOPE_FORBIDDEN = "LIVE_SCOPE_FORBIDDEN"
 
 
-_BLOCKED_REASONS = frozenset({
-    DispatchReason.LOCKDOWN_ACTIVE,
-    DispatchReason.CRITICAL_ALERT_DETECTED,
-    DispatchReason.POLICY_NOT_MATCH,
-})
+_BLOCKED_REASONS = frozenset(
+    {
+        DispatchReason.LOCKDOWN_ACTIVE,
+        DispatchReason.CRITICAL_ALERT_DETECTED,
+        DispatchReason.POLICY_NOT_MATCH,
+    }
+)
 
 
 class DispatchEvidenceChain(BaseModel):
     """Full evidence chain from I-03 through E-02."""
+
     check_id: str = ""
     preflight_id: str = ""
     gate_snapshot_id: str = ""
@@ -82,6 +85,7 @@ class DispatchReceipt(BaseModel):
     E-03: Dispatch Receipt.
     DISPATCH_ALLOWED means dispatch-eligible only, not order-sent.
     """
+
     execution_id: str
     decision: DispatchDecision
     timestamp: str = Field(description="ISO 8601")
@@ -91,13 +95,16 @@ class DispatchReceipt(BaseModel):
     requested_action: str = ""
     target_symbol: Optional[str] = None
     activation_consumed_at: Optional[str] = Field(
-        default=None, description="소비 시점 (ISO 8601). None=미소비.",
+        default=None,
+        description="소비 시점 (ISO 8601). None=미소비.",
     )
     consumed_by_execution_id: Optional[str] = Field(
-        default=None, description="소비한 execution_id. None=미소비.",
+        default=None,
+        description="소비한 execution_id. None=미소비.",
     )
     dispatch_window_expires_at: Optional[str] = Field(
-        default=None, description="dispatch 가능 시간창 만료 (ISO 8601)",
+        default=None,
+        description="dispatch 가능 시간창 만료 (ISO 8601)",
     )
     evidence_chain: DispatchEvidenceChain = Field(default_factory=DispatchEvidenceChain)
     items: list[DispatchCheckItem] = Field(default_factory=list)

@@ -22,6 +22,7 @@ logger = get_logger(__name__)
 @dataclass
 class CorrelationMatrix:
     """Result of correlation analysis."""
+
     genome_ids: list[str] = field(default_factory=list)
     matrix: np.ndarray = field(default_factory=lambda: np.array([]))
     avg_correlation: float = 0.0
@@ -38,7 +39,7 @@ class CorrelationAnalyzer:
     ) -> CorrelationMatrix:
         """
         Compute correlation matrix from return series.
-        
+
         Args:
             returns: genome_id -> list of period returns
         """
@@ -66,7 +67,7 @@ class CorrelationAnalyzer:
             )
 
         data = np.array([returns[gid][:min_len] for gid in ids])
-        
+
         # Compute correlation matrix
         corr = np.corrcoef(data)
         # Handle NaN (constant series)
@@ -94,10 +95,12 @@ class CorrelationAnalyzer:
             diversification_ratio=div_ratio,
         )
 
-        logger.info("correlation_computed",
-                     n_strategies=n,
-                     avg_corr=round(avg_corr, 4),
-                     div_ratio=round(div_ratio, 4))
+        logger.info(
+            "correlation_computed",
+            n_strategies=n,
+            avg_corr=round(avg_corr, 4),
+            div_ratio=round(div_ratio, 4),
+        )
         return result
 
     def compute_from_equity(

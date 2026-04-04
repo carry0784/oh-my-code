@@ -7,6 +7,7 @@ Axis 3: Record consistency (3)
 
 All tests mock _call_llm — no real LLM calls.
 """
+
 from __future__ import annotations
 
 import sys
@@ -19,10 +20,14 @@ import pytest
 # The Signal model uses 'metadata' (reserved by SQLAlchemy Declarative API).
 # We stub problematic modules before importing app code.
 _STUB_MODULES = [
-    "app.models", "app.models.order", "app.models.signal",
-    "app.models.position", "app.models.trade",
+    "app.models",
+    "app.models.order",
+    "app.models.signal",
+    "app.models.position",
+    "app.models.trade",
     "app.core.database",
-    "app.services", "app.services.signal_service",
+    "app.services",
+    "app.services.signal_service",
 ]
 _saved = {}
 for _mod_name in _STUB_MODULES:
@@ -57,6 +62,7 @@ from app.agents.orchestrator import AgentOrchestrator
 # ─────────────────────────────────────────────────────────────────────────── #
 # Fixtures
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 @pytest.fixture(autouse=True)
 def _reset_singleton():
@@ -120,6 +126,7 @@ def _mock_llm_result():
 # AXIS 1: CONTRACT PRESERVATION (2 tests)
 # ═══════════════════════════════════════════════════════════════════════════ #
 
+
 class TestContractPreservation:
     """Ensure AgentResponse API contract is preserved."""
 
@@ -152,6 +159,7 @@ class TestContractPreservation:
 # ═══════════════════════════════════════════════════════════════════════════ #
 # AXIS 2: BYPASS PREVENTION (8 tests)
 # ═══════════════════════════════════════════════════════════════════════════ #
+
 
 class TestBypassPrevention:
     """Ensure governance cannot be bypassed."""
@@ -197,13 +205,15 @@ class TestBypassPrevention:
         task.exchange = "binance"
 
         # Register a forbidden action that matches
-        gate.forbidden_ledger.register(ForbiddenAction(
-            action_id="FA-TEST-FORBIDDEN",
-            description="Test forbidden action",
-            severity="LOCKDOWN",
-            pattern="AGENT_DIRECT_EXCHANGE_CALL",
-            registered_by="test",
-        ))
+        gate.forbidden_ledger.register(
+            ForbiddenAction(
+                action_id="FA-TEST-FORBIDDEN",
+                description="Test forbidden action",
+                severity="LOCKDOWN",
+                pattern="AGENT_DIRECT_EXCHANGE_CALL",
+                registered_by="test",
+            )
+        )
 
         passed, decision, reason, eid = gate.pre_check(task)
         assert passed is False
@@ -276,8 +286,10 @@ class TestBypassPrevention:
             # Verify error evidence exists in store
             all_bundles = gate.evidence_store.list_all()
             error_bundles = [
-                b for b in all_bundles
-                if b.artifacts and isinstance(b.artifacts[0], dict)
+                b
+                for b in all_bundles
+                if b.artifacts
+                and isinstance(b.artifacts[0], dict)
                 and b.artifacts[0].get("phase") == PhaseCode.ERROR.value
             ]
             assert len(error_bundles) >= 1
@@ -350,19 +362,23 @@ class TestBypassPrevention:
             # governance_evidence_id와 1:1 일치하는 evidence를 직접 조회
             eid = result.governance_evidence_id
             target_bundle = gate.evidence_store.get(eid)
-            assert target_bundle is not None, \
+            assert target_bundle is not None, (
                 f"POST evidence {eid} must exist for risk rejection path"
+            )
             # bundle 내부에서 phase==POST artifact를 명시적으로 찾음
             post_arts = [
-                a for a in target_bundle.artifacts
+                a
+                for a in target_bundle.artifacts
                 if isinstance(a, dict) and a.get("phase") == PhaseCode.POST.value
             ]
-            assert len(post_arts) == 1, \
+            assert len(post_arts) == 1, (
                 f"Expected exactly 1 POST artifact in bundle {eid}, got {len(post_arts)}"
+            )
             post_art = post_arts[0]
             # F-04: ALLOWED로 기록되면 의미 오염
-            assert post_art["decision_code"] != DecisionCode.ALLOWED.value, \
+            assert post_art["decision_code"] != DecisionCode.ALLOWED.value, (
                 "Risk rejection should not record decision_code=ALLOWED"
+            )
 
     @pytest.mark.asyncio
     async def test_execute_validation_rejection_evidence_not_allowed(self, gate, mock_db):
@@ -401,7 +417,11 @@ class TestBypassPrevention:
             with patch(
                 "app.agents.signal_validator.SignalValidatorAgent.validate",
                 new_callable=AsyncMock,
-                return_value={"approved": False, "reasoning": "Signal quality too low", "confidence": 0.2},
+                return_value={
+                    "approved": False,
+                    "reasoning": "Signal quality too low",
+                    "confidence": 0.2,
+                },
             ):
                 with patch(
                     "app.agents.risk_manager.RiskManagerAgent.execute",
@@ -417,23 +437,28 @@ class TestBypassPrevention:
                     # governance_evidence_id와 1:1 일치하는 evidence를 직접 조회
                     eid = result.governance_evidence_id
                     target_bundle = gate.evidence_store.get(eid)
-                    assert target_bundle is not None, \
+                    assert target_bundle is not None, (
                         f"POST evidence {eid} must exist for validation rejection path"
+                    )
                     # bundle 내부에서 phase==POST artifact를 명시적으로 찾음
                     post_arts = [
-                        a for a in target_bundle.artifacts
+                        a
+                        for a in target_bundle.artifacts
                         if isinstance(a, dict) and a.get("phase") == PhaseCode.POST.value
                     ]
-                    assert len(post_arts) == 1, \
+                    assert len(post_arts) == 1, (
                         f"Expected exactly 1 POST artifact in bundle {eid}, got {len(post_arts)}"
+                    )
                     post_art = post_arts[0]
-                    assert post_art["decision_code"] != DecisionCode.ALLOWED.value, \
+                    assert post_art["decision_code"] != DecisionCode.ALLOWED.value, (
                         "Validation rejection should not record decision_code=ALLOWED"
+                    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════ #
 # AXIS 3: RECORD CONSISTENCY (3 tests)
 # ═══════════════════════════════════════════════════════════════════════════ #
+
 
 class TestRecordConsistency:
     """Ensure evidence bundles are produced and linked correctly."""
@@ -484,13 +509,17 @@ class TestRecordConsistency:
 
         # Find PRE and POST bundles
         pre_bundles = [
-            b for b in all_bundles
-            if b.artifacts and isinstance(b.artifacts[0], dict)
+            b
+            for b in all_bundles
+            if b.artifacts
+            and isinstance(b.artifacts[0], dict)
             and b.artifacts[0].get("phase") == PhaseCode.PRE.value
         ]
         post_bundles = [
-            b for b in all_bundles
-            if b.artifacts and isinstance(b.artifacts[0], dict)
+            b
+            for b in all_bundles
+            if b.artifacts
+            and isinstance(b.artifacts[0], dict)
             and b.artifacts[0].get("phase") == PhaseCode.POST.value
         ]
 
@@ -528,6 +557,7 @@ class TestRecordConsistency:
 # ═══════════════════════════════════════════════════════════════════════════ #
 # AXIS 4: SINGLETON SAFETY (B-06) — 5 tests
 # ═══════════════════════════════════════════════════════════════════════════ #
+
 
 class TestSingletonSafety:
     """B-06: GovernanceGate singleton enforcement and operational safety."""
@@ -567,6 +597,7 @@ class TestSingletonSafety:
         with patch("app.main.settings") as mock_settings:
             mock_settings.governance_enabled = True
             from app.main import _create_governance_gate
+
             with pytest.raises(RuntimeError, match="duplicate lifespan"):
                 _create_governance_gate()
 
@@ -631,6 +662,7 @@ class TestSingletonSafety:
 # ═════════════════��══════════════════��══════════════════════════════════════ #
 # AXIS 5: BUDGET CONTROL (M-08 / G-22) — 4 tests
 # ═══��═══════════════════════════════════���═══════════════════════════════���═══ #
+
 
 class TestBudgetControl:
     """M-08/G-22: CostController integration with GovernanceGate."""
@@ -697,7 +729,9 @@ class TestBudgetControl:
         assert check_matrix["BUDGET_CHECK"]["status"] == CheckStatus.DEFERRED.value
 
     @pytest.mark.asyncio
-    async def test_post_record_records_token_usage(self, governance_components, valid_task, mock_db):
+    async def test_post_record_records_token_usage(
+        self, governance_components, valid_task, mock_db
+    ):
         """post_record records LLM token usage to CostController."""
         from kdexter.engines.cost_controller import CostController
 
@@ -737,6 +771,7 @@ class TestBudgetControl:
 # ═══════════════════════════════════════════════════════════════════════════ #
 # AXIS 6: FAILURE PATTERN MEMORY (M-13 / G-21) — 3 tests
 # ═══════════════════════════════════════════════════════════════════════════ #
+
 
 class TestFailurePatternMemory:
     """M-13/G-21: FailurePatternMemory integration with GovernanceGate."""
@@ -791,7 +826,9 @@ class TestFailurePatternMemory:
         assert check_matrix["PATTERN_CHECK"]["status"] == CheckStatus.FAILED.value
 
     @pytest.mark.asyncio
-    async def test_error_records_failure_to_pattern_memory(self, governance_components, valid_task, mock_db):
+    async def test_error_records_failure_to_pattern_memory(
+        self, governance_components, valid_task, mock_db
+    ):
         """LLM exception records failure to FailurePatternMemory."""
         from kdexter.engines.failure_router import FailurePatternMemory
 

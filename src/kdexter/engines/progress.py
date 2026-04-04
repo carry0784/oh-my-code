@@ -6,6 +6,7 @@ Provides a lightweight metric store for other engines and gates to query.
 
 Governance: B2 (governance_layer_map.md -- L30)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -17,9 +18,11 @@ from typing import Optional
 # Data models
 # ------------------------------------------------------------------ #
 
+
 @dataclass
 class MetricRecord:
     """Internal record for a single tracked metric."""
+
     name: str
     value: float
     recorded_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -29,6 +32,7 @@ class MetricRecord:
 # ------------------------------------------------------------------ #
 # L30 Progress Engine
 # ------------------------------------------------------------------ #
+
 
 class ProgressEngine:
     """

@@ -9,20 +9,37 @@ from unittest.mock import MagicMock
 
 # Stub heavy modules before import
 _STUB_MODULES = [
-    "anthropic", "openai", "celery", "redis", "ccxt",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.orm.relationship",
+    "anthropic",
+    "openai",
+    "celery",
+    "redis",
+    "ccxt",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.orm.relationship",
     "alembic",
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.signal", "app.models.position", "app.models.trade",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.signal",
+    "app.models.position",
+    "app.models.trade",
     "app.models.asset_snapshot",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.exchanges.upbit", "app.exchanges.bitget",
-    "app.exchanges.kis", "app.exchanges.kiwoom",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.exchanges.upbit",
+    "app.exchanges.bitget",
+    "app.exchanges.kis",
+    "app.exchanges.kiwoom",
     "app.exchanges.factory",
-    "exchanges.base", "exchanges.binance",
-    "exchanges.upbit", "exchanges.bitget",
-    "exchanges.kis", "exchanges.kiwoom",
+    "exchanges.base",
+    "exchanges.binance",
+    "exchanges.upbit",
+    "exchanges.bitget",
+    "exchanges.kis",
+    "exchanges.kiwoom",
     "exchanges.factory",
 ]
 for mod_name in _STUB_MODULES:
@@ -97,7 +114,9 @@ class TestReport:
             overall=IndicatorStatus.WARN,
             indicators=[
                 Indicator("BUDGET_CHECK", IndicatorStatus.OK, "10%", "<80%"),
-                Indicator("PATTERN_CHECK", IndicatorStatus.WARN, "1 patterns", "<1", "Recurring failure"),
+                Indicator(
+                    "PATTERN_CHECK", IndicatorStatus.WARN, "1 patterns", "<1", "Recurring failure"
+                ),
             ],
             summary="G-MON: 1 OK, 1 WARN, 0 FAIL",
         )
@@ -144,8 +163,12 @@ class TestSixIndicators:
 
     def test_indicator_names(self):
         expected = {
-            "BUDGET_CHECK", "PATTERN_CHECK", "FORBIDDEN_CHECK",
-            "TOKEN_USAGE", "AGENT_SUCCESS", "CONSTITUTION",
+            "BUDGET_CHECK",
+            "PATTERN_CHECK",
+            "FORBIDDEN_CHECK",
+            "TOKEN_USAGE",
+            "AGENT_SUCCESS",
+            "CONSTITUTION",
         }
         # Import the individual check functions
         from app.core.governance_monitor import (
@@ -156,6 +179,7 @@ class TestSixIndicators:
             _check_agent_success,
             _check_constitution,
         )
+
         # Each function should return an Indicator with the expected name
         # (they may fail in test context, but name should be correct)
         checks = [
