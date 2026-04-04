@@ -7,12 +7,21 @@ Purpose:
   and governance erosion in production.
 
 No production code changes. Test-only audit card.
+
+NOTE: This entire module requires APP_ENV=production.
+      Skipped in CI where APP_ENV defaults to 'development'.
 """
 
 from pathlib import Path
 import os
 
 import pytest
+
+# Skip entire module when not in production environment (e.g. CI)
+pytestmark = pytest.mark.skipif(
+    os.environ.get("APP_ENV", "development") != "production",
+    reason="F-02 production integrity audit requires APP_ENV=production"
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DOCS = PROJECT_ROOT / "docs"

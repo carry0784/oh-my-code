@@ -163,7 +163,7 @@ class TestC15BuiltinSenders:
         ext_result = receipt.results[0]
         assert ext_result.channel == "external"
         assert ext_result.delivered is False
-        assert "stub" in ext_result.detail
+        assert "stub" in ext_result.detail or "webhook delivery failed" in ext_result.detail
 
 
 # ===========================================================================

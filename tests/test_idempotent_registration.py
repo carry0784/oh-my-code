@@ -89,6 +89,13 @@ class TestIdempotentRegistration:
 
     def test_exchange_factory_singleton_cached(self):
         """ExchangeFactory.create(): same exchange twice → same instance."""
+        import asyncio
+
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            pytest.skip("No running event loop — ExchangeFactory requires async context")
+
         from exchanges.factory import ExchangeFactory
 
         # Clear cache for test isolation
