@@ -14,13 +14,26 @@ from unittest.mock import MagicMock
 
 # Stub heavy dependencies
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services", "app.services.order_service",
-    "app.services.position_service", "app.services.signal_service",
-    "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
 ]
 for m in _STUB_MODULES:
     if m not in sys.modules:
@@ -65,7 +78,6 @@ def _all_pass_data():
 # EX-1: Chain validation — all pass → EXECUTED
 # ===========================================================================
 class TestC04ChainAllPass:
-
     def test_all_pass_returns_executed(self):
         receipt = validate_and_execute(_all_pass_data())
         assert receipt.decision == ManualActionDecision.EXECUTED
@@ -95,7 +107,6 @@ class TestC04ChainAllPass:
 # EX-2: Single stage blocked → REJECTED
 # ===========================================================================
 class TestC04ChainSingleBlocked:
-
     def test_pipeline_blocked(self):
         d = _all_pass_data()
         d["pipeline_state"] = "BLOCKED"
@@ -164,7 +175,6 @@ class TestC04ChainSingleBlocked:
 # EX-3: Missing/malformed data → fail-closed
 # ===========================================================================
 class TestC04FailClosed:
-
     def test_none_data_rejected(self):
         receipt = validate_and_execute(None)
         assert receipt.decision == ManualActionDecision.REJECTED
@@ -190,7 +200,6 @@ class TestC04FailClosed:
 # EX-4: Receipt created for every attempt type
 # ===========================================================================
 class TestC04ReceiptAlways:
-
     def test_success_has_receipt(self):
         receipt = validate_and_execute(_all_pass_data())
         assert receipt.receipt_id != ""
@@ -225,7 +234,6 @@ class TestC04ReceiptAlways:
 # EX-5: Audit on every attempt
 # ===========================================================================
 class TestC04AuditAlways:
-
     def test_success_has_audit_id(self):
         receipt = validate_and_execute(_all_pass_data())
         assert receipt.audit_id.startswith("AUD-")
@@ -239,7 +247,6 @@ class TestC04AuditAlways:
 # EX-6: Chain state contract
 # ===========================================================================
 class TestC04ChainState:
-
     def test_all_pass_chain(self):
         chain = build_chain_state(_all_pass_data())
         assert chain.all_pass is True
@@ -264,7 +271,6 @@ class TestC04ChainState:
 # EX-7: Prohibition checks — no forbidden patterns
 # ===========================================================================
 class TestC04Prohibitions:
-
     def test_endpoint_exists_in_routes(self):
         content = ROUTE_PATH.read_text(encoding="utf-8")
         assert "manual-action/execute" in content
@@ -316,7 +322,7 @@ class TestC04Prohibitions:
         c04_start = html.find('id="t3sc-c04"')
         next_card = html.find('id="t3sc-c05"', c04_start)
         c04 = html[c04_start:next_card].lower()
-        assert '<form' not in c04
+        assert "<form" not in c04
         assert 'type="submit"' not in c04
 
     def test_no_keyboard_trigger_in_template(self):
@@ -324,9 +330,9 @@ class TestC04Prohibitions:
         c04_start = html.find('id="t3sc-c04"')
         next_card = html.find('id="t3sc-c05"', c04_start)
         c04 = html[c04_start:next_card].lower()
-        assert 'onkeydown' not in c04
-        assert 'onkeypress' not in c04
-        assert 'onkeyup' not in c04
+        assert "onkeydown" not in c04
+        assert "onkeypress" not in c04
+        assert "onkeyup" not in c04
 
     def test_button_disabled_by_default_in_html(self):
         html = TEMPLATE_PATH.read_text(encoding="utf-8")
@@ -343,7 +349,6 @@ class TestC04Prohibitions:
 # EX-8: Schema contract checks
 # ===========================================================================
 class TestC04SchemaContract:
-
     def test_receipt_has_required_fields(self):
         fields = ManualActionReceipt.model_fields
         assert "receipt_id" in fields
@@ -365,7 +370,17 @@ class TestC04SchemaContract:
 
     def test_chain_state_has_9_stages(self):
         fields = ManualActionChainState.model_fields
-        expected = ["pipeline", "preflight", "gate", "approval", "policy", "risk", "auth", "scope", "evidence"]
+        expected = [
+            "pipeline",
+            "preflight",
+            "gate",
+            "approval",
+            "policy",
+            "risk",
+            "auth",
+            "scope",
+            "evidence",
+        ]
         for stage in expected:
             assert stage in fields, f"Missing stage: {stage}"
 

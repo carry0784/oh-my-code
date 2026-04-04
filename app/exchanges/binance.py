@@ -11,14 +11,16 @@ logger = get_logger(__name__)
 class BinanceExchange(BaseExchange):
     def __init__(self):
         super().__init__(settings.binance_api_key, settings.binance_api_secret)
-        self.client = ccxt.binance({
-            "apiKey": self.api_key,
-            "secret": self.api_secret,
-            "enableRateLimit": True,
-            "options": {
-                "defaultType": "future",
-            },
-        })
+        self.client = ccxt.binance(
+            {
+                "apiKey": self.api_key,
+                "secret": self.api_secret,
+                "enableRateLimit": True,
+                "options": {
+                    "defaultType": "future",
+                },
+            }
+        )
         if settings.binance_testnet:
             self.client.set_sandbox_mode(True)
 

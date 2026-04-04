@@ -35,6 +35,7 @@ class StageStatus(str, Enum):
 @dataclass
 class StageResult:
     """Result of a single validation stage."""
+
     stage: int
     name: str
     status: StageStatus = StageStatus.NOT_RUN
@@ -45,6 +46,7 @@ class StageResult:
 @dataclass
 class ValidationThresholds:
     """Minimum thresholds to pass each stage."""
+
     # Stage 1 & 2: Backtest
     min_trades: int = 10
     min_win_rate: float = 0.35
@@ -64,6 +66,7 @@ class ValidationThresholds:
 @dataclass
 class ValidationResult:
     """Complete 5-stage validation result."""
+
     strategy_name: str = ""
     overall_status: StageStatus = StageStatus.NOT_RUN
     stages: list[StageResult] = field(default_factory=list)
@@ -144,8 +147,9 @@ class ValidationPipeline:
             return result
 
         # Stage 4: Monte Carlo
-        all_trades = (result.in_sample.trades if result.in_sample else []) + \
-                     (result.out_sample.trades if result.out_sample else [])
+        all_trades = (result.in_sample.trades if result.in_sample else []) + (
+            result.out_sample.trades if result.out_sample else []
+        )
         stage4 = self._stage4_monte_carlo(all_trades)
         result.stages.append(stage4)
         if stage4.status == StageStatus.PASS:
@@ -174,8 +178,11 @@ class ValidationPipeline:
         return result
 
     def _stage1_in_sample(
-        self, engine: BacktestingEngine, strategy: BaseStrategy,
-        data: list[list], lookback: int,
+        self,
+        engine: BacktestingEngine,
+        strategy: BaseStrategy,
+        data: list[list],
+        lookback: int,
     ) -> StageResult:
         """Stage 1: In-sample backtest must meet minimum performance."""
         bt = engine.run(strategy, data, lookback)
@@ -183,8 +190,11 @@ class ValidationPipeline:
         return self._check_backtest_thresholds(1, "In-Sample Backtest", perf)
 
     def _stage2_out_sample(
-        self, engine: BacktestingEngine, strategy: BaseStrategy,
-        data: list[list], lookback: int,
+        self,
+        engine: BacktestingEngine,
+        strategy: BaseStrategy,
+        data: list[list],
+        lookback: int,
     ) -> StageResult:
         """Stage 2: Out-of-sample must show the strategy generalizes."""
         bt = engine.run(strategy, data, lookback)
@@ -205,17 +215,37 @@ class ValidationPipeline:
         }
 
         if perf.total_trades < t.min_trades:
-            return StageResult(stage, name, StageStatus.FAIL,
-                             f"Insufficient trades: {perf.total_trades} < {t.min_trades}", metrics)
+            return StageResult(
+                stage,
+                name,
+                StageStatus.FAIL,
+                f"Insufficient trades: {perf.total_trades} < {t.min_trades}",
+                metrics,
+            )
         if perf.win_rate < t.min_win_rate:
-            return StageResult(stage, name, StageStatus.FAIL,
-                             f"Win rate too low: {perf.win_rate:.1%} < {t.min_win_rate:.1%}", metrics)
+            return StageResult(
+                stage,
+                name,
+                StageStatus.FAIL,
+                f"Win rate too low: {perf.win_rate:.1%} < {t.min_win_rate:.1%}",
+                metrics,
+            )
         if perf.max_drawdown_pct > t.max_drawdown_pct:
-            return StageResult(stage, name, StageStatus.FAIL,
-                             f"Drawdown too high: {perf.max_drawdown_pct:.1f}% > {t.max_drawdown_pct}%", metrics)
+            return StageResult(
+                stage,
+                name,
+                StageStatus.FAIL,
+                f"Drawdown too high: {perf.max_drawdown_pct:.1f}% > {t.max_drawdown_pct}%",
+                metrics,
+            )
         if perf.profit_factor < t.min_profit_factor and perf.total_trades >= t.min_trades:
-            return StageResult(stage, name, StageStatus.FAIL,
-                             f"Profit factor too low: {perf.profit_factor:.2f} < {t.min_profit_factor}", metrics)
+            return StageResult(
+                stage,
+                name,
+                StageStatus.FAIL,
+                f"Profit factor too low: {perf.profit_factor:.2f} < {t.min_profit_factor}",
+                metrics,
+            )
 
         return StageResult(stage, name, StageStatus.PASS, "All thresholds met", metrics)
 
@@ -223,9 +253,7 @@ class ValidationPipeline:
         self, strategy: BaseStrategy, ohlcv: list[list], lookback: int
     ) -> StageResult:
         """Stage 3: Walk-forward analysis."""
-        validator = WalkForwardValidator(
-            n_windows=self.wf_windows, config=self.bt_config
-        )
+        validator = WalkForwardValidator(n_windows=self.wf_windows, config=self.bt_config)
         wf = validator.validate(strategy, ohlcv, lookback)
         self._last_wf = wf
 
@@ -238,23 +266,33 @@ class ValidationPipeline:
 
         t = self.thresholds
         if wf.is_overfit:
-            return StageResult(3, "Walk-Forward Analysis", StageStatus.FAIL,
-                             "Strategy is overfit", metrics)
+            return StageResult(
+                3, "Walk-Forward Analysis", StageStatus.FAIL, "Strategy is overfit", metrics
+            )
         if wf.total_windows == 0:
-            return StageResult(3, "Walk-Forward Analysis", StageStatus.FAIL,
-                             "Insufficient data for walk-forward", metrics)
+            return StageResult(
+                3,
+                "Walk-Forward Analysis",
+                StageStatus.FAIL,
+                "Insufficient data for walk-forward",
+                metrics,
+            )
         if wf.consistency < t.min_consistency:
-            return StageResult(3, "Walk-Forward Analysis", StageStatus.FAIL,
-                             f"Consistency too low: {wf.consistency:.1%} < {t.min_consistency:.1%}", metrics)
+            return StageResult(
+                3,
+                "Walk-Forward Analysis",
+                StageStatus.FAIL,
+                f"Consistency too low: {wf.consistency:.1%} < {t.min_consistency:.1%}",
+                metrics,
+            )
 
-        return StageResult(3, "Walk-Forward Analysis", StageStatus.PASS,
-                         "Walk-forward validation passed", metrics)
+        return StageResult(
+            3, "Walk-Forward Analysis", StageStatus.PASS, "Walk-forward validation passed", metrics
+        )
 
     def _stage4_monte_carlo(self, trades: list) -> StageResult:
         """Stage 4: Monte Carlo simulation."""
-        simulator = MonteCarloSimulator(
-            n_simulations=self.mc_simulations, seed=42
-        )
+        simulator = MonteCarloSimulator(n_simulations=self.mc_simulations, seed=42)
         mc = simulator.simulate(trades)
         self._last_mc = mc
 
@@ -268,18 +306,37 @@ class ValidationPipeline:
 
         t = self.thresholds
         if mc.ruin_probability > t.max_ruin_probability:
-            return StageResult(4, "Monte Carlo Simulation", StageStatus.FAIL,
-                             f"Ruin probability too high: {mc.ruin_probability:.1%} > {t.max_ruin_probability:.1%}",
-                             metrics)
+            return StageResult(
+                4,
+                "Monte Carlo Simulation",
+                StageStatus.FAIL,
+                f"Ruin probability too high: {mc.ruin_probability:.1%} > {t.max_ruin_probability:.1%}",
+                metrics,
+            )
         if mc.profitable_probability < t.min_profitable_probability:
-            return StageResult(4, "Monte Carlo Simulation", StageStatus.FAIL,
-                             f"Profit probability too low: {mc.profitable_probability:.1%}", metrics)
+            return StageResult(
+                4,
+                "Monte Carlo Simulation",
+                StageStatus.FAIL,
+                f"Profit probability too low: {mc.profitable_probability:.1%}",
+                metrics,
+            )
         if mc.max_dd_95th > t.max_dd_95th_pct:
-            return StageResult(4, "Monte Carlo Simulation", StageStatus.FAIL,
-                             f"95th percentile drawdown too high: {mc.max_dd_95th:.1f}%", metrics)
+            return StageResult(
+                4,
+                "Monte Carlo Simulation",
+                StageStatus.FAIL,
+                f"95th percentile drawdown too high: {mc.max_dd_95th:.1f}%",
+                metrics,
+            )
 
-        return StageResult(4, "Monte Carlo Simulation", StageStatus.PASS,
-                         "Monte Carlo within acceptable bounds", metrics)
+        return StageResult(
+            4,
+            "Monte Carlo Simulation",
+            StageStatus.PASS,
+            "Monte Carlo within acceptable bounds",
+            metrics,
+        )
 
     def _stage5_paper_ready(self, result: ValidationResult) -> StageResult:
         """Stage 5: Paper trading readiness gate."""
@@ -290,11 +347,21 @@ class ValidationPipeline:
         }
 
         if result.passed_stages < 4:
-            return StageResult(5, "Paper Trading Readiness", StageStatus.FAIL,
-                             f"Only {result.passed_stages}/4 stages passed", metrics)
+            return StageResult(
+                5,
+                "Paper Trading Readiness",
+                StageStatus.FAIL,
+                f"Only {result.passed_stages}/4 stages passed",
+                metrics,
+            )
 
-        return StageResult(5, "Paper Trading Readiness", StageStatus.PASS,
-                         "Strategy approved for paper trading", metrics)
+        return StageResult(
+            5,
+            "Paper Trading Readiness",
+            StageStatus.PASS,
+            "Strategy approved for paper trading",
+            metrics,
+        )
 
     def _fill_remaining(self, result: ValidationResult, from_stage: int) -> None:
         """Fill remaining stages as NOT_RUN after a failure."""
@@ -306,6 +373,8 @@ class ValidationPipeline:
         }
         for s in range(from_stage, 6):
             if s in stage_names:
-                result.stages.append(StageResult(
-                    s, stage_names[s], StageStatus.NOT_RUN, "Skipped due to prior failure"
-                ))
+                result.stages.append(
+                    StageResult(
+                        s, stage_names[s], StageStatus.NOT_RUN, "Skipped due to prior failure"
+                    )
+                )

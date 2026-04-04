@@ -22,6 +22,7 @@ logger = get_logger(__name__)
 @dataclass
 class OptimizationConstraints:
     """Constraints for portfolio optimization."""
+
     max_weight: float = 0.4
     min_weight: float = 0.02
     max_strategies: int = 10
@@ -53,7 +54,7 @@ class PortfolioOptimizer:
         Each strategy contributes equal risk to the portfolio.
         """
         constraints = constraints or OptimizationConstraints()
-        
+
         if len(returns) == 0:
             return {}
         if len(returns) == 1:
@@ -81,10 +82,12 @@ class PortfolioOptimizer:
         # Apply constraints
         weights = self._apply_constraints(weights, constraints)
 
-        logger.info("risk_parity_optimized",
-                     n_strategies=len(weights),
-                     max_w=round(max(weights.values()), 4),
-                     min_w=round(min(weights.values()), 4))
+        logger.info(
+            "risk_parity_optimized",
+            n_strategies=len(weights),
+            max_w=round(max(weights.values()), 4),
+            min_w=round(min(weights.values()), 4),
+        )
         return weights
 
     def optimize_min_variance(

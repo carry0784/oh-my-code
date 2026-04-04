@@ -19,15 +19,17 @@ logger = get_logger(__name__)
 @dataclass
 class TrendAnalysis:
     """Trend detection result for a single metric."""
+
     direction: str = "flat"  # "up", "down", "flat"
-    slope: float = 0.0       # Linear regression slope (normalized)
-    r_squared: float = 0.0   # Goodness of fit (0-1)
-    strength: str = "weak"   # "strong", "moderate", "weak"
+    slope: float = 0.0  # Linear regression slope (normalized)
+    r_squared: float = 0.0  # Goodness of fit (0-1)
+    strength: str = "weak"  # "strong", "moderate", "weak"
 
 
 @dataclass
 class RegimeTransition:
     """Detected regime change."""
+
     from_regime: str
     to_regime: str
     timestamp: datetime | None = None
@@ -37,20 +39,22 @@ class RegimeTransition:
 @dataclass
 class Divergence:
     """Price-indicator divergence."""
-    indicator: str          # e.g., "rsi", "obv", "macd"
-    divergence_type: str    # "bullish" or "bearish"
-    strength: float = 0.0   # 0-1
+
+    indicator: str  # e.g., "rsi", "obv", "macd"
+    divergence_type: str  # "bullish" or "bearish"
+    strength: float = 0.0  # 0-1
 
 
 @dataclass
 class MarketAnalysisResult:
     """Complete analysis result from stored snapshots."""
+
     price_trend: TrendAnalysis = field(default_factory=TrendAnalysis)
     rsi_trend: TrendAnalysis = field(default_factory=TrendAnalysis)
     volume_trend: TrendAnalysis = field(default_factory=TrendAnalysis)
     regime_transitions: list[RegimeTransition] = field(default_factory=list)
     divergences: list[Divergence] = field(default_factory=list)
-    regime_stability: float = 0.0   # 0-1 (1 = no changes in window)
+    regime_stability: float = 0.0  # 0-1 (1 = no changes in window)
     snapshot_count: int = 0
     analysis_window_hours: int = 0
 
@@ -168,12 +172,14 @@ class MarketStateAnalyzer:
         for i in range(1, len(regimes)):
             if regimes[i] != regimes[i - 1] and regimes[i] != "unknown":
                 ts = snapshots[i].get("snapshot_at")
-                transitions.append(RegimeTransition(
-                    from_regime=regimes[i - 1],
-                    to_regime=regimes[i],
-                    timestamp=ts if isinstance(ts, datetime) else None,
-                    confidence=0.7,  # Base confidence; Phase 3 will use duration
-                ))
+                transitions.append(
+                    RegimeTransition(
+                        from_regime=regimes[i - 1],
+                        to_regime=regimes[i],
+                        timestamp=ts if isinstance(ts, datetime) else None,
+                        confidence=0.7,  # Base confidence; Phase 3 will use duration
+                    )
+                )
         return transitions
 
     def _regime_stability(self, regimes: list[str]) -> float:

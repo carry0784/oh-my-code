@@ -43,12 +43,14 @@ class ActivationReason(str, Enum):
 
 
 # Blocked-class reasons (operator intervention required)
-_BLOCKED_REASONS = frozenset({
-    ActivationReason.LOCKDOWN_ACTIVE,
-    ActivationReason.CRITICAL_ALERT_DETECTED,
-    ActivationReason.GATE_CLOSED,
-    ActivationReason.PREFLIGHT_NOT_READY,
-})
+_BLOCKED_REASONS = frozenset(
+    {
+        ActivationReason.LOCKDOWN_ACTIVE,
+        ActivationReason.CRITICAL_ALERT_DETECTED,
+        ActivationReason.GATE_CLOSED,
+        ActivationReason.PREFLIGHT_NOT_READY,
+    }
+)
 
 
 class ActivationCheckItem(BaseModel):
@@ -63,6 +65,7 @@ class ActivationCheckItem(BaseModel):
 
 class ActivationApprovalReceipt(BaseModel):
     """Activation 전용 승인 영수증. I-06 operator approval과 별도 계층."""
+
     activation_approval_id: str
     approved_by: str = "operator"
     timestamp: str = Field(description="ISO 8601")
@@ -78,6 +81,7 @@ class ActivationReceipt(BaseModel):
     E-02: Activation Receipt.
     ACTIVATION_ALLOWED means activation-eligible only, not execution-performed.
     """
+
     activation_id: str
     decision: ActivationDecision
     timestamp: str = Field(description="ISO 8601")
@@ -108,6 +112,9 @@ class ActivationReceipt(BaseModel):
 
     @model_validator(mode="after")
     def enforce_denied_reapproval(self):
-        if self.decision in (ActivationDecision.ACTIVATION_DENIED, ActivationDecision.ACTIVATION_BLOCKED):
+        if self.decision in (
+            ActivationDecision.ACTIVATION_DENIED,
+            ActivationDecision.ACTIVATION_BLOCKED,
+        ):
             self.reapproval_required = True
         return self

@@ -156,15 +156,13 @@ class TestC04FailureClassContract:
         for fc in FAILURE_CLASSES:
             # 계약: 모든 failure class는 최소 1건의 audit 흔적 필요
             audit_required = True  # 계약상 항상 True
-            assert audit_required is True, (
-                f"Failure class {fc} must require audit trace"
-            )
+            assert audit_required is True, f"Failure class {fc} must require audit trace"
 
     def test_result_unknown_requires_investigation_flag(self):
         """RESULT_UNKNOWN은 investigation flag가 필수다."""
         # 계약: result unknown 시 operator_action_required = True
         result_class = "unknown"
-        operator_action_required = (result_class == "unknown")
+        operator_action_required = result_class == "unknown"
         assert operator_action_required is True
 
     def test_failure_with_no_record_forbidden(self):

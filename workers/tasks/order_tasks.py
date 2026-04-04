@@ -15,6 +15,7 @@ logger = get_logger(__name__)
 def get_sync_session():
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
+
     sync_engine = create_engine(settings.database_url_sync)
     return sessionmaker(bind=sync_engine)()
 
@@ -60,9 +61,7 @@ def check_pending_orders():
     """Check status of submitted orders."""
     session = get_sync_session()
     try:
-        orders = session.query(Order).filter(
-            Order.status == OrderStatus.SUBMITTED
-        ).all()
+        orders = session.query(Order).filter(Order.status == OrderStatus.SUBMITTED).all()
 
         for order in orders:
             if not order.exchange_order_id:

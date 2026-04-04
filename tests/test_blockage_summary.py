@@ -14,6 +14,7 @@ Tests the blockage summary observation card:
 
 Run: pytest tests/test_blockage_summary.py -v
 """
+
 import sys
 import json
 from pathlib import Path
@@ -26,16 +27,32 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services.order_service", "app.services.position_service",
-    "app.services.signal_service", "ccxt", "ccxt.async_support",
-    "redis", "celery", "asyncpg",
-    "kdexter", "kdexter.ledger", "kdexter.ledger.forbidden_ledger",
-    "kdexter.audit", "kdexter.audit.evidence_store",
-    "kdexter.state_machine", "kdexter.state_machine.security_state",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
+    "kdexter",
+    "kdexter.ledger",
+    "kdexter.ledger.forbidden_ledger",
+    "kdexter.audit",
+    "kdexter.audit.evidence_store",
+    "kdexter.state_machine",
+    "kdexter.state_machine.security_state",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -57,6 +74,7 @@ from app.schemas.four_tier_board_schema import TierSummary
 
 # -- Helpers ---------------------------------------------------------------- #
 
+
 def _tier(name, number, total=0, blocked=0, reasons=None, connected=True):
     return TierSummary(
         tier_name=name,
@@ -76,8 +94,17 @@ def _empty_tiers():
     )
 
 
-def _blocked_tiers(agent_b=0, agent_t=0, exec_b=0, exec_t=0, sub_b=0, sub_t=0,
-                   agent_reasons=None, exec_reasons=None, sub_reasons=None):
+def _blocked_tiers(
+    agent_b=0,
+    agent_t=0,
+    exec_b=0,
+    exec_t=0,
+    sub_b=0,
+    sub_t=0,
+    agent_reasons=None,
+    exec_reasons=None,
+    sub_reasons=None,
+):
     return (
         _tier("Agent", 1, total=agent_t, blocked=agent_b, reasons=agent_reasons),
         _tier("Execution", 2, total=exec_t, blocked=exec_b, reasons=exec_reasons),
@@ -89,8 +116,8 @@ def _blocked_tiers(agent_b=0, agent_t=0, exec_b=0, exec_t=0, sub_b=0, sub_t=0,
 # AXIS 1: Blockage Accuracy                                                    #
 # =========================================================================== #
 
-class TestBlockageAccuracy:
 
+class TestBlockageAccuracy:
     def test_zero_proposals_zero_blockage(self):
         summary = build_blockage_summary(*_empty_tiers())
         assert summary.total_blocked == 0
@@ -126,8 +153,8 @@ class TestBlockageAccuracy:
 # AXIS 2: Tier Distribution                                                    #
 # =========================================================================== #
 
-class TestTierDistribution:
 
+class TestTierDistribution:
     def test_three_tiers_present(self):
         summary = build_blockage_summary(*_empty_tiers())
         assert len(summary.by_tier) == 3
@@ -159,12 +186,16 @@ class TestTierDistribution:
 # AXIS 3: Reason Aggregation                                                   #
 # =========================================================================== #
 
-class TestReasonAggregation:
 
+class TestReasonAggregation:
     def test_reasons_aggregated_across_tiers(self):
         tiers = _blocked_tiers(
-            agent_b=2, agent_t=5, agent_reasons=["CHECK_A: 2"],
-            exec_b=1, exec_t=3, exec_reasons=["CHECK_A: 1", "CHECK_B: 1"],
+            agent_b=2,
+            agent_t=5,
+            agent_reasons=["CHECK_A: 2"],
+            exec_b=1,
+            exec_t=3,
+            exec_reasons=["CHECK_A: 1", "CHECK_B: 1"],
         )
         summary = build_blockage_summary(*tiers)
         reason_dict = {r.reason: r.count for r in summary.top_reasons}
@@ -177,7 +208,8 @@ class TestReasonAggregation:
 
     def test_reasons_ordered_by_count(self):
         tiers = _blocked_tiers(
-            agent_b=5, agent_t=10,
+            agent_b=5,
+            agent_t=10,
             agent_reasons=["HIGH: 5", "LOW: 1"],
         )
         summary = build_blockage_summary(*tiers)
@@ -195,8 +227,8 @@ class TestReasonAggregation:
 # AXIS 4: Density Signal                                                       #
 # =========================================================================== #
 
-class TestDensitySignal:
 
+class TestDensitySignal:
     def test_no_blocks_description(self):
         summary = build_blockage_summary(*_empty_tiers())
         assert summary.density.description == "No blocked proposals."
@@ -241,8 +273,8 @@ class TestDensitySignal:
 # AXIS 5: Safety Invariants                                                    #
 # =========================================================================== #
 
-class TestSafetyInvariants:
 
+class TestSafetyInvariants:
     def test_safety_all_true_empty(self):
         summary = build_blockage_summary(*_empty_tiers())
         assert summary.safety.read_only is True
@@ -263,18 +295,25 @@ class TestSafetyInvariants:
     def test_source_has_no_write_methods(self):
         import inspect
         import app.services.blockage_summary_service as mod
+
         source = inspect.getsource(mod)
-        forbidden = ["propose_and_guard", "record_receipt", "transition_to",
-                      ".delete(", ".remove(", ".write("]
+        forbidden = [
+            "propose_and_guard",
+            "record_receipt",
+            "transition_to",
+            ".delete(",
+            ".remove(",
+            ".write(",
+        ]
         for keyword in forbidden:
             assert keyword not in source, f"Forbidden keyword '{keyword}' in source"
 
     def test_source_has_no_prediction_keywords(self):
         import inspect
         import app.services.blockage_summary_service as mod
+
         source = inspect.getsource(mod)
-        forbidden = ["predict", "forecast", "score(", "auto_promote",
-                      "auto_escalate", "auto_judge"]
+        forbidden = ["predict", "forecast", "score(", "auto_promote", "auto_escalate", "auto_judge"]
         for keyword in forbidden:
             assert keyword not in source, f"Prediction keyword '{keyword}' in source"
 
@@ -291,15 +330,20 @@ class TestSafetyInvariants:
 # AXIS 6: Schema Drift Sentinel                                                #
 # =========================================================================== #
 
-class TestSchemaDriftSentinel:
 
+class TestSchemaDriftSentinel:
     def test_blockage_summary_field_count(self):
         assert len(BlockageSummarySchema.model_fields) == 7
 
     def test_blockage_summary_field_names(self):
         expected = {
-            "total_blocked", "total_proposals", "overall_blockage_rate",
-            "by_tier", "top_reasons", "density", "safety",
+            "total_blocked",
+            "total_proposals",
+            "overall_blockage_rate",
+            "by_tier",
+            "top_reasons",
+            "density",
+            "safety",
         }
         assert set(BlockageSummarySchema.model_fields.keys()) == expected
 
@@ -320,30 +364,35 @@ class TestSchemaDriftSentinel:
 # AXIS 7: Board Integration                                                    #
 # =========================================================================== #
 
-class TestBoardIntegration:
 
+class TestBoardIntegration:
     def test_board_schema_has_blockage_summary(self):
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         assert "blockage_summary" in FourTierBoardResponse.model_fields
 
     def test_board_schema_blockage_is_typed(self):
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         field_info = FourTierBoardResponse.model_fields["blockage_summary"]
         assert field_info.annotation is BlockageSummarySchema
 
     def test_board_service_returns_typed_blockage(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert isinstance(board.blockage_summary, BlockageSummarySchema)
 
     def test_board_blockage_safety_intact(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.blockage_summary.safety.read_only is True
         assert board.blockage_summary.safety.no_prediction is True
 
     def test_board_serializes_blockage_to_json(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         j = json.loads(board.model_dump_json())
         assert "blockage_summary" in j
@@ -352,6 +401,7 @@ class TestBoardIntegration:
 
     def test_board_blockage_empty_is_zero_safe(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.blockage_summary.total_blocked == 0
         assert board.blockage_summary.total_proposals == 0

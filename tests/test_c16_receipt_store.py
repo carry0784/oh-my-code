@@ -34,7 +34,6 @@ STORE_PATH = PROJECT_ROOT / "app" / "core" / "notification_receipt_store.py"
 # C16-1: 모듈 구조
 # ===========================================================================
 class TestC16ModuleStructure:
-
     def test_module_exists(self):
         assert STORE_PATH.exists()
 
@@ -59,7 +58,6 @@ class TestC16ModuleStructure:
 # C16-2: ReceiptStore CRUD
 # ===========================================================================
 class TestC16StoreCRUD:
-
     def test_store_returns_receipt_id(self):
         store = ReceiptStore()
         rid = store.store({"severity_tier": "low"})
@@ -119,7 +117,6 @@ class TestC16StoreCRUD:
 # C16-3: Ring buffer cap
 # ===========================================================================
 class TestC16RingBuffer:
-
     def test_default_max_size(self):
         assert DEFAULT_MAX_SIZE == 100
 
@@ -138,7 +135,6 @@ class TestC16RingBuffer:
 # C16-4: Fail-closed
 # ===========================================================================
 class TestC16FailClosed:
-
     def test_store_handles_none_receipt(self):
         store = ReceiptStore()
         rid = store.store(None)
@@ -159,7 +155,6 @@ class TestC16FailClosed:
 # C16-5: C-15 NotificationReceipt 호환
 # ===========================================================================
 class TestC16C15Compatibility:
-
     def test_stores_notification_receipt_dataclass(self):
         store = ReceiptStore()
         receipt = NotificationReceipt(
@@ -194,13 +189,16 @@ class TestC16C15Compatibility:
 # C16-6: 금지 조항
 # ===========================================================================
 class TestC16Forbidden:
-
     def test_no_forbidden_strings(self):
         content = STORE_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace', 'agent_analysis', 'error_class',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
+            "agent_analysis",
+            "error_class",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

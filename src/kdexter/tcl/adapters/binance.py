@@ -10,15 +10,14 @@ B1 Doctrine compliance:
   - All exceptions wrapped into CommandTranscript.fail()
   - DRY_RUN uses internal simulation (Binance testnet optional)
 """
+
 from __future__ import annotations
 
 from typing import Optional
 
 from kdexter.tcl.adapters import ExchangeAdapter
 from kdexter.tcl.adapters.ccxt_base import CcxtMixin
-from kdexter.tcl.commands import (
-    CommandTranscript, CommandType, ExecutionMode, TCLCommand
-)
+from kdexter.tcl.commands import CommandTranscript, CommandType, ExecutionMode, TCLCommand
 
 
 class BinanceAdapter(ExchangeAdapter, CcxtMixin):
@@ -44,7 +43,7 @@ class BinanceAdapter(ExchangeAdapter, CcxtMixin):
         self._api_key = api_key
         self._api_secret = api_secret
         self._testnet = testnet
-        self._client = None   # ccxt.binance instance — initialized on first use
+        self._client = None  # ccxt.binance instance — initialized on first use
         self._ccxt_exchange_cls = "binance"
         self._init_rate_limiter(max_calls=10, period=1.0)
 
@@ -57,18 +56,19 @@ class BinanceAdapter(ExchangeAdapter, CcxtMixin):
         if self._client is None:
             try:
                 import ccxt  # type: ignore
-                self._client = ccxt.binance({
-                    "apiKey": self._api_key,
-                    "secret": self._api_secret,
-                    "enableRateLimit": True,
-                    "options": {"defaultType": "spot"},
-                })
+
+                self._client = ccxt.binance(
+                    {
+                        "apiKey": self._api_key,
+                        "secret": self._api_secret,
+                        "enableRateLimit": True,
+                        "options": {"defaultType": "spot"},
+                    }
+                )
                 if self._testnet:
                     self._client.set_sandbox_mode(True)
             except ImportError:
-                raise RuntimeError(
-                    "ccxt not installed. Run: pip install ccxt"
-                )
+                raise RuntimeError("ccxt not installed. Run: pip install ccxt")
         return self._client
 
     # ── execute (LIVE) ───────────────────────────────────────────────────── #
@@ -105,8 +105,11 @@ class BinanceAdapter(ExchangeAdapter, CcxtMixin):
         """
         t = self._base_transcript(command)
         try:
-            if command.command_type in {CommandType.ORDER_BUY, CommandType.ORDER_SELL,
-                                        CommandType.ORDER_DRY_RUN}:
+            if command.command_type in {
+                CommandType.ORDER_BUY,
+                CommandType.ORDER_SELL,
+                CommandType.ORDER_DRY_RUN,
+            }:
                 sim_order_id = f"DRY-{command.idempotency_key[:8].upper()}"
                 raw = {
                     "orderId": sim_order_id,
@@ -150,6 +153,7 @@ class BinanceAdapter(ExchangeAdapter, CcxtMixin):
 
     async def verify(self, exchange_order_id: str) -> CommandTranscript:
         from kdexter.tcl.commands import TCLCommand, CommandType, ExecutionMode
+
         cmd = TCLCommand(
             command_type=CommandType.ORDER_VERIFY,
             exchange=self.exchange_id,
@@ -172,6 +176,7 @@ class BinanceAdapter(ExchangeAdapter, CcxtMixin):
 
     async def cancel(self, exchange_order_id: str) -> CommandTranscript:
         from kdexter.tcl.commands import TCLCommand, CommandType
+
         cmd = TCLCommand(
             command_type=CommandType.ORDER_CANCEL,
             exchange=self.exchange_id,
@@ -191,6 +196,7 @@ class BinanceAdapter(ExchangeAdapter, CcxtMixin):
 
     async def query_position(self, symbol: Optional[str] = None) -> CommandTranscript:
         from kdexter.tcl.commands import TCLCommand, CommandType
+
         cmd = TCLCommand(
             command_type=CommandType.POSITION_QUERY,
             exchange=self.exchange_id,
@@ -211,6 +217,7 @@ class BinanceAdapter(ExchangeAdapter, CcxtMixin):
 
     async def query_balance(self, currency: Optional[str] = None) -> CommandTranscript:
         from kdexter.tcl.commands import TCLCommand, CommandType
+
         cmd = TCLCommand(
             command_type=CommandType.BALANCE_QUERY,
             exchange=self.exchange_id,
@@ -233,29 +240,19 @@ class BinanceAdapter(ExchangeAdapter, CcxtMixin):
     ) -> CommandTranscript:
         return await self._ccxt_place_order(t, command, side)
 
-    async def _cancel_order(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _cancel_order(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         return await self._ccxt_cancel_order(t, command)
 
-    async def _verify_order(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _verify_order(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         return await self._ccxt_verify_order(t, command)
 
-    async def _query_position(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _query_position(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         return await self._ccxt_query_position(t, command)
 
-    async def _query_balance(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _query_balance(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         return await self._ccxt_query_balance(t, command)
 
-    def _risk_check(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    def _risk_check(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         """
         Basic risk check: quantity * estimated_price must not exceed budget cap.
         TODO: connect to L3 Security & Isolation for full policy enforcement.
@@ -266,10 +263,7 @@ class BinanceAdapter(ExchangeAdapter, CcxtMixin):
         # Placeholder cap: 10M KRW per order
         cap = command.extra.get("order_cap_krw", 10_000_000)
         if estimated_value > cap:
-            t.fail(
-                f"RISK.CHECK failed: estimated_value={estimated_value:,.0f} "
-                f"> cap={cap:,.0f}"
-            )
+            t.fail(f"RISK.CHECK failed: estimated_value={estimated_value:,.0f} > cap={cap:,.0f}")
         else:
             t.complete(
                 raw={"risk": "OK", "estimated_value": estimated_value, "cap": cap},

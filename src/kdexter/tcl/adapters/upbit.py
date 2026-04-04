@@ -16,15 +16,14 @@ B1 Doctrine compliance:
   - All exceptions wrapped into CommandTranscript.fail()
   - DRY_RUN uses internal simulation (Upbit has no public testnet)
 """
+
 from __future__ import annotations
 
 from typing import Optional
 
 from kdexter.tcl.adapters import ExchangeAdapter
 from kdexter.tcl.adapters.ccxt_base import CcxtMixin
-from kdexter.tcl.commands import (
-    CommandTranscript, CommandType, ExecutionMode, TCLCommand
-)
+from kdexter.tcl.commands import CommandTranscript, CommandType, ExecutionMode, TCLCommand
 
 
 class UpbitAdapter(ExchangeAdapter, CcxtMixin):
@@ -67,15 +66,16 @@ class UpbitAdapter(ExchangeAdapter, CcxtMixin):
         if self._client is None:
             try:
                 import ccxt  # type: ignore
-                self._client = ccxt.upbit({
-                    "apiKey": self._access_key,
-                    "secret": self._secret_key,
-                    "enableRateLimit": True,
-                })
-            except ImportError:
-                raise RuntimeError(
-                    "ccxt not installed. Run: pip install ccxt"
+
+                self._client = ccxt.upbit(
+                    {
+                        "apiKey": self._access_key,
+                        "secret": self._secret_key,
+                        "enableRateLimit": True,
+                    }
                 )
+            except ImportError:
+                raise RuntimeError("ccxt not installed. Run: pip install ccxt")
         return self._client
 
     # ── execute (LIVE) ───────────────────────────────────────────────────── #
@@ -109,8 +109,11 @@ class UpbitAdapter(ExchangeAdapter, CcxtMixin):
         """Internal simulation — no real orders. Upbit has no public testnet."""
         t = self._base_transcript(command)
         try:
-            if command.command_type in {CommandType.ORDER_BUY, CommandType.ORDER_SELL,
-                                        CommandType.ORDER_DRY_RUN}:
+            if command.command_type in {
+                CommandType.ORDER_BUY,
+                CommandType.ORDER_SELL,
+                CommandType.ORDER_DRY_RUN,
+            }:
                 # Upbit minimum order validation
                 qty = command.quantity or 0.0
                 price = command.price or 0.0
@@ -148,8 +151,12 @@ class UpbitAdapter(ExchangeAdapter, CcxtMixin):
             elif command.command_type == CommandType.BALANCE_QUERY:
                 raw = {
                     "accounts": [
-                        {"currency": "KRW", "balance": "10000000",
-                         "locked": "0", "avg_buy_price": "0"},
+                        {
+                            "currency": "KRW",
+                            "balance": "10000000",
+                            "locked": "0",
+                            "avg_buy_price": "0",
+                        },
                     ]
                 }
                 parsed = {"KRW": {"free": 10_000_000.0, "locked": 0.0}}
@@ -263,29 +270,19 @@ class UpbitAdapter(ExchangeAdapter, CcxtMixin):
         ccxt_side = "buy" if side == "bid" else "sell"
         return await self._ccxt_place_order(t, command, ccxt_side)
 
-    async def _cancel_order(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _cancel_order(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         return await self._ccxt_cancel_order(t, command)
 
-    async def _verify_order(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _verify_order(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         return await self._ccxt_verify_order(t, command)
 
-    async def _query_position(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _query_position(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         return await self._ccxt_query_position(t, command)
 
-    async def _query_balance(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _query_balance(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         return await self._ccxt_query_balance(t, command)
 
-    def _risk_check(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    def _risk_check(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         """Risk check with Upbit KRW constraints."""
         qty = command.quantity or 0.0
         price = command.price or 0.0

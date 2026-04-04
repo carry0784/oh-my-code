@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -127,6 +136,7 @@ def test_runner_evolution_validation_runs():
 
 
 # ── CR-045: RSI strategy branch tests ──
+
 
 def test_runner_genome_to_strategy_sma_default():
     """CR-045: strategy_type=0 returns SimpleMAStrategy."""

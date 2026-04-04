@@ -24,6 +24,7 @@ Key invariants:
   - LOCKDOWN can only be released by Human (L27)
   - Forbidden Ledger LOCKDOWN violations are non-negotiable
 """
+
 from __future__ import annotations
 
 import uuid
@@ -47,6 +48,7 @@ from kdexter.state_machine.security_state import SecurityStateContext, SecurityS
 # Constitutional invariant
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass(frozen=True)
 class ConstitutionalInvariant:
     """
@@ -54,15 +56,17 @@ class ConstitutionalInvariant:
     Unlike DoctrineArticle (declarative), invariants are code-level checks
     that B1Constitution.enforce() runs on every governance cycle.
     """
+
     invariant_id: str
     name: str
     description: str
-    check_fn_name: str   # method name on B1Constitution to call
+    check_fn_name: str  # method name on B1Constitution to call
 
 
 # ─────────────────────────────────────────────────────────────────────────── #
 # B1 Constitution
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 class B1Constitution:
     """
@@ -116,16 +120,20 @@ class B1Constitution:
         """
         doctrine_id = self._doctrine.ratify(article, ratified_by="L1")
 
-        self._evidence.store(EvidenceBundle(
-            trigger="B1Constitution.ratify_doctrine",
-            actor="B1",
-            action=f"RATIFY:{doctrine_id}",
-            artifacts=[{
-                "doctrine_id": doctrine_id,
-                "name": article.name,
-                "severity": article.severity.value,
-            }],
-        ))
+        self._evidence.store(
+            EvidenceBundle(
+                trigger="B1Constitution.ratify_doctrine",
+                actor="B1",
+                action=f"RATIFY:{doctrine_id}",
+                artifacts=[
+                    {
+                        "doctrine_id": doctrine_id,
+                        "name": article.name,
+                        "severity": article.severity.value,
+                    }
+                ],
+            )
+        )
         return doctrine_id
 
     def suspend_doctrine(self, doctrine_id: str, reason: str) -> bool:
@@ -146,12 +154,14 @@ class B1Constitution:
 
         # Suspension requires creating a new article with SUSPENDED status
         # (DoctrineArticle is frozen, so we record suspension separately)
-        self._evidence.store(EvidenceBundle(
-            trigger="B1Constitution.suspend_doctrine",
-            actor="B1",
-            action=f"SUSPEND:{doctrine_id}",
-            artifacts=[{"doctrine_id": doctrine_id, "reason": reason}],
-        ))
+        self._evidence.store(
+            EvidenceBundle(
+                trigger="B1Constitution.suspend_doctrine",
+                actor="B1",
+                action=f"SUSPEND:{doctrine_id}",
+                artifacts=[{"doctrine_id": doctrine_id, "reason": reason}],
+            )
+        )
         return True
 
     # ── Enforcement ──────────────────────────────────────────────────────── #
@@ -165,17 +175,21 @@ class B1Constitution:
         violations = self._doctrine.check_compliance(context)
 
         for v in violations:
-            self._evidence.store(EvidenceBundle(
-                trigger="B1Constitution.enforce",
-                actor="B1",
-                action=f"VIOLATION:{v.doctrine_id}",
-                before_state=self._security.current.value,
-                artifacts=[{
-                    "doctrine_id": v.doctrine_id,
-                    "severity": v.severity.value,
-                    "violated_by": v.violated_by,
-                }],
-            ))
+            self._evidence.store(
+                EvidenceBundle(
+                    trigger="B1Constitution.enforce",
+                    actor="B1",
+                    action=f"VIOLATION:{v.doctrine_id}",
+                    before_state=self._security.current.value,
+                    artifacts=[
+                        {
+                            "doctrine_id": v.doctrine_id,
+                            "severity": v.severity.value,
+                            "violated_by": v.violated_by,
+                        }
+                    ],
+                )
+            )
 
             # CONSTITUTIONAL violation → immediate LOCKDOWN
             if v.severity == DoctrineSeverity.CONSTITUTIONAL:
@@ -201,7 +215,10 @@ class B1Constitution:
         Returns (passed: bool, reason: str).
         """
         return self._forbidden.check_and_enforce(
-            action_name, context, self._security, self._evidence,
+            action_name,
+            context,
+            self._security,
+            self._evidence,
         )
 
     # ── LOCKDOWN management ──────────────────────────────────────────────── #
@@ -227,14 +244,16 @@ class B1Constitution:
             authorized_by="HUMAN_OVERRIDE",
         )
 
-        self._evidence.store(EvidenceBundle(
-            trigger="B1Constitution.release_lockdown",
-            actor="L27_HUMAN",
-            action="LOCKDOWN_RELEASE",
-            before_state=SecurityStateEnum.LOCKDOWN.value,
-            after_state=SecurityStateEnum.NORMAL.value,
-            artifacts=[{"reason": reason, "authorized_by": authorized_by}],
-        ))
+        self._evidence.store(
+            EvidenceBundle(
+                trigger="B1Constitution.release_lockdown",
+                actor="L27_HUMAN",
+                action="LOCKDOWN_RELEASE",
+                before_state=SecurityStateEnum.LOCKDOWN.value,
+                after_state=SecurityStateEnum.NORMAL.value,
+                artifacts=[{"reason": reason, "authorized_by": authorized_by}],
+            )
+        )
         return True
 
     # ── Invariant checks ─────────────────────────────────────────────────── #
@@ -266,12 +285,14 @@ class B1Constitution:
     def _build_invariants(self) -> list[ConstitutionalInvariant]:
         return [
             ConstitutionalInvariant(
-                "CI-001", "Core doctrine presence",
+                "CI-001",
+                "Core doctrine presence",
                 "At least 10 core doctrines must exist",
                 "_check_doctrine_count",
             ),
             ConstitutionalInvariant(
-                "CI-002", "Core doctrine ratification",
+                "CI-002",
+                "Core doctrine ratification",
                 "All core doctrines D-001~D-010 must be RATIFIED",
                 "_check_core_doctrines_ratified",
             ),
@@ -282,6 +303,8 @@ class B1Constitution:
 # Exceptions
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 class ConstitutionalViolationError(Exception):
     """Raised when an action violates a constitutional invariant."""
+
     pass

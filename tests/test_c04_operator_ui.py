@@ -30,7 +30,6 @@ def _css():
 # UI-1: Execute disabled when blocked
 # ===========================================================================
 class TestC04ExecuteDisabledWhenBlocked:
-
     def test_exec_btn_disabled_by_default(self):
         assert 'id="t3sc-c04-exec-btn" disabled' in _html()
 
@@ -42,7 +41,7 @@ class TestC04ExecuteDisabledWhenBlocked:
         html = _html()
         start = html.find("function _renderC04(")
         end = html.find("\n}", start + 20) if start != -1 else -1
-        body = html[start:end + 2].lower() if start != -1 and end != -1 else ""
+        body = html[start : end + 2].lower() if start != -1 and end != -1 else ""
         # Enable only when metCount === 9
         assert "metcount === 9" in body or "metcount===9" in body or "chainok" in body
 
@@ -51,15 +50,14 @@ class TestC04ExecuteDisabledWhenBlocked:
 # UI-2: Blocked reason visible and prominent
 # ===========================================================================
 class TestC04RejectedReasonVisible:
-
     def test_blocked_prominent_css_exists(self):
-        assert 't3sc-c04-blocked-prominent' in _css()
+        assert "t3sc-c04-blocked-prominent" in _css()
 
     def test_blocked_prominent_has_red_border(self):
         css = _css()
-        idx = css.find('.t3sc-c04-blocked-prominent')
-        section = css[idx:idx + 200]
-        assert 'accent-red' in section or 'red' in section
+        idx = css.find(".t3sc-c04-blocked-prominent")
+        section = css[idx : idx + 200]
+        assert "accent-red" in section or "red" in section
 
     def test_result_shows_block_code_first(self):
         """In execute result display, blocked reason comes before decision badge."""
@@ -75,59 +73,57 @@ class TestC04RejectedReasonVisible:
 # UI-3: Simulated and executed are visually distinct
 # ===========================================================================
 class TestC04SimulatedAndExecutedAreVisuallyDistinct:
-
     def test_executed_badge_class_exists(self):
-        assert 't3sc-c04-badge-executed' in _css()
+        assert "t3sc-c04-badge-executed" in _css()
 
     def test_rejected_badge_class_exists(self):
-        assert 't3sc-c04-badge-rejected' in _css()
+        assert "t3sc-c04-badge-rejected" in _css()
 
     def test_simulated_badge_class_exists(self):
-        assert 't3sc-c04-badge-simulated' in _css()
+        assert "t3sc-c04-badge-simulated" in _css()
 
     def test_executed_uses_green(self):
         css = _css()
-        idx = css.find('.t3sc-c04-badge-executed')
-        section = css[idx:idx + 100]
-        assert 'green' in section
+        idx = css.find(".t3sc-c04-badge-executed")
+        section = css[idx : idx + 100]
+        assert "green" in section
 
     def test_rejected_uses_red(self):
         css = _css()
-        idx = css.find('.t3sc-c04-badge-rejected')
-        section = css[idx:idx + 100]
-        assert 'red' in section
+        idx = css.find(".t3sc-c04-badge-rejected")
+        section = css[idx : idx + 100]
+        assert "red" in section
 
     def test_simulated_uses_yellow(self):
         css = _css()
-        idx = css.find('.t3sc-c04-badge-simulated')
-        section = css[idx:idx + 150]
-        assert 'yellow' in section
+        idx = css.find(".t3sc-c04-badge-simulated")
+        section = css[idx : idx + 150]
+        assert "yellow" in section
 
 
 # ===========================================================================
 # UI-4: Null payload fails closed
 # ===========================================================================
 class TestC04NullPayloadFailsClosed:
-
     def test_evidence_defaults_to_unavailable(self):
         html = _html()
-        assert 'unavailable' in html  # default evidence state
+        assert "unavailable" in html  # default evidence state
 
     def test_update_evidence_handles_null(self):
         """_updateC04Evidence handles null data gracefully."""
         html = _html()
-        assert '_updateC04Evidence' in html
+        assert "_updateC04Evidence" in html
         start = html.find("function _updateC04Evidence")
         assert start != -1
         end = html.find("\nfunction ", start + 30)
-        body = html[start:end] if end != -1 else html[start:start + 1500]
+        body = html[start:end] if end != -1 else html[start : start + 1500]
         assert "if (!data)" in body  # null guard
 
     def test_evidence_missing_not_empty(self):
         """Evidence shows 'missing' not empty string."""
         html = _html()
         start = html.find("function _updateC04Evidence")
-        body = html[start:start + 500]
+        body = html[start : start + 500]
         assert "'missing'" in body
 
 
@@ -135,7 +131,6 @@ class TestC04NullPayloadFailsClosed:
 # UI-5: Evidence section present
 # ===========================================================================
 class TestC04EvidenceSectionPresent:
-
     def test_evidence_vis_container(self):
         assert 'id="t3sc-c04-evidence-vis"' in _html()
 
@@ -149,20 +144,19 @@ class TestC04EvidenceSectionPresent:
         assert 'id="t3sc-c04-ev-chain"' in _html()
 
     def test_evidence_title(self):
-        assert 'Evidence Chain' in _html()
+        assert "Evidence Chain" in _html()
 
     def test_evidence_css_states(self):
         css = _css()
-        assert 't3sc-c04-ev-present' in css
-        assert 't3sc-c04-ev-missing' in css
-        assert 't3sc-c04-ev-unavailable' in css
+        assert "t3sc-c04-ev-present" in css
+        assert "t3sc-c04-ev-missing" in css
+        assert "t3sc-c04-ev-unavailable" in css
 
 
 # ===========================================================================
 # UI-6: UI uses existing ops-safety-summary only
 # ===========================================================================
 class TestC04UIUsesExistingOpsSafetySummaryOnly:
-
     def test_no_score_calculation_in_ui(self):
         """UI must not compute ops_score itself."""
         html = _html()
@@ -196,13 +190,12 @@ class TestC04UIUsesExistingOpsSafetySummaryOnly:
 # UI-7: Regression gate
 # ===========================================================================
 class TestC04GenesisRegressionGate:
-
     def test_c04_card_still_exists(self):
         assert 'id="t3sc-c04"' in _html()
 
     def test_safe_cards_intact(self):
         html = _html()
-        for n in ['01', '02', '03', '05', '06', '07', '08', '09']:
+        for n in ["01", "02", "03", "05", "06", "07", "08", "09"]:
             assert f'id="t3sc-c{n}"' in html
 
     def test_sealed_badge_still_exists(self):
@@ -213,18 +206,17 @@ class TestC04GenesisRegressionGate:
 # UI-8: Receipt/Audit session history
 # ===========================================================================
 class TestC04ReceiptAuditHistory:
-
     def test_history_container_exists(self):
         assert 'id="t3sc-c04-ev-history"' in _html()
 
     def test_session_history_array_exists(self):
-        assert '_c04SessionHistory' in _html()
+        assert "_c04SessionHistory" in _html()
 
     def test_push_history_function_exists(self):
-        assert '_pushC04History' in _html()
+        assert "_pushC04History" in _html()
 
     def test_history_empty_default(self):
-        assert 'No actions in this session' in _html()
+        assert "No actions in this session" in _html()
 
     def test_history_has_no_persistence(self):
         """History is session-local only, no fetch/POST for persistence."""
@@ -239,7 +231,7 @@ class TestC04ReceiptAuditHistory:
         """History rows use distinct decision badge classes."""
         html = _html()
         start = html.find("function _pushC04History")
-        body = html[start:start + 1000] if start != -1 else ""
+        body = html[start : start + 1000] if start != -1 else ""
         assert "t3sc-c04-badge-executed" in body
         assert "t3sc-c04-badge-simulated" in body
         assert "t3sc-c04-badge-rejected" in body
@@ -253,7 +245,7 @@ class TestC04ReceiptAuditHistory:
         """History is limited to prevent unbounded growth."""
         html = _html()
         start = html.find("function _pushC04History")
-        body = html[start:start + 500] if start != -1 else ""
+        body = html[start : start + 500] if start != -1 else ""
         assert "_c04SessionHistory.length > 10" in body or "length > " in body
 
 
@@ -261,7 +253,6 @@ class TestC04ReceiptAuditHistory:
 # UI-9: Operator identity binding
 # ===========================================================================
 class TestC04OperatorIdentityBinding:
-
     def test_operator_field_in_evidence(self):
         assert 'id="t3sc-c04-ev-operator"' in _html()
 
@@ -269,8 +260,8 @@ class TestC04OperatorIdentityBinding:
         html = _html()
         idx = html.find('id="t3sc-c04-ev-operator"')
         if idx != -1:
-            area = html[idx:idx + 100]
-            assert 'unavailable' in area
+            area = html[idx : idx + 100]
+            assert "unavailable" in area
 
     def test_get_operator_id_in_routes(self):
         route = ROUTE_PATH.read_text(encoding="utf-8")
@@ -280,7 +271,7 @@ class TestC04OperatorIdentityBinding:
         """Operator identity must not be used as auth/execute gate."""
         route = ROUTE_PATH.read_text(encoding="utf-8")
         start = route.find("def _get_operator_id")
-        body = route[start:start + 500] if start != -1 else ""
+        body = route[start : start + 500] if start != -1 else ""
         assert "authorize" not in body.lower()
         assert "permission" not in body.lower()
         assert "allow" not in body.lower()
@@ -297,36 +288,35 @@ class TestC04OperatorIdentityBinding:
 # UI-10: Re-close state transition display
 # ===========================================================================
 class TestC04RecloseUI:
-
     def test_reclose_container_exists(self):
         assert 'id="t3sc-c04-reclose"' in _html()
 
     def test_reclose_hidden_by_default(self):
         html = _html()
         idx = html.find('id="t3sc-c04-reclose"')
-        area = html[idx:idx + 100] if idx != -1 else ""
-        assert 'display:none' in area
+        area = html[idx : idx + 100] if idx != -1 else ""
+        assert "display:none" in area
 
     def test_reclose_badge_css_exists(self):
-        assert 't3sc-c04-reclose-badge' in _css()
+        assert "t3sc-c04-reclose-badge" in _css()
 
     def test_reopen_badge_css_exists(self):
-        assert 't3sc-c04-reopen-badge' in _css()
+        assert "t3sc-c04-reopen-badge" in _css()
 
     def test_reclose_detection_in_renderer(self):
         html = _html()
-        assert '_c04PrevChainOk' in html
-        assert 'RE-CLOSED' in html
+        assert "_c04PrevChainOk" in html
+        assert "RE-CLOSED" in html
 
     def test_reopen_detection_in_renderer(self):
         html = _html()
-        assert 'OPENED' in html
+        assert "OPENED" in html
 
     def test_reclose_shows_block_code(self):
         html = _html()
-        start = html.find('RE-CLOSED')
-        area = html[start:start + 200] if start != -1 else ""
-        assert 'blockCode' in area or 'Block:' in area
+        start = html.find("RE-CLOSED")
+        area = html[start : start + 200] if start != -1 else ""
+        assert "blockCode" in area or "Block:" in area
 
     def test_reclose_no_execution_logic(self):
         """Re-close detection must not contain execution logic."""

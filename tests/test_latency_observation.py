@@ -14,6 +14,7 @@ Tests the per-tier latency observation card:
 
 Run: pytest tests/test_latency_observation.py -v
 """
+
 import sys
 import json
 from pathlib import Path
@@ -26,16 +27,32 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services.order_service", "app.services.position_service",
-    "app.services.signal_service", "ccxt", "ccxt.async_support",
-    "redis", "celery", "asyncpg",
-    "kdexter", "kdexter.ledger", "kdexter.ledger.forbidden_ledger",
-    "kdexter.audit", "kdexter.audit.evidence_store",
-    "kdexter.state_machine", "kdexter.state_machine.security_state",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
+    "kdexter",
+    "kdexter.ledger",
+    "kdexter.ledger.forbidden_ledger",
+    "kdexter.audit",
+    "kdexter.audit.evidence_store",
+    "kdexter.state_machine",
+    "kdexter.state_machine.security_state",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -54,6 +71,7 @@ from app.schemas.latency_observation_schema import (
 
 
 # -- Helpers ---------------------------------------------------------------- #
+
 
 class FakeLedger:
     """Minimal ledger mock that returns proposal dicts."""
@@ -95,8 +113,8 @@ def _make_order(created_at, executed_at=None):
 # AXIS 1: Zero-Safe / Partial-Safe                                             #
 # =========================================================================== #
 
-class TestZeroSafe:
 
+class TestZeroSafe:
     def test_all_none_returns_zero_safe(self):
         obs = build_latency_observation(None, None, None, None)
         assert obs.agent_latency.measured is False
@@ -142,8 +160,8 @@ class TestZeroSafe:
 # AXIS 2: Per-Tier Elapsed Calculation                                         #
 # =========================================================================== #
 
-class TestPerTierElapsed:
 
+class TestPerTierElapsed:
     def test_agent_tier_single_measurement(self):
         proposals = [_make_proposal("2026-03-31T00:00:00Z", "2026-03-31T00:00:03Z")]
         obs = build_latency_observation(action_ledger=FakeLedger(proposals))
@@ -167,8 +185,9 @@ class TestPerTierElapsed:
 
     def test_execution_tier_uses_execution_ready_at(self):
         proposals = [
-            _make_proposal("2026-03-31T00:00:00Z", "2026-03-31T00:00:02Z",
-                           receipt_key="execution_ready_at"),
+            _make_proposal(
+                "2026-03-31T00:00:00Z", "2026-03-31T00:00:02Z", receipt_key="execution_ready_at"
+            ),
         ]
         obs = build_latency_observation(execution_ledger=FakeLedger(proposals))
         assert obs.execution_latency.measured is True
@@ -176,8 +195,9 @@ class TestPerTierElapsed:
 
     def test_submit_tier_uses_submit_ready_at(self):
         proposals = [
-            _make_proposal("2026-03-31T00:00:00Z", "2026-03-31T00:00:04Z",
-                           receipt_key="submit_ready_at"),
+            _make_proposal(
+                "2026-03-31T00:00:00Z", "2026-03-31T00:00:04Z", receipt_key="submit_ready_at"
+            ),
         ]
         obs = build_latency_observation(submit_ledger=FakeLedger(proposals))
         assert obs.submit_latency.measured is True
@@ -221,8 +241,8 @@ class TestPerTierElapsed:
 # AXIS 3: Excluded / Sample Handling                                           #
 # =========================================================================== #
 
-class TestExcludedSampleHandling:
 
+class TestExcludedSampleHandling:
     def test_unparseable_start_excluded(self):
         proposals = [_make_proposal("NOT-A-DATE", "2026-03-31T00:00:03Z")]
         obs = build_latency_observation(action_ledger=FakeLedger(proposals))
@@ -243,16 +263,20 @@ class TestExcludedSampleHandling:
 
     def test_missing_receipt_timestamp_excluded(self):
         """Receipt exists but lacks the expected timestamp key."""
-        proposals = [{"proposal_id": "P-1", "created_at": "2026-03-31T00:00:00Z",
-                       "receipt": {"other_field": "value"}}]
+        proposals = [
+            {
+                "proposal_id": "P-1",
+                "created_at": "2026-03-31T00:00:00Z",
+                "receipt": {"other_field": "value"},
+            }
+        ]
         obs = build_latency_observation(action_ledger=FakeLedger(proposals))
         assert obs.agent_latency.excluded_count == 1
 
     def test_sample_limited_flag(self):
         """More than 200 proposals → sample_limited=True."""
         proposals = [
-            _make_proposal("2026-03-31T00:00:00Z", "2026-03-31T00:00:01Z")
-            for _ in range(250)
+            _make_proposal("2026-03-31T00:00:00Z", "2026-03-31T00:00:01Z") for _ in range(250)
         ]
         obs = build_latency_observation(action_ledger=FakeLedger(proposals))
         assert obs.agent_latency.sample_limited is True
@@ -260,8 +284,7 @@ class TestExcludedSampleHandling:
 
     def test_under_limit_not_flagged(self):
         proposals = [
-            _make_proposal("2026-03-31T00:00:00Z", "2026-03-31T00:00:01Z")
-            for _ in range(50)
+            _make_proposal("2026-03-31T00:00:00Z", "2026-03-31T00:00:01Z") for _ in range(50)
         ]
         obs = build_latency_observation(action_ledger=FakeLedger(proposals))
         assert obs.agent_latency.sample_limited is False
@@ -284,8 +307,8 @@ class TestExcludedSampleHandling:
 # AXIS 4: Density Signal                                                       #
 # =========================================================================== #
 
-class TestDensitySignal:
 
+class TestDensitySignal:
     def test_no_measurements_description(self):
         obs = build_latency_observation(None, None, None, None)
         assert obs.density.description == "No latency measurements available."
@@ -303,8 +326,9 @@ class TestDensitySignal:
     def test_multi_tier_description_shows_slowest(self):
         agent_proposals = [_make_proposal("2026-03-31T00:00:00Z", "2026-03-31T00:00:01Z")]
         exec_proposals = [
-            _make_proposal("2026-03-31T00:00:00Z", "2026-03-31T00:00:10Z",
-                           receipt_key="execution_ready_at"),
+            _make_proposal(
+                "2026-03-31T00:00:00Z", "2026-03-31T00:00:10Z", receipt_key="execution_ready_at"
+            ),
         ]
         obs = build_latency_observation(
             action_ledger=FakeLedger(agent_proposals),
@@ -325,8 +349,8 @@ class TestDensitySignal:
 # AXIS 5: Safety Invariants                                                    #
 # =========================================================================== #
 
-class TestSafetyInvariants:
 
+class TestSafetyInvariants:
     def test_safety_all_true_empty(self):
         obs = build_latency_observation(None, None, None, None)
         assert obs.safety.read_only is True
@@ -347,18 +371,34 @@ class TestSafetyInvariants:
     def test_source_has_no_write_methods(self):
         import inspect
         import app.services.latency_observation_service as mod
+
         source = inspect.getsource(mod)
-        forbidden = ["propose_and_guard", "record_receipt", "transition_to",
-                      ".delete(", ".write(", "enqueue("]
+        forbidden = [
+            "propose_and_guard",
+            "record_receipt",
+            "transition_to",
+            ".delete(",
+            ".write(",
+            "enqueue(",
+        ]
         for keyword in forbidden:
             assert keyword not in source, f"Forbidden keyword '{keyword}' in source"
 
     def test_source_has_no_prediction_keywords(self):
         import inspect
         import app.services.latency_observation_service as mod
+
         source = inspect.getsource(mod)
-        forbidden = ["predict", "forecast", "score(", "auto_promote",
-                      "auto_escalate", "auto_judge", "SLA", "threshold"]
+        forbidden = [
+            "predict",
+            "forecast",
+            "score(",
+            "auto_promote",
+            "auto_escalate",
+            "auto_judge",
+            "SLA",
+            "threshold",
+        ]
         for keyword in forbidden:
             assert keyword not in source, f"Prediction keyword '{keyword}' in source"
 
@@ -366,9 +406,19 @@ class TestSafetyInvariants:
         """v1 constraint: no slow/fast/degraded/alert/warning in source."""
         import inspect
         import app.services.latency_observation_service as mod
+
         source = inspect.getsource(mod)
-        forbidden = ['"slow"', '"fast"', '"degraded"', '"alert"', '"warning"',
-                      '"breach"', '"target"', '"normal"', '"abnormal"']
+        forbidden = [
+            '"slow"',
+            '"fast"',
+            '"degraded"',
+            '"alert"',
+            '"warning"',
+            '"breach"',
+            '"target"',
+            '"normal"',
+            '"abnormal"',
+        ]
         for keyword in forbidden:
             assert keyword not in source, f"Judgment word {keyword} in source"
 
@@ -386,15 +436,19 @@ class TestSafetyInvariants:
 # AXIS 6: Schema Drift Sentinel                                                #
 # =========================================================================== #
 
-class TestSchemaDriftSentinel:
 
+class TestSchemaDriftSentinel:
     def test_latency_observation_field_count(self):
         assert len(LatencyObservationSchema.model_fields) == 6
 
     def test_latency_observation_field_names(self):
         expected = {
-            "agent_latency", "execution_latency", "submit_latency",
-            "order_latency", "density", "safety",
+            "agent_latency",
+            "execution_latency",
+            "submit_latency",
+            "order_latency",
+            "density",
+            "safety",
         }
         assert set(LatencyObservationSchema.model_fields.keys()) == expected
 
@@ -403,9 +457,15 @@ class TestSchemaDriftSentinel:
 
     def test_tier_latency_field_names(self):
         expected = {
-            "tier_name", "tier_number", "measured", "sample_size",
-            "excluded_count", "sample_limited",
-            "min_seconds", "max_seconds", "median_seconds",
+            "tier_name",
+            "tier_number",
+            "measured",
+            "sample_size",
+            "excluded_count",
+            "sample_limited",
+            "min_seconds",
+            "max_seconds",
+            "median_seconds",
         }
         assert set(TierLatency.model_fields.keys()) == expected
 
@@ -420,30 +480,35 @@ class TestSchemaDriftSentinel:
 # AXIS 7: Board Integration                                                    #
 # =========================================================================== #
 
-class TestBoardIntegration:
 
+class TestBoardIntegration:
     def test_board_schema_has_latency_observation(self):
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         assert "latency_observation" in FourTierBoardResponse.model_fields
 
     def test_board_schema_latency_is_typed(self):
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         field_info = FourTierBoardResponse.model_fields["latency_observation"]
         assert field_info.annotation is LatencyObservationSchema
 
     def test_board_service_returns_typed_latency(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert isinstance(board.latency_observation, LatencyObservationSchema)
 
     def test_board_latency_safety_intact(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.latency_observation.safety.read_only is True
         assert board.latency_observation.safety.no_prediction is True
 
     def test_board_serializes_latency_to_json(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         j = json.loads(board.model_dump_json())
         assert "latency_observation" in j
@@ -452,6 +517,7 @@ class TestBoardIntegration:
 
     def test_board_latency_empty_is_zero_safe(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.latency_observation.agent_latency.measured is False
         assert board.latency_observation.agent_latency.sample_size == 0

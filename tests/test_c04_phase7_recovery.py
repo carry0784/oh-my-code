@@ -11,13 +11,26 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services", "app.services.order_service",
-    "app.services.position_service", "app.services.signal_service",
-    "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
 ]
 for m in _STUB_MODULES:
     if m not in sys.modules:
@@ -28,7 +41,10 @@ sys.modules["app.models.order"].Order = MagicMock()
 sys.modules["app.models.order"].OrderStatus = MagicMock()
 
 from app.core.manual_recovery_handler import (
-    manual_rollback, manual_retry, simulate_action, preview_action,
+    manual_rollback,
+    manual_retry,
+    simulate_action,
+    preview_action,
 )
 from app.schemas.manual_recovery_schema import RecoveryDecision, SimulationDecision
 
@@ -57,7 +73,6 @@ def _all_pass():
 # P7-1: Manual Rollback
 # ===========================================================================
 class TestP7Rollback:
-
     def test_rollback_chain_pass_executes(self):
         r = manual_rollback(_all_pass(), original_receipt_id="RCP-orig-001")
         assert r.decision == RecoveryDecision.EXECUTED
@@ -95,7 +110,6 @@ class TestP7Rollback:
 # P7-2: Manual Retry
 # ===========================================================================
 class TestP7Retry:
-
     def test_retry_chain_pass_executes(self):
         r = manual_retry(_all_pass(), original_receipt_id="RCP-orig-001")
         assert r.decision == RecoveryDecision.EXECUTED
@@ -127,7 +141,6 @@ class TestP7Retry:
 # P7-3: Simulation
 # ===========================================================================
 class TestP7Simulation:
-
     def test_simulate_chain_pass_simulated(self):
         r = simulate_action(_all_pass())
         assert r.decision == SimulationDecision.SIMULATED
@@ -160,7 +173,6 @@ class TestP7Simulation:
 # P7-4: Preview
 # ===========================================================================
 class TestP7Preview:
-
     def test_preview_chain_pass(self):
         r = preview_action(_all_pass())
         assert r.chain_met == 9
@@ -186,7 +198,6 @@ class TestP7Preview:
 # P7-5: Prohibitions
 # ===========================================================================
 class TestP7Prohibitions:
-
     def test_no_auto_rollback_in_handler(self):
         content = HANDLER_PATH.read_text(encoding="utf-8")
         assert "def auto_rollback" not in content

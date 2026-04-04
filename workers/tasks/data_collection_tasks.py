@@ -138,6 +138,7 @@ def collect_market_state(
 def collect_sentiment_only():
     """Lightweight sentiment-only collection (runs less frequently)."""
     try:
+
         async def _collect():
             collector = SentimentCollector()
             return await collector.collect()

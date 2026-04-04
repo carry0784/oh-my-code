@@ -17,6 +17,7 @@ Change authority:
   - B2 must verify B1 doctrine compliance before any approval
   - B2 cannot modify B1 layers or doctrines
 """
+
 from __future__ import annotations
 
 import uuid
@@ -38,10 +39,12 @@ from kdexter.governance.doctrine import (
 # Layer attribution
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass(frozen=True)
 class LayerAttribution:
     """Governance attribution for a single layer."""
-    layer_id: str               # "L1" ~ "L30"
+
+    layer_id: str  # "L1" ~ "L30"
     name: str
     tier: GovernanceTier
     change_authority: ChangeAuthority
@@ -50,37 +53,48 @@ class LayerAttribution:
 
 # governance_layer_map.md Section 2 — full attribution table
 _LAYER_ATTRIBUTIONS: list[LayerAttribution] = [
-    LayerAttribution("L1",  "Human Decision",          GovernanceTier.B1, ChangeAuthority.HUMAN_ONLY),
-    LayerAttribution("L2",  "Doctrine & Policy",       GovernanceTier.B1, ChangeAuthority.B1_RATIFY),
-    LayerAttribution("L3",  "Security & Isolation",    GovernanceTier.B1, ChangeAuthority.B1_RATIFY),
-    LayerAttribution("L4",  "Clarify & Spec",          GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L5",  "Harness / Scheduler",     GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L6",  "Parallel Agent",          GovernanceTier.A,  ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L7",  "Evaluation",              GovernanceTier.A,  ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L8",  "Execution Cell",          GovernanceTier.A,  ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L9",  "Self-Improvement Engine", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L10", "Audit / Evidence Store",  GovernanceTier.A,  ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L11", "Rule Ledger",             GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L12", "Rule Provenance Store",   GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L13", "Compliance Engine",       GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L14", "Operation Evolution",     GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L15", "Intent Drift Engine",     GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L16", "Rule Conflict Engine",    GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L17", "Failure Pattern Memory",  GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L18", "Budget Evolution Engine", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L19", "Trust Decay Engine",      GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L20", "Meta Loop Controller",    GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L21", "Completion Engine",       GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L22", "Spec Lock System",        GovernanceTier.B1, ChangeAuthority.B1_RATIFY,
-                     "Lock release requires B1; lock execution is B2"),
-    LayerAttribution("L23", "Research Engine",         GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L24", "Knowledge Engine",        GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L25", "Scheduler Engine",        GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L26", "Recovery Engine",         GovernanceTier.A,  ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L27", "Override Controller",     GovernanceTier.B1, ChangeAuthority.HUMAN_ONLY),
-    LayerAttribution("L28", "Loop Monitor",            GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L29", "Cost Controller",         GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
-    LayerAttribution("L30", "Progress Engine",         GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L1", "Human Decision", GovernanceTier.B1, ChangeAuthority.HUMAN_ONLY),
+    LayerAttribution("L2", "Doctrine & Policy", GovernanceTier.B1, ChangeAuthority.B1_RATIFY),
+    LayerAttribution("L3", "Security & Isolation", GovernanceTier.B1, ChangeAuthority.B1_RATIFY),
+    LayerAttribution("L4", "Clarify & Spec", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L5", "Harness / Scheduler", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L6", "Parallel Agent", GovernanceTier.A, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L7", "Evaluation", GovernanceTier.A, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L8", "Execution Cell", GovernanceTier.A, ChangeAuthority.B2_APPROVE),
+    LayerAttribution(
+        "L9", "Self-Improvement Engine", GovernanceTier.B2, ChangeAuthority.B2_APPROVE
+    ),
+    LayerAttribution("L10", "Audit / Evidence Store", GovernanceTier.A, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L11", "Rule Ledger", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L12", "Rule Provenance Store", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L13", "Compliance Engine", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L14", "Operation Evolution", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L15", "Intent Drift Engine", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L16", "Rule Conflict Engine", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution(
+        "L17", "Failure Pattern Memory", GovernanceTier.B2, ChangeAuthority.B2_APPROVE
+    ),
+    LayerAttribution(
+        "L18", "Budget Evolution Engine", GovernanceTier.B2, ChangeAuthority.B2_APPROVE
+    ),
+    LayerAttribution("L19", "Trust Decay Engine", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L20", "Meta Loop Controller", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L21", "Completion Engine", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution(
+        "L22",
+        "Spec Lock System",
+        GovernanceTier.B1,
+        ChangeAuthority.B1_RATIFY,
+        "Lock release requires B1; lock execution is B2",
+    ),
+    LayerAttribution("L23", "Research Engine", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L24", "Knowledge Engine", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L25", "Scheduler Engine", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L26", "Recovery Engine", GovernanceTier.A, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L27", "Override Controller", GovernanceTier.B1, ChangeAuthority.HUMAN_ONLY),
+    LayerAttribution("L28", "Loop Monitor", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L29", "Cost Controller", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
+    LayerAttribution("L30", "Progress Engine", GovernanceTier.B2, ChangeAuthority.B2_APPROVE),
 ]
 
 _ATTR_MAP: dict[str, LayerAttribution] = {la.layer_id: la for la in _LAYER_ATTRIBUTIONS}
@@ -89,6 +103,7 @@ _ATTR_MAP: dict[str, LayerAttribution] = {la.layer_id: la for la in _LAYER_ATTRI
 # ─────────────────────────────────────────────────────────────────────────── #
 # Change request
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 class ApprovalStatus(Enum):
     PENDING = "PENDING"
@@ -99,11 +114,12 @@ class ApprovalStatus(Enum):
 @dataclass
 class ChangeRequest:
     """A request to change a B2/A layer or configuration."""
+
     request_id: str = field(default_factory=lambda: f"CR-{uuid.uuid4().hex[:8].upper()}")
-    target_layer: str = ""          # "L4", "L11", etc.
-    change_type: str = ""           # "CODE", "CONFIG", "RULE", "ADAPTER"
+    target_layer: str = ""  # "L4", "L11", etc.
+    change_type: str = ""  # "CODE", "CONFIG", "RULE", "ADAPTER"
     description: str = ""
-    requester: str = ""             # who/what is requesting
+    requester: str = ""  # who/what is requesting
     status: ApprovalStatus = ApprovalStatus.PENDING
     doctrine_compliant: bool = False
     reviewed_at: Optional[datetime] = None
@@ -123,19 +139,22 @@ class ChangeRequest:
 # Pipeline stage
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass
 class PipelineStage:
     """One stage in an execution pipeline."""
+
     stage_id: str
-    layer_id: str           # which layer executes this stage
+    layer_id: str  # which layer executes this stage
     gate_id: Optional[str]  # gate to evaluate before this stage (None = no gate)
-    order: int              # execution order within pipeline
+    order: int  # execution order within pipeline
     description: str = ""
 
 
 # ─────────────────────────────────────────────────────────────────────────── #
 # B2 Orchestration
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 class B2Orchestration:
     """
@@ -228,22 +247,20 @@ class B2Orchestration:
             "actor": request.requester,
             "target_layer": request.target_layer,
             "change_type": request.change_type,
-            "via_tcl": True,            # assume TCL compliance
-            "provenance": True,         # assume provenance present
-            "lock_held": True,          # assume lock held if needed
+            "via_tcl": True,  # assume TCL compliance
+            "provenance": True,  # assume provenance present
+            "lock_held": True,  # assume lock held if needed
             "intent": request.description or "change request",
             "risk_checked": True,
         }
         violations = self._doctrine.check_compliance(compliance_context)
 
         if violations:
-            constitutional = [v for v in violations
-                            if v.severity == DoctrineSeverity.CONSTITUTIONAL]
+            constitutional = [
+                v for v in violations if v.severity == DoctrineSeverity.CONSTITUTIONAL
+            ]
             if constitutional:
-                request.deny(
-                    f"Constitutional doctrine violation: "
-                    f"{constitutional[0].doctrine_id}"
-                )
+                request.deny(f"Constitutional doctrine violation: {constitutional[0].doctrine_id}")
                 self._log_change(request)
                 return False
 
@@ -282,16 +299,20 @@ class B2Orchestration:
         # Sort by order
         self._pipelines[pipeline_id] = sorted(stages, key=lambda s: s.order)
 
-        self._evidence.store(EvidenceBundle(
-            trigger="B2Orchestration.register_pipeline",
-            actor="B2",
-            action=f"REGISTER_PIPELINE:{pipeline_id}",
-            artifacts=[{
-                "pipeline_id": pipeline_id,
-                "stage_count": len(stages),
-                "layers": [s.layer_id for s in stages],
-            }],
-        ))
+        self._evidence.store(
+            EvidenceBundle(
+                trigger="B2Orchestration.register_pipeline",
+                actor="B2",
+                action=f"REGISTER_PIPELINE:{pipeline_id}",
+                artifacts=[
+                    {
+                        "pipeline_id": pipeline_id,
+                        "stage_count": len(stages),
+                        "layers": [s.layer_id for s in stages],
+                    }
+                ],
+            )
+        )
 
     def get_pipeline(self, pipeline_id: str) -> Optional[list[PipelineStage]]:
         return self._pipelines.get(pipeline_id)
@@ -330,25 +351,31 @@ class B2Orchestration:
 
     def _log_change(self, request: ChangeRequest) -> None:
         self._change_log.append(request)
-        self._evidence.store(EvidenceBundle(
-            trigger="B2Orchestration.change_request",
-            actor="B2",
-            action=f"CHANGE_{request.status.value}:{request.target_layer}",
-            artifacts=[{
-                "request_id": request.request_id,
-                "target_layer": request.target_layer,
-                "change_type": request.change_type,
-                "requester": request.requester,
-                "status": request.status.value,
-                "denial_reason": request.denial_reason,
-            }],
-        ))
+        self._evidence.store(
+            EvidenceBundle(
+                trigger="B2Orchestration.change_request",
+                actor="B2",
+                action=f"CHANGE_{request.status.value}:{request.target_layer}",
+                artifacts=[
+                    {
+                        "request_id": request.request_id,
+                        "target_layer": request.target_layer,
+                        "change_type": request.change_type,
+                        "requester": request.requester,
+                        "status": request.status.value,
+                        "denial_reason": request.denial_reason,
+                    }
+                ],
+            )
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────── #
 # Exceptions
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 class PipelineValidationError(Exception):
     """Raised when a pipeline references invalid layers or has structural issues."""
+
     pass

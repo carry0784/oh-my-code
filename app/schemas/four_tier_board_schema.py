@@ -11,6 +11,7 @@ Design rules:
   - guard_reason_top shows most frequent block reasons
   - Lineage trace: AP-* → EP-* → SP-* → OX-*
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -29,6 +30,7 @@ from app.schemas.trend_observation_schema import TrendObservationSchema
 
 class TierSummary(BaseModel):
     """Summary counts for a single tier."""
+
     tier_name: str
     tier_number: int
     total: int = 0
@@ -44,6 +46,7 @@ class TierSummary(BaseModel):
 
 class OrderTierSummary(BaseModel):
     """Summary for the Order Executor tier (external caller)."""
+
     tier_name: str = "Orders"
     tier_number: int = 4
     total: int = 0
@@ -59,9 +62,10 @@ class OrderTierSummary(BaseModel):
 
 class OrphanDetail(BaseModel):
     """Single orphan detail entry for board display."""
+
     proposal_id: str = ""
-    tier: str = ""                          # "execution" | "submit"
-    missing_parent_type: str = ""           # "agent_proposal_id" | "execution_proposal_id"
+    tier: str = ""  # "execution" | "submit"
+    missing_parent_type: str = ""  # "agent_proposal_id" | "execution_proposal_id"
     missing_parent_id: Optional[str] = None
     current_status: str = ""
     created_at: str = ""
@@ -69,6 +73,7 @@ class OrphanDetail(BaseModel):
 
 class CleanupActionSummary(BaseModel):
     """Cleanup action class counts (from simulation)."""
+
     INFO: int = 0
     WATCH: int = 0
     REVIEW: int = 0
@@ -77,14 +82,16 @@ class CleanupActionSummary(BaseModel):
 
 class DerivedFlags(BaseModel):
     """Current derived property flags across the chain."""
-    execution_ready_pending: int = 0   # EXEC_GUARDED but not RECEIPTED
-    submit_ready_pending: int = 0      # SUBMIT_GUARDED but not RECEIPTED
-    execution_ready_true: int = 0      # EXEC_RECEIPTED
-    submit_ready_true: int = 0         # SUBMIT_RECEIPTED
+
+    execution_ready_pending: int = 0  # EXEC_GUARDED but not RECEIPTED
+    submit_ready_pending: int = 0  # SUBMIT_GUARDED but not RECEIPTED
+    execution_ready_true: int = 0  # EXEC_RECEIPTED
+    submit_ready_true: int = 0  # SUBMIT_RECEIPTED
 
 
 class LineageEntry(BaseModel):
     """Single lineage trace (most recent, for dashboard display)."""
+
     agent_proposal_id: Optional[str] = None
     execution_proposal_id: Optional[str] = None
     submit_proposal_id: Optional[str] = None
@@ -110,6 +117,7 @@ class FourTierBoardResponse(BaseModel):
     │ Recent Lineage Trace                                │
     └─────────────────────────────────────────────────────┘
     """
+
     agent_tier: TierSummary
     execution_tier: TierSummary
     submit_tier: TierSummary

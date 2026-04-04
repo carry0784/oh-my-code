@@ -10,6 +10,7 @@ Validates:
   - no update/delete API
   - clear() production protection
 """
+
 from __future__ import annotations
 
 import os
@@ -29,6 +30,7 @@ from kdexter.audit.backends import EvidenceBackend
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 def _make_bundle(**kw) -> EvidenceBundle:
     defaults = dict(
         trigger="GovernanceGate.pre_check",
@@ -36,12 +38,14 @@ def _make_bundle(**kw) -> EvidenceBundle:
         action="PRE_CHECK:ALLOWED",
         before_state="NORMAL",
         after_state="NORMAL",
-        artifacts=[{
-            "phase": "PRE",
-            "gate_id": "test-gate-id-001",
-            "gate_generation": 1,
-            "gate_created_at": datetime.now(timezone.utc).isoformat(),
-        }],
+        artifacts=[
+            {
+                "phase": "PRE",
+                "gate_id": "test-gate-id-001",
+                "gate_generation": 1,
+                "gate_created_at": datetime.now(timezone.utc).isoformat(),
+            }
+        ],
     )
     defaults.update(kw)
     return EvidenceBundle(**defaults)
@@ -50,6 +54,7 @@ def _make_bundle(**kw) -> EvidenceBundle:
 # ═══════════════════════════════════════════════════════════════════════════ #
 # B-07: EVIDENCE PERSISTENCE TESTS
 # ═══════════════════════════════════════════════════════════════════════════ #
+
 
 class TestEvidencePersistence:
     """B-07: EvidenceStore append-only, durability, and audit verification."""
@@ -111,18 +116,40 @@ class TestEvidencePersistence:
 
     def test_evidence_write_failure_visible(self):
         """Backend write failure propagates to caller — no silent drop."""
+
         class FailingBackend(EvidenceBackend):
-            def store(self, bundle): raise IOError("Disk full")
-            def get(self, bid): return None
-            def count(self): return 0
-            def count_for_cycle(self, cid): return 0
-            def count_by_actor(self, a): return 0
-            def list_by_trigger(self, t): return []
-            def list_by_actor(self, a): return []
-            def list_by_actor_recent(self, a, limit=20): return []
-            def list_all(self): return []
-            def count_orphan_pre(self): return 0
-            def clear(self): pass
+            def store(self, bundle):
+                raise IOError("Disk full")
+
+            def get(self, bid):
+                return None
+
+            def count(self):
+                return 0
+
+            def count_for_cycle(self, cid):
+                return 0
+
+            def count_by_actor(self, a):
+                return 0
+
+            def list_by_trigger(self, t):
+                return []
+
+            def list_by_actor(self, a):
+                return []
+
+            def list_by_actor_recent(self, a, limit=20):
+                return []
+
+            def list_all(self):
+                return []
+
+            def count_orphan_pre(self):
+                return 0
+
+            def clear(self):
+                pass
 
         store = EvidenceStore(backend=FailingBackend())
         bundle = _make_bundle()

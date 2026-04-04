@@ -13,6 +13,7 @@ Design:
   - No external dependencies beyond stdlib
   - No hidden reasoning, no debug traces
 """
+
 from __future__ import annotations
 
 import json

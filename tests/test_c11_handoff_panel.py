@@ -18,13 +18,26 @@ from unittest.mock import MagicMock
 import pytest
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services", "app.services.order_service",
-    "app.services.position_service", "app.services.signal_service",
-    "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -55,7 +68,6 @@ def _get_fn_body():
 # C11-1: Operator Panel 블록
 # ===========================================================================
 class TestC11HandoffBlock:
-
     def test_block_exists(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert 'id="handoff-receipt-block"' in content
@@ -73,7 +85,6 @@ class TestC11HandoffBlock:
 # C11-2: JS 렌더링 함수
 # ===========================================================================
 class TestC11RenderFunction:
-
     def test_function_exists(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert "function renderHandoffReceipt" in content
@@ -136,9 +147,16 @@ class TestC11RenderFunction:
     def test_no_forbidden_strings(self):
         fn_body = _get_fn_body()
         forbidden = [
-            'agent_analysis', 'raw_prompt', 'chain_of_thought',
-            'internal_reasoning', 'debug_trace', 'error_class',
-            'traceback', 'exception_type', 'stack', 'internal_state_dump',
+            "agent_analysis",
+            "raw_prompt",
+            "chain_of_thought",
+            "internal_reasoning",
+            "debug_trace",
+            "error_class",
+            "traceback",
+            "exception_type",
+            "stack",
+            "internal_state_dump",
         ]
         for f in forbidden:
             assert f not in fn_body, f"Forbidden string '{f}'"
@@ -148,7 +166,6 @@ class TestC11RenderFunction:
 # C11-3: CSS
 # ===========================================================================
 class TestC11CSS:
-
     def test_receipt_class(self):
         content = CSS_PATH.read_text(encoding="utf-8")
         assert ".ho-receipt" in content
@@ -156,14 +173,14 @@ class TestC11CSS:
     def test_monospace_font(self):
         content = CSS_PATH.read_text(encoding="utf-8")
         idx = content.index(".ho-receipt")
-        section = content[idx:idx + 300]
+        section = content[idx : idx + 300]
         assert "monospace" in section
 
     def test_user_select_all(self):
         """전체 선택 가능하도록 user-select: all 설정."""
         content = CSS_PATH.read_text(encoding="utf-8")
         idx = content.index(".ho-receipt")
-        section = content[idx:idx + 300]
+        section = content[idx : idx + 300]
         assert "user-select" in section
 
 
@@ -171,7 +188,6 @@ class TestC11CSS:
 # C11-4: Tab 2 통합
 # ===========================================================================
 class TestC11Integration:
-
     def test_called_from_render_tab2(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert "renderHandoffReceipt(data, venueStates)" in content
@@ -185,8 +201,15 @@ class TestC11Integration:
 
     def test_existing_blocks_preserved(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        for bid in ['key-facts-block', 'loop-ceiling-block', 'quote-feed-block',
-                     'venue-status-block', 'freshness-timeline-block',
-                     'provenance-block', 'triage-checklist-block',
-                     'event-log-block', 'incident-overlay']:
+        for bid in [
+            "key-facts-block",
+            "loop-ceiling-block",
+            "quote-feed-block",
+            "venue-status-block",
+            "freshness-timeline-block",
+            "provenance-block",
+            "triage-checklist-block",
+            "event-log-block",
+            "incident-overlay",
+        ]:
             assert bid in content, f"{bid} must be preserved"

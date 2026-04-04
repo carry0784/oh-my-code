@@ -43,6 +43,7 @@ VOLUME_CHANGE_CAP = 5.0  # Cap volume change ratio at 5x
 @dataclass
 class RegimeResult:
     """Result of regime detection."""
+
     regime: str = UNKNOWN
     confidence: float = 0.0
     features: dict = field(default_factory=dict)
@@ -52,11 +53,12 @@ class RegimeResult:
 @dataclass
 class FeatureVector:
     """Normalized feature vector for clustering."""
-    rsi_norm: float = 0.5       # 0-1 normalized RSI
+
+    rsi_norm: float = 0.5  # 0-1 normalized RSI
     macd_hist_norm: float = 0.0  # Normalized MACD histogram
-    atr_pct: float = 0.0        # ATR as % of price
-    volume_ratio: float = 1.0    # Current / avg volume
-    spread_pct: float = 0.0      # Bid-ask spread %
+    atr_pct: float = 0.0  # ATR as % of price
+    volume_ratio: float = 1.0  # Current / avg volume
+    spread_pct: float = 0.0  # Bid-ask spread %
     fear_greed_norm: float = 0.5  # 0-1 normalized F&G
     btc_dominance_norm: float = 0.5  # 0-1 normalized
     mempool_fee_norm: float = 0.0  # Normalized fee pressure
@@ -73,13 +75,16 @@ class RegimeDetector:
     # Pre-defined cluster centroids (regime prototypes)
     # Each row: [rsi, macd_hist, atr_pct, vol_ratio, spread, fg, btc_dom, fee]
     # atr_pct capped at 0.1; vol_ratio fixed at 1.0 (Phase 3 will add historical avg)
-    CENTROIDS = np.array([
-        [0.70, 0.6, 0.02, 1.0, 0.02, 0.70, 0.50, 0.3],   # trending_up
-        [0.30, -0.6, 0.02, 1.0, 0.03, 0.30, 0.55, 0.3],   # trending_down
-        [0.50, 0.0, 0.01, 1.0, 0.01, 0.50, 0.50, 0.2],    # ranging
-        [0.50, 0.0, 0.06, 1.0, 0.05, 0.25, 0.55, 0.7],    # high_volatility
-        [0.15, -0.8, 0.10, 1.0, 0.10, 0.08, 0.65, 0.9],   # crisis
-    ], dtype=np.float64)
+    CENTROIDS = np.array(
+        [
+            [0.70, 0.6, 0.02, 1.0, 0.02, 0.70, 0.50, 0.3],  # trending_up
+            [0.30, -0.6, 0.02, 1.0, 0.03, 0.30, 0.55, 0.3],  # trending_down
+            [0.50, 0.0, 0.01, 1.0, 0.01, 0.50, 0.50, 0.2],  # ranging
+            [0.50, 0.0, 0.06, 1.0, 0.05, 0.25, 0.55, 0.7],  # high_volatility
+            [0.15, -0.8, 0.10, 1.0, 0.10, 0.08, 0.65, 0.9],  # crisis
+        ],
+        dtype=np.float64,
+    )
 
     CENTROID_LABELS = [TRENDING_UP, TRENDING_DOWN, RANGING, HIGH_VOLATILITY, CRISIS]
 
@@ -100,14 +105,10 @@ class RegimeDetector:
         on_chain = on_chain or OnChainData()
         microstructure = microstructure or MarketMicrostructure()
 
-        features = self._extract_features(
-            price, indicators, sentiment, on_chain, microstructure
-        )
+        features = self._extract_features(price, indicators, sentiment, on_chain, microstructure)
 
         # 1. Hard rule overrides (highest priority)
-        rule_result = self._apply_rule_overrides(
-            price, indicators, sentiment, on_chain, features
-        )
+        rule_result = self._apply_rule_overrides(price, indicators, sentiment, on_chain, features)
         if rule_result:
             return rule_result
 
@@ -117,7 +118,7 @@ class RegimeDetector:
         # 3. Update history
         self._history.append(features)
         if len(self._history) > self._history_window:
-            self._history = self._history[-self._history_window:]
+            self._history = self._history[-self._history_window :]
 
         return cluster_result
 
@@ -143,9 +144,7 @@ class RegimeDetector:
 
         # ATR as % of price
         if indicators.atr_14 is not None and price.price > 0:
-            fv.atr_pct = float(np.clip(
-                indicators.atr_14 / price.price, 0.0, ATR_PCT_CAP / 100
-            ))
+            fv.atr_pct = float(np.clip(indicators.atr_14 / price.price, 0.0, ATR_PCT_CAP / 100))
 
         # Volume ratio (current vs. typical — approximate via 24h)
         if price.volume_24h and price.volume_24h > 0:
@@ -205,16 +204,19 @@ class RegimeDetector:
 
     def _cluster_detect(self, features: FeatureVector) -> RegimeResult:
         """Assign regime by nearest centroid (K-Means style)."""
-        fv_array = np.array([
-            features.rsi_norm,
-            features.macd_hist_norm,
-            features.atr_pct,
-            features.volume_ratio,
-            features.spread_pct,
-            features.fear_greed_norm,
-            features.btc_dominance_norm,
-            features.mempool_fee_norm,
-        ], dtype=np.float64)
+        fv_array = np.array(
+            [
+                features.rsi_norm,
+                features.macd_hist_norm,
+                features.atr_pct,
+                features.volume_ratio,
+                features.spread_pct,
+                features.fear_greed_norm,
+                features.btc_dominance_norm,
+                features.mempool_fee_norm,
+            ],
+            dtype=np.float64,
+        )
 
         # Compute distances to each centroid
         distances = np.linalg.norm(self.CENTROIDS - fv_array, axis=1)
@@ -228,9 +230,7 @@ class RegimeDetector:
         # If history exists, apply momentum smoothing
         regime = self.CENTROID_LABELS[nearest_idx]
         if len(self._history) >= 3:
-            regime, confidence = self._apply_momentum(
-                regime, confidence, nearest_idx, distances
-            )
+            regime, confidence = self._apply_momentum(regime, confidence, nearest_idx, distances)
 
         return RegimeResult(
             regime=regime,
@@ -270,11 +270,18 @@ class RegimeDetector:
 
     def _detect_simple(self, features: FeatureVector) -> str:
         """Quick regime from single feature vector (no momentum)."""
-        fv_array = np.array([
-            features.rsi_norm, features.macd_hist_norm, features.atr_pct,
-            features.volume_ratio, features.spread_pct, features.fear_greed_norm,
-            features.btc_dominance_norm, features.mempool_fee_norm,
-        ])
+        fv_array = np.array(
+            [
+                features.rsi_norm,
+                features.macd_hist_norm,
+                features.atr_pct,
+                features.volume_ratio,
+                features.spread_pct,
+                features.fear_greed_norm,
+                features.btc_dominance_norm,
+                features.mempool_fee_norm,
+            ]
+        )
         distances = np.linalg.norm(self.CENTROIDS - fv_array, axis=1)
         return self.CENTROID_LABELS[int(np.argmin(distances))]
 

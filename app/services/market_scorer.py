@@ -27,11 +27,12 @@ logger = get_logger(__name__)
 @dataclass
 class ScoreBreakdown:
     """Detailed score breakdown per component."""
-    total: float = 0.0           # -100 to +100
-    technical: float = 0.0       # -100 to +100 (weight: 40%)
-    on_chain: float = 0.0        # -100 to +100 (weight: 30%)
-    sentiment: float = 0.0       # -100 to +100 (weight: 30%)
-    grade: str = "NEUTRAL"       # STRONG_BULL / BULL / NEUTRAL / BEAR / STRONG_BEAR
+
+    total: float = 0.0  # -100 to +100
+    technical: float = 0.0  # -100 to +100 (weight: 40%)
+    on_chain: float = 0.0  # -100 to +100 (weight: 30%)
+    sentiment: float = 0.0  # -100 to +100 (weight: 30%)
+    grade: str = "NEUTRAL"  # STRONG_BULL / BULL / NEUTRAL / BEAR / STRONG_BEAR
     signal_strength: float = 0.0  # 0.0 to 1.0 (absolute confidence)
     details: dict | None = None
 
@@ -60,7 +61,7 @@ class MarketScorer:
         chain = self._on_chain_score(on_chain)
         sent = self._sentiment_score(sentiment)
 
-        total = (tech * W_TECHNICAL + chain * W_ONCHAIN + sent * W_SENTIMENT)
+        total = tech * W_TECHNICAL + chain * W_ONCHAIN + sent * W_SENTIMENT
         total = max(-100, min(100, total))
 
         grade = self._grade(total)
@@ -74,7 +75,11 @@ class MarketScorer:
             grade=grade,
             signal_strength=round(strength, 3),
             details={
-                "weights": {"technical": W_TECHNICAL, "on_chain": W_ONCHAIN, "sentiment": W_SENTIMENT},
+                "weights": {
+                    "technical": W_TECHNICAL,
+                    "on_chain": W_ONCHAIN,
+                    "sentiment": W_SENTIMENT,
+                },
             },
         )
 
@@ -141,16 +146,16 @@ class MarketScorer:
             elif on_chain.mempool_fee_fast > 100:
                 scores.append(("fee", -20.0))  # High congestion
             elif on_chain.mempool_fee_fast > 30:
-                scores.append(("fee", 20.0))   # Healthy activity
+                scores.append(("fee", 20.0))  # Healthy activity
             else:
-                scores.append(("fee", 0.0))    # Low activity, neutral
+                scores.append(("fee", 0.0))  # Low activity, neutral
 
         # Mempool size: large mempool = high demand
         if on_chain.mempool_size is not None:
             if on_chain.mempool_size > 100000:
                 scores.append(("mempool", -30.0))  # Extreme congestion
             elif on_chain.mempool_size > 50000:
-                scores.append(("mempool", 10.0))    # Active
+                scores.append(("mempool", 10.0))  # Active
             else:
                 scores.append(("mempool", 0.0))
 

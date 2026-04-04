@@ -157,9 +157,16 @@ class TestC05RenderFunction:
         """C05-2j: 금지 문자열이 없다."""
         fn_body = self._get_fn_body()
         forbidden = [
-            'agent_analysis', 'raw_prompt', 'chain_of_thought',
-            'internal_reasoning', 'debug_trace', 'error_class',
-            'traceback', 'exception_type', 'stack', 'internal_state_dump',
+            "agent_analysis",
+            "raw_prompt",
+            "chain_of_thought",
+            "internal_reasoning",
+            "debug_trace",
+            "error_class",
+            "traceback",
+            "exception_type",
+            "stack",
+            "internal_state_dump",
         ]
         for f in forbidden:
             assert f not in fn_body, f"Forbidden string '{f}' in quote feed render"
@@ -184,7 +191,7 @@ class TestC05CSS:
     def test_trust_state_colors(self):
         """C05-3c: LIVE/STALE/DISCONNECTED/UNAVAILABLE 색상 클래스가 존재한다."""
         content = CSS_PATH.read_text(encoding="utf-8")
-        for cls in ['.qf-live', '.qf-stale', '.qf-disconnected', '.qf-unavailable']:
+        for cls in [".qf-live", ".qf-stale", ".qf-disconnected", ".qf-unavailable"]:
             assert cls in content, f"Color class {cls} must exist"
 
     def test_symbol_row_class(self):
@@ -215,7 +222,12 @@ class TestC05Integration:
     def test_existing_blocks_preserved(self):
         """C05-4c: 기존 Tab 2 블록이 보존된다."""
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        for block_id in ['key-facts-block', 'loop-ceiling-block', 'event-log-block', 'checkpoint-block']:
+        for block_id in [
+            "key-facts-block",
+            "loop-ceiling-block",
+            "event-log-block",
+            "checkpoint-block",
+        ]:
             assert f'id="{block_id}"' in content, f"Block {block_id} must be preserved"
 
     def test_existing_ai_workspace_preserved(self):

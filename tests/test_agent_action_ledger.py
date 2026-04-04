@@ -11,6 +11,7 @@ Tests the transplanted controls from Skill Loop:
 
 Run: pytest tests/test_agent_action_ledger.py -v
 """
+
 import sys
 import time
 from pathlib import Path
@@ -25,8 +26,10 @@ if str(_REPO_ROOT) not in sys.path:
 
 # ── Helpers ─────────────────────────────────────────────────────────────── #
 
+
 def _make_ledger():
     from app.agents.action_ledger import ActionLedger
+
     return ActionLedger(max_buffer=100)
 
 
@@ -44,14 +47,18 @@ def _oversized_risk():
 
 # ── AXIS 1: Proposal Board ─────────────────────────────────────────────── #
 
+
 class TestProposalBoard:
     """Proposal creation, lifecycle states, board view."""
 
     def test_proposal_created_on_guard(self):
         ledger = _make_ledger()
         passed, proposal = ledger.propose_and_guard(
-            task_type="execute_trade", symbol="BTC/USDT", exchange="binance",
-            risk_result=_good_risk(), pre_evidence_id="ev-001",
+            task_type="execute_trade",
+            symbol="BTC/USDT",
+            exchange="binance",
+            risk_result=_good_risk(),
+            pre_evidence_id="ev-001",
         )
         assert proposal.proposal_id.startswith("AP-")
         assert proposal.task_type == "execute_trade"
@@ -74,7 +81,11 @@ class TestProposalBoard:
     def test_proposal_lifecycle_guarded_to_receipted(self):
         ledger = _make_ledger()
         passed, proposal = ledger.propose_and_guard(
-            "execute_trade", "BTC", "binance", _good_risk(), "ev-1",
+            "execute_trade",
+            "BTC",
+            "binance",
+            _good_risk(),
+            "ev-1",
         )
         assert proposal.status == "GUARDED"
         ledger.record_receipt(proposal, {"stage": "ready", "adjusted_size": 5000})
@@ -83,7 +94,11 @@ class TestProposalBoard:
     def test_proposal_lifecycle_guarded_to_failed(self):
         ledger = _make_ledger()
         passed, proposal = ledger.propose_and_guard(
-            "execute_trade", "SOL", "binance", _good_risk(), "ev-1",
+            "execute_trade",
+            "SOL",
+            "binance",
+            _good_risk(),
+            "ev-1",
         )
         assert proposal.status == "GUARDED"
         ledger.record_failure(proposal, "Connection timeout")
@@ -108,13 +123,18 @@ class TestProposalBoard:
 
 # ── AXIS 2: Apply Guard ────────────────────────────────────────────────── #
 
+
 class TestApplyGuard:
     """4-check gate: risk, governance, size, cost."""
 
     def test_all_pass(self):
         ledger = _make_ledger()
         passed, proposal = ledger.propose_and_guard(
-            "execute_trade", "BTC", "binance", _good_risk(), "ev-1",
+            "execute_trade",
+            "BTC",
+            "binance",
+            _good_risk(),
+            "ev-1",
         )
         assert passed is True
         assert proposal.status == "GUARDED"
@@ -126,7 +146,11 @@ class TestApplyGuard:
     def test_risk_not_approved_blocks(self):
         ledger = _make_ledger()
         passed, proposal = ledger.propose_and_guard(
-            "execute_trade", "BTC", "binance", _bad_risk(), "ev-1",
+            "execute_trade",
+            "BTC",
+            "binance",
+            _bad_risk(),
+            "ev-1",
         )
         assert passed is False
         assert proposal.status == "BLOCKED"
@@ -135,7 +159,11 @@ class TestApplyGuard:
     def test_no_governance_evidence_blocks(self):
         ledger = _make_ledger()
         passed, proposal = ledger.propose_and_guard(
-            "execute_trade", "BTC", "binance", _good_risk(), pre_evidence_id=None,
+            "execute_trade",
+            "BTC",
+            "binance",
+            _good_risk(),
+            pre_evidence_id=None,
         )
         assert passed is False
         assert proposal.status == "BLOCKED"
@@ -144,7 +172,11 @@ class TestApplyGuard:
     def test_oversized_position_blocks(self):
         ledger = _make_ledger()
         passed, proposal = ledger.propose_and_guard(
-            "execute_trade", "BTC", "binance", _oversized_risk(), "ev-1",
+            "execute_trade",
+            "BTC",
+            "binance",
+            _oversized_risk(),
+            "ev-1",
         )
         assert passed is False
         assert proposal.guard_checks["SIZE_BOUND"]["passed"] is False
@@ -158,7 +190,11 @@ class TestApplyGuard:
         mock_cc.get_budget.return_value = mock_budget
 
         passed, proposal = ledger.propose_and_guard(
-            "execute_trade", "DOGE", "binance", _good_risk(), "ev-1",
+            "execute_trade",
+            "DOGE",
+            "binance",
+            _good_risk(),
+            "ev-1",
             cost_controller=mock_cc,
         )
         assert passed is False
@@ -174,15 +210,22 @@ class TestApplyGuard:
 
 # ── AXIS 3: Receipt Trail ──────────────────────────────────────────────── #
 
+
 class TestReceiptTrail:
     """Receipt creation, evidence linking, fail-closed receipt."""
 
     def test_receipt_links_evidence(self):
         ledger = _make_ledger()
         passed, proposal = ledger.propose_and_guard(
-            "execute_trade", "BTC", "binance", _good_risk(), "ev-pre-123",
+            "execute_trade",
+            "BTC",
+            "binance",
+            _good_risk(),
+            "ev-pre-123",
         )
-        receipt = ledger.record_receipt(proposal, {"stage": "ready"}, post_evidence_id="ev-post-456")
+        receipt = ledger.record_receipt(
+            proposal, {"stage": "ready"}, post_evidence_id="ev-post-456"
+        )
         assert receipt.receipt_id.startswith("AR-")
         assert receipt.pre_evidence_id == "ev-pre-123"
         assert receipt.post_evidence_id == "ev-post-456"
@@ -191,7 +234,11 @@ class TestReceiptTrail:
     def test_receipt_contains_guard_checks(self):
         ledger = _make_ledger()
         _, proposal = ledger.propose_and_guard(
-            "execute_trade", "ETH", "binance", _good_risk(), "ev-1",
+            "execute_trade",
+            "ETH",
+            "binance",
+            _good_risk(),
+            "ev-1",
         )
         receipt = ledger.record_receipt(proposal, {"stage": "ready"})
         assert "RISK_APPROVED" in receipt.guard_checks
@@ -202,9 +249,14 @@ class TestReceiptTrail:
     def test_receipt_to_dict_serializable(self):
         """Receipt must be JSON-serializable for flush."""
         import json
+
         ledger = _make_ledger()
         _, proposal = ledger.propose_and_guard(
-            "execute_trade", "SOL", "binance", _good_risk(), "ev-1",
+            "execute_trade",
+            "SOL",
+            "binance",
+            _good_risk(),
+            "ev-1",
         )
         receipt = ledger.record_receipt(proposal, {"stage": "ready", "adjusted_size": 5000})
         serialized = json.dumps(receipt.to_dict())
@@ -213,8 +265,11 @@ class TestReceiptTrail:
     def test_receipt_blocked_for_unguarded_proposal(self):
         """Fail-closed: cannot receipt a proposal that didn't pass guard."""
         from app.agents.action_ledger import ActionProposal, StateTransitionError
+
         raw = ActionProposal(
-            proposal_id="AP-test", task_type="test", status="PROPOSED",
+            proposal_id="AP-test",
+            task_type="test",
+            status="PROPOSED",
             created_at="2026-01-01T00:00:00Z",
         )
         ledger = _make_ledger()
@@ -224,9 +279,14 @@ class TestReceiptTrail:
     def test_receipt_blocked_for_blocked_proposal(self):
         """Fail-closed: cannot receipt a BLOCKED proposal."""
         from app.agents.action_ledger import StateTransitionError
+
         ledger = _make_ledger()
         _, blocked = ledger.propose_and_guard(
-            "execute_trade", "XRP", "binance", _bad_risk(), "ev-1",
+            "execute_trade",
+            "XRP",
+            "binance",
+            _bad_risk(),
+            "ev-1",
         )
         assert blocked.status == "BLOCKED"
         with pytest.raises(StateTransitionError):
@@ -235,12 +295,14 @@ class TestReceiptTrail:
 
 # ── AXIS 4: Boundary ───────────────────────────────────────────────────── #
 
+
 class TestBoundary:
     """ActionLedger boundary enforcement."""
 
     def test_no_exchange_import(self):
         """action_ledger.py must not import exchanges/."""
         import importlib
+
         source = importlib.util.find_spec("app.agents.action_ledger")
         if source and source.origin:
             content = Path(source.origin).read_text(encoding="utf-8")
@@ -250,11 +312,13 @@ class TestBoundary:
     def test_no_order_service_import(self):
         """action_ledger.py must not import OrderService."""
         import importlib
+
         source = importlib.util.find_spec("app.agents.action_ledger")
         if source and source.origin:
             content = Path(source.origin).read_text(encoding="utf-8")
-            assert "order_service" not in content.lower() or "# no order" in content.lower(), \
+            assert "order_service" not in content.lower() or "# no order" in content.lower(), (
                 "ActionLedger must not reference OrderService"
+            )
 
     def test_append_only(self):
         """Proposals cannot be deleted from the ledger."""
@@ -269,15 +333,21 @@ class TestBoundary:
 
 # ── AXIS 5: State Machine ──────────────────────────────────────────────── #
 
+
 class TestStateMachine:
     """Forbidden transitions, fail-closed enforcement."""
 
     def test_blocked_to_guarded_forbidden(self):
         """BLOCKED is terminal -- cannot transition to GUARDED."""
         from app.agents.action_ledger import StateTransitionError
+
         ledger = _make_ledger()
         _, blocked = ledger.propose_and_guard(
-            "execute_trade", "BTC", "binance", _bad_risk(), "ev-1",
+            "execute_trade",
+            "BTC",
+            "binance",
+            _bad_risk(),
+            "ev-1",
         )
         with pytest.raises(StateTransitionError, match="Forbidden transition"):
             blocked.transition_to("GUARDED")
@@ -285,9 +355,14 @@ class TestStateMachine:
     def test_receipted_is_terminal(self):
         """RECEIPTED is terminal -- no further transitions."""
         from app.agents.action_ledger import StateTransitionError
+
         ledger = _make_ledger()
         _, proposal = ledger.propose_and_guard(
-            "execute_trade", "ADA", "binance", _good_risk(), "ev-1",
+            "execute_trade",
+            "ADA",
+            "binance",
+            _good_risk(),
+            "ev-1",
         )
         ledger.record_receipt(proposal, {"stage": "ready"})
         assert proposal.status == "RECEIPTED"
@@ -297,9 +372,14 @@ class TestStateMachine:
     def test_failed_is_terminal(self):
         """FAILED is terminal -- no further transitions."""
         from app.agents.action_ledger import StateTransitionError
+
         ledger = _make_ledger()
         _, proposal = ledger.propose_and_guard(
-            "execute_trade", "DOT", "binance", _good_risk(), "ev-1",
+            "execute_trade",
+            "DOT",
+            "binance",
+            _good_risk(),
+            "ev-1",
         )
         ledger.record_failure(proposal, "error")
         assert proposal.status == "FAILED"
@@ -309,8 +389,11 @@ class TestStateMachine:
     def test_proposed_to_receipted_forbidden(self):
         """Cannot skip GUARDED and go directly to RECEIPTED."""
         from app.agents.action_ledger import StateTransitionError, ActionProposal
+
         raw = ActionProposal(
-            proposal_id="AP-test", task_type="test", status="PROPOSED",
+            proposal_id="AP-test",
+            task_type="test",
+            status="PROPOSED",
             created_at="2026-01-01T00:00:00Z",
         )
         with pytest.raises(StateTransitionError, match="Forbidden transition"):
@@ -319,9 +402,14 @@ class TestStateMachine:
     def test_no_state_regression(self):
         """Cannot go backwards in the state machine."""
         from app.agents.action_ledger import StateTransitionError
+
         ledger = _make_ledger()
         _, proposal = ledger.propose_and_guard(
-            "execute_trade", "AVAX", "binance", _good_risk(), "ev-1",
+            "execute_trade",
+            "AVAX",
+            "binance",
+            _good_risk(),
+            "ev-1",
         )
         assert proposal.status == "GUARDED"
         with pytest.raises(StateTransitionError):
@@ -330,15 +418,21 @@ class TestStateMachine:
     def test_record_failure_on_blocked_raises(self):
         """Cannot record failure on a BLOCKED proposal."""
         from app.agents.action_ledger import StateTransitionError
+
         ledger = _make_ledger()
         _, blocked = ledger.propose_and_guard(
-            "execute_trade", "LINK", "binance", _bad_risk(), "ev-1",
+            "execute_trade",
+            "LINK",
+            "binance",
+            _bad_risk(),
+            "ev-1",
         )
         with pytest.raises(StateTransitionError):
             ledger.record_failure(blocked, "error")
 
 
 # ── AXIS 6: Fingerprint & Duplicate Suppression ────────────────────────── #
+
 
 class TestFingerprint:
     """Duplicate proposal detection and suppression."""
@@ -347,7 +441,11 @@ class TestFingerprint:
         """Every proposal gets a fingerprint."""
         ledger = _make_ledger()
         _, proposal = ledger.propose_and_guard(
-            "execute_trade", "BTC", "binance", _good_risk(), "ev-1",
+            "execute_trade",
+            "BTC",
+            "binance",
+            _good_risk(),
+            "ev-1",
         )
         assert proposal.fingerprint != ""
         assert len(proposal.fingerprint) == 12
@@ -357,12 +455,20 @@ class TestFingerprint:
         ledger = _make_ledger()
         # First: passes
         passed1, p1 = ledger.propose_and_guard(
-            "execute_trade", "BTC", "binance", _good_risk(), "ev-1",
+            "execute_trade",
+            "BTC",
+            "binance",
+            _good_risk(),
+            "ev-1",
         )
         assert passed1 is True
         # Second: same params, within cooldown -> blocked as duplicate
         passed2, p2 = ledger.propose_and_guard(
-            "execute_trade", "BTC", "binance", _good_risk(), "ev-2",
+            "execute_trade",
+            "BTC",
+            "binance",
+            _good_risk(),
+            "ev-2",
         )
         assert passed2 is False
         assert p2.status == "BLOCKED"
@@ -372,10 +478,18 @@ class TestFingerprint:
         """Different symbols produce different fingerprints."""
         ledger = _make_ledger()
         passed1, _ = ledger.propose_and_guard(
-            "execute_trade", "BTC", "binance", _good_risk(), "ev-1",
+            "execute_trade",
+            "BTC",
+            "binance",
+            _good_risk(),
+            "ev-1",
         )
         passed2, _ = ledger.propose_and_guard(
-            "execute_trade", "ETH", "binance", _good_risk(), "ev-2",
+            "execute_trade",
+            "ETH",
+            "binance",
+            _good_risk(),
+            "ev-2",
         )
         assert passed1 is True
         assert passed2 is True  # different symbol, not duplicate
@@ -383,6 +497,7 @@ class TestFingerprint:
     def test_fingerprint_deterministic(self):
         """Same inputs produce same fingerprint."""
         from app.agents.action_ledger import ActionLedger
+
         fp1 = ActionLedger._compute_fingerprint("execute_trade", "BTC", "binance", 5000)
         fp2 = ActionLedger._compute_fingerprint("execute_trade", "BTC", "binance", 5000)
         assert fp1 == fp2
@@ -390,6 +505,7 @@ class TestFingerprint:
     def test_size_bucket_groups_similar(self):
         """Similar sizes (same 1000-bucket) produce same fingerprint."""
         from app.agents.action_ledger import ActionLedger
+
         fp1 = ActionLedger._compute_fingerprint("execute_trade", "BTC", "binance", 5100)
         fp2 = ActionLedger._compute_fingerprint("execute_trade", "BTC", "binance", 5900)
         assert fp1 == fp2  # both in 5000 bucket

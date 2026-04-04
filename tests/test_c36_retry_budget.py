@@ -33,7 +33,6 @@ BUDGET_PATH = PROJECT_ROOT / "app" / "core" / "retry_budget.py"
 # C36-1: 모듈 구조
 # ===========================================================================
 class TestC36ModuleStructure:
-
     def test_module_exists(self):
         assert BUDGET_PATH.exists()
 
@@ -55,7 +54,6 @@ class TestC36ModuleStructure:
 # C36-2: budget 통과
 # ===========================================================================
 class TestC36BudgetPass:
-
     def test_fresh_budget_allows(self):
         budget = RetryBudget()
         result = budget.check("external")
@@ -80,7 +78,6 @@ class TestC36BudgetPass:
 # C36-3: global budget 소진
 # ===========================================================================
 class TestC36GlobalBudget:
-
     def test_global_budget_exhausted(self):
         budget = RetryBudget(global_budget=3)
         for i in range(3):
@@ -101,7 +98,6 @@ class TestC36GlobalBudget:
 # C36-4: channel budget 소진
 # ===========================================================================
 class TestC36ChannelBudget:
-
     def test_channel_budget_exhausted(self):
         budget = RetryBudget(channel_budget=2)
         budget.record("external")
@@ -129,7 +125,6 @@ class TestC36ChannelBudget:
 # C36-5: sliding window
 # ===========================================================================
 class TestC36SlidingWindow:
-
     def test_reset_clears(self):
         budget = RetryBudget(global_budget=2)
         budget.record("ext")
@@ -153,7 +148,6 @@ class TestC36SlidingWindow:
 # C36-6: fail-closed
 # ===========================================================================
 class TestC36FailClosed:
-
     def test_corrupted_state_denied(self):
         budget = RetryBudget()
         budget._global_log = "corrupted"
@@ -177,13 +171,14 @@ class TestC36FailClosed:
 # C36-7: 금지 조항
 # ===========================================================================
 class TestC36Forbidden:
-
     def test_no_forbidden_strings(self):
         content = BUDGET_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

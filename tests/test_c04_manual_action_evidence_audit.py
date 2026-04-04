@@ -230,11 +230,13 @@ class TestC04EvidenceSchemaCompatibility:
     def test_evidence_chain_ref_importable(self):
         """EvidenceChainRef가 importable이어야 한다."""
         from app.schemas.executor_schema import EvidenceChainRef
+
         assert EvidenceChainRef is not None
 
     def test_evidence_chain_ref_has_required_fields(self):
         """EvidenceChainRef에 필수 필드가 있어야 한다."""
         from app.schemas.executor_schema import EvidenceChainRef
+
         fields = EvidenceChainRef.model_fields
         assert "check_id" in fields
         assert "preflight_id" in fields
@@ -244,11 +246,13 @@ class TestC04EvidenceSchemaCompatibility:
     def test_dispatch_evidence_chain_importable(self):
         """DispatchEvidenceChain이 importable이어야 한다."""
         from app.schemas.micro_executor_schema import DispatchEvidenceChain
+
         assert DispatchEvidenceChain is not None
 
     def test_ops_safety_summary_has_evidence_refs(self):
         """OpsSafetySummary에 evidence 참조 필드가 있어야 한다."""
         from app.schemas.ops_safety_schema import OpsSafetySummary
+
         fields = OpsSafetySummary.model_fields
         assert "preflight_evidence_id" in fields
         assert "gate_evidence_id" in fields

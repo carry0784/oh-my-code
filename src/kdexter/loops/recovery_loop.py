@@ -16,6 +16,7 @@ Mandatory items applied (Recovery Loop exempts M-01,02,05,06,11,12,13,15,17,18):
 Concurrent Recovery: merge new failures into active recovery scope (no parallel instances).
 rollback anchor: last VERIFIED state (OQ-8 — placeholder until v4 confirms).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -37,17 +38,18 @@ class RecoveryPhase(Enum):
     ROLLBACK = "ROLLBACK"
     REPAIR = "REPAIR"
     RESUME = "RESUME"
-    FAILED = "FAILED"       # recovery itself failed — Human Override required
+    FAILED = "FAILED"  # recovery itself failed — Human Override required
 
 
 @dataclass
 class FailureEvent:
     """A Failure event routed to the Recovery Loop."""
+
     failure_id: str
-    failure_type_id: str        # e.g. F-I-001, F-S-006, F-G-001
-    domain: str                 # INFRA / STRATEGY / GOVERNANCE
-    severity: str               # CRITICAL / HIGH / MEDIUM / LOW
-    recurrence: str             # FIRST / REPEAT / PATTERN
+    failure_type_id: str  # e.g. F-I-001, F-S-006, F-G-001
+    domain: str  # INFRA / STRATEGY / GOVERNANCE
+    severity: str  # CRITICAL / HIGH / MEDIUM / LOW
+    recurrence: str  # FIRST / REPEAT / PATTERN
     description: str
     occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     context: dict = field(default_factory=dict)
@@ -59,10 +61,11 @@ class RecoveryScope:
     Tracks all failures being handled in the current recovery session.
     New failures are merged into the active scope (no parallel Recovery instances).
     """
+
     scope_id: str
     failures: list[FailureEvent] = field(default_factory=list)
     opened_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    rollback_anchor: Optional[str] = None   # OQ-8: last VERIFIED state id (placeholder)
+    rollback_anchor: Optional[str] = None  # OQ-8: last VERIFIED state id (placeholder)
     repair_notes: list[str] = field(default_factory=list)
 
     def merge(self, event: FailureEvent) -> None:
@@ -122,10 +125,13 @@ class RecoveryLoop:
         if self._scope is not None:
             # Concurrent failure — merge into active scope (Section 3.2)
             self._scope.merge(event)
-            self._emit_evidence("FAILURE_MERGED", {
-                "failure_id": event.failure_id,
-                "scope_id": self._scope.scope_id,
-            })
+            self._emit_evidence(
+                "FAILURE_MERGED",
+                {
+                    "failure_id": event.failure_id,
+                    "scope_id": self._scope.scope_id,
+                },
+            )
         else:
             scope_id = f"REC-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
             self._scope = RecoveryScope(
@@ -185,13 +191,16 @@ class RecoveryLoop:
         else:
             self._security.escalate(SecurityStateEnum.RESTRICTED, scope.scope_id)
 
-        self._emit_evidence("ISOLATE_COMPLETE", {
-            "scope_id": scope.scope_id,
-            "failure_count": len(scope.failures),
-            "highest_severity": scope.highest_severity,
-            "work_state": self._work.current.value,
-            "security_state": self._security.current.value,
-        })
+        self._emit_evidence(
+            "ISOLATE_COMPLETE",
+            {
+                "scope_id": scope.scope_id,
+                "failure_count": len(scope.failures),
+                "highest_severity": scope.highest_severity,
+                "work_state": self._work.current.value,
+                "security_state": self._security.current.value,
+            },
+        )
 
     async def _phase_replay(self) -> None:
         """
@@ -203,10 +212,13 @@ class RecoveryLoop:
         self._work.transition_to(WorkStateEnum.REPLAY)
 
         # M-07: evidence required
-        self._emit_evidence("REPLAY_STARTED", {
-            "scope_id": self._scope.scope_id,
-            "failure_ids": [f.failure_id for f in self._scope.failures],
-        })
+        self._emit_evidence(
+            "REPLAY_STARTED",
+            {
+                "scope_id": self._scope.scope_id,
+                "failure_ids": [f.failure_id for f in self._scope.failures],
+            },
+        )
 
         # TODO: implement actual replay logic (connect to ReplayAuditor / SnapshotAuditor)
         await asyncio.sleep(0)  # placeholder for async replay
@@ -233,10 +245,13 @@ class RecoveryLoop:
 
             # TODO: implement actual rollback to anchor state
             self._scope.repair_notes.append(f"Rolled back to anchor: {anchor}")
-            self._emit_evidence("ROLLBACK_COMPLETE", {
-                "scope_id": self._scope.scope_id,
-                "rollback_anchor": anchor,
-            })
+            self._emit_evidence(
+                "ROLLBACK_COMPLETE",
+                {
+                    "scope_id": self._scope.scope_id,
+                    "rollback_anchor": anchor,
+                },
+            )
         finally:
             self._lock.release()
 
@@ -266,10 +281,13 @@ class RecoveryLoop:
 
         # TODO: implement actual repair logic
         self._scope.repair_notes.append("Repair completed (placeholder)")
-        self._emit_evidence("REPAIR_COMPLETE", {
-            "scope_id": self._scope.scope_id,
-            "repair_notes": self._scope.repair_notes,
-        })
+        self._emit_evidence(
+            "REPAIR_COMPLETE",
+            {
+                "scope_id": self._scope.scope_id,
+                "repair_notes": self._scope.repair_notes,
+            },
+        )
 
     async def _phase_resume(self) -> None:
         """
@@ -286,9 +304,12 @@ class RecoveryLoop:
         # De-escalate security (requires Human Override if LOCKDOWN)
         if self._security.current == SecurityStateEnum.LOCKDOWN:
             # Cannot auto-release LOCKDOWN — emit event and wait
-            self._emit_evidence("LOCKDOWN_HUMAN_OVERRIDE_REQUIRED", {
-                "scope_id": self._scope.scope_id,
-            })
+            self._emit_evidence(
+                "LOCKDOWN_HUMAN_OVERRIDE_REQUIRED",
+                {
+                    "scope_id": self._scope.scope_id,
+                },
+            )
             raise RecoveryFailedError(
                 "LOCKDOWN active — Human Override required to de-escalate. "
                 "Recovery will resume after L27 Override Controller releases LOCKDOWN."
@@ -297,10 +318,13 @@ class RecoveryLoop:
         self._security.de_escalate(SecurityStateEnum.NORMAL, authorized_by="RECOVERY_LOOP")
         self._work.transition_to(WorkStateEnum.RESUME)
 
-        self._emit_evidence("RECOVERY_COMPLETE", {
-            "scope_id": self._scope.scope_id,
-            "phases_completed": ["ISOLATE", "REPLAY", "ROLLBACK", "REPAIR", "RESUME"],
-        })
+        self._emit_evidence(
+            "RECOVERY_COMPLETE",
+            {
+                "scope_id": self._scope.scope_id,
+                "phases_completed": ["ISOLATE", "REPLAY", "ROLLBACK", "REPAIR", "RESUME"],
+            },
+        )
 
     # ------------------------------------------------------------------ #
     # Mandatory Checks (stubs — connect to actual engines in later steps)
@@ -348,4 +372,5 @@ class RecoveryLoop:
 
 class RecoveryFailedError(Exception):
     """Raised when the Recovery Loop itself cannot complete — Human Override required."""
+
     pass

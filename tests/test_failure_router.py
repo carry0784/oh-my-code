@@ -6,6 +6,7 @@ Tests the routing decision table from failure_taxonomy.md Section 2.
 
 Run: python tests/test_failure_router.py
 """
+
 from __future__ import annotations
 
 import sys
@@ -24,6 +25,7 @@ from kdexter.state_machine.security_state import SecurityStateEnum
 # ======================================================================== #
 # 1. FailurePatternMemory
 # ======================================================================== #
+
 
 def test_memory_first():
     mem = FailurePatternMemory()
@@ -82,6 +84,7 @@ def test_memory_clear():
 # 2. INFRA Routing
 # ======================================================================== #
 
+
 def test_infra_critical():
     mem = FailurePatternMemory()
     router = FailureRouter(mem)
@@ -115,8 +118,7 @@ def test_infra_medium_first():
 def test_infra_medium_pattern():
     mem = FailurePatternMemory()
     router = FailureRouter(mem)
-    d = router.route("INFRA", "MEDIUM", "F-I-003",
-                     recurrence_override=Recurrence.PATTERN)
+    d = router.route("INFRA", "MEDIUM", "F-I-003", recurrence_override=Recurrence.PATTERN)
     assert d.target_loop == TargetLoop.RECOVERY
     assert d.schedule_evolution is True
     print("  [10] INFRA MEDIUM PATTERN → Recovery + Evolution scheduled  OK")
@@ -134,6 +136,7 @@ def test_infra_low():
 # ======================================================================== #
 # 3. STRATEGY Routing
 # ======================================================================== #
+
 
 def test_strategy_critical():
     mem = FailurePatternMemory()
@@ -157,8 +160,7 @@ def test_strategy_high_first():
 def test_strategy_high_pattern():
     mem = FailurePatternMemory()
     router = FailureRouter(mem)
-    d = router.route("STRATEGY", "HIGH", "F-S-001",
-                     recurrence_override=Recurrence.PATTERN)
+    d = router.route("STRATEGY", "HIGH", "F-S-001", recurrence_override=Recurrence.PATTERN)
     assert d.target_loop == TargetLoop.EVOLUTION
     assert d.security_target == SecurityStateEnum.RESTRICTED
     print("  [14] STRATEGY HIGH PATTERN → Evolution  OK")
@@ -176,8 +178,7 @@ def test_strategy_medium_first():
 def test_strategy_medium_pattern():
     mem = FailurePatternMemory()
     router = FailureRouter(mem)
-    d = router.route("STRATEGY", "MEDIUM", "F-S-002",
-                     recurrence_override=Recurrence.PATTERN)
+    d = router.route("STRATEGY", "MEDIUM", "F-S-002", recurrence_override=Recurrence.PATTERN)
     assert d.target_loop == TargetLoop.EVOLUTION
     assert d.security_target == SecurityStateEnum.RESTRICTED
     print("  [16] STRATEGY MEDIUM PATTERN → Evolution  OK")
@@ -195,6 +196,7 @@ def test_strategy_low():
 # ======================================================================== #
 # 4. GOVERNANCE Routing
 # ======================================================================== #
+
 
 def test_governance_critical():
     mem = FailurePatternMemory()
@@ -230,8 +232,7 @@ def test_governance_medium_first():
 def test_governance_medium_pattern():
     mem = FailurePatternMemory()
     router = FailureRouter(mem)
-    d = router.route("GOVERNANCE", "MEDIUM", "F-G-004",
-                     recurrence_override=Recurrence.PATTERN)
+    d = router.route("GOVERNANCE", "MEDIUM", "F-G-004", recurrence_override=Recurrence.PATTERN)
     assert d.target_loop == TargetLoop.EVOLUTION
     assert d.b1_notify is True
     print("  [21] GOVERNANCE MEDIUM PATTERN → Evolution + B1  OK")
@@ -249,6 +250,7 @@ def test_governance_low():
 # ======================================================================== #
 # 5. Integration: recurrence auto-classification
 # ======================================================================== #
+
 
 def test_auto_recurrence_escalation():
     """Route same failure 3x → auto-escalates from FIRST to PATTERN."""
@@ -289,40 +291,55 @@ if __name__ == "__main__":
     print("=" * 60)
 
     tests = [
-        ("FailurePatternMemory", [
-            test_memory_first,
-            test_memory_repeat,
-            test_memory_pattern_by_count,
-            test_memory_pattern_by_window,
-            test_memory_count,
-            test_memory_clear,
-        ]),
-        ("INFRA Routing", [
-            test_infra_critical,
-            test_infra_high,
-            test_infra_medium_first,
-            test_infra_medium_pattern,
-            test_infra_low,
-        ]),
-        ("STRATEGY Routing", [
-            test_strategy_critical,
-            test_strategy_high_first,
-            test_strategy_high_pattern,
-            test_strategy_medium_first,
-            test_strategy_medium_pattern,
-            test_strategy_low,
-        ]),
-        ("GOVERNANCE Routing", [
-            test_governance_critical,
-            test_governance_high,
-            test_governance_medium_first,
-            test_governance_medium_pattern,
-            test_governance_low,
-        ]),
-        ("Integration", [
-            test_auto_recurrence_escalation,
-            test_router_records_to_memory,
-        ]),
+        (
+            "FailurePatternMemory",
+            [
+                test_memory_first,
+                test_memory_repeat,
+                test_memory_pattern_by_count,
+                test_memory_pattern_by_window,
+                test_memory_count,
+                test_memory_clear,
+            ],
+        ),
+        (
+            "INFRA Routing",
+            [
+                test_infra_critical,
+                test_infra_high,
+                test_infra_medium_first,
+                test_infra_medium_pattern,
+                test_infra_low,
+            ],
+        ),
+        (
+            "STRATEGY Routing",
+            [
+                test_strategy_critical,
+                test_strategy_high_first,
+                test_strategy_high_pattern,
+                test_strategy_medium_first,
+                test_strategy_medium_pattern,
+                test_strategy_low,
+            ],
+        ),
+        (
+            "GOVERNANCE Routing",
+            [
+                test_governance_critical,
+                test_governance_high,
+                test_governance_medium_first,
+                test_governance_medium_pattern,
+                test_governance_low,
+            ],
+        ),
+        (
+            "Integration",
+            [
+                test_auto_recurrence_escalation,
+                test_router_records_to_memory,
+            ],
+        ),
     ]
 
     total = 0

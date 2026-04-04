@@ -8,6 +8,7 @@ Append-only: INSERT only, no REPLACE/UPDATE/UPSERT.
 Duplicate bundle_id raises DuplicateEvidenceError.
 DURABLE: evidence survives process restart.
 """
+
 from __future__ import annotations
 
 import json
@@ -89,9 +90,7 @@ class SQLiteBackend(EvidenceBackend):
         return _row_to_bundle(row) if row else None
 
     def count(self) -> int:
-        return self._conn.execute(
-            "SELECT COUNT(*) FROM evidence_bundles"
-        ).fetchone()[0]
+        return self._conn.execute("SELECT COUNT(*) FROM evidence_bundles").fetchone()[0]
 
     def count_for_cycle(self, cycle_id: str) -> int:
         return self._conn.execute(
@@ -128,9 +127,7 @@ class SQLiteBackend(EvidenceBackend):
         return [_row_to_bundle(r) for r in reversed(rows)]
 
     def list_all(self) -> list[EvidenceBundle]:
-        rows = self._conn.execute(
-            "SELECT * FROM evidence_bundles ORDER BY created_at"
-        ).fetchall()
+        rows = self._conn.execute("SELECT * FROM evidence_bundles ORDER BY created_at").fetchall()
         return [_row_to_bundle(r) for r in rows]
 
     def count_orphan_pre(self) -> int:
@@ -170,6 +167,7 @@ class SQLiteBackend(EvidenceBackend):
 
 
 # ── helpers ──────────────────────────────────────────────────────────── #
+
 
 def _serialize(value) -> Optional[str]:
     if value is None:

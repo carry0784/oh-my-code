@@ -29,14 +29,14 @@ os.chdir(_REPO_ROOT)
 # GREEN: 0-2 | YELLOW: 3-7 | RED: 8+
 
 RISK_TABLE = {
-    "test_failed": 1,        # per test failure
-    "test_error": 2,         # per test error
-    "import_error": 3,       # import failure in validation
+    "test_failed": 1,  # per test failure
+    "test_error": 2,  # per test error
+    "import_error": 3,  # import failure in validation
     "governance_violation": 5,  # governance-checker BLOCK
-    "governance_warning": 2,   # governance-checker WARN
-    "validation_fail": 2,     # per validation check failure
-    "constitution_fail": 5,   # verify_constitution.py FAIL
-    "live_path_touch": 3,     # live execution path modified
+    "governance_warning": 2,  # governance-checker WARN
+    "validation_fail": 2,  # per validation check failure
+    "constitution_fail": 5,  # verify_constitution.py FAIL
+    "live_path_touch": 3,  # live execution path modified
 }
 
 RECURRENCE_MULTIPLIER = {
@@ -50,9 +50,12 @@ YELLOW_THRESHOLD = 7
 # Above YELLOW = RED
 
 
-def compute_risk_score(test_data: dict | None, validation_data: dict | None,
-                       governance_data: dict | None = None,
-                       failure_patterns: list[dict] | None = None) -> tuple[int, list[dict]]:
+def compute_risk_score(
+    test_data: dict | None,
+    validation_data: dict | None,
+    governance_data: dict | None = None,
+    failure_patterns: list[dict] | None = None,
+) -> tuple[int, list[dict]]:
     """Compute total risk score with breakdown."""
     breakdown: list[dict] = []
     total = 0
@@ -110,7 +113,9 @@ def compute_risk_score(test_data: dict | None, validation_data: dict | None,
                     breakdown.append({"type": "import_error", "name": c["name"], "score": score})
                 elif "constitution" in c.get("name", "").lower():
                     score = RISK_TABLE["constitution_fail"]
-                    breakdown.append({"type": "constitution_fail", "name": c["name"], "score": score})
+                    breakdown.append(
+                        {"type": "constitution_fail", "name": c["name"], "score": score}
+                    )
                 else:
                     score = RISK_TABLE["validation_fail"]
                     breakdown.append({"type": "validation_fail", "name": c["name"], "score": score})
@@ -121,7 +126,9 @@ def compute_risk_score(test_data: dict | None, validation_data: dict | None,
         warnings = governance_data.get("warnings", [])
         if violations:
             score = len(violations) * RISK_TABLE["governance_violation"]
-            breakdown.append({"type": "governance_violation", "count": len(violations), "score": score})
+            breakdown.append(
+                {"type": "governance_violation", "count": len(violations), "score": score}
+            )
             total += score
         if warnings:
             score = len(warnings) * RISK_TABLE["governance_warning"]
@@ -156,9 +163,12 @@ def load_json(path: str) -> dict | None:
         return None
 
 
-def evaluate(test_data: dict | None, validation_data: dict | None,
-             governance_data: dict | None = None,
-             failure_patterns: list[dict] | None = None) -> dict:
+def evaluate(
+    test_data: dict | None,
+    validation_data: dict | None,
+    governance_data: dict | None = None,
+    failure_patterns: list[dict] | None = None,
+) -> dict:
     """Produce unified evaluation report with risk-score-based grading."""
     now = datetime.now(timezone.utc).isoformat()
 
@@ -172,9 +182,7 @@ def evaluate(test_data: dict | None, validation_data: dict | None,
             "errors": test_data.get("errors", 0),
             "total": test_data.get("total", 0),
             "failure_count": len(test_data.get("failures", [])),
-            "top_failures": [
-                f["test_id"] for f in test_data.get("failures", [])[:5]
-            ],
+            "top_failures": [f["test_id"] for f in test_data.get("failures", [])[:5]],
         }
     else:
         test_summary = {"status": "NOT_RUN", "reason": "data/test_results.json not found"}
@@ -190,12 +198,13 @@ def evaluate(test_data: dict | None, validation_data: dict | None,
             "failed": validation_data.get("failed", 0),
             "total": validation_data.get("total", 0),
             "import_errors": import_errors,
-            "failures": [
-                {"name": c["name"], "detail": c["detail"]} for c in val_failures
-            ],
+            "failures": [{"name": c["name"], "detail": c["detail"]} for c in val_failures],
         }
     else:
-        validation_summary = {"status": "NOT_RUN", "reason": "data/validation_results.json not found"}
+        validation_summary = {
+            "status": "NOT_RUN",
+            "reason": "data/validation_results.json not found",
+        }
 
     # Governance check summary
     if governance_data:
@@ -208,7 +217,10 @@ def evaluate(test_data: dict | None, validation_data: dict | None,
             "files_checked": len(governance_data.get("files_checked", [])),
         }
     else:
-        governance_summary = {"status": "NOT_RUN", "reason": "data/governance_check_result.json not found"}
+        governance_summary = {
+            "status": "NOT_RUN",
+            "reason": "data/governance_check_result.json not found",
+        }
 
     # ── Risk-score-based grading ──────────────────────────────────────── #
     risk_score, risk_breakdown = compute_risk_score(
@@ -237,7 +249,9 @@ def evaluate(test_data: dict | None, validation_data: dict | None,
         top_risk = max(risk_breakdown, key=lambda x: x["score"]) if risk_breakdown else {}
         action = f"Moderate risk (score={risk_score}). Primary factor: {top_risk.get('type', 'unknown')}. Review and fix."
     else:  # RED
-        block_items = [r for r in risk_breakdown if r["type"] in ("governance_violation", "constitution_fail")]
+        block_items = [
+            r for r in risk_breakdown if r["type"] in ("governance_violation", "constitution_fail")
+        ]
         if block_items:
             action = f"CRITICAL (score={risk_score}). Governance violations detected — manual review required before any merge."
         else:
@@ -250,7 +264,9 @@ def evaluate(test_data: dict | None, validation_data: dict | None,
     val_ok = validation_summary.get("status") == "PASS"
 
     if gov_blocked:
-        next_steps.append("BLOCKED: Governance violation detected. Revert changes or fix violations first.")
+        next_steps.append(
+            "BLOCKED: Governance violation detected. Revert changes or fix violations first."
+        )
     if not test_ok and test_summary.get("status") != "NOT_RUN":
         next_steps.append("Run: python scripts/run_tests.py --scope governance")
         next_steps.append("Analyze failures with failure-analyzer agent")
@@ -328,7 +344,9 @@ def format_markdown(report: dict) -> str:
         lines.append(f"- Not run: {ts.get('reason', '')}")
     else:
         lines.append(f"- Status: {ts['status']} | Scope: {ts.get('scope', '?')}")
-        lines.append(f"- Passed: {ts.get('passed', 0)} / Failed: {ts.get('failed', 0)} / Errors: {ts.get('errors', 0)}")
+        lines.append(
+            f"- Passed: {ts.get('passed', 0)} / Failed: {ts.get('failed', 0)} / Errors: {ts.get('errors', 0)}"
+        )
         if ts.get("top_failures"):
             lines.append(f"- Top failures:")
             for f in ts["top_failures"]:
@@ -342,7 +360,9 @@ def format_markdown(report: dict) -> str:
         lines.append(f"- Not run: {vs.get('reason', '')}")
     else:
         lines.append(f"- Status: {vs['status']}")
-        lines.append(f"- Passed: {vs.get('passed', 0)} / Failed: {vs.get('failed', 0)} | Import errors: {vs.get('import_errors', 0)}")
+        lines.append(
+            f"- Passed: {vs.get('passed', 0)} / Failed: {vs.get('failed', 0)} | Import errors: {vs.get('import_errors', 0)}"
+        )
         if vs.get("failures"):
             for f in vs["failures"]:
                 lines.append(f"  - [{f['name']}] {f['detail']}")
@@ -355,7 +375,9 @@ def format_markdown(report: dict) -> str:
         lines.append(f"- Not run: {gs.get('reason', '')}")
     else:
         lines.append(f"- Judgment: {gs.get('status', '?')}")
-        lines.append(f"- Violations: {gs.get('violations', 0)} | Warnings: {gs.get('warnings', 0)} | Live-path touches: {gs.get('live_path_touches', 0)}")
+        lines.append(
+            f"- Violations: {gs.get('violations', 0)} | Warnings: {gs.get('warnings', 0)} | Live-path touches: {gs.get('live_path_touches', 0)}"
+        )
 
     lines.append(f"")
     lines.append(f"## Next Steps")

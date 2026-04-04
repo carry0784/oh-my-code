@@ -20,13 +20,26 @@ from unittest.mock import MagicMock
 import pytest
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services", "app.services.order_service",
-    "app.services.position_service", "app.services.signal_service",
-    "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -51,13 +64,9 @@ DASHBOARD_ROUTE_PATH = PROJECT_ROOT / "app" / "api" / "routes" / "dashboard.py"
 # C09-1: API provenance 헬퍼
 # ===========================================================================
 class TestC09APIHelper:
-
     def _get_fn_body(self):
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        fn_match = re.search(
-            r'def _get_provenance_metadata.*?(?=\ndef |\Z)',
-            content, re.DOTALL
-        )
+        fn_match = re.search(r"def _get_provenance_metadata.*?(?=\ndef |\Z)", content, re.DOTALL)
         assert fn_match, "_get_provenance_metadata not found"
         return fn_match.group()
 
@@ -115,18 +124,23 @@ class TestC09APIHelper:
         # Strip docstring before checking
         body_after_docstring = fn_body.split('"""', 2)[-1] if '"""' in fn_body else fn_body
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace', 'agent_analysis', 'error_class',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
+            "agent_analysis",
+            "error_class",
         ]
         for f in forbidden:
-            assert f not in body_after_docstring, f"Forbidden string '{f}' in provenance helper code"
+            assert f not in body_after_docstring, (
+                f"Forbidden string '{f}' in provenance helper code"
+            )
 
 
 # ===========================================================================
 # C09-2: Operator Panel 블록
 # ===========================================================================
 class TestC09ProvenanceBlock:
-
     def test_block_exists(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert 'id="provenance-block"' in content
@@ -144,7 +158,6 @@ class TestC09ProvenanceBlock:
 # C09-3: JS 렌더링 함수
 # ===========================================================================
 class TestC09RenderFunction:
-
     def _get_fn_body(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         fn_start = content.index("function renderSourceProvenance")
@@ -179,9 +192,16 @@ class TestC09RenderFunction:
     def test_no_forbidden_strings(self):
         fn_body = self._get_fn_body()
         forbidden = [
-            'agent_analysis', 'raw_prompt', 'chain_of_thought',
-            'internal_reasoning', 'debug_trace', 'error_class',
-            'traceback', 'exception_type', 'stack', 'internal_state_dump',
+            "agent_analysis",
+            "raw_prompt",
+            "chain_of_thought",
+            "internal_reasoning",
+            "debug_trace",
+            "error_class",
+            "traceback",
+            "exception_type",
+            "stack",
+            "internal_state_dump",
         ]
         for f in forbidden:
             assert f not in fn_body, f"Forbidden string '{f}' in provenance render"
@@ -191,14 +211,13 @@ class TestC09RenderFunction:
 # C09-4: CSS
 # ===========================================================================
 class TestC09CSS:
-
     def test_row_class(self):
         content = CSS_PATH.read_text(encoding="utf-8")
         assert ".pv-row" in content
 
     def test_origin_classes(self):
         content = CSS_PATH.read_text(encoding="utf-8")
-        for cls in ['.pv-connected', '.pv-disconnected', '.pv-fallback']:
+        for cls in [".pv-connected", ".pv-disconnected", ".pv-fallback"]:
             assert cls in content, f"CSS class {cls} must exist"
 
     def test_state_class(self):
@@ -214,7 +233,6 @@ class TestC09CSS:
 # C09-5: Tab 2 통합
 # ===========================================================================
 class TestC09Integration:
-
     def test_called_from_render_tab2(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert "renderSourceProvenance(data)" in content
@@ -228,7 +246,13 @@ class TestC09Integration:
 
     def test_existing_blocks_preserved(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        for bid in ['key-facts-block', 'loop-ceiling-block', 'quote-feed-block',
-                     'venue-status-block', 'freshness-timeline-block',
-                     'event-log-block', 'incident-overlay']:
+        for bid in [
+            "key-facts-block",
+            "loop-ceiling-block",
+            "quote-feed-block",
+            "venue-status-block",
+            "freshness-timeline-block",
+            "event-log-block",
+            "incident-overlay",
+        ]:
             assert bid in content, f"{bid} must be preserved"

@@ -4,6 +4,7 @@ K-Dexter AOS v4
 
 Run: python -X utf8 tests/test_evidence_backends.py
 """
+
 from __future__ import annotations
 
 import os
@@ -20,12 +21,14 @@ from kdexter.audit.backends.sqlite import SQLiteBackend
 # Helpers
 # ======================================================================== #
 
+
 def _make_bundle(
-    trigger="TEST", actor="tester", action="test_action",
-    cycle_id="CYC-001", bundle_id=None, **kw
+    trigger="TEST", actor="tester", action="test_action", cycle_id="CYC-001", bundle_id=None, **kw
 ) -> EvidenceBundle:
     return EvidenceBundle(
-        trigger=trigger, actor=actor, action=action,
+        trigger=trigger,
+        actor=actor,
+        action=action,
         cycle_id=cycle_id,
         **({"bundle_id": bundle_id} if bundle_id else {}),
         **kw,
@@ -221,6 +224,7 @@ def _run_backend_tests(backend, label, start_num):
 # ======================================================================== #
 # EvidenceStore facade tests
 # ======================================================================== #
+
 
 def test_evidence_store_default_backend():
     es = EvidenceStore()

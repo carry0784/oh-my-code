@@ -73,9 +73,7 @@ class MarketStateBuilder:
             change_pct_24h=ticker.get("percentage"),
         )
 
-    def _extract_microstructure(
-        self, data: MarketDataCollectionResult
-    ) -> MarketMicrostructure:
+    def _extract_microstructure(self, data: MarketDataCollectionResult) -> MarketMicrostructure:
         ticker = data.ticker or {}
         bid = ticker.get("bid")
         ask = ticker.get("ask")
@@ -91,9 +89,7 @@ class MarketStateBuilder:
             spread_pct=spread_pct,
         )
 
-    def _extract_sentiment(
-        self, sentiment: SentimentCollectionResult | None
-    ) -> SentimentData:
+    def _extract_sentiment(self, sentiment: SentimentCollectionResult | None) -> SentimentData:
         if not sentiment:
             return SentimentData()
         return SentimentData(
@@ -101,9 +97,7 @@ class MarketStateBuilder:
             fear_greed_label=sentiment.fear_greed_label,
         )
 
-    def _extract_on_chain(
-        self, sentiment: SentimentCollectionResult | None
-    ) -> OnChainData:
+    def _extract_on_chain(self, sentiment: SentimentCollectionResult | None) -> OnChainData:
         if not sentiment:
             return OnChainData()
         return sentiment.on_chain

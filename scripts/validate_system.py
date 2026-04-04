@@ -29,6 +29,7 @@ os.chdir(_REPO_ROOT)
 
 # ── Validation checks ────────────────────────────────────────────────────── #
 
+
 def _check(name: str, fn) -> dict:
     """Run a single check, return structured result."""
     try:
@@ -127,6 +128,7 @@ def check_fastapi_entry() -> tuple[bool, str]:
     """Check FastAPI app is importable and has expected attributes."""
     try:
         from app.main import app
+
         routes = [r.path for r in app.routes]
         has_health = any("/health" in r for r in routes)
         has_dashboard = any("/dashboard" in r or "/api" in r for r in routes)
@@ -143,8 +145,14 @@ def check_fastapi_entry() -> tuple[bool, str]:
 def check_workers() -> tuple[bool, str]:
     """Check worker task files exist."""
     task_files = list(Path("workers/tasks").glob("*.py"))
-    expected = {"order_tasks.py", "signal_tasks.py", "market_tasks.py",
-                "check_tasks.py", "snapshot_tasks.py", "governance_monitor_tasks.py"}
+    expected = {
+        "order_tasks.py",
+        "signal_tasks.py",
+        "market_tasks.py",
+        "check_tasks.py",
+        "snapshot_tasks.py",
+        "governance_monitor_tasks.py",
+    }
     found = {f.name for f in task_files}
     missing = expected - found
     if missing:
@@ -166,21 +174,25 @@ def check_governance_components() -> tuple[bool, str]:
     checks = []
     try:
         from app.agents.governance_gate import GovernanceGate
+
         checks.append("GovernanceGate")
     except Exception:
         pass
     try:
         from app.core.governance_monitor import run_governance_monitor
+
         checks.append("G-MON")
     except Exception:
         pass
     try:
         from kdexter.engines.cost_controller import CostController
+
         checks.append("CostController")
     except Exception:
         pass
     try:
         from kdexter.engines.failure_router import FailurePatternMemory
+
         checks.append("FailurePatternMemory")
     except Exception:
         pass
@@ -193,10 +205,13 @@ def check_governance_components() -> tuple[bool, str]:
 def check_constitution() -> tuple[bool, str]:
     """Run verify_constitution.py."""
     import subprocess
+
     try:
         result = subprocess.run(
             [sys.executable, "scripts/verify_constitution.py"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         if result.returncode == 0:
             return True, "verify_constitution.py PASS"

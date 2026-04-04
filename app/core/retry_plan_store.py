@@ -23,6 +23,7 @@ Plan states:
   executed  → consumed by future executor
   expired   → TTL exceeded without execution
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
@@ -43,9 +44,11 @@ DEFAULT_TTL_SECONDS = 3600  # 1 hour default expiry
 # Data models
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class RetryPlan:
     """A single deferred retry plan entry."""
+
     retry_id: str = ""
     created_at: str = ""
     incident: str = ""
@@ -66,6 +69,7 @@ class RetryPlan:
 @dataclass
 class EnqueueResult:
     """Result of a plan enqueue attempt."""
+
     enqueued: bool
     retry_id: str = ""
     reason: str = ""
@@ -74,6 +78,7 @@ class EnqueueResult:
 # ---------------------------------------------------------------------------
 # Retry Plan Store
 # ---------------------------------------------------------------------------
+
 
 class RetryPlanStore:
     """
@@ -166,6 +171,7 @@ class RetryPlanStore:
         eligible_seconds = retry_after_seconds if retry_after_seconds is not None else 60
 
         from datetime import timedelta
+
         eligible_at = now + timedelta(seconds=eligible_seconds)
 
         plan = RetryPlan(
@@ -270,6 +276,7 @@ class RetryPlanStore:
     def _expire_old_plans(self, now: datetime) -> None:
         """Auto-expire plans past TTL."""
         from datetime import timedelta
+
         cutoff = now - timedelta(seconds=self._ttl_seconds)
         for p in self._plans:
             if p.status == "pending":

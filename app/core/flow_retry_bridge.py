@@ -14,6 +14,7 @@ Design:
   - No daemon, scheduler, background worker
   - No modification of existing send path behavior
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
@@ -23,6 +24,7 @@ from typing import Any, Optional
 @dataclass
 class BridgeResult:
     """Result of conditional retry enqueue after send."""
+
     checked: int = 0
     enqueued: int = 0
     skipped: int = 0
@@ -63,8 +65,13 @@ def bridge_failed_to_retry_store(
 
     try:
         return _bridge_impl(
-            send_receipt, plan_store, retry_policy,
-            incident, severity_tier, snapshot_summary, result,
+            send_receipt,
+            plan_store,
+            retry_policy,
+            incident,
+            severity_tier,
+            snapshot_summary,
+            result,
         )
     except Exception as e:
         result.errors.append(f"bridge_error: {str(e)[:100]}")

@@ -32,6 +32,7 @@ Safety:
   - write_impact always 0, terminal_impact always 0
   - simulation_only always True
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
@@ -79,30 +80,34 @@ REASON_ORPHAN_EXEC_PARENT = "ORPHAN_EXEC_PARENT"
 REASON_ORPHAN_SUBMIT_PARENT = "ORPHAN_SUBMIT_PARENT"
 REASON_STALE_AND_ORPHAN = "STALE_AND_ORPHAN"
 
-_VALID_REASON_CODES = frozenset({
-    REASON_STALE_AGENT,
-    REASON_STALE_EXECUTION,
-    REASON_STALE_SUBMIT,
-    REASON_ORPHAN_EXEC_PARENT,
-    REASON_ORPHAN_SUBMIT_PARENT,
-    REASON_STALE_AND_ORPHAN,
-})
+_VALID_REASON_CODES = frozenset(
+    {
+        REASON_STALE_AGENT,
+        REASON_STALE_EXECUTION,
+        REASON_STALE_SUBMIT,
+        REASON_ORPHAN_EXEC_PARENT,
+        REASON_ORPHAN_SUBMIT_PARENT,
+        REASON_STALE_AND_ORPHAN,
+    }
+)
 
 
 # -- Data classes ----------------------------------------------------------- #
 
+
 @dataclass
 class CleanupCandidate:
     """Single cleanup candidate with action recommendation (simulation only)."""
+
     proposal_id: str
-    tier: str                          # "agent" | "execution" | "submit"
-    action_class: str                  # ACTION_WATCH | ACTION_REVIEW | ACTION_MANUAL
-    reason_code: str                   # one of _VALID_REASON_CODES
+    tier: str  # "agent" | "execution" | "submit"
+    action_class: str  # ACTION_WATCH | ACTION_REVIEW | ACTION_MANUAL
+    reason_code: str  # one of _VALID_REASON_CODES
     is_stale: bool
     is_orphan: bool
-    stale_age_seconds: float = 0.0     # 0.0 if not stale
+    stale_age_seconds: float = 0.0  # 0.0 if not stale
     current_status: str = ""
-    explanation: str = ""              # Human-readable reason for this classification
+    explanation: str = ""  # Human-readable reason for this classification
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -111,20 +116,22 @@ class CleanupCandidate:
 @dataclass
 class CleanupSimulationReport:
     """Cleanup simulation result — advisory only, never executed."""
+
     total_candidates: int = 0
     by_tier: dict = field(default_factory=dict)
     by_action_class: dict = field(default_factory=dict)
     by_reason: dict = field(default_factory=dict)
     candidates: list[dict] = field(default_factory=list)
-    write_impact: int = 0              # Always 0 — write forbidden
-    terminal_impact: int = 0           # Always 0 — terminal change forbidden
-    simulation_only: bool = True       # Always True
+    write_impact: int = 0  # Always 0 — write forbidden
+    terminal_impact: int = 0  # Always 0 — terminal change forbidden
+    simulation_only: bool = True  # Always True
 
     def to_dict(self) -> dict:
         return asdict(self)
 
 
 # -- Core logic ------------------------------------------------------------- #
+
 
 def _determine_action_class(
     is_stale: bool,
@@ -222,13 +229,15 @@ def _collect_stale_candidates(
 
             # Mirror is_stale() rule 4: age > threshold
             if age > threshold:
-                results.append({
-                    "proposal_id": proposal_id,
-                    "tier": tier_name,
-                    "stale_age_seconds": age,
-                    "status": status,
-                    "threshold": threshold,
-                })
+                results.append(
+                    {
+                        "proposal_id": proposal_id,
+                        "tier": tier_name,
+                        "stale_age_seconds": age,
+                        "status": status,
+                        "threshold": threshold,
+                    }
+                )
     except Exception:
         pass
     return results
@@ -247,10 +256,7 @@ def _build_explanation(
     parts = []
     if is_stale and is_orphan:
         multiplier = f"{stale_age_seconds / threshold:.1f}x" if threshold > 0 else "N/A"
-        parts.append(
-            f"Stale ({multiplier} threshold) and orphan (missing parent) "
-            f"in {tier} tier."
-        )
+        parts.append(f"Stale ({multiplier} threshold) and orphan (missing parent) in {tier} tier.")
     elif is_stale:
         multiplier_val = stale_age_seconds / threshold if threshold > 0 else 0
         multiplier = f"{multiplier_val:.1f}x" if threshold > 0 else "N/A"
@@ -295,7 +301,9 @@ def simulate_cleanup(
             stale_map[item["proposal_id"]] = item
 
     if execution_ledger is not None:
-        for item in _collect_stale_candidates(execution_ledger, "execution", execution_stale_threshold):
+        for item in _collect_stale_candidates(
+            execution_ledger, "execution", execution_stale_threshold
+        ):
             stale_map[item["proposal_id"]] = item
 
     if submit_ledger is not None:
@@ -344,8 +352,13 @@ def simulate_cleanup(
         action_class = _determine_action_class(is_stale, is_orphan, stale_age, threshold)
         reason_code = _determine_reason_code(tier, is_stale, is_orphan)
         explanation = _build_explanation(
-            action_class, reason_code, is_stale, is_orphan,
-            stale_age, threshold, tier,
+            action_class,
+            reason_code,
+            is_stale,
+            is_orphan,
+            stale_age,
+            threshold,
+            tier,
         )
 
         candidate = CleanupCandidate(

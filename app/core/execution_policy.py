@@ -58,7 +58,9 @@ def compute_receipt_hash(receipt: OperatorApprovalReceipt) -> str:
         receipt.security_state,
         receipt.timestamp,
         receipt.approval_expiry_at,
-        receipt.approval_scope.value if hasattr(receipt.approval_scope, "value") else str(receipt.approval_scope),
+        receipt.approval_scope.value
+        if hasattr(receipt.approval_scope, "value")
+        else str(receipt.approval_scope),
         receipt.target_symbol or "",
     ]
     raw = "|".join(parts)
@@ -119,63 +121,86 @@ def evaluate_execution_policy(
 
     # --- Check 2: gate.decision == OPEN ---
     gate_open, gate_observed = _recheck_gate()
-    items.append(PolicyCheckItem(
-        name="gate_open", matched=gate_open,
-        approval_value="OPEN", current_value=gate_observed,
-        rule_refs=["Art43"],
-    ))
+    items.append(
+        PolicyCheckItem(
+            name="gate_open",
+            matched=gate_open,
+            approval_value="OPEN",
+            current_value=gate_observed,
+            rule_refs=["Art43"],
+        )
+    )
     if not gate_open:
         drift_reasons.append(PolicyDriftReason.GATE_CLOSED)
 
     # --- Check 3: preflight.decision == READY ---
     pf_ready, pf_observed = _recheck_preflight()
-    items.append(PolicyCheckItem(
-        name="preflight_ready", matched=pf_ready,
-        approval_value="READY", current_value=pf_observed,
-        rule_refs=["Art43"],
-    ))
+    items.append(
+        PolicyCheckItem(
+            name="preflight_ready",
+            matched=pf_ready,
+            approval_value="READY",
+            current_value=pf_observed,
+            rule_refs=["Art43"],
+        )
+    )
     if not pf_ready:
         drift_reasons.append(PolicyDriftReason.PREFLIGHT_NOT_READY)
 
     # --- Check 4: ops_score >= threshold ---
     score_ok, score_observed = _recheck_ops_score(ops_score_threshold)
-    items.append(PolicyCheckItem(
-        name="ops_score_above_threshold", matched=score_ok,
-        approval_value=f">={ops_score_threshold}", current_value=score_observed,
-        rule_refs=["Art41"],
-    ))
+    items.append(
+        PolicyCheckItem(
+            name="ops_score_above_threshold",
+            matched=score_ok,
+            approval_value=f">={ops_score_threshold}",
+            current_value=score_observed,
+            rule_refs=["Art41"],
+        )
+    )
     if not score_ok:
         drift_reasons.append(PolicyDriftReason.OPS_SCORE_LOW)
 
     # --- Check 5: security_state != LOCKDOWN ---
     sec_ok, sec_observed = _recheck_security()
-    items.append(PolicyCheckItem(
-        name="security_not_lockdown", matched=sec_ok,
-        approval_value="!=LOCKDOWN", current_value=sec_observed,
-        rule_refs=["Art7"],
-    ))
+    items.append(
+        PolicyCheckItem(
+            name="security_not_lockdown",
+            matched=sec_ok,
+            approval_value="!=LOCKDOWN",
+            current_value=sec_observed,
+            rule_refs=["Art7"],
+        )
+    )
     if not sec_ok:
         drift_reasons.append(PolicyDriftReason.LOCKDOWN_ACTIVE)
 
     # --- Check 6: no CRITICAL alerts since approval ---
     no_critical, crit_observed = _recheck_critical_alerts(receipt.timestamp)
-    items.append(PolicyCheckItem(
-        name="no_critical_since_approval", matched=no_critical,
-        approval_value="0 critical", current_value=crit_observed,
-        rule_refs=["Art18"],
-    ))
+    items.append(
+        PolicyCheckItem(
+            name="no_critical_since_approval",
+            matched=no_critical,
+            approval_value="0 critical",
+            current_value=crit_observed,
+            rule_refs=["Art18"],
+        )
+    )
     if not no_critical:
         drift_reasons.append(PolicyDriftReason.CRITICAL_ALERT_DETECTED)
 
     # --- Hash revalidation ---
     current_hash = _recompute_hash_from_current(receipt)
     hash_match = approval_hash == current_hash
-    items.append(PolicyCheckItem(
-        name="receipt_hash_integrity", matched=hash_match,
-        approval_value=approval_hash[:16] + "...",
-        current_value=current_hash[:16] + "...",
-        rule_refs=["Art43"],
-    ))
+    items.append(
+        PolicyCheckItem(
+            name="receipt_hash_integrity",
+            matched=hash_match,
+            approval_value=approval_hash[:16] + "...",
+            current_value=current_hash[:16] + "...",
+            rule_refs=["Art43"],
+        )
+    )
     if not hash_match:
         drift_reasons.append(PolicyDriftReason.APPROVAL_HASH_MISMATCH)
 
@@ -207,10 +232,12 @@ def evaluate_execution_policy(
 # Recheck helpers (read-only, fail-closed)
 # ---------------------------------------------------------------------------
 
+
 def _get_latest_approval() -> OperatorApprovalReceipt | None:
     """Get latest APPROVED receipt from evidence store."""
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate and hasattr(gate, "evidence_store"):
             # CR-027: Bounded query — only need latest few, not all 42K.
@@ -223,6 +250,7 @@ def _get_latest_approval() -> OperatorApprovalReceipt | None:
                 after = b.after_state if hasattr(b, "after_state") else {}
                 if isinstance(after, dict) and after.get("decision") == "APPROVED":
                     from app.schemas.operator_approval_schema import ApprovalScope
+
                     return OperatorApprovalReceipt(
                         approval_id=b.bundle_id if hasattr(b, "bundle_id") else "unknown",
                         decision=ApprovalDecision.APPROVED,
@@ -231,7 +259,9 @@ def _get_latest_approval() -> OperatorApprovalReceipt | None:
                         check_id=after.get("check_id", ""),
                         ops_score=after.get("ops_score", 0.0),
                         security_state=after.get("security_state", "UNKNOWN"),
-                        timestamp=b.created_at.isoformat() if hasattr(b.created_at, "isoformat") else "",
+                        timestamp=b.created_at.isoformat()
+                        if hasattr(b.created_at, "isoformat")
+                        else "",
                         approval_expiry_at=after.get("expiry", ""),
                         approval_scope=ApprovalScope(after.get("scope", "NO_EXECUTION")),
                     )
@@ -243,6 +273,7 @@ def _get_latest_approval() -> OperatorApprovalReceipt | None:
 def _recheck_gate() -> tuple[bool, str]:
     try:
         from app.core.execution_gate import evaluate_execution_gate
+
         r = evaluate_execution_gate()
         return r.decision.value == "OPEN", r.decision.value
     except Exception as e:
@@ -252,6 +283,7 @@ def _recheck_gate() -> tuple[bool, str]:
 def _recheck_preflight() -> tuple[bool, str]:
     try:
         from app.core.recovery_preflight import run_recovery_preflight
+
         r = run_recovery_preflight()
         return r.decision.value == "READY", r.decision.value
     except Exception as e:
@@ -271,30 +303,55 @@ def _recheck_ops_score(threshold: float) -> tuple[bool, str]:
             from app.core.config import settings as _cfg
             from app.models.position import Position
             from datetime import datetime, timezone
+
             _engine = create_engine(_cfg.database_url_sync)
             try:
                 with SyncSession(_engine) as _sess:
-                    latest = _sess.query(Position.updated_at).order_by(Position.updated_at.desc()).first()
+                    latest = (
+                        _sess.query(Position.updated_at)
+                        .order_by(Position.updated_at.desc())
+                        .first()
+                    )
                     ts = latest[0] if latest else None
                     if ts is None:
                         from app.models.asset_snapshot import AssetSnapshot
-                        snap = _sess.query(AssetSnapshot.snapshot_at).order_by(AssetSnapshot.snapshot_at.desc()).first()
+
+                        snap = (
+                            _sess.query(AssetSnapshot.snapshot_at)
+                            .order_by(AssetSnapshot.snapshot_at.desc())
+                            .first()
+                        )
                         ts = snap[0] if snap else None
                     if ts:
-                        snapshot_age = int((datetime.now(timezone.utc) - ts.replace(tzinfo=timezone.utc)).total_seconds())
+                        snapshot_age = int(
+                            (
+                                datetime.now(timezone.utc) - ts.replace(tzinfo=timezone.utc)
+                            ).total_seconds()
+                        )
             finally:
                 _engine.dispose()  # CR-035: prevent connection leak
         except Exception:
             snapshot_age = None
 
         score = _compute_ops_score(
-            IntegrityPanel(exchange_db_consistency="unknown", snapshot_age_seconds=snapshot_age,
-                           position_mismatch=False, open_orders_mismatch=False,
-                           balance_mismatch=False,
-                           stale_data=snapshot_age is None or (snapshot_age is not None and snapshot_age > 300)),
-            TradingSafetyPanel(), IncidentEvidencePanel(),
+            IntegrityPanel(
+                exchange_db_consistency="unknown",
+                snapshot_age_seconds=snapshot_age,
+                position_mismatch=False,
+                open_orders_mismatch=False,
+                balance_mismatch=False,
+                stale_data=snapshot_age is None
+                or (snapshot_age is not None and snapshot_age > 300),
+            ),
+            TradingSafetyPanel(),
+            IncidentEvidencePanel(),
         )
-        avg = (score.integrity + score.connectivity + score.execution_safety + score.evidence_completeness) / 4
+        avg = (
+            score.integrity
+            + score.connectivity
+            + score.execution_safety
+            + score.evidence_completeness
+        ) / 4
         return avg >= threshold, f"{avg:.4f}"
     except Exception as e:
         return False, f"error:{e}"
@@ -303,9 +360,14 @@ def _recheck_ops_score(threshold: float) -> tuple[bool, str]:
 def _recheck_security() -> tuple[bool, str]:
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate and hasattr(gate, "security_ctx"):
-            val = gate.security_ctx.current.value if hasattr(gate.security_ctx.current, "value") else str(gate.security_ctx.current)
+            val = (
+                gate.security_ctx.current.value
+                if hasattr(gate.security_ctx.current, "value")
+                else str(gate.security_ctx.current)
+            )
             return val != "LOCKDOWN", val
         return False, "UNKNOWN"
     except Exception as e:
@@ -316,6 +378,7 @@ def _recheck_critical_alerts(since_timestamp: str) -> tuple[bool, str]:
     """Check if any CRITICAL alerts occurred since approval timestamp."""
     try:
         import app.main as main_module
+
         flow_log = getattr(main_module.app.state, "flow_log", None)
         if flow_log is None:
             return True, "no_flow_log"
@@ -335,15 +398,19 @@ def _recompute_hash_from_current(receipt: OperatorApprovalReceipt) -> str:
 
 
 def _store_policy_evidence(
-    policy_id: str, decision: PolicyDecision,
-    drift_reasons: list, now: datetime,
+    policy_id: str,
+    decision: PolicyDecision,
+    drift_reasons: list,
+    now: datetime,
 ) -> str:
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate is None or not hasattr(gate, "evidence_store"):
             return f"fallback-pol-{uuid.uuid4().hex[:8]}"
         from kdexter.audit.evidence_store import EvidenceBundle
+
         bundle = EvidenceBundle(
             bundle_id=policy_id,
             created_at=now,

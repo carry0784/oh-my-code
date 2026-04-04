@@ -13,6 +13,7 @@ Tests the staleness observation layer across 3 Ledgers:
 
 Run: pytest tests/test_cleanup_policy.py -v
 """
+
 import sys
 import json
 from pathlib import Path
@@ -64,6 +65,7 @@ for mod_name in _STUB_MODULES:
 
 # -- Helpers ---------------------------------------------------------------- #
 
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -79,131 +81,186 @@ def _fixed_time() -> datetime:
 
 # -- AXIS 1: Stale Detection ---------------------------------------------- #
 
+
 class TestStaleDetection:
     """Threshold, age, boundary values."""
 
     def test_action_proposal_fresh_is_not_stale(self):
         from app.agents.action_ledger import ActionProposal
-        p = ActionProposal(proposal_id="AP-fresh", task_type="test",
-                           status="GUARDED", created_at=_now_iso())
+
+        p = ActionProposal(
+            proposal_id="AP-fresh", task_type="test", status="GUARDED", created_at=_now_iso()
+        )
         assert p.is_stale(threshold_seconds=600.0) is False
 
     def test_action_proposal_old_is_stale(self):
         from app.agents.action_ledger import ActionProposal
-        p = ActionProposal(proposal_id="AP-old", task_type="test",
-                           status="GUARDED", created_at=_past_iso(700))
+
+        p = ActionProposal(
+            proposal_id="AP-old", task_type="test", status="GUARDED", created_at=_past_iso(700)
+        )
         assert p.is_stale(threshold_seconds=600.0) is True
 
     def test_boundary_exactly_at_threshold_is_not_stale(self):
         """At exactly threshold_seconds, should NOT be stale (> not >=)."""
         from app.agents.action_ledger import ActionProposal
+
         now = _fixed_time()
         created = (now - timedelta(seconds=600)).isoformat()
-        p = ActionProposal(proposal_id="AP-boundary", task_type="test",
-                           status="GUARDED", created_at=created)
+        p = ActionProposal(
+            proposal_id="AP-boundary", task_type="test", status="GUARDED", created_at=created
+        )
         assert p.is_stale(threshold_seconds=600.0, now=now) is False
 
     def test_one_second_past_threshold_is_stale(self):
         from app.agents.action_ledger import ActionProposal
+
         now = _fixed_time()
         created = (now - timedelta(seconds=601)).isoformat()
-        p = ActionProposal(proposal_id="AP-boundary2", task_type="test",
-                           status="GUARDED", created_at=created)
+        p = ActionProposal(
+            proposal_id="AP-boundary2", task_type="test", status="GUARDED", created_at=created
+        )
         assert p.is_stale(threshold_seconds=600.0, now=now) is True
 
     def test_proposed_status_can_be_stale(self):
         """PROPOSED (non-terminal, no receipt) should also be detected as stale."""
         from app.agents.action_ledger import ActionProposal
-        p = ActionProposal(proposal_id="AP-proposed", task_type="test",
-                           status="PROPOSED", created_at=_past_iso(700))
+
+        p = ActionProposal(
+            proposal_id="AP-proposed",
+            task_type="test",
+            status="PROPOSED",
+            created_at=_past_iso(700),
+        )
         assert p.is_stale(threshold_seconds=600.0) is True
 
     def test_empty_created_at_is_not_stale(self):
         from app.agents.action_ledger import ActionProposal
-        p = ActionProposal(proposal_id="AP-empty", task_type="test",
-                           status="GUARDED", created_at="")
+
+        p = ActionProposal(
+            proposal_id="AP-empty", task_type="test", status="GUARDED", created_at=""
+        )
         assert p.is_stale(threshold_seconds=600.0) is False
 
     def test_proposal_with_receipt_is_not_stale(self):
         """Even if old, if receipt exists, not stale."""
         from app.agents.action_ledger import ActionProposal, ActionReceipt
-        receipt = ActionReceipt(receipt_id="AR-1", proposal_id="AP-r",
-                                pre_evidence_id="EV-1")
-        p = ActionProposal(proposal_id="AP-r", task_type="test",
-                           status="GUARDED", created_at=_past_iso(9999),
-                           receipt=receipt)
+
+        receipt = ActionReceipt(receipt_id="AR-1", proposal_id="AP-r", pre_evidence_id="EV-1")
+        p = ActionProposal(
+            proposal_id="AP-r",
+            task_type="test",
+            status="GUARDED",
+            created_at=_past_iso(9999),
+            receipt=receipt,
+        )
         assert p.is_stale(threshold_seconds=600.0) is False
 
 
 # -- AXIS 2: Terminal Protection ------------------------------------------ #
+
 
 class TestTerminalProtection:
     """BLOCKED/RECEIPTED/FAILED are NEVER stale regardless of age."""
 
     def test_action_blocked_never_stale(self):
         from app.agents.action_ledger import ActionProposal
-        p = ActionProposal(proposal_id="AP-blk", task_type="test",
-                           status="BLOCKED", created_at=_past_iso(99999))
+
+        p = ActionProposal(
+            proposal_id="AP-blk", task_type="test", status="BLOCKED", created_at=_past_iso(99999)
+        )
         assert p.is_stale(threshold_seconds=1.0) is False
 
     def test_action_receipted_never_stale(self):
         from app.agents.action_ledger import ActionProposal
-        p = ActionProposal(proposal_id="AP-rcp", task_type="test",
-                           status="RECEIPTED", created_at=_past_iso(99999))
+
+        p = ActionProposal(
+            proposal_id="AP-rcp", task_type="test", status="RECEIPTED", created_at=_past_iso(99999)
+        )
         assert p.is_stale(threshold_seconds=1.0) is False
 
     def test_action_failed_never_stale(self):
         from app.agents.action_ledger import ActionProposal
-        p = ActionProposal(proposal_id="AP-fail", task_type="test",
-                           status="FAILED", created_at=_past_iso(99999))
+
+        p = ActionProposal(
+            proposal_id="AP-fail", task_type="test", status="FAILED", created_at=_past_iso(99999)
+        )
         assert p.is_stale(threshold_seconds=1.0) is False
 
     def test_exec_blocked_never_stale(self):
         from app.services.execution_ledger import ExecutionProposal
-        p = ExecutionProposal(proposal_id="EP-blk", agent_proposal_id="AP-1",
-                              task_type="test", status="EXEC_BLOCKED",
-                              created_at=_past_iso(99999))
+
+        p = ExecutionProposal(
+            proposal_id="EP-blk",
+            agent_proposal_id="AP-1",
+            task_type="test",
+            status="EXEC_BLOCKED",
+            created_at=_past_iso(99999),
+        )
         assert p.is_stale(threshold_seconds=1.0) is False
 
     def test_exec_receipted_never_stale(self):
         from app.services.execution_ledger import ExecutionProposal
-        p = ExecutionProposal(proposal_id="EP-rcp", agent_proposal_id="AP-1",
-                              task_type="test", status="EXEC_RECEIPTED",
-                              created_at=_past_iso(99999))
+
+        p = ExecutionProposal(
+            proposal_id="EP-rcp",
+            agent_proposal_id="AP-1",
+            task_type="test",
+            status="EXEC_RECEIPTED",
+            created_at=_past_iso(99999),
+        )
         assert p.is_stale(threshold_seconds=1.0) is False
 
     def test_submit_blocked_never_stale(self):
         from app.services.submit_ledger import SubmitProposal
-        p = SubmitProposal(proposal_id="SP-blk", agent_proposal_id="AP-1",
-                           execution_proposal_id="EP-1", task_type="test",
-                           status="SUBMIT_BLOCKED", created_at=_past_iso(99999))
+
+        p = SubmitProposal(
+            proposal_id="SP-blk",
+            agent_proposal_id="AP-1",
+            execution_proposal_id="EP-1",
+            task_type="test",
+            status="SUBMIT_BLOCKED",
+            created_at=_past_iso(99999),
+        )
         assert p.is_stale(threshold_seconds=1.0) is False
 
     def test_submit_receipted_never_stale(self):
         from app.services.submit_ledger import SubmitProposal
-        p = SubmitProposal(proposal_id="SP-rcp", agent_proposal_id="AP-1",
-                           execution_proposal_id="EP-1", task_type="test",
-                           status="SUBMIT_RECEIPTED", created_at=_past_iso(99999))
+
+        p = SubmitProposal(
+            proposal_id="SP-rcp",
+            agent_proposal_id="AP-1",
+            execution_proposal_id="EP-1",
+            task_type="test",
+            status="SUBMIT_RECEIPTED",
+            created_at=_past_iso(99999),
+        )
         assert p.is_stale(threshold_seconds=1.0) is False
 
 
 # -- AXIS 3: Board Aggregation ------------------------------------------- #
+
 
 class TestBoardAggregation:
     """get_board() stale_count accuracy."""
 
     def test_action_board_stale_count(self):
         from app.agents.action_ledger import ActionLedger
+
         ledger = ActionLedger(stale_threshold=60.0)
 
         # Create proposals with known ages using internal access
         from app.agents.action_ledger import ActionProposal
-        fresh = ActionProposal(proposal_id="AP-fresh", task_type="t",
-                               status="GUARDED", created_at=_now_iso())
-        stale = ActionProposal(proposal_id="AP-stale", task_type="t",
-                               status="GUARDED", created_at=_past_iso(120))
-        blocked = ActionProposal(proposal_id="AP-blk", task_type="t",
-                                 status="BLOCKED", created_at=_past_iso(9999))
+
+        fresh = ActionProposal(
+            proposal_id="AP-fresh", task_type="t", status="GUARDED", created_at=_now_iso()
+        )
+        stale = ActionProposal(
+            proposal_id="AP-stale", task_type="t", status="GUARDED", created_at=_past_iso(120)
+        )
+        blocked = ActionProposal(
+            proposal_id="AP-blk", task_type="t", status="BLOCKED", created_at=_past_iso(9999)
+        )
 
         ledger._proposals = [fresh, stale, blocked]
         board = ledger.get_board()
@@ -213,17 +270,30 @@ class TestBoardAggregation:
 
     def test_execution_board_stale_count(self):
         from app.services.execution_ledger import ExecutionLedger, ExecutionProposal
+
         ledger = ExecutionLedger(stale_threshold=30.0)
 
-        stale1 = ExecutionProposal(proposal_id="EP-s1", agent_proposal_id="AP-1",
-                                   task_type="t", status="EXEC_GUARDED",
-                                   created_at=_past_iso(60))
-        stale2 = ExecutionProposal(proposal_id="EP-s2", agent_proposal_id="AP-2",
-                                   task_type="t", status="EXEC_PROPOSED",
-                                   created_at=_past_iso(60))
-        terminal = ExecutionProposal(proposal_id="EP-t", agent_proposal_id="AP-3",
-                                     task_type="t", status="EXEC_RECEIPTED",
-                                     created_at=_past_iso(60))
+        stale1 = ExecutionProposal(
+            proposal_id="EP-s1",
+            agent_proposal_id="AP-1",
+            task_type="t",
+            status="EXEC_GUARDED",
+            created_at=_past_iso(60),
+        )
+        stale2 = ExecutionProposal(
+            proposal_id="EP-s2",
+            agent_proposal_id="AP-2",
+            task_type="t",
+            status="EXEC_PROPOSED",
+            created_at=_past_iso(60),
+        )
+        terminal = ExecutionProposal(
+            proposal_id="EP-t",
+            agent_proposal_id="AP-3",
+            task_type="t",
+            status="EXEC_RECEIPTED",
+            created_at=_past_iso(60),
+        )
 
         ledger._proposals = [stale1, stale2, terminal]
         board = ledger.get_board()
@@ -233,11 +303,17 @@ class TestBoardAggregation:
 
     def test_submit_board_stale_count(self):
         from app.services.submit_ledger import SubmitLedger, SubmitProposal
+
         ledger = SubmitLedger(stale_threshold=10.0)
 
-        fresh = SubmitProposal(proposal_id="SP-f", agent_proposal_id="AP-1",
-                               execution_proposal_id="EP-1", task_type="t",
-                               status="SUBMIT_GUARDED", created_at=_now_iso())
+        fresh = SubmitProposal(
+            proposal_id="SP-f",
+            agent_proposal_id="AP-1",
+            execution_proposal_id="EP-1",
+            task_type="t",
+            status="SUBMIT_GUARDED",
+            created_at=_now_iso(),
+        )
         ledger._proposals = [fresh]
         board = ledger.get_board()
 
@@ -246,12 +322,14 @@ class TestBoardAggregation:
 
 # -- AXIS 4: State Machine Preservation ---------------------------------- #
 
+
 class TestStateMachinePreservation:
     """No _TRANSITIONS change, no STALE state added."""
 
     def test_action_transitions_unchanged(self):
         """ActionProposal _TRANSITIONS must not contain STALE."""
         from app.agents.action_ledger import ActionProposal
+
         p = ActionProposal(proposal_id="AP-t", task_type="t")
         all_states = set(p._TRANSITIONS.keys())
         all_targets = set()
@@ -264,22 +342,38 @@ class TestStateMachinePreservation:
 
     def test_execution_transitions_unchanged(self):
         from app.services.execution_ledger import ExecutionProposal
+
         p = ExecutionProposal(proposal_id="EP-t", agent_proposal_id="AP-1", task_type="t")
         all_states = set(p._TRANSITIONS.keys())
         assert "STALE" not in all_states
         assert "EXEC_STALE" not in all_states
-        assert all_states == {"EXEC_PROPOSED", "EXEC_GUARDED", "EXEC_BLOCKED",
-                              "EXEC_RECEIPTED", "EXEC_FAILED"}
+        assert all_states == {
+            "EXEC_PROPOSED",
+            "EXEC_GUARDED",
+            "EXEC_BLOCKED",
+            "EXEC_RECEIPTED",
+            "EXEC_FAILED",
+        }
 
     def test_submit_transitions_unchanged(self):
         from app.services.submit_ledger import SubmitProposal
-        p = SubmitProposal(proposal_id="SP-t", agent_proposal_id="AP-1",
-                           execution_proposal_id="EP-1", task_type="t")
+
+        p = SubmitProposal(
+            proposal_id="SP-t",
+            agent_proposal_id="AP-1",
+            execution_proposal_id="EP-1",
+            task_type="t",
+        )
         all_states = set(p._TRANSITIONS.keys())
         assert "STALE" not in all_states
         assert "SUBMIT_STALE" not in all_states
-        assert all_states == {"SUBMIT_PROPOSED", "SUBMIT_GUARDED", "SUBMIT_BLOCKED",
-                              "SUBMIT_RECEIPTED", "SUBMIT_FAILED"}
+        assert all_states == {
+            "SUBMIT_PROPOSED",
+            "SUBMIT_GUARDED",
+            "SUBMIT_BLOCKED",
+            "SUBMIT_RECEIPTED",
+            "SUBMIT_FAILED",
+        }
 
     def test_source_no_stale_in_transitions(self):
         """Source code scan: STALE must not appear in _TRANSITIONS definitions."""
@@ -302,8 +396,10 @@ class TestStateMachinePreservation:
     def test_is_stale_does_not_mutate_status(self):
         """is_stale() must never change proposal.status."""
         from app.agents.action_ledger import ActionProposal
-        p = ActionProposal(proposal_id="AP-mut", task_type="test",
-                           status="GUARDED", created_at=_past_iso(9999))
+
+        p = ActionProposal(
+            proposal_id="AP-mut", task_type="test", status="GUARDED", created_at=_past_iso(9999)
+        )
         original_status = p.status
         result = p.is_stale(threshold_seconds=1.0)
         assert result is True
@@ -312,16 +408,22 @@ class TestStateMachinePreservation:
 
 # -- AXIS 5: 4-Tier Board Integration ------------------------------------ #
 
+
 class TestFourTierBoardIntegration:
     """stale_count in dashboard response."""
 
     def test_board_includes_stale_count(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         mock_ledger = MagicMock()
         mock_ledger.get_board.return_value = {
-            "total": 5, "receipted_count": 2, "blocked_count": 1,
-            "failed_count": 0, "orphan_count": 1,
-            "stale_count": 3, "stale_threshold_seconds": 600.0,
+            "total": 5,
+            "receipted_count": 2,
+            "blocked_count": 1,
+            "failed_count": 0,
+            "orphan_count": 1,
+            "stale_count": 3,
+            "stale_threshold_seconds": 600.0,
             "guard_reason_top": [],
         }
         board = build_four_tier_board(action_ledger=mock_ledger)
@@ -330,10 +432,14 @@ class TestFourTierBoardIntegration:
 
     def test_board_stale_count_default_zero(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         mock_ledger = MagicMock()
         mock_ledger.get_board.return_value = {
-            "total": 0, "receipted_count": 0, "blocked_count": 0,
-            "failed_count": 0, "orphan_count": 0,
+            "total": 0,
+            "receipted_count": 0,
+            "blocked_count": 0,
+            "failed_count": 0,
+            "orphan_count": 0,
             "guard_reason_top": [],
             # stale_count intentionally missing — should default to 0
         }
@@ -342,11 +448,16 @@ class TestFourTierBoardIntegration:
 
     def test_board_response_serializable_with_stale(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         mock_ledger = MagicMock()
         mock_ledger.get_board.return_value = {
-            "total": 2, "receipted_count": 1, "blocked_count": 0,
-            "failed_count": 0, "orphan_count": 0,
-            "stale_count": 1, "stale_threshold_seconds": 300.0,
+            "total": 2,
+            "receipted_count": 1,
+            "blocked_count": 0,
+            "failed_count": 0,
+            "orphan_count": 0,
+            "stale_count": 1,
+            "stale_threshold_seconds": 300.0,
             "guard_reason_top": [],
         }
         board = build_four_tier_board(
@@ -362,6 +473,7 @@ class TestFourTierBoardIntegration:
 
 
 # -- AXIS 6: 3-Ledger Consistency ---------------------------------------- #
+
 
 class TestThreeLedgerConsistency:
     """Same pattern across Action/Execution/Submit."""
@@ -381,8 +493,9 @@ class TestThreeLedgerConsistency:
 
         ap = ActionProposal(proposal_id="AP", task_type="t")
         ep = ExecutionProposal(proposal_id="EP", agent_proposal_id="AP", task_type="t")
-        sp = SubmitProposal(proposal_id="SP", agent_proposal_id="AP",
-                            execution_proposal_id="EP", task_type="t")
+        sp = SubmitProposal(
+            proposal_id="SP", agent_proposal_id="AP", execution_proposal_id="EP", task_type="t"
+        )
 
         for p in [ap, ep, sp]:
             assert hasattr(p, "_TERMINAL_STATES"), f"{type(p).__name__} missing _TERMINAL_STATES"

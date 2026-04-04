@@ -10,6 +10,7 @@ Tests the External Caller (OrderExecutor) layer:
 
 Run: pytest tests/test_order_executor.py -v
 """
+
 import sys
 import asyncio
 import json
@@ -25,8 +26,10 @@ if str(_REPO_ROOT) not in sys.path:
 
 # -- Helpers ---------------------------------------------------------------- #
 
+
 def _make_executor():
     from app.services.order_executor import OrderExecutor
+
     return OrderExecutor(default_timeout=5.0)
 
 
@@ -54,6 +57,7 @@ def _make_submit_proposal(
 
 
 # -- AXIS 1: Execute Flow ------------------------------------------------- #
+
 
 class TestExecuteFlow:
     """Dry run, result recording, lineage."""
@@ -109,12 +113,14 @@ class TestExecuteFlow:
 
 # -- AXIS 2: Safety Checks ------------------------------------------------ #
 
+
 class TestSafetyChecks:
     """submit_ready, exchange allowlist, idempotency."""
 
     @pytest.mark.asyncio
     async def test_submit_ready_false_raises_denied(self):
         from app.services.order_executor import ExecutionDeniedError
+
         executor = _make_executor()
         proposal = _make_submit_proposal(submit_ready=False, status="SUBMIT_GUARDED")
         with pytest.raises(ExecutionDeniedError, match="submit_ready is False"):
@@ -123,6 +129,7 @@ class TestSafetyChecks:
     @pytest.mark.asyncio
     async def test_submit_ready_missing_raises_denied(self):
         from app.services.order_executor import ExecutionDeniedError
+
         executor = _make_executor()
         proposal = MagicMock(spec=[])  # no submit_ready attribute
         proposal.proposal_id = "SP-none"
@@ -156,6 +163,7 @@ class TestSafetyChecks:
 
 
 # -- AXIS 3: Error Handling ------------------------------------------------ #
+
 
 class TestErrorHandling:
     """Timeout, exchange error, error recording."""
@@ -229,12 +237,15 @@ class TestErrorHandling:
 
 class OrderExecutorWithShortTimeout:
     """Helper: OrderExecutor with very short timeout for testing."""
+
     def __new__(cls):
         from app.services.order_executor import OrderExecutor
+
         return OrderExecutor(default_timeout=0.1)
 
 
 # -- AXIS 4: Boundary ----------------------------------------------------- #
+
 
 class TestBoundary:
     """No ledger write, append-only, no delete."""
@@ -261,6 +272,7 @@ class TestBoundary:
     def test_executor_source_no_ledger_write(self):
         """OrderExecutor source must not write to any ledger."""
         import importlib
+
         source = importlib.util.find_spec("app.services.order_executor")
         if source and source.origin:
             content = Path(source.origin).read_text(encoding="utf-8")
@@ -272,6 +284,7 @@ class TestBoundary:
 
 
 # -- AXIS 5: Audit Trail -------------------------------------------------- #
+
 
 class TestAuditTrail:
     """History, order lookup, lineage trace."""

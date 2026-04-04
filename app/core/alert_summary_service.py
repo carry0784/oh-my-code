@@ -36,6 +36,7 @@ def build_alert_summary() -> AlertSummaryDetailResponse:
     # Collect from existing services
     try:
         from app.core.ops_aggregate_service import build_ops_aggregate
+
         agg = build_ops_aggregate()
         ops_status = agg.overall_status.value
         stale = agg.source_coverage.stale
@@ -45,6 +46,7 @@ def build_alert_summary() -> AlertSummaryDetailResponse:
 
     try:
         from app.core.governance_summary_service import build_governance_summary
+
         gov = build_governance_summary()
         gov_status = gov.overall_status.value
         exec_state = gov.execution_state.value
@@ -54,6 +56,7 @@ def build_alert_summary() -> AlertSummaryDetailResponse:
 
     try:
         from app.core.market_feed_service import build_empty_market_feed
+
         # Market feed requires async; use lightweight check
         market_trust = "STALE"  # conservative in sync context
     except Exception:
@@ -64,7 +67,13 @@ def build_alert_summary() -> AlertSummaryDetailResponse:
 
     # P1 checks
     if gov_status == "BLOCKED" or exec_state == "BLOCKED" or ops_status == "UNHEALTHY":
-        reason = "lockdown_active" if gov_status == "BLOCKED" else "ops_unhealthy" if ops_status == "UNHEALTHY" else "execution_blocked"
+        reason = (
+            "lockdown_active"
+            if gov_status == "BLOCKED"
+            else "ops_unhealthy"
+            if ops_status == "UNHEALTHY"
+            else "execution_blocked"
+        )
         alerts.append((PriorityLevel.P1, reason))
 
     # P2 checks
@@ -84,8 +93,18 @@ def build_alert_summary() -> AlertSummaryDetailResponse:
         alerts.append((PriorityLevel.P3, f"active_constraints_{constraints}"))
 
     # Determine top
-    priority_order = {PriorityLevel.P1: 0, PriorityLevel.P2: 1, PriorityLevel.P3: 2, PriorityLevel.INFO: 3}
-    escalation_map = {PriorityLevel.P1: EscalationState.CRITICAL, PriorityLevel.P2: EscalationState.ESCALATED, PriorityLevel.P3: EscalationState.WATCH, PriorityLevel.INFO: EscalationState.NONE}
+    priority_order = {
+        PriorityLevel.P1: 0,
+        PriorityLevel.P2: 1,
+        PriorityLevel.P3: 2,
+        PriorityLevel.INFO: 3,
+    }
+    escalation_map = {
+        PriorityLevel.P1: EscalationState.CRITICAL,
+        PriorityLevel.P2: EscalationState.ESCALATED,
+        PriorityLevel.P3: EscalationState.WATCH,
+        PriorityLevel.INFO: EscalationState.NONE,
+    }
 
     if alerts:
         alerts.sort(key=lambda x: priority_order.get(x[0], 99))

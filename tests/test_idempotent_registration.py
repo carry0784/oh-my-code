@@ -15,6 +15,7 @@ Idempotent mode taxonomy:
   - Overwrite-convergent: ForbiddenLedger.register(), TrustDecayEngine.register(),
                           TCLDispatcher.register()
 """
+
 from __future__ import annotations
 
 import logging
@@ -34,6 +35,7 @@ from kdexter.tcl.commands import TCLDispatcher
 # ═══════════════════════════════════════════════════════════════════════════ #
 # B-05: IDEMPOTENT REGISTRATION TESTS
 # ═══════════════════════════════════════════════════════════════════════════ #
+
 
 class TestIdempotentRegistration:
     """B-05: register/init/setup idempotent contract verification."""
@@ -82,10 +84,10 @@ class TestIdempotentRegistration:
             log_module.setup_logging()
             handler_count_2 = len(logging.getLogger().handlers)
 
-        assert handler_count_1 == handler_count_2, \
+        assert handler_count_1 == handler_count_2, (
             "Handler count must not increase on repeated setup_logging() calls"
-        assert handler_count_2 == 1, \
-            "Only StreamHandler should exist (no file path configured)"
+        )
+        assert handler_count_2 == 1, "Only StreamHandler should exist (no file path configured)"
 
     def test_exchange_factory_singleton_cached(self):
         """ExchangeFactory.create(): same exchange twice → same instance."""
@@ -106,8 +108,7 @@ class TestIdempotentRegistration:
             instance1 = ExchangeFactory.create("binance")
             instance2 = ExchangeFactory.create("binance")
 
-            assert instance1 is instance2, \
-                "Same exchange key must return cached singleton"
+            assert instance1 is instance2, "Same exchange key must return cached singleton"
         finally:
             ExchangeFactory._instances = original_instances
 
@@ -118,12 +119,15 @@ class TestIdempotentRegistration:
         # Verified in tests/test_agent_governance.py::TestSingletonSafety::test_singleton_enforced
         from app.agents.governance_gate import GovernanceGate
 
-        assert hasattr(GovernanceGate, "_instance"), \
+        assert hasattr(GovernanceGate, "_instance"), (
             "GovernanceGate must have _instance class variable (B-06)"
-        assert hasattr(GovernanceGate, "_creation_lock"), \
+        )
+        assert hasattr(GovernanceGate, "_creation_lock"), (
             "GovernanceGate must have _creation_lock (B-06)"
-        assert hasattr(GovernanceGate, "_reset_for_testing"), \
+        )
+        assert hasattr(GovernanceGate, "_reset_for_testing"), (
             "GovernanceGate must have _reset_for_testing (B-06)"
+        )
 
     def test_trust_decay_register_idempotent(self):
         """TrustDecayEngine.register(): same component_id twice → count=1."""
@@ -135,10 +139,8 @@ class TestIdempotentRegistration:
         engine.register("main_strategy", ctx1)
         engine.register("main_strategy", ctx2)  # duplicate
 
-        assert len(engine._components) == 1, \
-            "Same component_id must converge to one entry"
-        assert engine.get_context("main_strategy") is ctx2, \
-            "Last registration wins"
+        assert len(engine._components) == 1, "Same component_id must converge to one entry"
+        assert engine.get_context("main_strategy") is ctx2, "Last registration wins"
 
     def test_tcl_dispatcher_register_idempotent(self):
         """TCLDispatcher.register(): same exchange twice → count=1."""
@@ -150,7 +152,5 @@ class TestIdempotentRegistration:
         dispatcher.register("binance", adapter1)
         dispatcher.register("binance", adapter2)  # duplicate
 
-        assert len(dispatcher._adapters) == 1, \
-            "Same exchange key must converge to one entry"
-        assert dispatcher._adapters["binance"] is adapter2, \
-            "Last registration wins"
+        assert len(dispatcher._adapters) == 1, "Same exchange key must converge to one entry"
+        assert dispatcher._adapters["binance"] is adapter2, "Last registration wins"

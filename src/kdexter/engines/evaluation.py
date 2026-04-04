@@ -7,6 +7,7 @@ Feeds results into the Self-Improvement (L9) and Evolution (L14) loops.
 
 A (Runtime Execution) layer, B2-approved.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -70,8 +71,7 @@ class EvaluationEngine:
         return self._results.get(eval_id)
 
     def list_for_strategy(self, strategy_id: str) -> list[EvaluationResult]:
-        return [r for r in self._results.values()
-                if r.strategy_id == strategy_id]
+        return [r for r in self._results.values() if r.strategy_id == strategy_id]
 
     def average_score(self, strategy_id: str) -> float:
         results = self.list_for_strategy(strategy_id)

@@ -6,6 +6,7 @@ Acts as a lightweight in-process knowledge base for other engines.
 
 Governance: B2 (governance_layer_map.md -- L24)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -17,12 +18,14 @@ from typing import Optional
 # Data models
 # ------------------------------------------------------------------ #
 
+
 @dataclass
 class KnowledgeEntry:
     """A single knowledge entry in the store."""
+
     key: str
     value: object
-    source: str              # identifier of the component that stored this
+    source: str  # identifier of the component that stored this
     stored_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     access_count: int = 0
 
@@ -30,6 +33,7 @@ class KnowledgeEntry:
 # ------------------------------------------------------------------ #
 # L24 Knowledge Engine
 # ------------------------------------------------------------------ #
+
 
 class KnowledgeEngine:
     """

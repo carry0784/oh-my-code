@@ -10,6 +10,7 @@ Tests:
 
 Run: python tests/test_tier1.py
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -19,8 +20,11 @@ from kdexter.audit.evidence_store import EvidenceBundle, EvidenceStore
 from kdexter.ledger.mandatory_ledger import MandatoryLedger, MandatoryItem, LoopType
 from kdexter.ledger.forbidden_ledger import ForbiddenLedger, ForbiddenAction
 from kdexter.ledger.rule_ledger import (
-    RuleLedger, Rule, RuleProvenance,
-    ProvenanceRequiredError, RuleNotFoundError,
+    RuleLedger,
+    Rule,
+    RuleProvenance,
+    ProvenanceRequiredError,
+    RuleNotFoundError,
 )
 from kdexter.loops.concurrency import RuleLedgerLock, LoopPriority
 from kdexter.state_machine.work_state import WorkStateContext
@@ -30,6 +34,7 @@ from kdexter.state_machine.security_state import SecurityStateContext, SecurityS
 # ═══════════════════════════════════════════════════════════════════════════ #
 # 1. EvidenceStore
 # ═══════════════════════════════════════════════════════════════════════════ #
+
 
 def test_evidence_store_basic():
     store = EvidenceStore()
@@ -80,6 +85,7 @@ def test_evidence_store_clear():
 # ═══════════════════════════════════════════════════════════════════════════ #
 # 2. MandatoryLedger
 # ═══════════════════════════════════════════════════════════════════════════ #
+
 
 def test_mandatory_18_items():
     ledger = MandatoryLedger()
@@ -170,6 +176,7 @@ def test_mandatory_is_exempt():
 # 3. ForbiddenLedger
 # ═══════════════════════════════════════════════════════════════════════════ #
 
+
 def test_forbidden_register_and_check():
     ledger = ForbiddenLedger()
     fa = ForbiddenAction(
@@ -194,13 +201,15 @@ def test_forbidden_register_and_check():
 
 def test_forbidden_wildcard_match():
     ledger = ForbiddenLedger()
-    ledger.register(ForbiddenAction(
-        action_id="FA-002",
-        description="Any bypass attempt",
-        severity="BLOCKED",
-        pattern="BYPASS_*",
-        registered_by="B1",
-    ))
+    ledger.register(
+        ForbiddenAction(
+            action_id="FA-002",
+            description="Any bypass attempt",
+            severity="BLOCKED",
+            pattern="BYPASS_*",
+            registered_by="B1",
+        )
+    )
 
     assert ledger.check("BYPASS_GATE") is not None
     assert ledger.check("BYPASS_AUTH") is not None
@@ -210,20 +219,24 @@ def test_forbidden_wildcard_match():
 
 def test_forbidden_enforce_lockdown():
     ledger = ForbiddenLedger()
-    ledger.register(ForbiddenAction(
-        action_id="FA-001",
-        description="Direct API call",
-        severity="LOCKDOWN",
-        pattern="DIRECT_API_CALL",
-        registered_by="B1",
-    ))
+    ledger.register(
+        ForbiddenAction(
+            action_id="FA-001",
+            description="Direct API call",
+            severity="LOCKDOWN",
+            pattern="DIRECT_API_CALL",
+            registered_by="B1",
+        )
+    )
 
     sec = SecurityStateContext()
     store = EvidenceStore()
 
     passed, reason = ledger.check_and_enforce(
-        "DIRECT_API_CALL", {"target": "binance"},
-        sec, store,
+        "DIRECT_API_CALL",
+        {"target": "binance"},
+        sec,
+        store,
     )
 
     assert not passed
@@ -236,13 +249,15 @@ def test_forbidden_enforce_lockdown():
 
 def test_forbidden_enforce_blocked():
     ledger = ForbiddenLedger()
-    ledger.register(ForbiddenAction(
-        action_id="FA-003",
-        description="Unsafe operation",
-        severity="BLOCKED",
-        pattern="UNSAFE_OP",
-        registered_by="B1",
-    ))
+    ledger.register(
+        ForbiddenAction(
+            action_id="FA-003",
+            description="Unsafe operation",
+            severity="BLOCKED",
+            pattern="UNSAFE_OP",
+            registered_by="B1",
+        )
+    )
 
     sec = SecurityStateContext()
     store = EvidenceStore()
@@ -270,6 +285,7 @@ def test_forbidden_no_violation():
 # 4. RuleLedger
 # ═══════════════════════════════════════════════════════════════════════════ #
 
+
 def _prov(incident: str = "INC-001") -> RuleProvenance:
     return RuleProvenance(
         source_incident=incident,
@@ -282,8 +298,7 @@ def test_rule_create():
     lock = RuleLedgerLock()
     ledger = RuleLedger(lock)
 
-    rule = Rule(name="max_loss", condition="loss > 0.05", action="BLOCK",
-                provenance=_prov())
+    rule = Rule(name="max_loss", condition="loss > 0.05", action="BLOCK", provenance=_prov())
     rid = asyncio.run(ledger.create(rule, LoopPriority.MAIN))
 
     assert ledger.read(rid) is rule
@@ -309,13 +324,17 @@ def test_rule_update():
     lock = RuleLedgerLock()
     ledger = RuleLedger(lock)
 
-    rule = Rule(name="test", condition="a > b", action="WARN",
-                provenance=_prov())
+    rule = Rule(name="test", condition="a > b", action="WARN", provenance=_prov())
     rid = asyncio.run(ledger.create(rule, LoopPriority.MAIN))
 
-    updated = asyncio.run(ledger.update(
-        rid, {"condition": "a > c"}, _prov("INC-002"), LoopPriority.MAIN,
-    ))
+    updated = asyncio.run(
+        ledger.update(
+            rid,
+            {"condition": "a > c"},
+            _prov("INC-002"),
+            LoopPriority.MAIN,
+        )
+    )
     assert updated.condition == "a > c"
     assert updated.version == 2
     assert ledger.rule_change_count() == 2  # 1 create + 1 update
@@ -338,6 +357,7 @@ def test_rule_delete():
 
 def test_rule_change_count_since():
     from datetime import timedelta
+
     lock = RuleLedgerLock()
     ledger = RuleLedger(lock)
 
@@ -346,6 +366,7 @@ def test_rule_change_count_since():
 
     # All changes since epoch
     from datetime import datetime, timezone
+
     assert ledger.rule_change_count(since=datetime(2000, 1, 1, tzinfo=timezone.utc)) == 1
     # No changes in the future
     assert ledger.rule_change_count(since=datetime(2099, 1, 1, tzinfo=timezone.utc)) == 0
@@ -391,36 +412,48 @@ if __name__ == "__main__":
     print("=" * 60)
 
     tests = [
-        ("EvidenceStore", [
-            test_evidence_store_basic,
-            test_evidence_store_count_cycle,
-            test_evidence_store_list_by_trigger,
-            test_evidence_store_clear,
-        ]),
-        ("MandatoryLedger", [
-            test_mandatory_18_items,
-            test_mandatory_get_item,
-            test_mandatory_recovery_exemptions,
-            test_mandatory_check_satisfied,
-            test_mandatory_list_unsatisfied,
-            test_mandatory_is_exempt,
-        ]),
-        ("ForbiddenLedger", [
-            test_forbidden_register_and_check,
-            test_forbidden_wildcard_match,
-            test_forbidden_enforce_lockdown,
-            test_forbidden_enforce_blocked,
-            test_forbidden_no_violation,
-        ]),
-        ("RuleLedger", [
-            test_rule_create,
-            test_rule_provenance_required,
-            test_rule_update,
-            test_rule_delete,
-            test_rule_change_count_since,
-            test_rule_change_history,
-            test_rule_not_found,
-        ]),
+        (
+            "EvidenceStore",
+            [
+                test_evidence_store_basic,
+                test_evidence_store_count_cycle,
+                test_evidence_store_list_by_trigger,
+                test_evidence_store_clear,
+            ],
+        ),
+        (
+            "MandatoryLedger",
+            [
+                test_mandatory_18_items,
+                test_mandatory_get_item,
+                test_mandatory_recovery_exemptions,
+                test_mandatory_check_satisfied,
+                test_mandatory_list_unsatisfied,
+                test_mandatory_is_exempt,
+            ],
+        ),
+        (
+            "ForbiddenLedger",
+            [
+                test_forbidden_register_and_check,
+                test_forbidden_wildcard_match,
+                test_forbidden_enforce_lockdown,
+                test_forbidden_enforce_blocked,
+                test_forbidden_no_violation,
+            ],
+        ),
+        (
+            "RuleLedger",
+            [
+                test_rule_create,
+                test_rule_provenance_required,
+                test_rule_update,
+                test_rule_delete,
+                test_rule_change_count_since,
+                test_rule_change_history,
+                test_rule_not_found,
+            ],
+        ),
     ]
 
     total = 0

@@ -21,6 +21,7 @@ Safety:
   - read_only always True
   - No write, no delete, no transition, no execution
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
@@ -63,6 +64,7 @@ POSTURE_DESCRIPTIONS = {
 
 # -- Data classes ----------------------------------------------------------- #
 
+
 @dataclass
 class DecisionSummary:
     """
@@ -70,6 +72,7 @@ class DecisionSummary:
 
     Suggestion only. No action executed. action_allowed is ALWAYS False.
     """
+
     recommended_posture: str = POSTURE_MONITOR
     risk_level: str = RISK_LOW
     reason_chain: list = field(default_factory=list)
@@ -80,9 +83,9 @@ class DecisionSummary:
     cleanup_pressure: str = PRESSURE_LOW
 
     # Safety labels — ALWAYS fixed, NEVER changed
-    action_allowed: bool = False     # NEVER True
-    suggestion_only: bool = True     # Always True
-    read_only: bool = True           # Always True
+    action_allowed: bool = False  # NEVER True
+    suggestion_only: bool = True  # Always True
+    read_only: bool = True  # Always True
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -90,8 +93,10 @@ class DecisionSummary:
     def to_schema(self):
         """Convert to typed Pydantic schema (DecisionSummarySchema)."""
         from app.schemas.decision_summary_schema import (
-            DecisionSummarySchema, DecisionSafety,
+            DecisionSummarySchema,
+            DecisionSafety,
         )
+
         return DecisionSummarySchema(
             recommended_posture=self.recommended_posture,
             risk_level=self.risk_level,
@@ -102,7 +107,7 @@ class DecisionSummary:
             stale_total=self.stale_total,
             cleanup_pressure=self.cleanup_pressure,
             safety=DecisionSafety(
-                action_allowed=False,   # Structurally fixed
+                action_allowed=False,  # Structurally fixed
                 suggestion_only=True,
                 read_only=True,
             ),
@@ -110,6 +115,7 @@ class DecisionSummary:
 
 
 # -- Core logic ------------------------------------------------------------- #
+
 
 def _determine_posture(pressure: str) -> str:
     """
@@ -222,7 +228,9 @@ def build_decision_summary(
 
     posture = _determine_posture(obs.cleanup_pressure)
     risk_level = _determine_risk_level(
-        obs.cleanup_pressure, obs.orphan_total, obs.candidate_total,
+        obs.cleanup_pressure,
+        obs.orphan_total,
+        obs.candidate_total,
     )
     reason_chain = _build_reason_chain(obs)
     explanation = _build_explanation(posture, risk_level, obs)

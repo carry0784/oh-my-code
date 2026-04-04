@@ -10,15 +10,14 @@ B1 Doctrine compliance:
   - All exceptions wrapped into CommandTranscript.fail()
   - DRY_RUN uses internal simulation (Bitget demo trading optional)
 """
+
 from __future__ import annotations
 
 from typing import Optional
 
 from kdexter.tcl.adapters import ExchangeAdapter
 from kdexter.tcl.adapters.ccxt_base import CcxtMixin
-from kdexter.tcl.commands import (
-    CommandTranscript, CommandType, ExecutionMode, TCLCommand
-)
+from kdexter.tcl.commands import CommandTranscript, CommandType, ExecutionMode, TCLCommand
 
 
 class BitgetAdapter(ExchangeAdapter, CcxtMixin):
@@ -61,19 +60,20 @@ class BitgetAdapter(ExchangeAdapter, CcxtMixin):
         if self._client is None:
             try:
                 import ccxt  # type: ignore
-                self._client = ccxt.bitget({
-                    "apiKey": self._api_key,
-                    "secret": self._api_secret,
-                    "password": self._passphrase,
-                    "enableRateLimit": True,
-                    "options": {"defaultType": "spot"},
-                })
+
+                self._client = ccxt.bitget(
+                    {
+                        "apiKey": self._api_key,
+                        "secret": self._api_secret,
+                        "password": self._passphrase,
+                        "enableRateLimit": True,
+                        "options": {"defaultType": "spot"},
+                    }
+                )
                 if self._demo:
                     self._client.set_sandbox_mode(True)
             except ImportError:
-                raise RuntimeError(
-                    "ccxt not installed. Run: pip install ccxt"
-                )
+                raise RuntimeError("ccxt not installed. Run: pip install ccxt")
         return self._client
 
     # ── execute (LIVE) ───────────────────────────────────────────────────── #
@@ -107,8 +107,11 @@ class BitgetAdapter(ExchangeAdapter, CcxtMixin):
         """Internal simulation — no real orders."""
         t = self._base_transcript(command)
         try:
-            if command.command_type in {CommandType.ORDER_BUY, CommandType.ORDER_SELL,
-                                        CommandType.ORDER_DRY_RUN}:
+            if command.command_type in {
+                CommandType.ORDER_BUY,
+                CommandType.ORDER_SELL,
+                CommandType.ORDER_DRY_RUN,
+            }:
                 sim_order_id = f"DRY-{command.idempotency_key[:8].upper()}"
                 raw = {
                     "orderId": sim_order_id,
@@ -223,29 +226,19 @@ class BitgetAdapter(ExchangeAdapter, CcxtMixin):
     ) -> CommandTranscript:
         return await self._ccxt_place_order(t, command, side)
 
-    async def _cancel_order(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _cancel_order(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         return await self._ccxt_cancel_order(t, command)
 
-    async def _verify_order(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _verify_order(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         return await self._ccxt_verify_order(t, command)
 
-    async def _query_position(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _query_position(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         return await self._ccxt_query_position(t, command)
 
-    async def _query_balance(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    async def _query_balance(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         return await self._ccxt_query_balance(t, command)
 
-    def _risk_check(
-        self, t: CommandTranscript, command: TCLCommand
-    ) -> CommandTranscript:
+    def _risk_check(self, t: CommandTranscript, command: TCLCommand) -> CommandTranscript:
         """Basic risk check: quantity * price must not exceed budget cap."""
         qty = command.quantity or 0.0
         price = command.price or 0.0
@@ -253,8 +246,7 @@ class BitgetAdapter(ExchangeAdapter, CcxtMixin):
         cap = command.extra.get("order_cap_usdt", 10_000)  # Bitget uses USDT
         if estimated_value > cap:
             t.fail(
-                f"RISK.CHECK failed: estimated_value={estimated_value:,.2f} "
-                f"> cap={cap:,.2f} USDT"
+                f"RISK.CHECK failed: estimated_value={estimated_value:,.2f} > cap={cap:,.2f} USDT"
             )
         else:
             t.complete(

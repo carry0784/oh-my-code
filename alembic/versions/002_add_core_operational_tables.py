@@ -14,6 +14,7 @@ Policy:
 - No server_default — all defaults are ORM client-side
 - Enum types created explicitly before tables, dropped after tables
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -33,12 +34,21 @@ positionside_enum = sa.Enum("long", "short", name="positionside")
 orderside_enum = sa.Enum("buy", "sell", name="orderside")
 ordertype_enum = sa.Enum("market", "limit", "stop_loss", "take_profit", name="ordertype")
 orderstatus_enum = sa.Enum(
-    "pending", "submitted", "filled", "partially_filled", "cancelled", "rejected",
+    "pending",
+    "submitted",
+    "filled",
+    "partially_filled",
+    "cancelled",
+    "rejected",
     name="orderstatus",
 )
 signaltype_enum = sa.Enum("long", "short", "close", name="signaltype")
 signalstatus_enum = sa.Enum(
-    "pending", "validated", "rejected", "executed", "expired",
+    "pending",
+    "validated",
+    "rejected",
+    "executed",
+    "expired",
     name="signalstatus",
 )
 

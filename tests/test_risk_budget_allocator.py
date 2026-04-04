@@ -4,10 +4,20 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config", "structlog",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
+    "structlog",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -24,6 +34,7 @@ from app.services.risk_budget_allocator import RiskBudgetAllocator, RiskBudget
 
 TOTAL_RISK = 20.0
 
+
 @pytest.fixture
 def allocator():
     return RiskBudgetAllocator(total_risk_pct=TOTAL_RISK)
@@ -32,6 +43,7 @@ def allocator():
 # ---------------------------------------------------------------------------
 # test_simple_proportional
 # ---------------------------------------------------------------------------
+
 
 def test_simple_proportional(allocator):
     """Without volatilities, each strategy gets total_risk * weight."""
@@ -45,6 +57,7 @@ def test_simple_proportional(allocator):
 # ---------------------------------------------------------------------------
 # test_vol_adjusted_allocation
 # ---------------------------------------------------------------------------
+
 
 def test_vol_adjusted_allocation(allocator):
     """Lower-volatility strategy receives a larger share of the risk budget."""
@@ -60,6 +73,7 @@ def test_vol_adjusted_allocation(allocator):
 # test_budget_sums_to_total
 # ---------------------------------------------------------------------------
 
+
 def test_budget_sums_to_total(allocator):
     """All strategy budgets must sum to total_risk_pct."""
     weights = {"s1": 0.3, "s2": 0.5, "s3": 0.2}
@@ -72,6 +86,7 @@ def test_budget_sums_to_total(allocator):
 # ---------------------------------------------------------------------------
 # test_check_breach_detects
 # ---------------------------------------------------------------------------
+
 
 def test_check_breach_detects(allocator):
     """A drawdown exceeding the allocated budget is reported as a breach."""
@@ -89,6 +104,7 @@ def test_check_breach_detects(allocator):
 # ---------------------------------------------------------------------------
 # test_check_breach_no_breach
 # ---------------------------------------------------------------------------
+
 
 def test_check_breach_no_breach(allocator):
     """All drawdowns within budget produce an empty breach list."""

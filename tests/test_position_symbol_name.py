@@ -12,6 +12,7 @@ Isolation: This test creates its own in-memory SQLAlchemy Base and engine
 to avoid contamination from MagicMock stubs injected by other test files
 (e.g. test_dashboard.py). Do NOT remove the isolation bootstrap below.
 """
+
 from __future__ import annotations
 
 import importlib
@@ -85,6 +86,7 @@ _TestBase.metadata.create_all(_engine)
 # ═══════════════════════════════════════════════════════════════════════════ #
 # B-01: POSITION SYMBOL_NAME TESTS
 # ═══════════════════════════════════════════════════════════════════════════ #
+
 
 class TestPositionSymbolName:
     """B-01: Position.symbol_name field reinforcement."""

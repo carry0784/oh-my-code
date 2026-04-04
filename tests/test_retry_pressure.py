@@ -14,6 +14,7 @@ Tests the retry pressure observation card:
 
 Run: pytest tests/test_retry_pressure.py -v
 """
+
 import sys
 import json
 from pathlib import Path
@@ -26,16 +27,32 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services.order_service", "app.services.position_service",
-    "app.services.signal_service", "ccxt", "ccxt.async_support",
-    "redis", "celery", "asyncpg",
-    "kdexter", "kdexter.ledger", "kdexter.ledger.forbidden_ledger",
-    "kdexter.audit", "kdexter.audit.evidence_store",
-    "kdexter.state_machine", "kdexter.state_machine.security_state",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
+    "kdexter",
+    "kdexter.ledger",
+    "kdexter.ledger.forbidden_ledger",
+    "kdexter.audit",
+    "kdexter.audit.evidence_store",
+    "kdexter.state_machine",
+    "kdexter.state_machine.security_state",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -58,6 +75,7 @@ from app.core.retry_plan_store import RetryPlanStore
 
 # -- Helpers ---------------------------------------------------------------- #
 
+
 def _empty_store():
     return RetryPlanStore(max_plans=100, ttl_seconds=3600)
 
@@ -65,6 +83,7 @@ def _empty_store():
 def _store_with_plans(plans):
     """Create store and manually inject plans (bypass enqueue for test control)."""
     from app.core.retry_plan_store import RetryPlan
+
     store = RetryPlanStore(max_plans=200, ttl_seconds=3600)
     for p in plans:
         plan = RetryPlan(
@@ -82,8 +101,7 @@ def _store_with_plans(plans):
 
 def _pending_plans(count, channel="slack", severity="medium"):
     return [
-        {"status": "pending", "channel": channel, "severity_tier": severity}
-        for _ in range(count)
+        {"status": "pending", "channel": channel, "severity_tier": severity} for _ in range(count)
     ]
 
 
@@ -91,8 +109,8 @@ def _pending_plans(count, channel="slack", severity="medium"):
 # AXIS 1: Backlog Accuracy                                                     #
 # =========================================================================== #
 
-class TestBacklogAccuracy:
 
+class TestBacklogAccuracy:
     def test_none_store_zero_pressure(self):
         pressure = build_retry_pressure(None)
         assert pressure.total_plans == 0
@@ -130,8 +148,8 @@ class TestBacklogAccuracy:
 # AXIS 2: Status Distribution                                                  #
 # =========================================================================== #
 
-class TestStatusDistribution:
 
+class TestStatusDistribution:
     def test_all_statuses_counted(self):
         plans = [
             {"status": "pending"},
@@ -163,8 +181,8 @@ class TestStatusDistribution:
 # AXIS 3: Channel Distribution                                                 #
 # =========================================================================== #
 
-class TestChannelDistribution:
 
+class TestChannelDistribution:
     def test_single_channel_counted(self):
         store = _store_with_plans(_pending_plans(3, channel="slack"))
         pressure = build_retry_pressure(store)
@@ -200,8 +218,8 @@ class TestChannelDistribution:
 # AXIS 4: Density Signal                                                       #
 # =========================================================================== #
 
-class TestDensitySignal:
 
+class TestDensitySignal:
     def test_no_plans_description(self):
         pressure = build_retry_pressure(None)
         assert pressure.density.description == "No retry plans."
@@ -220,7 +238,11 @@ class TestDensitySignal:
         assert pressure.density.dominant_channel == "slack"
 
     def test_not_concentrated_when_spread(self):
-        plans = _pending_plans(2, channel="slack") + _pending_plans(2, channel="email") + _pending_plans(2, channel="pager")
+        plans = (
+            _pending_plans(2, channel="slack")
+            + _pending_plans(2, channel="email")
+            + _pending_plans(2, channel="pager")
+        )
         store = _store_with_plans(plans)
         pressure = build_retry_pressure(store)
         assert pressure.density.is_channel_concentrated is False
@@ -240,8 +262,8 @@ class TestDensitySignal:
 # AXIS 5: Safety Invariants                                                    #
 # =========================================================================== #
 
-class TestSafetyInvariants:
 
+class TestSafetyInvariants:
     def test_safety_all_true_empty(self):
         pressure = build_retry_pressure(None)
         assert pressure.safety.read_only is True
@@ -262,18 +284,25 @@ class TestSafetyInvariants:
     def test_source_has_no_write_methods(self):
         import inspect
         import app.services.retry_pressure_service as mod
+
         source = inspect.getsource(mod)
-        forbidden = ["propose_and_guard", "record_receipt", "transition_to",
-                      ".delete(", ".write(", "enqueue("]
+        forbidden = [
+            "propose_and_guard",
+            "record_receipt",
+            "transition_to",
+            ".delete(",
+            ".write(",
+            "enqueue(",
+        ]
         for keyword in forbidden:
             assert keyword not in source, f"Forbidden keyword '{keyword}' in source"
 
     def test_source_has_no_prediction_keywords(self):
         import inspect
         import app.services.retry_pressure_service as mod
+
         source = inspect.getsource(mod)
-        forbidden = ["predict", "forecast", "score(", "auto_promote",
-                      "auto_escalate", "auto_judge"]
+        forbidden = ["predict", "forecast", "score(", "auto_promote", "auto_escalate", "auto_judge"]
         for keyword in forbidden:
             assert keyword not in source, f"Prediction keyword '{keyword}' in source"
 
@@ -290,15 +319,21 @@ class TestSafetyInvariants:
 # AXIS 6: Schema Drift Sentinel                                                #
 # =========================================================================== #
 
-class TestSchemaDriftSentinel:
 
+class TestSchemaDriftSentinel:
     def test_retry_pressure_field_count(self):
         assert len(RetryPressureSchema.model_fields) == 8
 
     def test_retry_pressure_field_names(self):
         expected = {
-            "total_plans", "pending_count", "backlog_ratio",
-            "by_status", "by_channel", "by_severity", "density", "safety",
+            "total_plans",
+            "pending_count",
+            "backlog_ratio",
+            "by_status",
+            "by_channel",
+            "by_severity",
+            "density",
+            "safety",
         }
         assert set(RetryPressureSchema.model_fields.keys()) == expected
 
@@ -322,30 +357,35 @@ class TestSchemaDriftSentinel:
 # AXIS 7: Board Integration                                                    #
 # =========================================================================== #
 
-class TestBoardIntegration:
 
+class TestBoardIntegration:
     def test_board_schema_has_retry_pressure(self):
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         assert "retry_pressure" in FourTierBoardResponse.model_fields
 
     def test_board_schema_retry_pressure_is_typed(self):
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         field_info = FourTierBoardResponse.model_fields["retry_pressure"]
         assert field_info.annotation is RetryPressureSchema
 
     def test_board_service_returns_typed_retry_pressure(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert isinstance(board.retry_pressure, RetryPressureSchema)
 
     def test_board_retry_pressure_safety_intact(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.retry_pressure.safety.read_only is True
         assert board.retry_pressure.safety.no_prediction is True
 
     def test_board_serializes_retry_pressure_to_json(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         j = json.loads(board.model_dump_json())
         assert "retry_pressure" in j
@@ -354,6 +394,7 @@ class TestBoardIntegration:
 
     def test_board_retry_pressure_empty_is_zero_safe(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.retry_pressure.total_plans == 0
         assert board.retry_pressure.pending_count == 0

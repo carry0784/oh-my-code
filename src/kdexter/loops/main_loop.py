@@ -21,6 +21,7 @@ Mandatory items enforced per step (mandatory_enforcement_map.md):
 Governance: A layer (runtime execution). WorkState transitions require
   B2-approved guard conditions.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -33,15 +34,21 @@ from typing import Callable, Optional, Awaitable
 
 from kdexter.audit.evidence_store import EvidenceBundle, EvidenceStore
 from kdexter.loops.concurrency import (
-    LoopCounter, LoopCeilingExceededError,
-    LoopPriority, LoopPriorityQueue, RuleLedgerLock,
+    LoopCounter,
+    LoopCeilingExceededError,
+    LoopPriority,
+    LoopPriorityQueue,
+    RuleLedgerLock,
 )
 from kdexter.state_machine.security_state import SecurityStateContext, SecurityStateEnum
 from kdexter.state_machine.trust_state import TrustStateContext
 from kdexter.state_machine.work_state import (
-    GuardViolationError, InvalidTransitionError,
-    ValidatingCheck, ValidationResult,
-    WorkStateContext, WorkStateEnum,
+    GuardViolationError,
+    InvalidTransitionError,
+    ValidatingCheck,
+    ValidationResult,
+    WorkStateContext,
+    WorkStateEnum,
 )
 from kdexter.tcl.commands import TCLDispatcher
 
@@ -52,15 +59,17 @@ logger = logging.getLogger(__name__)
 # Cycle input / output
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass
 class CycleInput:
     """
     All data the Main Loop needs to start one execution cycle.
     Provided by the caller (L5 Harness / Scheduler or operator).
     """
-    intent: str                             # M-01: user's execution intent
-    spec_twin_id: str                       # M-02: pre-generated spec twin ID
-    incident_id: str = field(             # loop count tracking key
+
+    intent: str  # M-01: user's execution intent
+    spec_twin_id: str  # M-02: pre-generated spec twin ID
+    incident_id: str = field(  # loop count tracking key
         default_factory=lambda: f"CYCLE-{uuid.uuid4().hex[:8].upper()}"
     )
     # Optional pre-approvals (set True to skip human gate in automated runs)
@@ -70,6 +79,7 @@ class CycleInput:
 @dataclass
 class CycleResult:
     """Result of one complete Main Loop cycle."""
+
     cycle_id: str
     incident_id: str
     outcome: CycleOutcome
@@ -79,8 +89,9 @@ class CycleResult:
     started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = None
 
-    def finish(self, outcome: "CycleOutcome", state: WorkStateEnum,
-               error: Optional[str] = None) -> None:
+    def finish(
+        self, outcome: "CycleOutcome", state: WorkStateEnum, error: Optional[str] = None
+    ) -> None:
         self.outcome = outcome
         self.final_state = state
         self.error = error
@@ -88,16 +99,17 @@ class CycleResult:
 
 
 class CycleOutcome(Enum):
-    SUCCESS    = "SUCCESS"          # reached MONITOR
-    BLOCKED    = "BLOCKED"          # guard violation — needs review
-    FAILED     = "FAILED"           # routed to Recovery/Self-Improvement
-    CEILING    = "CEILING"          # loop count ceiling exceeded
-    INTERRUPTED = "INTERRUPTED"     # external stop signal
+    SUCCESS = "SUCCESS"  # reached MONITOR
+    BLOCKED = "BLOCKED"  # guard violation — needs review
+    FAILED = "FAILED"  # routed to Recovery/Self-Improvement
+    CEILING = "CEILING"  # loop count ceiling exceeded
+    INTERRUPTED = "INTERRUPTED"  # external stop signal
 
 
 # ─────────────────────────────────────────────────────────────────────────── #
 # Hooks (dependency injection for engines not yet implemented)
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 @dataclass
 class MainLoopHooks:
@@ -106,30 +118,31 @@ class MainLoopHooks:
     Default implementations are stubs that pass all checks.
     Replace with real engines as they are implemented.
     """
+
     # VALIDATING checklist hooks — each returns (passed: bool, reason: str)
-    check_forbidden:   Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
-    check_mandatory:   Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
-    check_compliance:  Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
-    check_drift:       Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
-    check_conflict:    Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
-    check_pattern:     Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
-    check_budget:      Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
-    check_trust:       Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
-    check_loop:        Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
-    check_lock:        Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
+    check_forbidden: Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
+    check_mandatory: Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
+    check_compliance: Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
+    check_drift: Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
+    check_conflict: Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
+    check_pattern: Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
+    check_budget: Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
+    check_trust: Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
+    check_loop: Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
+    check_lock: Callable[[WorkStateContext], Awaitable[tuple[bool, str]]] = None
 
     # Execution hook — called at RUNNING state
-    run_execution:     Callable[[WorkStateContext, TCLDispatcher],
-                                 Awaitable[tuple[bool, str]]] = None
+    run_execution: Callable[[WorkStateContext, TCLDispatcher], Awaitable[tuple[bool, str]]] = None
 
     # Evaluation hook — called at EVALUATING state; returns completion_score
-    evaluate:          Callable[[WorkStateContext], Awaitable[float]] = None
+    evaluate: Callable[[WorkStateContext], Awaitable[float]] = None
 
     # Approval hook — called at APPROVAL_PENDING; returns approved bool
-    request_approval:  Callable[[WorkStateContext], Awaitable[bool]] = None
+    request_approval: Callable[[WorkStateContext], Awaitable[bool]] = None
 
     def __post_init__(self) -> None:
         """Install stub implementations for any unset hooks."""
+
         async def _pass(_ctx=None, _d=None) -> tuple[bool, str]:
             return True, ""
 
@@ -140,9 +153,16 @@ class MainLoopHooks:
             return True
 
         for attr in [
-            "check_forbidden", "check_mandatory", "check_compliance",
-            "check_drift", "check_conflict", "check_pattern",
-            "check_budget", "check_trust", "check_loop", "check_lock",
+            "check_forbidden",
+            "check_mandatory",
+            "check_compliance",
+            "check_drift",
+            "check_conflict",
+            "check_pattern",
+            "check_budget",
+            "check_trust",
+            "check_loop",
+            "check_lock",
         ]:
             if getattr(self, attr) is None:
                 setattr(self, attr, _pass)
@@ -158,6 +178,7 @@ class MainLoopHooks:
 # ─────────────────────────────────────────────────────────────────────────── #
 # Main Loop
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 class MainLoop:
     """
@@ -297,7 +318,7 @@ class MainLoop:
         self._transition(WorkStateEnum.PLANNING, result)
 
         # M-03 risk check
-        self._work.risk_checked = True           # TODO: call L3 Security engine
+        self._work.risk_checked = True  # TODO: call L3 Security engine
 
         # M-04 security check
         if self._security.is_locked_down():
@@ -305,13 +326,13 @@ class MainLoop:
         self._work.security_checked = True
 
         # M-05 rollback plan
-        self._work.rollback_plan_ready = True    # TODO: call L26 Recovery Engine
+        self._work.rollback_plan_ready = True  # TODO: call L26 Recovery Engine
 
         # M-06 recovery simulation
         self._work.recovery_simulation_done = True  # TODO: Sandbox simulation
 
         # M-18 research
-        self._work.research_complete = True      # TODO: call L23 Research Engine
+        self._work.research_complete = True  # TODO: call L23 Research Engine
 
         logger.debug("PLANNING: all 5 mandatory checks set")
 
@@ -320,16 +341,16 @@ class MainLoop:
         self._transition(WorkStateEnum.VALIDATING, result)
 
         checks: list[tuple[ValidatingCheck, Callable]] = [
-            (ValidatingCheck.FORBIDDEN_CHECK,   self._hooks.check_forbidden),
-            (ValidatingCheck.MANDATORY_CHECK,   self._hooks.check_mandatory),
-            (ValidatingCheck.COMPLIANCE_CHECK,  self._hooks.check_compliance),
-            (ValidatingCheck.DRIFT_CHECK,       self._hooks.check_drift),
-            (ValidatingCheck.CONFLICT_CHECK,    self._hooks.check_conflict),
-            (ValidatingCheck.PATTERN_CHECK,     self._hooks.check_pattern),
-            (ValidatingCheck.BUDGET_CHECK,      self._hooks.check_budget),
-            (ValidatingCheck.TRUST_CHECK,       self._hooks.check_trust),
-            (ValidatingCheck.LOOP_CHECK,        self._hooks.check_loop),
-            (ValidatingCheck.LOCK_CHECK,        self._hooks.check_lock),
+            (ValidatingCheck.FORBIDDEN_CHECK, self._hooks.check_forbidden),
+            (ValidatingCheck.MANDATORY_CHECK, self._hooks.check_mandatory),
+            (ValidatingCheck.COMPLIANCE_CHECK, self._hooks.check_compliance),
+            (ValidatingCheck.DRIFT_CHECK, self._hooks.check_drift),
+            (ValidatingCheck.CONFLICT_CHECK, self._hooks.check_conflict),
+            (ValidatingCheck.PATTERN_CHECK, self._hooks.check_pattern),
+            (ValidatingCheck.BUDGET_CHECK, self._hooks.check_budget),
+            (ValidatingCheck.TRUST_CHECK, self._hooks.check_trust),
+            (ValidatingCheck.LOOP_CHECK, self._hooks.check_loop),
+            (ValidatingCheck.LOCK_CHECK, self._hooks.check_lock),
         ]
 
         for check_enum, hook_fn in checks:
@@ -339,9 +360,7 @@ class MainLoop:
 
             if not passed:
                 self._work.failed_check = check_enum
-                raise CycleFailureError(
-                    f"VALIDATING [{check_enum.name}] failed: {reason}"
-                )
+                raise CycleFailureError(f"VALIDATING [{check_enum.name}] failed: {reason}")
             logger.debug(f"VALIDATING [{check_enum.name}] PASS")
 
     async def _step_running(self, result: CycleResult) -> None:
@@ -411,13 +430,10 @@ class MainLoop:
         self._evidence.store(bundle)
         result.evidence_bundles.append(bundle)
         logger.debug(
-            f"  {self._work.previous.value if self._work.previous else '?'}"
-            f" → {state.value}"
+            f"  {self._work.previous.value if self._work.previous else '?'} → {state.value}"
         )
 
-    def _safe_transition(
-        self, state: WorkStateEnum, reason: Optional[str] = None
-    ) -> None:
+    def _safe_transition(self, state: WorkStateEnum, reason: Optional[str] = None) -> None:
         """Transition without raising — for error recovery paths."""
         try:
             self._work.transition_to(state, reason=reason)
@@ -427,4 +443,5 @@ class MainLoop:
 
 class CycleFailureError(Exception):
     """Internal exception that routes the cycle to FAILED state."""
+
     pass

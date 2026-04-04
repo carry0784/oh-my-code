@@ -10,6 +10,7 @@ Handler duplication prevention: setup_logging() clears existing handlers
 on the root logger before attaching new ones, making it safe to call
 multiple times (tests, reloads).
 """
+
 import logging
 import sys
 from logging.handlers import RotatingFileHandler

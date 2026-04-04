@@ -7,6 +7,7 @@ Each agent operates through TCL (never direct exchange access).
 
 A (Runtime Execution) layer, B2-approved.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -89,12 +90,10 @@ class ParallelAgentManager:
         return self._agents.get(agent_id)
 
     def list_running(self) -> list[AgentInstance]:
-        return [a for a in self._agents.values()
-                if a.status == AgentStatus.RUNNING]
+        return [a for a in self._agents.values() if a.status == AgentStatus.RUNNING]
 
     def list_all(self) -> list[AgentInstance]:
         return list(self._agents.values())
 
     def active_count(self) -> int:
-        return sum(1 for a in self._agents.values()
-                   if a.status == AgentStatus.RUNNING)
+        return sum(1 for a in self._agents.values() if a.status == AgentStatus.RUNNING)

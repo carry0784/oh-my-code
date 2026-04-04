@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -32,10 +41,18 @@ def _make_trades(pnl_list: list[float], price: float = 100.0) -> list[TradeRecor
     for pnl in pnl_list:
         if pnl >= 0:
             exit_p = price + pnl + price * 0.002  # offset fee
-            trades.append(TradeRecord(entry_price=price, exit_price=exit_p, side="long", quantity=1.0, fee_pct=0.001))
+            trades.append(
+                TradeRecord(
+                    entry_price=price, exit_price=exit_p, side="long", quantity=1.0, fee_pct=0.001
+                )
+            )
         else:
             exit_p = price + pnl + price * 0.002
-            trades.append(TradeRecord(entry_price=price, exit_price=exit_p, side="long", quantity=1.0, fee_pct=0.001))
+            trades.append(
+                TradeRecord(
+                    entry_price=price, exit_price=exit_p, side="long", quantity=1.0, fee_pct=0.001
+                )
+            )
     return trades
 
 
@@ -58,8 +75,12 @@ class TestTradeRecord:
         assert t.pnl < 0
 
     def test_fee_deduction(self):
-        t_no_fee = TradeRecord(entry_price=100, exit_price=110, side="long", quantity=1.0, fee_pct=0.0)
-        t_with_fee = TradeRecord(entry_price=100, exit_price=110, side="long", quantity=1.0, fee_pct=0.001)
+        t_no_fee = TradeRecord(
+            entry_price=100, exit_price=110, side="long", quantity=1.0, fee_pct=0.0
+        )
+        t_with_fee = TradeRecord(
+            entry_price=100, exit_price=110, side="long", quantity=1.0, fee_pct=0.001
+        )
         assert t_no_fee.pnl > t_with_fee.pnl
 
 
@@ -95,7 +116,7 @@ class TestPerformanceCalculator:
         result = self.calc.calculate(trades)
         assert result.total_trades == 3
         assert result.winning_trades == 2
-        assert abs(result.win_rate - 2/3) < 0.01
+        assert abs(result.win_rate - 2 / 3) < 0.01
 
     def test_equity_curve(self):
         trades = [

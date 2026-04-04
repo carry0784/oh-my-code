@@ -30,7 +30,6 @@ ALERT_POLICY_PATH = PROJECT_ROOT / "app" / "core" / "alert_policy.py"
 # C28-1: 모듈 구조
 # ===========================================================================
 class TestC28ModuleStructure:
-
     def test_module_exists(self):
         assert POLICY_PATH.exists()
 
@@ -52,7 +51,6 @@ class TestC28ModuleStructure:
 # C28-2: 기본 matrix 검증
 # ===========================================================================
 class TestC28DefaultMatrix:
-
     def test_critical_has_all_channels(self):
         assert "console" in _DEFAULT_MATRIX["critical"]
         assert "snapshot" in _DEFAULT_MATRIX["critical"]
@@ -84,7 +82,6 @@ class TestC28DefaultMatrix:
 # C28-3: resolve_channels() 로직
 # ===========================================================================
 class TestC28ResolveChannels:
-
     def test_critical_send(self):
         cp = ChannelPolicy()
         channels = cp.resolve_channels("critical", "send")
@@ -113,7 +110,6 @@ class TestC28ResolveChannels:
 # C28-4: Policy action 우선순위
 # ===========================================================================
 class TestC28ActionPriority:
-
     def test_suppress_always_empty(self):
         cp = ChannelPolicy()
         assert cp.resolve_channels("critical", "suppress") == []
@@ -144,7 +140,6 @@ class TestC28ActionPriority:
 # C28-5: Custom matrix / reconfiguration
 # ===========================================================================
 class TestC28CustomMatrix:
-
     def test_custom_matrix_at_init(self):
         custom = {"critical": ["console"], "low": ["file"], "clear": []}
         cp = ChannelPolicy(matrix=custom)
@@ -166,7 +161,6 @@ class TestC28CustomMatrix:
 # C28-6: Fail-closed
 # ===========================================================================
 class TestC28FailClosed:
-
     def test_unknown_tier_returns_fallback(self):
         cp = ChannelPolicy()
         channels = cp.resolve_channels("nonexistent_tier", "send")
@@ -182,7 +176,6 @@ class TestC28FailClosed:
 # C28-7: 기존 모듈 보존
 # ===========================================================================
 class TestC28ExistingPreserved:
-
     def test_alert_router_unchanged(self):
         content = ROUTER_PATH.read_text(encoding="utf-8")
         assert "def route_snapshot" in content
@@ -198,13 +191,16 @@ class TestC28ExistingPreserved:
 # C28-8: 금지 조항
 # ===========================================================================
 class TestC28Forbidden:
-
     def test_no_forbidden_strings(self):
         content = POLICY_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace', 'agent_analysis', 'error_class',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
+            "agent_analysis",
+            "error_class",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

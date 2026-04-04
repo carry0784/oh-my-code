@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -76,7 +85,16 @@ class TestValidationPipeline:
 
     def test_all_stages_have_results(self):
         pipeline = ValidationPipeline(
-            thresholds=ValidationThresholds(min_trades=1, min_win_rate=0.0, max_drawdown_pct=100, min_profit_factor=0.0, min_consistency=0.0, max_ruin_probability=1.0, min_profitable_probability=0.0, max_dd_95th_pct=100),
+            thresholds=ValidationThresholds(
+                min_trades=1,
+                min_win_rate=0.0,
+                max_drawdown_pct=100,
+                min_profit_factor=0.0,
+                min_consistency=0.0,
+                max_ruin_probability=1.0,
+                min_profitable_probability=0.0,
+                max_dd_95th_pct=100,
+            ),
             backtest_config=BacktestConfig(fee_pct=0, slippage_pct=0),
             mc_simulations=50,
             wf_windows=3,
@@ -91,9 +109,14 @@ class TestValidationPipeline:
         """With very lenient thresholds, oscillating data should pass all stages."""
         pipeline = ValidationPipeline(
             thresholds=ValidationThresholds(
-                min_trades=1, min_win_rate=0.0, max_drawdown_pct=100,
-                min_profit_factor=0.0, min_consistency=0.0, min_efficiency_ratio=0.0,
-                max_ruin_probability=1.0, min_profitable_probability=0.0,
+                min_trades=1,
+                min_win_rate=0.0,
+                max_drawdown_pct=100,
+                min_profit_factor=0.0,
+                min_consistency=0.0,
+                min_efficiency_ratio=0.0,
+                max_ruin_probability=1.0,
+                min_profitable_probability=0.0,
                 max_dd_95th_pct=100,
             ),
             backtest_config=BacktestConfig(fee_pct=0, slippage_pct=0),
@@ -117,7 +140,9 @@ class TestValidationPipeline:
         """Strict thresholds should make it harder to pass."""
         pipeline = ValidationPipeline(
             thresholds=ValidationThresholds(
-                min_trades=50, min_win_rate=0.7, max_drawdown_pct=5,
+                min_trades=50,
+                min_win_rate=0.7,
+                max_drawdown_pct=5,
                 min_profit_factor=3.0,
             ),
             backtest_config=BacktestConfig(fee_pct=0, slippage_pct=0),

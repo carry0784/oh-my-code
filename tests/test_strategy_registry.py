@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -79,6 +88,7 @@ def test_register_duplicate_rejected():
 
     # Clone with same params — should be detected as duplicate
     import copy
+
     clone = copy.deepcopy(g)
     clone.id = "different-id"  # different id but same parameters
 
@@ -165,12 +175,17 @@ def test_export_format():
     assert isinstance(exported, list)
     assert len(exported) == 2
 
-    required_keys = {"rank", "genome_id", "fitness", "regime_tag",
-                     "validation_status", "registered_at", "params"}
+    required_keys = {
+        "rank",
+        "genome_id",
+        "fitness",
+        "regime_tag",
+        "validation_status",
+        "registered_at",
+        "params",
+    }
     for item in exported:
-        assert required_keys.issubset(item.keys()), (
-            f"Missing keys: {required_keys - item.keys()}"
-        )
+        assert required_keys.issubset(item.keys()), f"Missing keys: {required_keys - item.keys()}"
         assert isinstance(item["params"], dict)
         assert isinstance(item["rank"], int)
         assert isinstance(item["fitness"], float)

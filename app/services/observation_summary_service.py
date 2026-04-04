@@ -19,6 +19,7 @@ Data sources:
   - Ledger.get_board() → stale_count per tier
   Only public read APIs. Never accesses _proposals directly.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
@@ -49,6 +50,7 @@ PRESSURE_CRITICAL = "CRITICAL"
 
 # -- Data classes ----------------------------------------------------------- #
 
+
 @dataclass
 class ObservationSummary:
     """
@@ -56,6 +58,7 @@ class ObservationSummary:
 
     Read-only observation. Simulation only. No action executed.
     """
+
     # -- Pressure --
     cleanup_pressure: str = PRESSURE_LOW
 
@@ -84,9 +87,12 @@ class ObservationSummary:
     def to_schema(self):
         """Convert to typed Pydantic schema (ObservationSummarySchema)."""
         from app.schemas.observation_summary_schema import (
-            ObservationSummarySchema, ObservationSafety,
-            ReasonActionEntry, TopPriorityCandidate,
+            ObservationSummarySchema,
+            ObservationSafety,
+            ReasonActionEntry,
+            TopPriorityCandidate,
         )
+
         return ObservationSummarySchema(
             cleanup_pressure=self.cleanup_pressure,
             stale_total=self.stale_total,
@@ -108,6 +114,7 @@ class ObservationSummary:
 
 
 # -- Core logic ------------------------------------------------------------- #
+
 
 def _determine_pressure(
     cleanup_report: CleanupSimulationReport,
@@ -230,7 +237,9 @@ def build_observation_summary(
     cleanup_report = simulate_cleanup(action_ledger, execution_ledger, submit_ledger)
     orphan_report = detect_orphans(action_ledger, execution_ledger, submit_ledger)
     stale_by_tier = _collect_stale_by_tier(
-        action_ledger, execution_ledger, submit_ledger,
+        action_ledger,
+        execution_ledger,
+        submit_ledger,
     )
 
     # -- Build summary ----------------------------------------------------- #

@@ -35,6 +35,7 @@ EXECUTOR_PATH = PROJECT_ROOT / "app" / "core" / "retry_executor.py"
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class FakeChannelResult:
     channel: str
@@ -60,7 +61,6 @@ def _make_store_with_plan(channel="external", incident="inc_001"):
 # C32-1: 모듈 구조
 # ===========================================================================
 class TestC32ModuleStructure:
-
     def test_entrypoint_exists(self):
         content = FLOW_PATH.read_text(encoding="utf-8")
         assert "run_manual_retry_pass" in content
@@ -87,7 +87,6 @@ class TestC32ModuleStructure:
 # C32-2: 수동 진입점 호출 시 executor 1회 연결
 # ===========================================================================
 class TestC32ManualExecution:
-
     def test_calls_executor_once(self):
         store = RetryPlanStore()
         with patch("app.core.retry_executor.execute_retry_pass") as mock_exec:
@@ -125,12 +124,12 @@ class TestC32ManualExecution:
 # C32-3: 미호출 시 자동 실행 없음
 # ===========================================================================
 class TestC32NoAutoExecution:
-
     def test_import_has_no_side_effect(self):
         """import만으로 retry pass가 실행되지 않는다."""
         store = _make_store_with_plan()
         # Just importing the module should not trigger anything
         import app.core.notification_flow  # noqa: F401
+
         assert store.pending_count() == 1  # still pending
 
     def test_execute_notification_flow_does_not_retry(self):
@@ -149,14 +148,17 @@ class TestC32NoAutoExecution:
 # C32-4: bounded max_executions 유지
 # ===========================================================================
 class TestC32BoundedExecution:
-
     def test_respects_max_executions_param(self):
         store = RetryPlanStore(ttl_seconds=9999)
         for i in range(10):
-            store.enqueue(channel=f"ch{i}", reason="timeout",
-                          reliability_tier="transient_failure",
-                          retryable=True, retry_after_seconds=0,
-                          incident=f"inc_{i}")
+            store.enqueue(
+                channel=f"ch{i}",
+                reason="timeout",
+                reliability_tier="transient_failure",
+                retryable=True,
+                retry_after_seconds=0,
+                incident=f"inc_{i}",
+            )
 
         fake = FakeChannelResult(channel="ext", delivered=True)
         mock_sender = MagicMock(return_value=fake)
@@ -169,10 +171,14 @@ class TestC32BoundedExecution:
     def test_default_max_is_five(self):
         store = RetryPlanStore(ttl_seconds=9999)
         for i in range(10):
-            store.enqueue(channel=f"ch{i}", reason="timeout",
-                          reliability_tier="transient_failure",
-                          retryable=True, retry_after_seconds=0,
-                          incident=f"inc_{i}")
+            store.enqueue(
+                channel=f"ch{i}",
+                reason="timeout",
+                reliability_tier="transient_failure",
+                retryable=True,
+                retry_after_seconds=0,
+                incident=f"inc_{i}",
+            )
 
         fake = FakeChannelResult(channel="ext", delivered=True)
         mock_sender = MagicMock(return_value=fake)
@@ -187,13 +193,16 @@ class TestC32BoundedExecution:
 # C32-5: eligible plan만 실행
 # ===========================================================================
 class TestC32EligibleOnly:
-
     def test_future_plan_skipped(self):
         store = RetryPlanStore(ttl_seconds=9999)
-        store.enqueue(channel="ext", reason="timeout",
-                      reliability_tier="transient_failure",
-                      retryable=True, retry_after_seconds=9999,
-                      incident="future")
+        store.enqueue(
+            channel="ext",
+            reason="timeout",
+            reliability_tier="transient_failure",
+            retryable=True,
+            retry_after_seconds=9999,
+            incident="future",
+        )
         result = run_manual_retry_pass(store)
         assert result["plans_attempted"] == 0
 
@@ -202,7 +211,6 @@ class TestC32EligibleOnly:
 # C32-6: sender 성공 → executed
 # ===========================================================================
 class TestC32SuccessPath:
-
     def test_success_marks_executed(self):
         store = _make_store_with_plan()
         fake = FakeChannelResult(channel="external", delivered=True)
@@ -220,7 +228,6 @@ class TestC32SuccessPath:
 # C32-7: sender 실패 → expired
 # ===========================================================================
 class TestC32FailurePath:
-
     def test_failure_marks_expired(self):
         store = _make_store_with_plan()
         fake = FakeChannelResult(channel="external", delivered=False, detail="fail")
@@ -238,7 +245,6 @@ class TestC32FailurePath:
 # C32-8: 기존 notification flow 회귀 없음
 # ===========================================================================
 class TestC32FlowRegression:
-
     def test_flow_result_unchanged(self):
         """FlowResult 구조가 유지되는지 확인."""
         r = FlowResult()
@@ -259,11 +265,11 @@ class TestC32FlowRegression:
 # C32-9: import side effect 없음
 # ===========================================================================
 class TestC32NoSideEffect:
-
     def test_module_import_safe(self):
         """notification_flow import에 retry 부수효과 없음."""
         import importlib
         import app.core.notification_flow as mod
+
         importlib.reload(mod)
         # No exception = no side effect
 
@@ -272,7 +278,6 @@ class TestC32NoSideEffect:
 # C32-10: fail-closed
 # ===========================================================================
 class TestC32FailClosed:
-
     def test_corrupted_store_handled(self):
         result = run_manual_retry_pass("not_a_store")
         assert isinstance(result, dict)
@@ -280,8 +285,9 @@ class TestC32FailClosed:
         assert len(result["errors"]) > 0
 
     def test_executor_import_error(self):
-        with patch("app.core.retry_executor.execute_retry_pass",
-                    side_effect=ImportError("missing")):
+        with patch(
+            "app.core.retry_executor.execute_retry_pass", side_effect=ImportError("missing")
+        ):
             store = RetryPlanStore()
             result = run_manual_retry_pass(store)
             assert isinstance(result, dict)
@@ -292,7 +298,6 @@ class TestC32FailClosed:
 # C32-11: 금지 조항
 # ===========================================================================
 class TestC32Forbidden:
-
     def test_no_daemon_scheduler(self):
         content = FLOW_PATH.read_text(encoding="utf-8")
         parts = content.split('"""')
@@ -319,8 +324,10 @@ class TestC32Forbidden:
         content = FLOW_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

@@ -23,7 +23,9 @@ from app.schemas.manual_recovery_schema import (
 )
 
 
-def manual_rollback(safety_data: dict, original_receipt_id: str = "", operator_id: str = "operator") -> RecoveryReceipt:
+def manual_rollback(
+    safety_data: dict, original_receipt_id: str = "", operator_id: str = "operator"
+) -> RecoveryReceipt:
     """Manual rollback — revalidates 9-stage chain. Synchronous. No auto."""
     ts = datetime.now(timezone.utc).isoformat()
     audit_id = f"AUD-RB-{uuid.uuid4().hex[:8]}"
@@ -87,7 +89,9 @@ def manual_rollback(safety_data: dict, original_receipt_id: str = "", operator_i
     )
 
 
-def manual_retry(safety_data: dict, original_receipt_id: str = "", operator_id: str = "operator") -> RecoveryReceipt:
+def manual_retry(
+    safety_data: dict, original_receipt_id: str = "", operator_id: str = "operator"
+) -> RecoveryReceipt:
     """Manual retry — revalidates 9-stage chain. Synchronous. No auto. No cached chain."""
     ts = datetime.now(timezone.utc).isoformat()
     audit_id = f"AUD-RT-{uuid.uuid4().hex[:8]}"
@@ -197,17 +201,29 @@ def preview_action(safety_data: dict, operator_id: str = "operator") -> PreviewR
     """Preview — text-based description. No computation. No guarantee."""
     sd = safety_data if isinstance(safety_data, dict) else {}
     chain = build_chain_state(sd)
-    met = sum(1 for s in [
-        chain.pipeline, chain.preflight, chain.gate,
-        chain.approval, chain.policy, chain.risk,
-        chain.auth, chain.scope, chain.evidence,
-    ] if s.value == "PASS")
+    met = sum(
+        1
+        for s in [
+            chain.pipeline,
+            chain.preflight,
+            chain.gate,
+            chain.approval,
+            chain.policy,
+            chain.risk,
+            chain.auth,
+            chain.scope,
+            chain.evidence,
+        ]
+        if s.value == "PASS"
+    )
 
     if met == 9:
         summary = "All conditions met. Manual action could be attempted if operator confirms."
     else:
         blocked = chain.first_blocked_stage or "unknown"
-        summary = f"Blocked at {blocked}. {met}/9 conditions met. Resolve blocking conditions first."
+        summary = (
+            f"Blocked at {blocked}. {met}/9 conditions met. Resolve blocking conditions first."
+        )
 
     return PreviewResult(
         operator_id=operator_id,

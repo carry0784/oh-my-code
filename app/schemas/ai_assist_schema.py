@@ -21,7 +21,9 @@ class OpsSummary(BaseModel):
 
     status_word: str = Field(default="UNKNOWN", description="I-01 시스템 상태 문구")
     system_healthy: bool = Field(default=False, description="I-01 이중 잠금: system healthy")
-    trading_authorized: bool = Field(default=False, description="I-01 이중 잠금: trading authorized")
+    trading_authorized: bool = Field(
+        default=False, description="I-01 이중 잠금: trading authorized"
+    )
     ops_score_average: float = Field(default=0.0, description="I-01 Ops Score 4축 평균")
     latest_check_grade: str = Field(default="UNKNOWN", description="I-03 최근 점검 등급")
     preflight_decision: str = Field(default="UNKNOWN", description="I-04 preflight 판정")

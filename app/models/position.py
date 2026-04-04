@@ -28,5 +28,11 @@ class Position(Base):
     realized_pnl: Mapped[float] = mapped_column(Float, default=0.0)
     leverage: Mapped[float] = mapped_column(Float, default=1.0)
     liquidation_price: Mapped[float | None] = mapped_column(Float, nullable=True)
-    opened_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    opened_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )

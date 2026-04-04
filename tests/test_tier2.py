@@ -9,6 +9,7 @@ Tests:
 
 Run: python tests/test_tier2.py
 """
+
 from __future__ import annotations
 
 import sys
@@ -40,6 +41,7 @@ from kdexter.state_machine.security_state import SecurityStateContext, SecurityS
 # ======================================================================== #
 # 1. DoctrineRegistry
 # ======================================================================== #
+
 
 def test_core_doctrines_loaded():
     reg = DoctrineRegistry()
@@ -125,7 +127,7 @@ def test_doctrine_compliance_violation():
         "actor": "BadActor",
         "via_tcl": True,
         "provenance": True,
-        "intent": "",           # empty intent
+        "intent": "",  # empty intent
         "risk_checked": True,
         "lock_held": True,
         "evidence_bundle_count": 1,
@@ -151,6 +153,7 @@ def test_doctrine_violation_recording():
 # ======================================================================== #
 # 2. B1Constitution
 # ======================================================================== #
+
 
 def test_b1_enforce_clean():
     doctrine = DoctrineRegistry()
@@ -203,13 +206,15 @@ def test_b1_enforce_constitutional_violation():
 def test_b1_forbidden_bridge():
     doctrine = DoctrineRegistry()
     forbidden = ForbiddenLedger()
-    forbidden.register(ForbiddenAction(
-        action_id="FA-TEST",
-        description="test forbidden",
-        severity="BLOCKED",
-        pattern="TEST_FORBIDDEN",
-        registered_by="B1",
-    ))
+    forbidden.register(
+        ForbiddenAction(
+            action_id="FA-TEST",
+            description="test forbidden",
+            severity="BLOCKED",
+            pattern="TEST_FORBIDDEN",
+            registered_by="B1",
+        )
+    )
     security = SecurityStateContext()
     evidence = EvidenceStore()
     b1 = B1Constitution(doctrine, forbidden, security, evidence)
@@ -298,6 +303,7 @@ def test_b1_ratify_new_doctrine():
 # 3. B2Orchestration
 # ======================================================================== #
 
+
 def test_b2_attribution():
     assert B2Orchestration.get_attribution("L1").tier == GovernanceTier.B1
     assert B2Orchestration.get_attribution("L11").tier == GovernanceTier.B2
@@ -356,10 +362,10 @@ def test_b2_deny_unauthorized():
     b2 = B2Orchestration(doctrine, evidence)
 
     cr = ChangeRequest(
-        target_layer="L1",      # B1/Human-only layer
+        target_layer="L1",  # B1/Human-only layer
         change_type="CODE",
         description="modify L1",
-        requester="B2",         # B2 cannot modify L1
+        requester="B2",  # B2 cannot modify L1
     )
     approved = b2.approve_change(cr)
     assert not approved
@@ -446,36 +452,45 @@ if __name__ == "__main__":
     print("=" * 60)
 
     tests = [
-        ("DoctrineRegistry", [
-            test_core_doctrines_loaded,
-            test_doctrine_get,
-            test_doctrine_list_by_severity,
-            test_doctrine_ratify_b1,
-            test_doctrine_ratify_unauthorized,
-            test_doctrine_compliance_pass,
-            test_doctrine_compliance_violation,
-            test_doctrine_violation_recording,
-        ]),
-        ("B1Constitution", [
-            test_b1_enforce_clean,
-            test_b1_enforce_constitutional_violation,
-            test_b1_forbidden_bridge,
-            test_b1_lockdown_release,
-            test_b1_invariants,
-            test_b1_core_doctrine_suspension_blocked,
-            test_b1_ratify_new_doctrine,
-        ]),
-        ("B2Orchestration", [
-            test_b2_attribution,
-            test_b2_tier_layers,
-            test_b2_can_modify,
-            test_b2_approve_change,
-            test_b2_deny_unauthorized,
-            test_b2_pipeline,
-            test_b2_pipeline_validation,
-            test_b2_pipeline_invalid_layer,
-            test_b2_change_log,
-        ]),
+        (
+            "DoctrineRegistry",
+            [
+                test_core_doctrines_loaded,
+                test_doctrine_get,
+                test_doctrine_list_by_severity,
+                test_doctrine_ratify_b1,
+                test_doctrine_ratify_unauthorized,
+                test_doctrine_compliance_pass,
+                test_doctrine_compliance_violation,
+                test_doctrine_violation_recording,
+            ],
+        ),
+        (
+            "B1Constitution",
+            [
+                test_b1_enforce_clean,
+                test_b1_enforce_constitutional_violation,
+                test_b1_forbidden_bridge,
+                test_b1_lockdown_release,
+                test_b1_invariants,
+                test_b1_core_doctrine_suspension_blocked,
+                test_b1_ratify_new_doctrine,
+            ],
+        ),
+        (
+            "B2Orchestration",
+            [
+                test_b2_attribution,
+                test_b2_tier_layers,
+                test_b2_can_modify,
+                test_b2_approve_change,
+                test_b2_deny_unauthorized,
+                test_b2_pipeline,
+                test_b2_pipeline_validation,
+                test_b2_pipeline_invalid_layer,
+                test_b2_change_log,
+            ],
+        ),
     ]
 
     total = 0

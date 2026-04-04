@@ -23,7 +23,9 @@ REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=10)
 # All free, no API key required
 FEAR_GREED_URL = "https://api.alternative.me/fng/"
 BLOCKCHAIN_STATS_URL = "https://api.blockchain.info/stats"
-BLOCKCHAIN_MEMPOOL_URL = "https://api.blockchain.info/charts/mempool-count?timespan=1days&format=json"
+BLOCKCHAIN_MEMPOOL_URL = (
+    "https://api.blockchain.info/charts/mempool-count?timespan=1days&format=json"
+)
 MEMPOOL_FEES_URL = "https://mempool.space/api/v1/fees/recommended"
 MEMPOOL_STATS_URL = "https://mempool.space/api/mempool"
 COINGECKO_GLOBAL_URL = "https://api.coingecko.com/api/v3/global"
@@ -33,9 +35,7 @@ class SentimentCollector:
     """Collects market sentiment + on-chain data from free public APIs."""
 
     def _create_session(self) -> aiohttp.ClientSession:
-        connector = aiohttp.TCPConnector(
-            resolver=aiohttp.resolver.ThreadedResolver()
-        )
+        connector = aiohttp.TCPConnector(resolver=aiohttp.resolver.ThreadedResolver())
         return aiohttp.ClientSession(connector=connector, timeout=REQUEST_TIMEOUT)
 
     async def collect(self) -> SentimentCollectionResult:
@@ -74,9 +74,7 @@ class SentimentCollector:
             logger.warning("fear_greed_fetch_failed", error=str(e))
             return None, None
 
-    async def _fetch_on_chain(
-        self, session: aiohttp.ClientSession
-    ) -> OnChainData:
+    async def _fetch_on_chain(self, session: aiohttp.ClientSession) -> OnChainData:
         """Fetch on-chain data from 3 free sources in sequence (rate limit safe)."""
         data = OnChainData()
 
@@ -115,9 +113,7 @@ class SentimentCollector:
         except Exception as e:
             logger.warning("blockchain_stats_failed", error=str(e))
 
-    async def _fetch_mempool_data(
-        self, session: aiohttp.ClientSession, data: OnChainData
-    ) -> None:
+    async def _fetch_mempool_data(self, session: aiohttp.ClientSession, data: OnChainData) -> None:
         """Mempool.space /fees + /mempool — free, no key."""
         try:
             # Fee estimates
@@ -150,11 +146,7 @@ class SentimentCollector:
                 global_data = result.get("data", {})
                 market_cap_pct = global_data.get("market_cap_percentage", {})
                 data.btc_dominance = market_cap_pct.get("btc")
-                data.total_market_cap_usd = global_data.get(
-                    "total_market_cap", {}
-                ).get("usd")
-                data.total_volume_24h_usd = global_data.get(
-                    "total_volume", {}
-                ).get("usd")
+                data.total_market_cap_usd = global_data.get("total_market_cap", {}).get("usd")
+                data.total_volume_24h_usd = global_data.get("total_volume", {}).get("usd")
         except Exception as e:
             logger.warning("coingecko_global_failed", error=str(e))

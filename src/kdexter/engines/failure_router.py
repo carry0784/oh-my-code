@@ -15,6 +15,7 @@ Also integrates Failure Pattern Memory (L17) for recurrence classification:
 
 Governance: B2 (L17 Failure Pattern Memory)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -29,12 +30,13 @@ from kdexter.state_machine.security_state import SecurityStateEnum
 # Routing targets
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 class TargetLoop(Enum):
     RECOVERY = "RECOVERY"
     SELF_IMPROVEMENT = "SELF_IMPROVEMENT"
     EVOLUTION = "EVOLUTION"
-    MAIN_LOOP = "MAIN_LOOP"        # handled within MainLoop (LOW severity)
-    AUDIT_ONLY = "AUDIT_ONLY"      # just log (GOVERNANCE LOW)
+    MAIN_LOOP = "MAIN_LOOP"  # handled within MainLoop (LOW severity)
+    AUDIT_ONLY = "AUDIT_ONLY"  # just log (GOVERNANCE LOW)
 
 
 class Recurrence(Enum):
@@ -46,11 +48,12 @@ class Recurrence(Enum):
 @dataclass
 class RoutingDecision:
     """Result of the failure routing decision."""
+
     target_loop: TargetLoop
     security_target: SecurityStateEnum
-    work_state_action: str              # "ISOLATED", "FAILED", "BLOCKED", "MONITOR", "RUNNING"
-    b1_notify: bool = False             # whether B1 must be notified
-    schedule_evolution: bool = False    # INFRA MEDIUM PATTERN: Recovery + Evolution scheduled
+    work_state_action: str  # "ISOLATED", "FAILED", "BLOCKED", "MONITOR", "RUNNING"
+    b1_notify: bool = False  # whether B1 must be notified
+    schedule_evolution: bool = False  # INFRA MEDIUM PATTERN: Recovery + Evolution scheduled
     reason: str = ""
 
 
@@ -59,14 +62,15 @@ class RoutingDecision:
 # ─────────────────────────────────────────────────────────────────────────── #
 
 # OQ-1 placeholder: PATTERN threshold
-PATTERN_COUNT_THRESHOLD: int = 3        # 3+ total occurrences
-PATTERN_WINDOW_DAYS: int = 7            # OR 2 within 7 days
+PATTERN_COUNT_THRESHOLD: int = 3  # 3+ total occurrences
+PATTERN_WINDOW_DAYS: int = 7  # OR 2 within 7 days
 PATTERN_WINDOW_COUNT: int = 2
 
 
 @dataclass
 class FailureRecord:
     """A single recorded failure occurrence."""
+
     failure_type_id: str
     occurred_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -81,10 +85,12 @@ class FailurePatternMemory:
         self._records: list[FailureRecord] = []
 
     def record(self, failure_type_id: str, occurred_at: Optional[datetime] = None) -> None:
-        self._records.append(FailureRecord(
-            failure_type_id=failure_type_id,
-            occurred_at=occurred_at or datetime.now(timezone.utc),
-        ))
+        self._records.append(
+            FailureRecord(
+                failure_type_id=failure_type_id,
+                occurred_at=occurred_at or datetime.now(timezone.utc),
+            )
+        )
 
     def classify_recurrence(self, failure_type_id: str) -> Recurrence:
         """
@@ -121,6 +127,7 @@ class FailurePatternMemory:
 # ─────────────────────────────────────────────────────────────────────────── #
 # Failure Router
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 class FailureRouter:
     """
@@ -186,7 +193,10 @@ class FailureRouter:
     # ── INFRA routing ────────────────────────────────────────────────────── #
 
     def _route_infra(
-        self, severity: str, recurrence: Recurrence, fid: str,
+        self,
+        severity: str,
+        recurrence: Recurrence,
+        fid: str,
     ) -> RoutingDecision:
         if severity == "CRITICAL":
             return RoutingDecision(
@@ -210,7 +220,7 @@ class FailureRouter:
                 work_state_action="FAILED",
                 schedule_evolution=schedule_evo,
                 reason=f"INFRA MEDIUM {fid} ({recurrence.value}) → Recovery"
-                       + (" + Evolution scheduled" if schedule_evo else ""),
+                + (" + Evolution scheduled" if schedule_evo else ""),
             )
         # LOW
         return RoutingDecision(
@@ -223,7 +233,10 @@ class FailureRouter:
     # ── STRATEGY routing ─────────────────────────────────────────────────── #
 
     def _route_strategy(
-        self, severity: str, recurrence: Recurrence, fid: str,
+        self,
+        severity: str,
+        recurrence: Recurrence,
+        fid: str,
     ) -> RoutingDecision:
         if severity == "CRITICAL":
             return RoutingDecision(
@@ -271,7 +284,10 @@ class FailureRouter:
     # ── GOVERNANCE routing ───────────────────────────────────────────────── #
 
     def _route_governance(
-        self, severity: str, recurrence: Recurrence, fid: str,
+        self,
+        severity: str,
+        recurrence: Recurrence,
+        fid: str,
     ) -> RoutingDecision:
         if severity == "CRITICAL":
             return RoutingDecision(

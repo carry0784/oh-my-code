@@ -46,20 +46,22 @@ STAGE_TO_BLOCK = {
 }
 
 # All block codes (chain + sentinel)
-ALL_BLOCK_CODES = frozenset({
-    "MANUAL_ACTION_DISABLED",
-    "PREVIEW_MISSING",
-    "PIPELINE_NOT_READY",
-    "PREFLIGHT_NOT_READY",
-    "GATE_CLOSED",
-    "APPROVAL_REQUIRED",
-    "POLICY_BLOCKED",
-    "RISK_NOT_OK",
-    "AUTH_NOT_OK",
-    "SCOPE_NOT_OK",
-    "EVIDENCE_MISSING",
-    "TRACE_INCOMPLETE",
-})
+ALL_BLOCK_CODES = frozenset(
+    {
+        "MANUAL_ACTION_DISABLED",
+        "PREVIEW_MISSING",
+        "PIPELINE_NOT_READY",
+        "PREFLIGHT_NOT_READY",
+        "GATE_CLOSED",
+        "APPROVAL_REQUIRED",
+        "POLICY_BLOCKED",
+        "RISK_NOT_OK",
+        "AUTH_NOT_OK",
+        "SCOPE_NOT_OK",
+        "EVIDENCE_MISSING",
+        "TRACE_INCOMPLETE",
+    }
+)
 
 
 def _read_template():
@@ -113,9 +115,7 @@ class TestC04ChainFailClosedDefault:
             chain_state[stage] = False
             # 하나라도 False면 전체 action 불가
             action_allowed = all(chain_state[s] for s in CHAIN_STAGES)
-            assert action_allowed is False, (
-                f"Stage {stage} failed but action still allowed"
-            )
+            assert action_allowed is False, f"Stage {stage} failed but action still allowed"
 
     def test_first_missing_stage_determines_block_code(self):
         """첫 번째 실패 단계가 block code를 결정한다."""
@@ -166,7 +166,7 @@ class TestC04DisplayPreviewActionSeparation:
     def test_c04_remains_sealed(self):
         """C-04 카드가 sealed 상태를 유지해야 한다."""
         html = _read_template()
-        assert 't3sc-sealed' in html
+        assert "t3sc-sealed" in html
 
     def test_button_inside_c04_is_disabled_by_default(self):
         """C-04 카드의 execute 버튼은 기본 disabled 상태여야 한다.
@@ -180,8 +180,10 @@ class TestC04DisplayPreviewActionSeparation:
         c04_start = html.find('id="t3sc-c04"')
         assert c04_start != -1
         next_card = html.find('id="t3sc-c05"', c04_start)
-        c04_section = html[c04_start:next_card] if next_card != -1 else html[c04_start:c04_start + 1000]
-        assert '<form' not in c04_section.lower()
+        c04_section = (
+            html[c04_start:next_card] if next_card != -1 else html[c04_start : c04_start + 1000]
+        )
+        assert "<form" not in c04_section.lower()
 
     def test_no_onclick_handler_in_c04(self):
         """C-04 카드에 onclick 핸들러가 없어야 한다."""
@@ -189,13 +191,15 @@ class TestC04DisplayPreviewActionSeparation:
         c04_start = html.find('id="t3sc-c04"')
         assert c04_start != -1
         next_card = html.find('id="t3sc-c05"', c04_start)
-        c04_section = html[c04_start:next_card] if next_card != -1 else html[c04_start:c04_start + 1000]
-        assert 'onclick' not in c04_section.lower()
+        c04_section = (
+            html[c04_start:next_card] if next_card != -1 else html[c04_start : c04_start + 1000]
+        )
+        assert "onclick" not in c04_section.lower()
 
     def test_sealed_body_text_exists(self):
         """봉인 텍스트 'Not enabled in this phase'가 존재해야 한다."""
         html = _read_template()
-        assert 'Not enabled in this phase' in html
+        assert "Not enabled in this phase" in html
 
     def test_action_endpoint_is_chain_gated(self):
         """C-04 action endpoint가 존재하되 chain-gated이어야 한다.
@@ -207,8 +211,8 @@ class TestC04DisplayPreviewActionSeparation:
     def test_no_preview_pane_implying_executability(self):
         """C-04 영역에 preview가 실행 가능을 암시하는 UI가 없어야 한다."""
         html = _read_template().lower()
-        assert 'c04-preview' not in html
-        assert 'c04-action-preview' not in html
+        assert "c04-preview" not in html
+        assert "c04-action-preview" not in html
 
 
 # ===========================================================================
@@ -232,6 +236,4 @@ class TestC04ChainStageToBlockCodeMapping:
     def test_all_block_codes_in_registry(self):
         """모든 체인 block code가 전체 block code registry에 포함되어야 한다."""
         for stage, code in STAGE_TO_BLOCK.items():
-            assert code in ALL_BLOCK_CODES, (
-                f"Block code {code} for stage {stage} not in registry"
-            )
+            assert code in ALL_BLOCK_CODES, f"Block code {code} for stage {stage} not in registry"

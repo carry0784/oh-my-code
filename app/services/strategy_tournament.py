@@ -27,6 +27,7 @@ logger = get_logger(__name__)
 @dataclass
 class TournamentEntry:
     """Single entry in a tournament."""
+
     genome: StrategyGenome
     fitness: FitnessBreakdown = field(default_factory=FitnessBreakdown)
     rank: int = 0
@@ -36,6 +37,7 @@ class TournamentEntry:
 @dataclass
 class TournamentResult:
     """Result of a tournament round."""
+
     generation: int = 0
     entries: list[TournamentEntry] = field(default_factory=list)
     survivors: list[StrategyGenome] = field(default_factory=list)
@@ -54,9 +56,9 @@ class StrategyTournament:
 
     def __init__(
         self,
-        promote_ratio: float = 0.25,    # Top 25% kept
-        mutate_ratio: float = 0.25,     # Bottom 25% mutated
-        eliminate_count: int = 3,        # Bottom 3 removed
+        promote_ratio: float = 0.25,  # Top 25% kept
+        mutate_ratio: float = 0.25,  # Bottom 25% mutated
+        eliminate_count: int = 3,  # Bottom 3 removed
         seed: int | None = None,
     ):
         self.promote_ratio = promote_ratio
@@ -107,9 +109,9 @@ class StrategyTournament:
         n_eliminate = min(self.eliminate_count, n // 4)  # Never eliminate > 25%
 
         promoted = entries[:n_promote]
-        middle = entries[n_promote:n - n_mutate]
-        bottom = entries[n - n_mutate:]
-        eliminated = entries[n - n_eliminate:] if n_eliminate > 0 else []
+        middle = entries[n_promote : n - n_mutate]
+        bottom = entries[n - n_mutate :]
+        eliminated = entries[n - n_eliminate :] if n_eliminate > 0 else []
 
         # 4. Apply actions
         survivors = []

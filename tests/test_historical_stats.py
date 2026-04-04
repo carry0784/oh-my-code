@@ -9,6 +9,7 @@ Validates:
   - Live window status
   - Zero-position snapshot behavior
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
@@ -21,6 +22,7 @@ from app.models.asset_snapshot import AssetSnapshot
 # ═══════════════════════════════════════════════════════════════════════════ #
 # B-02: HISTORICAL STATS VERIFICATION TESTS
 # ═══════════════════════════════════════════════════════════════════════════ #
+
 
 class TestHistoricalStats:
     """B-02: Historical Stats accumulation and query verification."""
@@ -89,8 +91,7 @@ class TestHistoricalStats:
             if delta is None:  # "실시간" has no min_samples requirement
                 assert min_samples == 0
                 continue
-            assert min_samples > 0, \
-                f"Window '{label}' must require positive min_samples"
+            assert min_samples > 0, f"Window '{label}' must require positive min_samples"
 
         # Verify specific window thresholds
         windows_by_label = {label: (delta, ms) for label, delta, ms in _TIME_WINDOWS}
@@ -121,17 +122,15 @@ class TestHistoricalStats:
         # Verify this is NOT total_value change
         value_change = latest.total_value - earliest.total_value
         assert value_change == 200.0  # Different from pnl_change
-        assert pnl_change != value_change, \
+        assert pnl_change != value_change, (
             "PnL change must be unrealized delta, not total value change"
+        )
 
     def test_time_window_live_status(self):
         """'실시간' window always returns live status."""
         from app.api.routes.dashboard import _TIME_WINDOWS
 
-        live_windows = [
-            (label, delta, ms) for label, delta, ms in _TIME_WINDOWS
-            if delta is None
-        ]
+        live_windows = [(label, delta, ms) for label, delta, ms in _TIME_WINDOWS if delta is None]
         assert len(live_windows) == 1, "Exactly one live window must exist"
         assert live_windows[0][0] == "실시간"
         assert live_windows[0][2] == 0  # no min_samples for live
@@ -144,10 +143,7 @@ class TestHistoricalStats:
             (getattr(p, "entry_price", 0) or 0) * (getattr(p, "quantity", 0) or 0)
             for p in positions
         )
-        unrealized_pnl = sum(
-            getattr(p, "unrealized_pnl", 0) or 0
-            for p in positions
-        )
+        unrealized_pnl = sum(getattr(p, "unrealized_pnl", 0) or 0 for p in positions)
         total_balance = sum(
             (getattr(p, "current_price", 0) or 0) * (getattr(p, "quantity", 0) or 0)
             for p in positions

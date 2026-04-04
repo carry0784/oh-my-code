@@ -32,6 +32,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # DATA COLLECTION
 # ===================================================================
 
+
 def collect_6month_ohlcv(
     symbol: str = "BTC/USDT",
     timeframe: str = "1h",
@@ -40,6 +41,7 @@ def collect_6month_ohlcv(
     """Collect ~6 months of hourly OHLCV from Binance via CCXT."""
     try:
         import ccxt
+
         exchange = ccxt.binance({"enableRateLimit": True})
 
         all_ohlcv = []
@@ -59,8 +61,7 @@ def collect_6month_ohlcv(
                 break
             time.sleep(0.5)
 
-        print(f"[DATA] Collected {len(all_ohlcv)} bars "
-              f"({all_ohlcv[0][0]} ~ {all_ohlcv[-1][0]})")
+        print(f"[DATA] Collected {len(all_ohlcv)} bars ({all_ohlcv[0][0]} ~ {all_ohlcv[-1][0]})")
         return all_ohlcv
 
     except Exception as e:
@@ -76,7 +77,7 @@ def _synthetic_6month(n: int = 4320) -> list[list]:
     data = []
     for i in range(n):
         ret = rng.normal(0, 0.008)  # ~0.8% hourly vol
-        price *= (1 + ret)
+        price *= 1 + ret
         h = price * (1 + abs(rng.normal(0, 0.003)))
         l = price * (1 - abs(rng.normal(0, 0.003)))
         o = price * (1 + rng.normal(0, 0.001))
@@ -89,6 +90,7 @@ def _synthetic_6month(n: int = 4320) -> list[list]:
 # INDICATOR IMPLEMENTATIONS
 # ===================================================================
 
+
 def sma(data: np.ndarray, period: int) -> np.ndarray:
     """Simple Moving Average."""
     out = np.full(len(data), np.nan)
@@ -96,7 +98,7 @@ def sma(data: np.ndarray, period: int) -> np.ndarray:
         return out
     cumsum = np.cumsum(data)
     cumsum[period:] = cumsum[period:] - cumsum[:-period]
-    out[period - 1:] = cumsum[period - 1:] / period
+    out[period - 1 :] = cumsum[period - 1 :] / period
     return out
 
 
@@ -116,7 +118,7 @@ def stdev(data: np.ndarray, period: int) -> np.ndarray:
     """Rolling standard deviation."""
     out = np.full(len(data), np.nan)
     for i in range(period - 1, len(data)):
-        out[i] = np.std(data[i - period + 1:i + 1], ddof=0)
+        out[i] = np.std(data[i - period + 1 : i + 1], ddof=0)
     return out
 
 
@@ -126,9 +128,7 @@ def atr(highs: np.ndarray, lows: np.ndarray, closes: np.ndarray, period: int) ->
     tr = np.zeros(n)
     tr[0] = highs[0] - lows[0]
     for i in range(1, n):
-        tr[i] = max(highs[i] - lows[i],
-                     abs(highs[i] - closes[i - 1]),
-                     abs(lows[i] - closes[i - 1]))
+        tr[i] = max(highs[i] - lows[i], abs(highs[i] - closes[i - 1]), abs(lows[i] - closes[i - 1]))
     return sma(tr, period)
 
 
@@ -136,11 +136,12 @@ def linreg(data: np.ndarray, period: int) -> np.ndarray:
     """Linear regression value (endpoint of regression line)."""
     out = np.full(len(data), np.nan)
     for i in range(period - 1, len(data)):
-        y = data[i - period + 1:i + 1]
+        y = data[i - period + 1 : i + 1]
         x = np.arange(period)
         if len(y) == period:
-            slope = (period * np.sum(x * y) - np.sum(x) * np.sum(y)) / \
-                    (period * np.sum(x * x) - np.sum(x) ** 2)
+            slope = (period * np.sum(x * y) - np.sum(x) * np.sum(y)) / (
+                period * np.sum(x * x) - np.sum(x) ** 2
+            )
             intercept = (np.sum(y) - slope * np.sum(x)) / period
             out[i] = intercept + slope * (period - 1)
     return out
@@ -150,9 +151,13 @@ def linreg(data: np.ndarray, period: int) -> np.ndarray:
 # 1. SUPERTREND
 # -----------------------------------------------------------------
 
+
 def calc_supertrend(
-    highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
-    period: int = 10, multiplier: float = 3.0,
+    highs: np.ndarray,
+    lows: np.ndarray,
+    closes: np.ndarray,
+    period: int = 10,
+    multiplier: float = 3.0,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Returns (trend, signals). trend: +1=bull, -1=bear. signals: +1=buy, -1=sell, 0=hold."""
     n = len(closes)
@@ -191,10 +196,15 @@ def calc_supertrend(
 # 2. SQUEEZE MOMENTUM [LazyBear]
 # -----------------------------------------------------------------
 
+
 def calc_squeeze_momentum(
-    highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
-    bb_length: int = 20, bb_mult: float = 2.0,
-    kc_length: int = 20, kc_mult: float = 1.5,
+    highs: np.ndarray,
+    lows: np.ndarray,
+    closes: np.ndarray,
+    bb_length: int = 20,
+    bb_mult: float = 2.0,
+    kc_length: int = 20,
+    kc_mult: float = 1.5,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Returns (momentum_val, squeeze_on, signals)."""
     n = len(closes)
@@ -207,9 +217,7 @@ def calc_squeeze_momentum(
     tr = np.zeros(n)
     tr[0] = highs[0] - lows[0]
     for i in range(1, n):
-        tr[i] = max(highs[i] - lows[i],
-                     abs(highs[i] - closes[i - 1]),
-                     abs(lows[i] - closes[i - 1]))
+        tr[i] = max(highs[i] - lows[i], abs(highs[i] - closes[i - 1]), abs(lows[i] - closes[i - 1]))
     range_ma = sma(tr, kc_length)
     upper_kc = ma_kc + range_ma * kc_mult
     lower_kc = ma_kc - range_ma * kc_mult
@@ -223,8 +231,8 @@ def calc_squeeze_momentum(
     highest_h = np.full(n, np.nan)
     lowest_l = np.full(n, np.nan)
     for i in range(kc_length - 1, n):
-        highest_h[i] = np.max(highs[i - kc_length + 1:i + 1])
-        lowest_l[i] = np.min(lows[i - kc_length + 1:i + 1])
+        highest_h[i] = np.max(highs[i - kc_length + 1 : i + 1])
+        lowest_l[i] = np.min(lows[i - kc_length + 1 : i + 1])
 
     sma_c = sma(closes, kc_length)
     mid = np.full(n, np.nan)
@@ -266,9 +274,12 @@ def calc_squeeze_momentum(
 # 3. MACD Ultimate MTF [ChrisMoody]
 # -----------------------------------------------------------------
 
+
 def calc_macd(
     closes: np.ndarray,
-    fast: int = 12, slow: int = 26, signal_len: int = 9,
+    fast: int = 12,
+    slow: int = 26,
+    signal_len: int = 9,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Returns (macd_line, signal_line, histogram, signals)."""
     n = len(closes)
@@ -296,10 +307,15 @@ def calc_macd(
 # 4. WILLIAMS VIX FIX [ChrisMoody]
 # -----------------------------------------------------------------
 
+
 def calc_williams_vix_fix(
-    closes: np.ndarray, lows: np.ndarray,
-    pd: int = 22, bbl: int = 20, mult: float = 2.0,
-    lb: int = 50, ph: float = 0.85,
+    closes: np.ndarray,
+    lows: np.ndarray,
+    pd: int = 22,
+    bbl: int = 20,
+    mult: float = 2.0,
+    lb: int = 50,
+    ph: float = 0.85,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Returns (wvf, signals). Signals: +1 when WVF spikes (fear = buy opportunity)."""
     n = len(closes)
@@ -307,7 +323,7 @@ def calc_williams_vix_fix(
     # WVF = ((highest(close, pd) - low) / highest(close, pd)) * 100
     wvf = np.full(n, np.nan)
     for i in range(pd - 1, n):
-        hc = np.max(closes[i - pd + 1:i + 1])
+        hc = np.max(closes[i - pd + 1 : i + 1])
         if hc > 0:
             wvf[i] = ((hc - lows[i]) / hc) * 100
 
@@ -318,15 +334,19 @@ def calc_williams_vix_fix(
 
     range_high = np.full(n, np.nan)
     for i in range(lb - 1, n):
-        range_high[i] = np.max(wvf_clean[i - lb + 1:i + 1]) * ph
+        range_high[i] = np.max(wvf_clean[i - lb + 1 : i + 1]) * ph
 
     signals = np.zeros(n, dtype=int)
     for i in range(1, n):
         if not np.isnan(wvf[i]) and not np.isnan(upper_band[i]):
-            is_spike = wvf[i] >= upper_band[i] or (not np.isnan(range_high[i]) and wvf[i] >= range_high[i])
+            is_spike = wvf[i] >= upper_band[i] or (
+                not np.isnan(range_high[i]) and wvf[i] >= range_high[i]
+            )
             was_spike = False
             if i > 0 and not np.isnan(wvf[i - 1]) and not np.isnan(upper_band[i - 1]):
-                was_spike = wvf[i - 1] >= upper_band[i - 1] or (not np.isnan(range_high[i - 1]) and wvf[i - 1] >= range_high[i - 1])
+                was_spike = wvf[i - 1] >= upper_band[i - 1] or (
+                    not np.isnan(range_high[i - 1]) and wvf[i - 1] >= range_high[i - 1]
+                )
             # Buy when spike ends (fear subsides)
             if was_spike and not is_spike:
                 signals[i] = 1
@@ -341,10 +361,15 @@ def calc_williams_vix_fix(
 # 5. WAVETREND [LazyBear]
 # -----------------------------------------------------------------
 
+
 def calc_wavetrend(
-    highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
-    n1: int = 10, n2: int = 21,
-    ob1: float = 60, os1: float = -60,
+    highs: np.ndarray,
+    lows: np.ndarray,
+    closes: np.ndarray,
+    n1: int = 10,
+    n2: int = 21,
+    ob1: float = 60,
+    os1: float = -60,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Returns (wt1, wt2, signals)."""
     n = len(closes)
@@ -388,9 +413,13 @@ def calc_wavetrend(
 # 6. SMART MONEY CONCEPTS (simplified: BOS/CHoCH + trend)
 # -----------------------------------------------------------------
 
+
 def calc_smc(
-    highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
-    swing_length: int = 50, internal_length: int = 5,
+    highs: np.ndarray,
+    lows: np.ndarray,
+    closes: np.ndarray,
+    swing_length: int = 50,
+    internal_length: int = 5,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Simplified Smart Money Concepts.
@@ -408,11 +437,11 @@ def calc_smc(
 
     for i in range(internal_length, n - internal_length):
         # Swing high: high[i] is highest in window
-        window_h = highs[max(0, i - internal_length):i + internal_length + 1]
+        window_h = highs[max(0, i - internal_length) : i + internal_length + 1]
         if highs[i] == np.max(window_h):
             swing_highs[i] = highs[i]
         # Swing low: low[i] is lowest in window
-        window_l = lows[max(0, i - internal_length):i + internal_length + 1]
+        window_l = lows[max(0, i - internal_length) : i + internal_length + 1]
         if lows[i] == np.min(window_l):
             swing_lows[i] = lows[i]
 
@@ -451,8 +480,11 @@ def calc_smc(
 
 
 def calc_smc_pure_causal(
-    highs: np.ndarray, lows: np.ndarray, closes: np.ndarray,
-    swing_length: int = 50, internal_length: int = 5,
+    highs: np.ndarray,
+    lows: np.ndarray,
+    closes: np.ndarray,
+    swing_length: int = 50,
+    internal_length: int = 5,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Pure-causal Smart Money Concepts (Version B).
@@ -515,6 +547,7 @@ def calc_smc_pure_causal(
 # BACKTESTING ENGINE
 # ===================================================================
 
+
 @dataclass
 class Trade:
     entry_idx: int
@@ -571,12 +604,16 @@ def backtest_signals(
                 # Close position
                 net_pnl = pnl_pct - 2 * fee_pct  # entry + exit fee
                 trade = Trade(
-                    entry_idx=entry_idx, entry_price=entry_price,
-                    direction=position, exit_idx=i, exit_price=closes[i],
-                    pnl_pct=net_pnl, indicator=indicator_name,
+                    entry_idx=entry_idx,
+                    entry_price=entry_price,
+                    direction=position,
+                    exit_idx=i,
+                    exit_price=closes[i],
+                    pnl_pct=net_pnl,
+                    indicator=indicator_name,
                 )
                 trades.append(trade)
-                equity *= (1 + net_pnl / 100)
+                equity *= 1 + net_pnl / 100
                 position = 0
 
         # Process signal
@@ -589,12 +626,16 @@ def backtest_signals(
             pnl_pct = position * (closes[i] / entry_price - 1) * 100
             net_pnl = pnl_pct - 2 * fee_pct
             trade = Trade(
-                entry_idx=entry_idx, entry_price=entry_price,
-                direction=position, exit_idx=i, exit_price=closes[i],
-                pnl_pct=net_pnl, indicator=indicator_name,
+                entry_idx=entry_idx,
+                entry_price=entry_price,
+                direction=position,
+                exit_idx=i,
+                exit_price=closes[i],
+                pnl_pct=net_pnl,
+                indicator=indicator_name,
             )
             trades.append(trade)
-            equity *= (1 + net_pnl / 100)
+            equity *= 1 + net_pnl / 100
             # Open new position
             position = signals[i]
             entry_price = closes[i]
@@ -610,19 +651,25 @@ def backtest_signals(
         pnl_pct = position * (closes[-1] / entry_price - 1) * 100
         net_pnl = pnl_pct - 2 * fee_pct
         trade = Trade(
-            entry_idx=entry_idx, entry_price=entry_price,
-            direction=position, exit_idx=n - 1, exit_price=closes[-1],
-            pnl_pct=net_pnl, indicator=indicator_name,
+            entry_idx=entry_idx,
+            entry_price=entry_price,
+            direction=position,
+            exit_idx=n - 1,
+            exit_price=closes[-1],
+            pnl_pct=net_pnl,
+            indicator=indicator_name,
         )
         trades.append(trade)
-        equity *= (1 + net_pnl / 100)
+        equity *= 1 + net_pnl / 100
 
     # Compute metrics
     result.trades = trades
     result.total_trades = len(trades)
     result.winning_trades = sum(1 for t in trades if t.pnl_pct > 0)
     result.losing_trades = sum(1 for t in trades if t.pnl_pct <= 0)
-    result.win_rate = (result.winning_trades / result.total_trades * 100) if result.total_trades > 0 else 0
+    result.win_rate = (
+        (result.winning_trades / result.total_trades * 100) if result.total_trades > 0 else 0
+    )
     result.total_return_pct = (equity / 10000 - 1) * 100
     result.max_drawdown_pct = max_dd
     result.equity_curve = equity_curve
@@ -635,7 +682,7 @@ def backtest_signals(
 
         gross_profit = sum(t.pnl_pct for t in trades if t.pnl_pct > 0)
         gross_loss = abs(sum(t.pnl_pct for t in trades if t.pnl_pct < 0))
-        result.profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+        result.profit_factor = gross_profit / gross_loss if gross_loss > 0 else float("inf")
 
     return result
 
@@ -643,6 +690,7 @@ def backtest_signals(
 # ===================================================================
 # COMPOSITE STRATEGY
 # ===================================================================
+
 
 def build_composite_strategy(
     closes: np.ndarray,
@@ -674,6 +722,7 @@ def build_composite_strategy(
 # ===================================================================
 # MAIN
 # ===================================================================
+
 
 def main():
     print("=" * 70)
@@ -763,10 +812,16 @@ def main():
     print("  INDICATOR RANKING")
     print("-" * 70)
     ranking = sorted(results.items(), key=lambda x: x[1].sharpe_ratio, reverse=True)
-    print(f"\n  {'Rank':<5} {'Indicator':<14} {'Sharpe':>8} {'Return':>10} {'Win%':>7} {'PF':>7} {'MaxDD':>8}")
-    print(f"  {'-'*4:<5} {'-'*13:<14} {'-'*7:>8} {'-'*9:>10} {'-'*6:>7} {'-'*6:>7} {'-'*7:>8}")
+    print(
+        f"\n  {'Rank':<5} {'Indicator':<14} {'Sharpe':>8} {'Return':>10} {'Win%':>7} {'PF':>7} {'MaxDD':>8}"
+    )
+    print(
+        f"  {'-' * 4:<5} {'-' * 13:<14} {'-' * 7:>8} {'-' * 9:>10} {'-' * 6:>7} {'-' * 6:>7} {'-' * 7:>8}"
+    )
     for i, (name, res) in enumerate(ranking, 1):
-        print(f"  {i:<5} {name:<14} {res.sharpe_ratio:>8.2f} {res.total_return_pct:>+9.2f}% {res.win_rate:>6.1f}% {res.profit_factor:>7.2f} {res.max_drawdown_pct:>7.2f}%")
+        print(
+            f"  {i:<5} {name:<14} {res.sharpe_ratio:>8.2f} {res.total_return_pct:>+9.2f}% {res.win_rate:>6.1f}% {res.profit_factor:>7.2f} {res.max_drawdown_pct:>7.2f}%"
+        )
 
     # 5. Build composite strategies
     print("\n" + "-" * 70)
@@ -800,7 +855,9 @@ def main():
     composite_c = build_composite_strategy(closes, all_signals, sharpe_weights, threshold=2.0)
     res_c = backtest_signals(closes, composite_c, "Composite_SharpeWeighted")
     print(f"\n  [Strategy C: Sharpe-Weighted -adaptive threshold]")
-    print(f"    Weights: {', '.join(f'{k}={v:.2f}' for k, v in sorted(sharpe_weights.items(), key=lambda x: -x[1]))}")
+    print(
+        f"    Weights: {', '.join(f'{k}={v:.2f}' for k, v in sorted(sharpe_weights.items(), key=lambda x: -x[1]))}"
+    )
     print(f"    Trades: {res_c.total_trades}, Win Rate: {res_c.win_rate:.1f}%")
     print(f"    Return: {res_c.total_return_pct:+.2f}%, MaxDD: {res_c.max_drawdown_pct:.2f}%")
     print(f"    Sharpe: {res_c.sharpe_ratio:.2f}, PF: {res_c.profit_factor:.2f}")
@@ -837,15 +894,23 @@ def main():
         f"Composite D (Top3)": res_d,
     }
 
-    print(f"\n  {'Strategy':<22} {'Return':>10} {'MaxDD':>8} {'Sharpe':>8} {'WinR':>7} {'Trades':>7} {'PF':>7}")
-    print(f"  {'-'*21:<22} {'-'*9:>10} {'-'*7:>8} {'-'*7:>8} {'-'*6:>7} {'-'*6:>7} {'-'*6:>7}")
+    print(
+        f"\n  {'Strategy':<22} {'Return':>10} {'MaxDD':>8} {'Sharpe':>8} {'WinR':>7} {'Trades':>7} {'PF':>7}"
+    )
+    print(
+        f"  {'-' * 21:<22} {'-' * 9:>10} {'-' * 7:>8} {'-' * 7:>8} {'-' * 6:>7} {'-' * 6:>7} {'-' * 6:>7}"
+    )
     for name, res in all_results.items():
-        print(f"  {name:<22} {res.total_return_pct:>+9.2f}% {res.max_drawdown_pct:>7.2f}% {res.sharpe_ratio:>7.2f} {res.win_rate:>6.1f}% {res.total_trades:>6} {res.profit_factor:>7.2f}")
+        print(
+            f"  {name:<22} {res.total_return_pct:>+9.2f}% {res.max_drawdown_pct:>7.2f}% {res.sharpe_ratio:>7.2f} {res.win_rate:>6.1f}% {res.total_trades:>6} {res.profit_factor:>7.2f}"
+        )
 
     # 7. Best strategy recommendation
     composite_results = {"A": res_a, "B": res_b, "C": res_c, "D": res_d}
     best = max(composite_results.items(), key=lambda x: x[1].sharpe_ratio)
-    print(f"\n  * RECOMMENDED: Strategy {best[0]} (Sharpe={best[1].sharpe_ratio:.2f}, Return={best[1].total_return_pct:+.2f}%)")
+    print(
+        f"\n  * RECOMMENDED: Strategy {best[0]} (Sharpe={best[1].sharpe_ratio:.2f}, Return={best[1].total_return_pct:+.2f}%)"
+    )
 
     # 8. Save results
     output = {
@@ -860,7 +925,8 @@ def main():
                 "sharpe": round(r.sharpe_ratio, 2),
                 "profit_factor": round(r.profit_factor, 2),
                 "avg_trade_pct": round(r.avg_trade_pct, 3),
-            } for name, r in results.items()
+            }
+            for name, r in results.items()
         },
         "composite_results": {
             f"Strategy_{k}": {
@@ -870,7 +936,8 @@ def main():
                 "max_dd_pct": round(v.max_drawdown_pct, 2),
                 "sharpe": round(v.sharpe_ratio, 2),
                 "profit_factor": round(v.profit_factor, 2),
-            } for k, v in composite_results.items()
+            }
+            for k, v in composite_results.items()
         },
         "ranking": [name for name, _ in ranking],
         "recommended_strategy": best[0],

@@ -20,11 +20,12 @@ logger = get_logger(__name__)
 @dataclass
 class BacktestConfig:
     """Backtesting configuration."""
+
     initial_capital: float = 10000.0
-    position_size_pct: float = 10.0   # % of capital per trade
-    max_positions: int = 1             # Max concurrent positions
-    slippage_pct: float = 0.05        # 0.05% slippage
-    fee_pct: float = 0.1              # 0.1% fee per side
+    position_size_pct: float = 10.0  # % of capital per trade
+    max_positions: int = 1  # Max concurrent positions
+    slippage_pct: float = 0.05  # 0.05% slippage
+    fee_pct: float = 0.1  # 0.1% fee per side
     stop_loss_enabled: bool = True
     take_profit_enabled: bool = True
 
@@ -32,6 +33,7 @@ class BacktestConfig:
 @dataclass
 class BacktestResult:
     """Complete backtesting result."""
+
     strategy_name: str = ""
     config: BacktestConfig = field(default_factory=BacktestConfig)
     trades: list[TradeRecord] = field(default_factory=list)
@@ -86,9 +88,7 @@ class BacktestingEngine:
 
             # Check stop loss / take profit on open position
             if position:
-                exit_price, exit_reason = self._check_exit(
-                    position, high, low, close
-                )
+                exit_price, exit_reason = self._check_exit(position, high, low, close)
                 if exit_price is not None:
                     trade = self._close_position(position, exit_price, timestamp)
                     trades.append(trade)
@@ -97,27 +97,21 @@ class BacktestingEngine:
 
             # Generate signal on window
             if position is None:
-                window = ohlcv[:i + 1]
+                window = ohlcv[: i + 1]
                 signal = strategy.analyze(window)
 
                 if signal is not None:
                     result.signals_generated += 1
-                    position = self._open_position(
-                        signal, close, timestamp, capital
-                    )
+                    position = self._open_position(signal, close, timestamp, capital)
 
         # Close any remaining position at last bar
         if position:
             last_bar = ohlcv[-1]
-            trade = self._close_position(
-                position, float(last_bar[4]), int(last_bar[0])
-            )
+            trade = self._close_position(position, float(last_bar[4]), int(last_bar[0]))
             trades.append(trade)
 
         result.trades = trades
-        result.performance = self._calculator.calculate(
-            trades, self.config.initial_capital
-        )
+        result.performance = self._calculator.calculate(trades, self.config.initial_capital)
 
         logger.info(
             "backtest_complete",
@@ -129,9 +123,7 @@ class BacktestingEngine:
         )
         return result
 
-    def _open_position(
-        self, signal: dict, price: float, timestamp: int, capital: float
-    ) -> dict:
+    def _open_position(self, signal: dict, price: float, timestamp: int, capital: float) -> dict:
         """Create a position from a signal."""
         # Apply slippage
         side = signal.get("signal_type")
@@ -175,9 +167,7 @@ class BacktestingEngine:
 
         return None, None
 
-    def _close_position(
-        self, position: dict, exit_price: float, timestamp: int
-    ) -> TradeRecord:
+    def _close_position(self, position: dict, exit_price: float, timestamp: int) -> TradeRecord:
         """Close a position and create a TradeRecord."""
         # Apply slippage on exit
         if position["side"] == "long":

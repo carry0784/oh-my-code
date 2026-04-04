@@ -23,6 +23,7 @@ logger = get_logger(__name__)
 @dataclass
 class EvolutionCheckpoint:
     """Snapshot of evolution state at a point in time."""
+
     timestamp: str = ""
     generation: int = 0
     islands: list[dict] = field(default_factory=list)
@@ -47,19 +48,18 @@ class EvolutionStateManager:
         checkpoint = EvolutionCheckpoint(
             timestamp=datetime.now(timezone.utc).isoformat(),
             generation=generation,
-            islands=[
-                [g.to_dict() for g in pop]
-                for pop in populations
-            ],
+            islands=[[g.to_dict() for g in pop] for pop in populations],
             hall_of_fame=[g.to_dict() for g in (hall_of_fame or [])],
             mutation_schedule=mutation_state or {},
             fitness_history=list(fitness_history or []),
         )
 
-        logger.info("checkpoint_saved",
-                    generation=generation,
-                    islands=len(populations),
-                    hof_size=len(checkpoint.hall_of_fame))
+        logger.info(
+            "checkpoint_saved",
+            generation=generation,
+            islands=len(populations),
+            hof_size=len(checkpoint.hall_of_fame),
+        )
         return checkpoint
 
     def load(self, checkpoint: EvolutionCheckpoint) -> dict:
@@ -80,10 +80,12 @@ class EvolutionStateManager:
 
         hof = [self._dict_to_genome(gd) for gd in checkpoint.hall_of_fame]
 
-        logger.info("checkpoint_loaded",
-                    generation=checkpoint.generation,
-                    islands=len(populations),
-                    hof_size=len(hof))
+        logger.info(
+            "checkpoint_loaded",
+            generation=checkpoint.generation,
+            islands=len(populations),
+            hof_size=len(hof),
+        )
 
         return {
             "generation": checkpoint.generation,

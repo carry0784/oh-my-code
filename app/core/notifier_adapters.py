@@ -12,6 +12,7 @@ Design:
   - No hidden reasoning, no debug traces
   - Transport logic isolated per adapter
 """
+
 from __future__ import annotations
 
 import json
@@ -26,6 +27,7 @@ from app.core.notification_sender import ChannelResult
 # File Notifier — append incident summary to local JSONL file
 # ---------------------------------------------------------------------------
 
+
 def send_file(snapshot: dict[str, Any], routing: dict[str, Any]) -> ChannelResult:
     """
     Append a compact incident summary to a notification log file.
@@ -33,6 +35,7 @@ def send_file(snapshot: dict[str, Any], routing: dict[str, Any]) -> ChannelResul
     """
     try:
         from app.core.config import settings
+
         file_path = getattr(settings, "notifier_file_path", "")
     except Exception:
         file_path = ""
@@ -75,6 +78,7 @@ def send_file(snapshot: dict[str, Any], routing: dict[str, Any]) -> ChannelResul
 # Slack Notifier — stub for future Slack webhook integration
 # ---------------------------------------------------------------------------
 
+
 def send_slack(snapshot: dict[str, Any], routing: dict[str, Any]) -> ChannelResult:
     """
     Send incident summary to Slack webhook.
@@ -82,6 +86,7 @@ def send_slack(snapshot: dict[str, Any], routing: dict[str, Any]) -> ChannelResu
     """
     try:
         from app.core.config import settings
+
         slack_url = getattr(settings, "notifier_slack_url", "")
     except Exception:
         slack_url = ""
@@ -95,6 +100,7 @@ def send_slack(snapshot: dict[str, Any], routing: dict[str, Any]) -> ChannelResu
 
     try:
         from app.core.real_notifier_adapter import send_webhook
+
         status = snapshot.get("overall_status", "UNKNOWN")
         incident = snapshot.get("highest_incident", "NONE")
         payload = {"text": f"[K-Dexter] {status} | Incident: {incident}"}

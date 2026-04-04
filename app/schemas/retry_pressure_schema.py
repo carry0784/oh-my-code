@@ -14,6 +14,7 @@ Design rules:
 Data source:
   RetryPlanStore plan list (pending/cancelled/executed/expired counts)
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
@@ -21,8 +22,10 @@ from pydantic import BaseModel, Field
 
 # -- Nested models --------------------------------------------------------- #
 
+
 class RetryStatusDistribution(BaseModel):
     """Retry plan count per status."""
+
     pending: int = 0
     cancelled: int = 0
     executed: int = 0
@@ -31,12 +34,14 @@ class RetryStatusDistribution(BaseModel):
 
 class RetryChannelDistribution(BaseModel):
     """Retry plan count per notification channel."""
+
     channel: str = ""
     count: int = 0
 
 
 class RetrySeverityDistribution(BaseModel):
     """Retry plan count per severity tier."""
+
     severity: str = ""
     count: int = 0
 
@@ -47,16 +52,18 @@ class RetryDensitySignal(BaseModel):
 
     NOT prescriptive. Describes observable patterns only.
     """
-    has_pending: bool = False           # any pending plans exist
-    pending_ratio: float = 0.0          # pending / total (0 if no plans)
+
+    has_pending: bool = False  # any pending plans exist
+    pending_ratio: float = 0.0  # pending / total (0 if no plans)
     is_channel_concentrated: bool = False  # >66% in single channel
-    dominant_channel: str = ""          # channel with most pending plans
-    dominant_channel_ratio: float = 0.0 # ratio of dominant channel
-    description: str = ""               # human-readable summary
+    dominant_channel: str = ""  # channel with most pending plans
+    dominant_channel_ratio: float = 0.0  # ratio of dominant channel
+    description: str = ""  # human-readable summary
 
 
 class RetryPressureSafety(BaseModel):
     """Structurally fixed safety labels. All ALWAYS True."""
+
     read_only: bool = Field(default=True, description="ALWAYS True.")
     simulation_only: bool = Field(default=True, description="ALWAYS True.")
     no_action_executed: bool = Field(default=True, description="ALWAYS True.")
@@ -64,6 +71,7 @@ class RetryPressureSafety(BaseModel):
 
 
 # -- Main schema ----------------------------------------------------------- #
+
 
 class RetryPressureSchema(BaseModel):
     """
@@ -76,9 +84,10 @@ class RetryPressureSchema(BaseModel):
       RetryPlanStore -> RetryPressureSchema (observation)
       Notification flow produces retry plans; this card observes them.
     """
+
     total_plans: int = 0
     pending_count: int = 0
-    backlog_ratio: float = 0.0          # pending / total (0 if no plans)
+    backlog_ratio: float = 0.0  # pending / total (0 if no plans)
     by_status: RetryStatusDistribution = Field(default_factory=RetryStatusDistribution)
     by_channel: list[RetryChannelDistribution] = Field(default_factory=list, max_length=10)
     by_severity: list[RetrySeverityDistribution] = Field(default_factory=list, max_length=10)

@@ -13,6 +13,7 @@ Tests the unified 4-tier seal chain dashboard board:
 
 Run: pytest tests/test_four_tier_board.py -v
 """
+
 import sys
 import json
 from pathlib import Path
@@ -64,8 +65,13 @@ for mod_name in _STUB_MODULES:
 
 # -- Helpers ---------------------------------------------------------------- #
 
+
 def _make_action_ledger_board(
-    total=5, receipted=2, blocked=1, failed=0, orphan=2,
+    total=5,
+    receipted=2,
+    blocked=1,
+    failed=0,
+    orphan=2,
     guard_reason_top=None,
 ):
     """Create a mock ActionLedger with get_board() returning given counts."""
@@ -82,7 +88,11 @@ def _make_action_ledger_board(
 
 
 def _make_execution_ledger_board(
-    total=4, receipted=3, blocked=0, failed=1, orphan=0,
+    total=4,
+    receipted=3,
+    blocked=0,
+    failed=1,
+    orphan=0,
     guard_reason_top=None,
 ):
     mock = MagicMock()
@@ -98,7 +108,11 @@ def _make_execution_ledger_board(
 
 
 def _make_submit_ledger_board(
-    total=3, receipted=2, blocked=1, failed=0, orphan=0,
+    total=3,
+    receipted=2,
+    blocked=1,
+    failed=0,
+    orphan=0,
     guard_reason_top=None,
     proposals=None,
 ):
@@ -125,11 +139,13 @@ def _make_order_executor(orders=None):
 
 # -- AXIS 1: Board Assembly ------------------------------------------------ #
 
+
 class TestBoardAssembly:
     """Service builds correct response from live ledgers."""
 
     def test_full_board_all_tiers_connected(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board(
             action_ledger=_make_action_ledger_board(),
             execution_ledger=_make_execution_ledger_board(),
@@ -143,6 +159,7 @@ class TestBoardAssembly:
 
     def test_tier_names_correct(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board(
             action_ledger=_make_action_ledger_board(),
             execution_ledger=_make_execution_ledger_board(),
@@ -160,8 +177,11 @@ class TestBoardAssembly:
 
     def test_agent_tier_counts_match_board(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board(
-            action_ledger=_make_action_ledger_board(total=10, receipted=5, blocked=3, failed=1, orphan=1),
+            action_ledger=_make_action_ledger_board(
+                total=10, receipted=5, blocked=3, failed=1, orphan=1
+            ),
         )
         assert board.agent_tier.total == 10
         assert board.agent_tier.receipted_count == 5
@@ -171,16 +191,19 @@ class TestBoardAssembly:
 
     def test_total_guard_checks_is_25(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.total_guard_checks == 25
 
     def test_seal_chain_complete_flag(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.seal_chain_complete is True
 
     def test_generated_at_populated(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.generated_at != ""
         # Should be ISO format
@@ -189,11 +212,13 @@ class TestBoardAssembly:
 
 # -- AXIS 2: Missing Tier ------------------------------------------------- #
 
+
 class TestMissingTier:
     """Disconnected tier → connected=False, zero counts."""
 
     def test_all_none_returns_disconnected(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.agent_tier.connected is False
         assert board.execution_tier.connected is False
@@ -202,6 +227,7 @@ class TestMissingTier:
 
     def test_partial_connection(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board(
             action_ledger=_make_action_ledger_board(),
             # execution, submit, order all None
@@ -213,6 +239,7 @@ class TestMissingTier:
 
     def test_disconnected_tier_has_zero_counts(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.agent_tier.total == 0
         assert board.agent_tier.receipted_count == 0
@@ -223,11 +250,13 @@ class TestMissingTier:
 
 # -- AXIS 3: Order Tier --------------------------------------------------- #
 
+
 class TestOrderTier:
     """OrderExecutor history aggregation."""
 
     def test_order_status_counts(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         orders = [
             {"status": "FILLED", "dry_run": True},
             {"status": "FILLED", "dry_run": True},
@@ -245,12 +274,14 @@ class TestOrderTier:
 
     def test_empty_history(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board(order_executor=_make_order_executor([]))
         assert board.order_tier.total == 0
         assert board.order_tier.connected is True
 
     def test_all_dry_run(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         orders = [
             {"status": "FILLED", "dry_run": True},
             {"status": "FILLED", "dry_run": True},
@@ -262,11 +293,13 @@ class TestOrderTier:
 
 # -- AXIS 4: Derived Flags ------------------------------------------------ #
 
+
 class TestDerivedFlags:
     """execution_ready / submit_ready counts."""
 
     def test_derived_flags_from_ledgers(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board(
             execution_ledger=_make_execution_ledger_board(receipted=3, orphan=2),
             submit_ledger=_make_submit_ledger_board(receipted=1, orphan=1),
@@ -278,6 +311,7 @@ class TestDerivedFlags:
 
     def test_derived_flags_no_ledgers(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.derived_flags.execution_ready_true == 0
         assert board.derived_flags.execution_ready_pending == 0
@@ -287,11 +321,13 @@ class TestDerivedFlags:
 
 # -- AXIS 5: Block Reasons ------------------------------------------------ #
 
+
 class TestBlockReasons:
     """Aggregated top block reasons across tiers."""
 
     def test_aggregated_reasons(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board(
             action_ledger=_make_action_ledger_board(
                 guard_reason_top=["COST_BUDGET: 3", "SIZE_BOUND: 1"]
@@ -299,9 +335,7 @@ class TestBlockReasons:
             execution_ledger=_make_execution_ledger_board(
                 guard_reason_top=["LOCKDOWN_CHECK: 2", "COST_BUDGET: 1"]
             ),
-            submit_ledger=_make_submit_ledger_board(
-                guard_reason_top=["EXCHANGE_ALLOWED: 2"]
-            ),
+            submit_ledger=_make_submit_ledger_board(guard_reason_top=["EXCHANGE_ALLOWED: 2"]),
         )
         # COST_BUDGET should be aggregated: 3+1=4
         assert len(board.top_block_reasons_all) > 0
@@ -312,17 +346,20 @@ class TestBlockReasons:
 
     def test_empty_reasons(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.top_block_reasons_all == []
 
 
 # -- AXIS 6: Lineage ------------------------------------------------------ #
 
+
 class TestLineage:
     """Recent lineage trace from submit → order."""
 
     def test_lineage_from_proposals(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         proposals = [
             {
                 "proposal_id": "SP-001",
@@ -343,11 +380,13 @@ class TestLineage:
 
     def test_lineage_empty_without_submit_ledger(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.recent_lineage == []
 
     def test_lineage_with_order_match(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         proposals = [
             {
                 "proposal_id": "SP-match",
@@ -371,11 +410,13 @@ class TestLineage:
 
 # -- AXIS 7: Schema ------------------------------------------------------- #
 
+
 class TestSchema:
     """Response model validation."""
 
     def test_response_serializable(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board(
             action_ledger=_make_action_ledger_board(),
             execution_ledger=_make_execution_ledger_board(),
@@ -392,6 +433,7 @@ class TestSchema:
     def test_no_raw_reasoning_exposure(self):
         """Board must not expose raw reasoning, prompts, or error_class."""
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board(
             action_ledger=_make_action_ledger_board(),
         )
@@ -402,12 +444,14 @@ class TestSchema:
 
     def test_tier_summary_fields(self):
         from app.schemas.four_tier_board_schema import TierSummary
+
         tier = TierSummary(tier_name="Test", tier_number=0)
         assert tier.total == 0
         assert tier.connected is False
 
     def test_order_tier_summary_fields(self):
         from app.schemas.four_tier_board_schema import OrderTierSummary
+
         tier = OrderTierSummary()
         assert tier.tier_name == "Orders"
         assert tier.tier_number == 4
@@ -415,6 +459,7 @@ class TestSchema:
 
 
 # -- AXIS 8: Dashboard Endpoint ------------------------------------------- #
+
 
 class TestDashboardEndpoint:
     """API route integration."""
@@ -435,7 +480,12 @@ class TestDashboardEndpoint:
 
     def test_endpoint_is_read_only(self):
         """Four-tier board endpoint must NOT call any write methods (outside comments)."""
-        source = Path(__file__).resolve().parent.parent / "app" / "services" / "four_tier_board_service.py"
+        source = (
+            Path(__file__).resolve().parent.parent
+            / "app"
+            / "services"
+            / "four_tier_board_service.py"
+        )
         content = source.read_text(encoding="utf-8")
         # Strip comment lines and docstrings, check actual code
         code_lines = []

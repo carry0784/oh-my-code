@@ -12,13 +12,18 @@ Each adapter tested for:
 
 Run: python tests/test_adapters.py
 """
+
 from __future__ import annotations
 
 import asyncio
 import sys
 
 from kdexter.tcl.commands import (
-    TCLCommand, CommandType, ExecutionMode, OrderType, CommandTranscript,
+    TCLCommand,
+    CommandType,
+    ExecutionMode,
+    OrderType,
+    CommandTranscript,
 )
 from kdexter.tcl.adapters.binance import BinanceAdapter
 from kdexter.tcl.adapters.bitget import BitgetAdapter
@@ -31,8 +36,10 @@ from kdexter.tcl.adapters.kiwoom import KiwoomAdapter
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────── #
 
-def _buy_cmd(exchange: str, symbol: str = "BTC/KRW",
-             qty: float = 0.01, price: float = 50_000_000) -> TCLCommand:
+
+def _buy_cmd(
+    exchange: str, symbol: str = "BTC/KRW", qty: float = 0.01, price: float = 50_000_000
+) -> TCLCommand:
     return TCLCommand(
         command_type=CommandType.ORDER_BUY,
         exchange=exchange,
@@ -44,8 +51,9 @@ def _buy_cmd(exchange: str, symbol: str = "BTC/KRW",
     )
 
 
-def _sell_cmd(exchange: str, symbol: str = "BTC/KRW",
-              qty: float = 0.01, price: float = 51_000_000) -> TCLCommand:
+def _sell_cmd(
+    exchange: str, symbol: str = "BTC/KRW", qty: float = 0.01, price: float = 51_000_000
+) -> TCLCommand:
     return TCLCommand(
         command_type=CommandType.ORDER_SELL,
         exchange=exchange,
@@ -73,8 +81,13 @@ def _position_cmd(exchange: str) -> TCLCommand:
     )
 
 
-def _risk_cmd(exchange: str, qty: float = 0.01, price: float = 50_000_000,
-              cap_key: str = "order_cap_krw", cap: float = 10_000_000) -> TCLCommand:
+def _risk_cmd(
+    exchange: str,
+    qty: float = 0.01,
+    price: float = 50_000_000,
+    cap_key: str = "order_cap_krw",
+    cap: float = 10_000_000,
+) -> TCLCommand:
     return TCLCommand(
         command_type=CommandType.RISK_CHECK,
         exchange=exchange,
@@ -90,12 +103,17 @@ def _risk_cmd(exchange: str, qty: float = 0.01, price: float = 50_000_000,
 # Test suite for each adapter
 # ─────────────────────────────────────────────────────────────────────────── #
 
-def _test_adapter(name: str, adapter, exchange_id: str,
-                  risk_cap_key: str = "order_cap_krw",
-                  risk_cap: float = 10_000_000,
-                  buy_symbol: str = "BTC/KRW",
-                  buy_qty: float = 0.01,
-                  buy_price: float = 50_000_000):
+
+def _test_adapter(
+    name: str,
+    adapter,
+    exchange_id: str,
+    risk_cap_key: str = "order_cap_krw",
+    risk_cap: float = 10_000_000,
+    buy_symbol: str = "BTC/KRW",
+    buy_qty: float = 0.01,
+    buy_price: float = 50_000_000,
+):
     """Generic test suite for an adapter."""
     results = []
 
@@ -160,36 +178,63 @@ def _test_adapter(name: str, adapter, exchange_id: str,
 # Individual adapter tests
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 def test_binance():
     adapter = BinanceAdapter()
     _test_adapter("Binance", adapter, "binance")
 
+
 def test_bitget():
     adapter = BitgetAdapter()
-    _test_adapter("Bitget", adapter, "bitget",
-                  risk_cap_key="order_cap_usdt", risk_cap=10_000,
-                  buy_symbol="BTC/USDT", buy_qty=0.001, buy_price=60_000)
+    _test_adapter(
+        "Bitget",
+        adapter,
+        "bitget",
+        risk_cap_key="order_cap_usdt",
+        risk_cap=10_000,
+        buy_symbol="BTC/USDT",
+        buy_qty=0.001,
+        buy_price=60_000,
+    )
+
 
 def test_upbit():
     adapter = UpbitAdapter()
     _test_adapter("Upbit", adapter, "upbit")
 
+
 def test_kis():
     adapter = KISAdapter(account_no="50123456-01")
-    _test_adapter("KIS", adapter, "kis",
-                  risk_cap_key="order_cap_krw", risk_cap=50_000_000,
-                  buy_symbol="005930/KRW", buy_qty=10, buy_price=70_000)
+    _test_adapter(
+        "KIS",
+        adapter,
+        "kis",
+        risk_cap_key="order_cap_krw",
+        risk_cap=50_000_000,
+        buy_symbol="005930/KRW",
+        buy_qty=10,
+        buy_price=70_000,
+    )
+
 
 def test_kiwoom():
     adapter = KiwoomAdapter(account_no="1234567890")
-    _test_adapter("Kiwoom", adapter, "kiwoom",
-                  risk_cap_key="order_cap_krw", risk_cap=50_000_000,
-                  buy_symbol="005930/KRW", buy_qty=10, buy_price=70_000)
+    _test_adapter(
+        "Kiwoom",
+        adapter,
+        "kiwoom",
+        risk_cap_key="order_cap_krw",
+        risk_cap=50_000_000,
+        buy_symbol="005930/KRW",
+        buy_qty=10,
+        buy_price=70_000,
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────── #
 # TCLDispatcher integration test
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 def test_dispatcher_all_adapters():
     """Register all 5 adapters and dispatch DRY_RUN commands."""

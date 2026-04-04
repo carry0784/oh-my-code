@@ -4,10 +4,20 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config", "structlog",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
+    "structlog",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -31,6 +41,7 @@ def analyzer():
 # test_single_strategy_identity
 # ---------------------------------------------------------------------------
 
+
 def test_single_strategy_identity(analyzer):
     """1 strategy returns a 1x1 identity matrix with avg_correlation=0.0."""
     returns = {"s1": [0.01, -0.005, 0.02, 0.003, -0.001]}
@@ -46,6 +57,7 @@ def test_single_strategy_identity(analyzer):
 # ---------------------------------------------------------------------------
 # test_identical_returns_perfect_correlation
 # ---------------------------------------------------------------------------
+
 
 def test_identical_returns_perfect_correlation(analyzer):
     """Two strategies with the same return series produce correlation = 1.0."""
@@ -64,6 +76,7 @@ def test_identical_returns_perfect_correlation(analyzer):
 # test_uncorrelated_returns
 # ---------------------------------------------------------------------------
 
+
 def test_uncorrelated_returns(analyzer):
     """Strategies with opposite-sign returns yield negative/low correlation."""
     pos = [0.01, 0.02, 0.005, 0.015, 0.01, 0.03, 0.005, 0.02]
@@ -81,6 +94,7 @@ def test_uncorrelated_returns(analyzer):
 # test_compute_from_equity
 # ---------------------------------------------------------------------------
 
+
 def test_compute_from_equity(analyzer):
     """Equity curves are converted to returns before correlation is computed."""
     # Two identical steady-growth curves → perfect correlation
@@ -97,6 +111,7 @@ def test_compute_from_equity(analyzer):
 # ---------------------------------------------------------------------------
 # test_identify_clusters_high_threshold
 # ---------------------------------------------------------------------------
+
 
 def test_identify_clusters_high_threshold(analyzer):
     """With threshold=0.99 anti-correlated strategies form no shared cluster."""
@@ -116,6 +131,7 @@ def test_identify_clusters_high_threshold(analyzer):
 # ---------------------------------------------------------------------------
 # test_identify_clusters_groups_correlated
 # ---------------------------------------------------------------------------
+
 
 def test_identify_clusters_groups_correlated(analyzer):
     """Highly correlated strategies are placed in the same cluster."""

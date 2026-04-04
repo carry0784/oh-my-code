@@ -36,7 +36,9 @@ def build_governance_summary() -> GovernanceSummaryResponse:
     """B-11: Governance summary. Read-only. No enforcement change."""
     now = datetime.now(timezone.utc)
 
-    sec_state, enabled, orphan_detected, evidence_exists, evidence_total = _collect_governance_info()
+    sec_state, enabled, orphan_detected, evidence_exists, evidence_total = (
+        _collect_governance_info()
+    )
 
     # --- Constraints ---
     constraints: list[str] = []
@@ -119,6 +121,7 @@ def _collect_governance_info() -> tuple[str, bool, bool, bool, int]:
 
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
 
         if gate is None:

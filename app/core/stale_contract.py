@@ -35,6 +35,7 @@ SYNC NOTE:
   If any Ledger's Proposal._TERMINAL_STATES changes,
   TERMINAL_STATES_BY_TIER here must be updated to match.
 """
+
 from __future__ import annotations
 
 
@@ -46,9 +47,9 @@ from __future__ import annotations
 # These mirror the defaults in each sealed Ledger's __init__.
 # Ledger files are sealed and not modified; these values must stay in sync.
 STALE_THRESHOLD_DEFAULTS = {
-    "agent": 600.0,       # ActionLedger default
-    "execution": 300.0,   # ExecutionLedger default
-    "submit": 180.0,      # SubmitLedger default
+    "agent": 600.0,  # ActionLedger default
+    "execution": 300.0,  # ExecutionLedger default
+    "submit": 180.0,  # SubmitLedger default
 }
 
 
@@ -63,8 +64,8 @@ STALE_THRESHOLD_DEFAULTS = {
 #   >= PROLONGED   → REVIEW  (prolonged band, flagged in explanation)
 #
 # MANUAL is not age-driven — requires orphan intersection.
-THRESHOLD_WATCH_UPPER = 1.5    # age < 1.5x → WATCH
-THRESHOLD_PROLONGED = 3.0      # age >= 3.0x → REVIEW (prolonged flag)
+THRESHOLD_WATCH_UPPER = 1.5  # age < 1.5x → WATCH
+THRESHOLD_PROLONGED = 3.0  # age >= 3.0x → REVIEW (prolonged flag)
 
 
 # =========================================================================== #
@@ -83,6 +84,7 @@ TERMINAL_STATES_BY_TIER = {
 # =========================================================================== #
 # Helpers                                                                      #
 # =========================================================================== #
+
 
 def classify_stale_band(multiplier: float) -> str:
     """

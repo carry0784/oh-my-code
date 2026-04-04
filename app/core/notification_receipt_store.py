@@ -19,6 +19,7 @@ Store contract:
   Output: stored receipt_id
   Query:  list_receipts(), latest(), count()
 """
+
 from __future__ import annotations
 
 import uuid
@@ -32,9 +33,11 @@ from typing import Any, Optional
 # Data model
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class StoredReceipt:
     """A persisted notification receipt with context."""
+
     receipt_id: str = ""
     stored_at: str = ""
     severity_tier: str = ""
@@ -75,10 +78,15 @@ class ReceiptStore:
             try:
                 existing = file_backend.load_all()
                 for entry in existing[-max_size:]:
-                    self._buffer.append(StoredReceipt(**{
-                        k: v for k, v in entry.items()
-                        if k in StoredReceipt.__dataclass_fields__
-                    }))
+                    self._buffer.append(
+                        StoredReceipt(
+                            **{
+                                k: v
+                                for k, v in entry.items()
+                                if k in StoredReceipt.__dataclass_fields__
+                            }
+                        )
+                    )
             except Exception:
                 pass  # fail-closed: skip loading on error
 

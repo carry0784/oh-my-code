@@ -46,6 +46,7 @@ def build_ops_aggregate() -> OpsAggregateResponse:
     _cached_src = None
     try:
         from app.core.ai_assist_source import collect_ai_assist_sources
+
         _cached_src = collect_ai_assist_sources()
     except Exception:
         pass
@@ -62,7 +63,10 @@ def build_ops_aggregate() -> OpsAggregateResponse:
     stale = sum(1 for s in sources if s.status == SourceStatus.STALE)
     unavailable = sum(1 for s in sources if s.status == SourceStatus.UNAVAILABLE)
     coverage = SourceCoverage(
-        sources_total=len(sources), ok=ok, stale=stale, unavailable=unavailable,
+        sources_total=len(sources),
+        ok=ok,
+        stale=stale,
+        unavailable=unavailable,
     )
 
     # Overall status
@@ -106,68 +110,87 @@ def build_ops_health() -> OpsHealth:
 # Source checkers (read-only, fail-closed)
 # ---------------------------------------------------------------------------
 
+
 def _check_ops_summary(src=None) -> SourceEntry:
     try:
         if src is None:
             from app.core.ai_assist_source import collect_ai_assist_sources
+
             src = collect_ai_assist_sources()
         status = SourceStatus.OK if src.ops_summary.status_word != "UNKNOWN" else SourceStatus.STALE
         return SourceEntry(
-            name="ops_summary", status=status,
+            name="ops_summary",
+            status=status,
             summary=f"status={src.ops_summary.status_word}, gate={src.ops_summary.gate_decision}",
         )
     except Exception:
-        return SourceEntry(name="ops_summary", status=SourceStatus.UNAVAILABLE, summary="collection failed")
+        return SourceEntry(
+            name="ops_summary", status=SourceStatus.UNAVAILABLE, summary="collection failed"
+        )
 
 
 def _check_signal_pipeline(src=None) -> SourceEntry:
     try:
         if src is None:
             from app.core.ai_assist_source import collect_ai_assist_sources
+
             src = collect_ai_assist_sources()
         # Signal pipeline is populated in async context only
         if src.signal_pipeline.total_24h > 0:
             return SourceEntry(
-                name="signal_pipeline", status=SourceStatus.OK,
+                name="signal_pipeline",
+                status=SourceStatus.OK,
                 summary=f"24h={src.signal_pipeline.total_24h}",
             )
         return SourceEntry(
-            name="signal_pipeline", status=SourceStatus.STALE,
+            name="signal_pipeline",
+            status=SourceStatus.STALE,
             summary="no 24h signals (sync context or empty)",
         )
     except Exception:
-        return SourceEntry(name="signal_pipeline", status=SourceStatus.UNAVAILABLE, summary="collection failed")
+        return SourceEntry(
+            name="signal_pipeline", status=SourceStatus.UNAVAILABLE, summary="collection failed"
+        )
 
 
 def _check_position_overview(src=None) -> SourceEntry:
     try:
         if src is None:
             from app.core.ai_assist_source import collect_ai_assist_sources
+
             src = collect_ai_assist_sources()
         return SourceEntry(
-            name="position_overview", status=SourceStatus.OK,
+            name="position_overview",
+            status=SourceStatus.OK,
             summary=f"positions={src.position_overview.total_positions}",
         )
     except Exception:
-        return SourceEntry(name="position_overview", status=SourceStatus.UNAVAILABLE, summary="collection failed")
+        return SourceEntry(
+            name="position_overview", status=SourceStatus.UNAVAILABLE, summary="collection failed"
+        )
 
 
 def _check_evidence_summary(src=None) -> SourceEntry:
     try:
         if src is None:
             from app.core.ai_assist_source import collect_ai_assist_sources
+
             src = collect_ai_assist_sources()
         if src.evidence_summary.governance_active:
             return SourceEntry(
-                name="evidence_summary", status=SourceStatus.OK,
+                name="evidence_summary",
+                status=SourceStatus.OK,
                 summary=f"bundles={src.evidence_summary.total_bundles}",
             )
         return SourceEntry(
-            name="evidence_summary", status=SourceStatus.UNAVAILABLE,
+            name="evidence_summary",
+            status=SourceStatus.UNAVAILABLE,
             summary="governance not active",
         )
     except Exception:
-        return SourceEntry(name="evidence_summary", status=SourceStatus.UNAVAILABLE, summary="collection failed")
+        return SourceEntry(
+            name="evidence_summary", status=SourceStatus.UNAVAILABLE, summary="collection failed"
+        )
 
 
 def _check_market_feed() -> SourceEntry:
@@ -175,20 +198,31 @@ def _check_market_feed() -> SourceEntry:
         # Market feed requires async context for live quotes
         # In sync context, check if service module is importable
         from app.core.market_feed_service import build_empty_market_feed
+
         return SourceEntry(
-            name="market_feed", status=SourceStatus.STALE,
+            name="market_feed",
+            status=SourceStatus.STALE,
             summary="available (live data in async context)",
         )
     except Exception:
-        return SourceEntry(name="market_feed", status=SourceStatus.UNAVAILABLE, summary="service unavailable")
+        return SourceEntry(
+            name="market_feed", status=SourceStatus.UNAVAILABLE, summary="service unavailable"
+        )
 
 
 def _check_runtime_status() -> SourceEntry:
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate is not None:
-            return SourceEntry(name="runtime_status", status=SourceStatus.OK, summary="governance active")
-        return SourceEntry(name="runtime_status", status=SourceStatus.UNAVAILABLE, summary="governance_gate=None")
+            return SourceEntry(
+                name="runtime_status", status=SourceStatus.OK, summary="governance active"
+            )
+        return SourceEntry(
+            name="runtime_status", status=SourceStatus.UNAVAILABLE, summary="governance_gate=None"
+        )
     except Exception:
-        return SourceEntry(name="runtime_status", status=SourceStatus.UNAVAILABLE, summary="app state inaccessible")
+        return SourceEntry(
+            name="runtime_status", status=SourceStatus.UNAVAILABLE, summary="app state inaccessible"
+        )

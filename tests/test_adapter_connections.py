@@ -5,6 +5,7 @@ K-Dexter AOS v4
 Tests that work WITHOUT external dependencies (ccxt, pykiwoom, etc.).
 Run: python -X utf8 tests/test_adapter_connections.py
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -28,6 +29,7 @@ def run(coro):
 # ======================================================================== #
 # 1. Rate Limiter
 # ======================================================================== #
+
 
 def test_rate_limiter_init():
     rl = AsyncRateLimiter(max_calls=10, period=1.0)
@@ -77,9 +79,11 @@ def test_rate_limiter_multiple():
 # 2. CcxtMixin — import guard
 # ======================================================================== #
 
+
 def test_ccxt_binance_no_ccxt():
     """Binance live order should fail gracefully without ccxt."""
     from kdexter.tcl.adapters.binance import BinanceAdapter
+
     adapter = BinanceAdapter(api_key="test", api_secret="test")
     # _get_client should raise RuntimeError if ccxt not installed
     # (or succeed if ccxt IS installed — either way, adapter works)
@@ -94,6 +98,7 @@ def test_ccxt_binance_no_ccxt():
 
 def test_ccxt_bitget_no_ccxt():
     from kdexter.tcl.adapters.bitget import BitgetAdapter
+
     adapter = BitgetAdapter(api_key="test", api_secret="test")
     try:
         adapter._get_client()
@@ -105,6 +110,7 @@ def test_ccxt_bitget_no_ccxt():
 
 def test_ccxt_upbit_no_ccxt():
     from kdexter.tcl.adapters.upbit import UpbitAdapter
+
     adapter = UpbitAdapter(access_key="test", secret_key="test")
     try:
         adapter._get_client()
@@ -118,9 +124,11 @@ def test_ccxt_upbit_no_ccxt():
 # 3. KIS Token logic
 # ======================================================================== #
 
+
 def test_kis_token_validity():
     from kdexter.tcl.adapters.kis import KISAdapter
     from datetime import datetime, timedelta, timezone
+
     adapter = KISAdapter(appkey="test", appsecret="test")
     assert adapter._is_token_valid() is False
     # Simulate valid token
@@ -135,6 +143,7 @@ def test_kis_token_validity():
 
 def test_kis_token_no_key():
     from kdexter.tcl.adapters.kis import KISAdapter
+
     adapter = KISAdapter()  # no appkey/appsecret
 
     async def try_token():
@@ -150,6 +159,7 @@ def test_kis_token_no_key():
 
 def test_kis_code_conversion():
     from kdexter.tcl.adapters.kis import KISAdapter
+
     assert KISAdapter._to_kis_code("005930/KRW") == "005930"
     assert KISAdapter._to_kis_code("005930") == "005930"
     assert KISAdapter._to_kis_code(None) == ""
@@ -158,6 +168,7 @@ def test_kis_code_conversion():
 
 def test_kis_tr_id_mapping():
     from kdexter.tcl.adapters.kis import KISAdapter
+
     assert KISAdapter._get_tr_id("buy", True) == "VTTC0802U"
     assert KISAdapter._get_tr_id("sell", True) == "VTTC0801U"
     assert KISAdapter._get_tr_id("buy", False) == "TTTC0802U"
@@ -167,6 +178,7 @@ def test_kis_tr_id_mapping():
 
 def test_kis_headers():
     from kdexter.tcl.adapters.kis import KISAdapter
+
     adapter = KISAdapter(appkey="AK", appsecret="AS")
     adapter._access_token = "TOKEN"
     h = adapter._build_headers("VTTC0802U")
@@ -180,8 +192,10 @@ def test_kis_headers():
 # 4. Kiwoom COM guard
 # ======================================================================== #
 
+
 def test_kiwoom_no_pykiwoom():
     from kdexter.tcl.adapters.kiwoom import KiwoomAdapter
+
     adapter = KiwoomAdapter(account_no="1234567890")
     try:
         adapter._get_api()
@@ -193,6 +207,7 @@ def test_kiwoom_no_pykiwoom():
 
 def test_kiwoom_code_conversion():
     from kdexter.tcl.adapters.kiwoom import KiwoomAdapter
+
     assert KiwoomAdapter._to_kiwoom_code("005930/KRW") == "005930"
     assert KiwoomAdapter._to_kiwoom_code("005930") == "005930"
     assert KiwoomAdapter._to_kiwoom_code(None) == ""
@@ -201,6 +216,7 @@ def test_kiwoom_code_conversion():
 
 def test_kiwoom_rate_limiter():
     from kdexter.tcl.adapters.kiwoom import KiwoomAdapter
+
     adapter = KiwoomAdapter()
     assert adapter._rate_limiter.max_calls == 5
     print("  [15] Kiwoom rate limiter configured  OK")
@@ -209,6 +225,7 @@ def test_kiwoom_rate_limiter():
 # ======================================================================== #
 # 5. Dry run backward compatibility
 # ======================================================================== #
+
 
 def test_all_adapters_dry_run():
     """All 5 adapters' dry_run still works after refactoring."""
@@ -253,32 +270,47 @@ if __name__ == "__main__":
     print("=" * 60)
 
     tests = [
-        ("Rate Limiter", [
-            test_rate_limiter_init,
-            test_rate_limiter_invalid_args,
-            test_rate_limiter_acquire,
-            test_rate_limiter_multiple,
-        ]),
-        ("CcxtMixin Guard", [
-            test_ccxt_binance_no_ccxt,
-            test_ccxt_bitget_no_ccxt,
-            test_ccxt_upbit_no_ccxt,
-        ]),
-        ("KIS Token & Config", [
-            test_kis_token_validity,
-            test_kis_token_no_key,
-            test_kis_code_conversion,
-            test_kis_tr_id_mapping,
-            test_kis_headers,
-        ]),
-        ("Kiwoom COM Guard", [
-            test_kiwoom_no_pykiwoom,
-            test_kiwoom_code_conversion,
-            test_kiwoom_rate_limiter,
-        ]),
-        ("Dry Run Compat", [
-            test_all_adapters_dry_run,
-        ]),
+        (
+            "Rate Limiter",
+            [
+                test_rate_limiter_init,
+                test_rate_limiter_invalid_args,
+                test_rate_limiter_acquire,
+                test_rate_limiter_multiple,
+            ],
+        ),
+        (
+            "CcxtMixin Guard",
+            [
+                test_ccxt_binance_no_ccxt,
+                test_ccxt_bitget_no_ccxt,
+                test_ccxt_upbit_no_ccxt,
+            ],
+        ),
+        (
+            "KIS Token & Config",
+            [
+                test_kis_token_validity,
+                test_kis_token_no_key,
+                test_kis_code_conversion,
+                test_kis_tr_id_mapping,
+                test_kis_headers,
+            ],
+        ),
+        (
+            "Kiwoom COM Guard",
+            [
+                test_kiwoom_no_pykiwoom,
+                test_kiwoom_code_conversion,
+                test_kiwoom_rate_limiter,
+            ],
+        ),
+        (
+            "Dry Run Compat",
+            [
+                test_all_adapters_dry_run,
+            ],
+        ),
     ]
 
     total = 0

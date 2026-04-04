@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock, patch
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -19,7 +28,11 @@ sys.modules["app.core.database"].async_session_factory = MagicMock()
 
 import pytest
 
-from app.services.advanced_runner import AdvancedRunnerConfig, AdvancedRunnerResult, AdvancedStrategyRunner
+from app.services.advanced_runner import (
+    AdvancedRunnerConfig,
+    AdvancedRunnerResult,
+    AdvancedStrategyRunner,
+)
 from app.services.backtesting_engine import BacktestResult
 from app.services.evolution_state import EvolutionCheckpoint
 from app.services.performance_metrics import PerformanceReport
@@ -28,17 +41,19 @@ from app.services.strategy_runner import EvolutionRecord
 from app.services.strategy_tournament import TournamentResult
 
 # Small deterministic OHLCV dataset
-_OHLCV = [[1_000_000 + i * 60_000, 100 + i * 0.1, 101 + i * 0.1,
-           99 + i * 0.1, 100.5 + i * 0.1, 1000] for i in range(100)]
+_OHLCV = [
+    [1_000_000 + i * 60_000, 100 + i * 0.1, 101 + i * 0.1, 99 + i * 0.1, 100.5 + i * 0.1, 1000]
+    for i in range(100)
+]
 
 _SMALL_CFG = AdvancedRunnerConfig(
     n_islands=2,
     population_per_island=5,
     max_generations=2,
     seed=42,
-    migration_interval=10,   # far enough that migration never fires in 2 gens
+    migration_interval=10,  # far enough that migration never fires in 2 gens
     adaptive_mutation=True,
-    persist_state=False,     # default off; individual tests opt-in
+    persist_state=False,  # default off; individual tests opt-in
     registry_max_entries=20,
 )
 
@@ -64,7 +79,9 @@ def _patched_runner(cfg=None):
     from app.services.strategy_tournament import StrategyTournament
 
     runner._bt_patch = patch.object(BacktestingEngine, "run", return_value=mock_bt)
-    runner._tour_patch = patch.object(StrategyTournament, "run_tournament", return_value=mock_t_result)
+    runner._tour_patch = patch.object(
+        StrategyTournament, "run_tournament", return_value=mock_t_result
+    )
     runner._strat_patch = patch(
         "app.services.island_model.IslandModel._genome_to_strategy",
         return_value=MagicMock(),

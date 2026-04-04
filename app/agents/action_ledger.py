@@ -38,6 +38,7 @@ Constraints:
   - In-memory buffer with periodic flush to data/agent_action_history.json
   - Duplicate proposals (same fingerprint within 60s) are suppressed
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -54,9 +55,11 @@ FINGERPRINT_COOLDOWN_SECONDS = 60
 
 # ── Data Models ─────────────────────────────────────────────────────────── #
 
+
 @dataclass
 class ActionReceipt:
     """Immutable receipt generated after a proposal passes the Apply Guard."""
+
     receipt_id: str
     proposal_id: str
     pre_evidence_id: str
@@ -82,6 +85,7 @@ class ActionProposal:
 
     Terminal states: RECEIPTED, BLOCKED, FAILED
     """
+
     proposal_id: str
     task_type: str
     symbol: Optional[str] = None
@@ -99,13 +103,16 @@ class ActionProposal:
     created_at: str = ""
 
     # Allowed transitions (fail-closed: unlisted = forbidden)
-    _TRANSITIONS: dict = field(default_factory=lambda: {
-        "PROPOSED": {"GUARDED", "BLOCKED"},
-        "GUARDED": {"RECEIPTED", "FAILED"},
-        "BLOCKED": set(),      # terminal
-        "RECEIPTED": set(),    # terminal
-        "FAILED": set(),       # terminal
-    }, repr=False)
+    _TRANSITIONS: dict = field(
+        default_factory=lambda: {
+            "PROPOSED": {"GUARDED", "BLOCKED"},
+            "GUARDED": {"RECEIPTED", "FAILED"},
+            "BLOCKED": set(),  # terminal
+            "RECEIPTED": set(),  # terminal
+            "FAILED": set(),  # terminal
+        },
+        repr=False,
+    )
 
     # Terminal states — proposals in these states are never stale
     _TERMINAL_STATES: frozenset = field(
@@ -161,10 +168,12 @@ class ActionProposal:
 
 class StateTransitionError(Exception):
     """Raised when an invalid state transition is attempted."""
+
     pass
 
 
 # ── Apply Guard ─────────────────────────────────────────────────────────── #
+
 
 def _check_risk_approved(risk_result: dict) -> tuple[bool, str]:
     """Guard 1: risk_result must have approved=True."""
@@ -197,16 +206,23 @@ def _check_cost_budget(cost_controller: Any = None) -> tuple[bool, str]:
     try:
         api_budget = cost_controller.get_budget("API_CALLS")
         if api_budget and api_budget.current >= api_budget.limit:
-            return False, f"COST_BUDGET: API calls exhausted ({api_budget.current}/{api_budget.limit})"
+            return (
+                False,
+                f"COST_BUDGET: API calls exhausted ({api_budget.current}/{api_budget.limit})",
+            )
         token_budget = cost_controller.get_budget("LLM_TOKENS")
         if token_budget and token_budget.current >= token_budget.limit:
-            return False, f"COST_BUDGET: tokens exhausted ({token_budget.current}/{token_budget.limit})"
+            return (
+                False,
+                f"COST_BUDGET: tokens exhausted ({token_budget.current}/{token_budget.limit})",
+            )
         return True, "COST_BUDGET: within budget"
     except Exception as e:
         return True, f"COST_BUDGET: check error ({e}), allowing"
 
 
 # ── Action Ledger ───────────────────────────────────────────────────────── #
+
 
 class ActionLedger:
     """
@@ -226,11 +242,16 @@ class ActionLedger:
     # ── Core Operations ───────────────────────────────────────────────── #
 
     @staticmethod
-    def _compute_fingerprint(task_type: str, symbol: Optional[str],
-                             exchange: Optional[str], position_size: Any) -> str:
+    def _compute_fingerprint(
+        task_type: str, symbol: Optional[str], exchange: Optional[str], position_size: Any
+    ) -> str:
         """Compute proposal fingerprint for duplicate detection."""
         # Bucket position size to 1000s to avoid noise
-        size_bucket = int((position_size or 0) / 1000) * 1000 if isinstance(position_size, (int, float)) else 0
+        size_bucket = (
+            int((position_size or 0) / 1000) * 1000
+            if isinstance(position_size, (int, float))
+            else 0
+        )
         raw = f"{task_type}|{symbol}|{exchange}|{size_bucket}"
         return hashlib.md5(raw.encode()).hexdigest()[:12]
 
@@ -262,7 +283,9 @@ class ActionLedger:
         Returns (passed, proposal).
         """
         now_iso = datetime.now(timezone.utc).isoformat()
-        fp = self._compute_fingerprint(task_type, symbol, exchange, risk_result.get("position_size"))
+        fp = self._compute_fingerprint(
+            task_type, symbol, exchange, risk_result.get("position_size")
+        )
 
         proposal = ActionProposal(
             proposal_id=f"AP-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}",
@@ -283,8 +306,12 @@ class ActionLedger:
         # Duplicate suppression check
         if self._is_duplicate(fp):
             proposal.guard_passed = False
-            proposal.guard_reasons = [f"DUPLICATE: fingerprint {fp} seen within {FINGERPRINT_COOLDOWN_SECONDS}s"]
-            proposal.guard_checks = {"DUPLICATE": {"passed": False, "detail": proposal.guard_reasons[0]}}
+            proposal.guard_reasons = [
+                f"DUPLICATE: fingerprint {fp} seen within {FINGERPRINT_COOLDOWN_SECONDS}s"
+            ]
+            proposal.guard_checks = {
+                "DUPLICATE": {"passed": False, "detail": proposal.guard_reasons[0]}
+            }
             proposal.transition_to("BLOCKED")
             self._proposals.append(proposal)
             return False, proposal
@@ -382,15 +409,17 @@ class ActionLedger:
         for p in self._proposals:
             key = p.status.lower()
             if key in board:
-                board[key].append({
-                    "proposal_id": p.proposal_id,
-                    "task_type": p.task_type,
-                    "symbol": p.symbol,
-                    "status": p.status,
-                    "guard_passed": p.guard_passed,
-                    "fingerprint": p.fingerprint,
-                    "created_at": p.created_at,
-                })
+                board[key].append(
+                    {
+                        "proposal_id": p.proposal_id,
+                        "task_type": p.task_type,
+                        "symbol": p.symbol,
+                        "status": p.status,
+                        "guard_passed": p.guard_passed,
+                        "fingerprint": p.fingerprint,
+                        "created_at": p.created_at,
+                    }
+                )
 
         # Orphan detection: GUARDED proposals without receipt
         orphan_count = len(board["guarded"])  # GUARDED = not yet receipted or failed
@@ -411,6 +440,7 @@ class ActionLedger:
     def _top_block_reasons(self, limit: int = 5) -> list[str]:
         """Top N blocking reasons across all blocked proposals."""
         from collections import Counter
+
         reasons = Counter()
         for p in self._proposals:
             if p.status == "BLOCKED":

@@ -47,15 +47,23 @@ _SEVERITY_TO_LEVEL = {
 }
 
 # PROMOTION 이벤트 키워드 (event_name 기반 분류)
-_PROMOTION_KEYWORDS = frozenset({
-    "promotion", "demotion", "capital_expand", "capital_reduce",
-    "stage_transition", "upgrade", "downgrade",
-})
+_PROMOTION_KEYWORDS = frozenset(
+    {
+        "promotion",
+        "demotion",
+        "capital_expand",
+        "capital_reduce",
+        "stage_transition",
+        "upgrade",
+        "downgrade",
+    }
+)
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def map_severity_to_alert_level(
     severity_tier: str,

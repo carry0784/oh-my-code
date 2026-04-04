@@ -4,8 +4,10 @@ B-11: Governance Summary Tests
 
 import pytest
 from app.schemas.governance_summary_schema import (
-    GovernanceSummaryResponse, GovernanceHealth,
-    GovOverallStatus, GovExecutionState,
+    GovernanceSummaryResponse,
+    GovernanceHealth,
+    GovOverallStatus,
+    GovExecutionState,
 )
 
 
@@ -34,6 +36,7 @@ class TestSchema:
 class TestRules:
     def test_healthy_when_normal_enabled_no_orphan_evidence(self):
         from app.core.governance_summary_service import build_governance_summary
+
         s = build_governance_summary()
         # In dev env, result depends on governance_gate state
         assert s.overall_status.value in ("HEALTHY", "DEGRADED", "BLOCKED")
@@ -48,7 +51,11 @@ class TestRules:
     def test_blocked_rules(self):
         """QUARANTINED / LOCKDOWN → BLOCKED (highest priority)."""
         sec = "LOCKDOWN"
-        overall = GovOverallStatus.BLOCKED if sec in ("LOCKDOWN", "QUARANTINED") else GovOverallStatus.DEGRADED
+        overall = (
+            GovOverallStatus.BLOCKED
+            if sec in ("LOCKDOWN", "QUARANTINED")
+            else GovOverallStatus.DEGRADED
+        )
         assert overall == GovOverallStatus.BLOCKED
 
     def test_enabled_false_is_degraded(self):
@@ -69,7 +76,11 @@ class TestRules:
     def test_blocked_overrides_enabled_false(self):
         """LOCKDOWN + enabled=false → BLOCKED (not just DEGRADED)."""
         sec = "LOCKDOWN"
-        overall = GovOverallStatus.BLOCKED if sec in ("LOCKDOWN", "QUARANTINED") else GovOverallStatus.DEGRADED
+        overall = (
+            GovOverallStatus.BLOCKED
+            if sec in ("LOCKDOWN", "QUARANTINED")
+            else GovOverallStatus.DEGRADED
+        )
         assert overall == GovOverallStatus.BLOCKED
 
     def test_orphan_causes_degraded(self):
@@ -101,17 +112,20 @@ class TestRules:
 class TestDominantReason:
     def test_priority_order(self):
         from app.core.governance_summary_service import _REASON_PRIORITY
+
         assert _REASON_PRIORITY[0] == "lockdown_active"
         assert _REASON_PRIORITY[-1] == "governance_disabled"
 
     def test_dominant_reason_generated(self):
         from app.core.governance_summary_service import build_governance_summary
+
         s = build_governance_summary()
         if s.overall_status != GovOverallStatus.HEALTHY:
             assert len(s.dominant_reason) > 0
 
     def test_constraints_count(self):
         from app.core.governance_summary_service import build_governance_summary
+
         s = build_governance_summary()
         assert s.active_constraints_count >= 0
 
@@ -120,11 +134,13 @@ class TestV2:
     def test_v2_references_governance_health(self):
         import inspect
         from app.api.routes.dashboard import dashboard_data_v2
+
         src = inspect.getsource(dashboard_data_v2)
         assert "governance_health" in src
 
     def test_endpoint_exists(self):
         from app.api.routes.dashboard import governance_summary
+
         assert governance_summary is not None
 
 
@@ -132,6 +148,7 @@ class TestReadOnly:
     def test_no_write_in_service(self):
         import inspect
         from app.core import governance_summary_service
+
         src = inspect.getsource(governance_summary_service)
         forbidden = ["db.add", "db.delete", "session.commit", "submit_order"]
         for f in forbidden:

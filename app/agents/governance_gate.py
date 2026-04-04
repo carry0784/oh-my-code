@@ -10,6 +10,7 @@ Resolves:
   D-009: ForbiddenLedger must be checked before any agent execution
   VALIDATING: 10-check state classification required before execution
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -35,6 +36,7 @@ logger = get_logger(__name__)
 # ─────────────────────────────────────────────────────────────────────────── #
 # Code classification enums
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 class DecisionCode(str, Enum):
     ALLOWED = "ALLOWED"
@@ -110,6 +112,7 @@ _AGENT_FORBIDDEN_ACTIONS = [
 # GovernanceGate
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 class GovernanceGate:
     """
     Control boundary for agent execution.
@@ -178,9 +181,7 @@ class GovernanceGate:
         """Reset singleton state. Forbidden in production."""
         env = os.environ.get("APP_ENV", "").lower()
         if env in ("production", "prod"):
-            raise RuntimeError(
-                "_reset_for_testing() is forbidden in production (APP_ENV=%s)" % env
-            )
+            raise RuntimeError("_reset_for_testing() is forbidden in production (APP_ENV=%s)" % env)
         with cls._creation_lock:
             cls._instance = None
             cls._generation_count = 0
@@ -204,8 +205,12 @@ class GovernanceGate:
                 "detail": "Global SecurityState is LOCKDOWN",
             }
             return self._finalize_pre(
-                task, False, DecisionCode.BLOCKED, ReasonCode.LOCKDOWN_BLOCK,
-                check_matrix, "SecurityState LOCKDOWN — execution denied",
+                task,
+                False,
+                DecisionCode.BLOCKED,
+                ReasonCode.LOCKDOWN_BLOCK,
+                check_matrix,
+                "SecurityState LOCKDOWN — execution denied",
             )
 
         if self.security_ctx.sandbox_only():
@@ -214,12 +219,18 @@ class GovernanceGate:
                 "detail": "Global SecurityState is QUARANTINED",
             }
             return self._finalize_pre(
-                task, False, DecisionCode.BLOCKED, ReasonCode.QUARANTINE_BLOCK,
-                check_matrix, "SecurityState QUARANTINED — execution denied",
+                task,
+                False,
+                DecisionCode.BLOCKED,
+                ReasonCode.QUARANTINE_BLOCK,
+                check_matrix,
+                "SecurityState QUARANTINED — execution denied",
             )
 
         # ForbiddenLedger check
-        action_name = f"AGENT_{task.task_type.upper()}" if hasattr(task, "task_type") else "AGENT_UNKNOWN"
+        action_name = (
+            f"AGENT_{task.task_type.upper()}" if hasattr(task, "task_type") else "AGENT_UNKNOWN"
+        )
         forbidden_passed, forbidden_reason = self.forbidden_ledger.check_and_enforce(
             action_name=action_name,
             context={"task_type": getattr(task, "task_type", "unknown")},
@@ -233,8 +244,12 @@ class GovernanceGate:
                 "detail": forbidden_reason,
             }
             return self._finalize_pre(
-                task, False, DecisionCode.BLOCKED, ReasonCode.FORBIDDEN_ACTION,
-                check_matrix, forbidden_reason,
+                task,
+                False,
+                DecisionCode.BLOCKED,
+                ReasonCode.FORBIDDEN_ACTION,
+                check_matrix,
+                forbidden_reason,
             )
 
         check_matrix["FORBIDDEN_CHECK"] = {
@@ -252,8 +267,12 @@ class GovernanceGate:
                 "detail": "symbol is required",
             }
             return self._finalize_pre(
-                task, False, DecisionCode.BLOCKED, ReasonCode.MISSING_SYMBOL,
-                check_matrix, "Mandatory field missing: symbol",
+                task,
+                False,
+                DecisionCode.BLOCKED,
+                ReasonCode.MISSING_SYMBOL,
+                check_matrix,
+                "Mandatory field missing: symbol",
             )
 
         if not exchange:
@@ -262,8 +281,12 @@ class GovernanceGate:
                 "detail": "exchange is required",
             }
             return self._finalize_pre(
-                task, False, DecisionCode.BLOCKED, ReasonCode.MISSING_EXCHANGE,
-                check_matrix, "Mandatory field missing: exchange",
+                task,
+                False,
+                DecisionCode.BLOCKED,
+                ReasonCode.MISSING_EXCHANGE,
+                check_matrix,
+                "Mandatory field missing: exchange",
             )
 
         check_matrix["MANDATORY_CHECK"] = {
@@ -299,8 +322,12 @@ class GovernanceGate:
                     "detail": f"Recurring failure pattern detected for AGENT_{task_type.upper()}",
                 }
                 return self._finalize_pre(
-                    task, False, DecisionCode.BLOCKED, ReasonCode.PATTERN_DETECTED,
-                    check_matrix, f"Failure pattern detected: AGENT_{task_type.upper()}",
+                    task,
+                    False,
+                    DecisionCode.BLOCKED,
+                    ReasonCode.PATTERN_DETECTED,
+                    check_matrix,
+                    f"Failure pattern detected: AGENT_{task_type.upper()}",
                 )
             check_matrix["PATTERN_CHECK"] = {
                 "status": CheckStatus.PASSED.value,
@@ -328,8 +355,12 @@ class GovernanceGate:
                     ),
                 }
                 return self._finalize_pre(
-                    task, False, DecisionCode.BLOCKED, ReasonCode.BUDGET_EXCEEDED,
-                    check_matrix, f"Budget exceeded: {cost_result.exceeded}",
+                    task,
+                    False,
+                    DecisionCode.BLOCKED,
+                    ReasonCode.BUDGET_EXCEEDED,
+                    check_matrix,
+                    f"Budget exceeded: {cost_result.exceeded}",
                 )
         else:
             check_matrix["BUDGET_CHECK"] = {
@@ -351,8 +382,12 @@ class GovernanceGate:
 
         # All checks passed
         return self._finalize_pre(
-            task, True, DecisionCode.ALLOWED, ReasonCode.NONE,
-            check_matrix, "All pre-checks passed",
+            task,
+            True,
+            DecisionCode.ALLOWED,
+            ReasonCode.NONE,
+            check_matrix,
+            "All pre-checks passed",
         )
 
     def _finalize_pre(
@@ -373,18 +408,20 @@ class GovernanceGate:
             action=f"PRE_CHECK:{decision_code.value}",
             before_state=self.security_ctx.current.value,
             after_state=self.security_ctx.current.value,
-            artifacts=[{
-                "phase": PhaseCode.PRE.value,
-                "decision_code": decision_code.value,
-                "reason_code": reason_code.value,
-                "detail": detail,
-                "task_type": getattr(task, "task_type", "unknown"),
-                "check_matrix": check_matrix,
-                "coverage_meta": coverage_meta,
-                "gate_id": self.gate_id,
-                "gate_generation": self.gate_generation,
-                "gate_created_at": self.gate_created_at.isoformat(),
-            }],
+            artifacts=[
+                {
+                    "phase": PhaseCode.PRE.value,
+                    "decision_code": decision_code.value,
+                    "reason_code": reason_code.value,
+                    "detail": detail,
+                    "task_type": getattr(task, "task_type", "unknown"),
+                    "check_matrix": check_matrix,
+                    "coverage_meta": coverage_meta,
+                    "gate_id": self.gate_id,
+                    "gate_generation": self.gate_generation,
+                    "gate_created_at": self.gate_created_at.isoformat(),
+                }
+            ],
         )
         evidence_id = self.evidence_store.store(bundle)
 
@@ -418,9 +455,7 @@ class GovernanceGate:
         if not pre_evidence_id:
             raise ValueError("post_record requires pre_evidence_id — post without pre is forbidden")
 
-        prompt_hash = hashlib.sha256(
-            str(result.get("reasoning", "")).encode()
-        ).hexdigest()[:16]
+        prompt_hash = hashlib.sha256(str(result.get("reasoning", "")).encode()).hexdigest()[:16]
 
         # Record LLM token usage to CostController (M-08/G-22)
         llm_usage = result.get("_llm_usage", {})
@@ -442,20 +477,22 @@ class GovernanceGate:
             action=f"POST_RECORD:{decision_code.value}",
             before_state=self.security_ctx.current.value,
             after_state=self.security_ctx.current.value,
-            artifacts=[{
-                "phase": PhaseCode.POST.value,
-                "decision_code": decision_code.value,
-                "pre_evidence_id": pre_evidence_id,
-                "task_type": getattr(task, "task_type", "unknown"),
-                "prompt_hash": prompt_hash,
-                "confidence": result.get("confidence", 0.0),
-                "approved": approved,
-                "reasoning_hash": prompt_hash,
-                "llm_tokens": total_tokens,
-                "gate_id": self.gate_id,
-                "gate_generation": self.gate_generation,
-                "gate_created_at": self.gate_created_at.isoformat(),
-            }],
+            artifacts=[
+                {
+                    "phase": PhaseCode.POST.value,
+                    "decision_code": decision_code.value,
+                    "pre_evidence_id": pre_evidence_id,
+                    "task_type": getattr(task, "task_type", "unknown"),
+                    "prompt_hash": prompt_hash,
+                    "confidence": result.get("confidence", 0.0),
+                    "approved": approved,
+                    "reasoning_hash": prompt_hash,
+                    "llm_tokens": total_tokens,
+                    "gate_id": self.gate_id,
+                    "gate_generation": self.gate_generation,
+                    "gate_created_at": self.gate_created_at.isoformat(),
+                }
+            ],
         )
         evidence_id = self.evidence_store.store(bundle)
 
@@ -490,7 +527,9 @@ class GovernanceGate:
                 error="pre_evidence_id is required but missing",
                 exception_type=type(exception).__name__,
             )
-            raise ValueError("post_record_error requires pre_evidence_id — post without pre is forbidden")
+            raise ValueError(
+                "post_record_error requires pre_evidence_id — post without pre is forbidden"
+            )
 
         # Record failure to FailurePatternMemory (L17/M-13)
         if self.pattern_memory is not None:
@@ -504,22 +543,24 @@ class GovernanceGate:
                 action=f"POST_ERROR:{DecisionCode.FAILED.value}",
                 before_state=self.security_ctx.current.value,
                 after_state=self.security_ctx.current.value,
-                artifacts=[{
-                    "phase": PhaseCode.ERROR.value,
-                    "decision_code": DecisionCode.FAILED.value,
-                    "reason_code": ReasonCode.POST_EXCEPTION.value,
-                    "error_severity": "CRITICAL",
-                    "error_class": type(exception).__name__,
-                    "pre_evidence_id": pre_evidence_id,
-                    "task_type": getattr(task, "task_type", "unknown"),
-                    "exception_message": str(exception),
-                    "traceback_hash": hashlib.sha256(
-                        traceback.format_exc().encode()
-                    ).hexdigest()[:16],
-                    "gate_id": self.gate_id,
-                    "gate_generation": self.gate_generation,
-                    "gate_created_at": self.gate_created_at.isoformat(),
-                }],
+                artifacts=[
+                    {
+                        "phase": PhaseCode.ERROR.value,
+                        "decision_code": DecisionCode.FAILED.value,
+                        "reason_code": ReasonCode.POST_EXCEPTION.value,
+                        "error_severity": "CRITICAL",
+                        "error_class": type(exception).__name__,
+                        "pre_evidence_id": pre_evidence_id,
+                        "task_type": getattr(task, "task_type", "unknown"),
+                        "exception_message": str(exception),
+                        "traceback_hash": hashlib.sha256(
+                            traceback.format_exc().encode()
+                        ).hexdigest()[:16],
+                        "gate_id": self.gate_id,
+                        "gate_generation": self.gate_generation,
+                        "gate_created_at": self.gate_created_at.isoformat(),
+                    }
+                ],
             )
             evidence_id = self.evidence_store.store(bundle)
 

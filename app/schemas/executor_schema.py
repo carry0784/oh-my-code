@@ -43,10 +43,11 @@ from pydantic import BaseModel, Field, model_validator
 # ---------------------------------------------------------------------------
 class ExecutionState(str, Enum):
     """E-01 실행 상태. 설계 계약만 정의."""
-    PENDING = "PENDING"          # 실행 요청 생성됨, 아직 미실행
+
+    PENDING = "PENDING"  # 실행 요청 생성됨, 아직 미실행
     PRECONDITION_FAILED = "PRECONDITION_FAILED"  # 전제 조건 미충족
-    SCOPE_MISMATCH = "SCOPE_MISMATCH"            # scope 불일치
-    READY_TO_EXECUTE = "READY_TO_EXECUTE"         # 전제 충족, 실행 대기 (활성화 금지)
+    SCOPE_MISMATCH = "SCOPE_MISMATCH"  # scope 불일치
+    READY_TO_EXECUTE = "READY_TO_EXECUTE"  # 전제 충족, 실행 대기 (활성화 금지)
     # 아래 상태는 E-01 활성화 후에만 사용 가능 (현재 금지)
     # EXECUTING = "EXECUTING"
     # COMPLETED = "COMPLETED"
@@ -56,6 +57,7 @@ class ExecutionState(str, Enum):
 
 class ExecutionScope(str, Enum):
     """실행 범위. I-06 ApprovalScope와 동일 체계."""
+
     MICRO_LIVE_ONLY = "MICRO_LIVE_ONLY"
     PAPER_ONLY = "PAPER_ONLY"
     NO_EXECUTION = "NO_EXECUTION"
@@ -64,6 +66,7 @@ class ExecutionScope(str, Enum):
 
 class ExecutionFailReason(str, Enum):
     """Fail-closed 실패 사유."""
+
     MISSING_APPROVAL = "MISSING_APPROVAL"
     APPROVAL_EXPIRED = "APPROVAL_EXPIRED"
     APPROVAL_NOT_APPROVED = "APPROVAL_NOT_APPROVED"
@@ -81,6 +84,7 @@ class ExecutionFailReason(str, Enum):
 # ---------------------------------------------------------------------------
 class EvidenceChainRef(BaseModel):
     """I-03 ~ I-07 → E-01 증거 체인 참조 계약."""
+
     check_id: str = Field(description="I-03 점검 결과 ID")
     preflight_id: str = Field(description="I-04 Recovery Preflight ID")
     gate_snapshot_id: str = Field(description="I-05 Execution Gate ID")
@@ -143,10 +147,7 @@ class ExecutionReceipt(BaseModel):
     @model_validator(mode="after")
     def enforce_scope_symbol(self):
         """SPECIFIC_SYMBOL_ONLY인데 target_symbol 없으면 SCOPE_MISMATCH."""
-        if (
-            self.execution_scope == ExecutionScope.SPECIFIC_SYMBOL_ONLY
-            and not self.target_symbol
-        ):
+        if self.execution_scope == ExecutionScope.SPECIFIC_SYMBOL_ONLY and not self.target_symbol:
             self.state = ExecutionState.SCOPE_MISMATCH
             if ExecutionFailReason.SYMBOL_MISMATCH not in self.fail_reasons:
                 self.fail_reasons.append(ExecutionFailReason.SYMBOL_MISMATCH)

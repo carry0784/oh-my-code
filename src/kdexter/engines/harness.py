@@ -8,6 +8,7 @@ for timed execution.
 
 B2 Orchestration layer.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -82,5 +83,4 @@ class HarnessEngine:
         return list(self._runs.values())
 
     def list_running(self) -> list[HarnessRun]:
-        return [r for r in self._runs.values()
-                if r.status == HarnessStatus.RUNNING]
+        return [r for r in self._runs.values() if r.status == HarnessStatus.RUNNING]

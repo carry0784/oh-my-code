@@ -13,6 +13,7 @@ Tests:
 Usage:
     python scripts/strategy_d_oos_validator.py
 """
+
 from __future__ import annotations
 
 import json
@@ -143,15 +144,17 @@ def test_walk_forward(highs, lows, closes, n):
         test_sigs = compute_all_signals(h_te, l_te, c_te)
         oos_res = build_strategy_d(c_te, test_sigs, top3)
 
-        windows.append({
-            "window": w + 1,
-            "train_range": f"{train_start}-{train_end}",
-            "test_range": f"{test_start}-{test_end}",
-            "top3": top3,
-            "oos_sharpe": round(oos_res.sharpe_ratio, 2),
-            "oos_return_pct": round(oos_res.total_return_pct, 2),
-            "oos_trades": oos_res.total_trades,
-        })
+        windows.append(
+            {
+                "window": w + 1,
+                "train_range": f"{train_start}-{train_end}",
+                "test_range": f"{test_start}-{test_end}",
+                "top3": top3,
+                "oos_sharpe": round(oos_res.sharpe_ratio, 2),
+                "oos_return_pct": round(oos_res.total_return_pct, 2),
+                "oos_trades": oos_res.total_trades,
+            }
+        )
 
     sharpes = [w["oos_sharpe"] for w in windows]
     mean_sharpe = np.mean(sharpes) if sharpes else 0.0
@@ -197,15 +200,17 @@ def test_purged_cv(highs, lows, closes, n, n_folds=5, embargo=48):
         test_sigs = compute_all_signals(h_te, l_te, c_te)
         oos_res = build_strategy_d(c_te, test_sigs, top3)
 
-        folds.append({
-            "fold": fold + 1,
-            "test_range": f"{test_start}-{test_end}",
-            "top3": top3,
-            "full_ranking": [name for name, _ in ranking],
-            "oos_sharpe": round(oos_res.sharpe_ratio, 2),
-            "oos_return_pct": round(oos_res.total_return_pct, 2),
-            "oos_trades": oos_res.total_trades,
-        })
+        folds.append(
+            {
+                "fold": fold + 1,
+                "test_range": f"{test_start}-{test_end}",
+                "top3": top3,
+                "full_ranking": [name for name, _ in ranking],
+                "oos_sharpe": round(oos_res.sharpe_ratio, 2),
+                "oos_return_pct": round(oos_res.total_return_pct, 2),
+                "oos_trades": oos_res.total_trades,
+            }
+        )
 
     sharpes = [f["oos_sharpe"] for f in folds]
     mean_sharpe = np.mean(sharpes) if sharpes else 0.0
@@ -283,9 +288,11 @@ def main():
     wf = test_walk_forward(highs, lows, closes, n)
     results["walk_forward"] = wf
     for w in wf["windows"]:
-        print(f"  Window {w['window']}: Top3={w['top3']}, "
-              f"Sharpe={w['oos_sharpe']}, Return={w['oos_return_pct']:+.2f}%, "
-              f"Trades={w['oos_trades']}")
+        print(
+            f"  Window {w['window']}: Top3={w['top3']}, "
+            f"Sharpe={w['oos_sharpe']}, Return={w['oos_return_pct']:+.2f}%, "
+            f"Trades={w['oos_trades']}"
+        )
     print(f"  Mean OOS Sharpe: {wf['mean_oos_sharpe']}")
     print(f"  PASS (mean>0.3): {'YES' if wf['pass'] else 'NO'}")
 
@@ -296,9 +303,11 @@ def main():
     cv = test_purged_cv(highs, lows, closes, n)
     results["purged_cv"] = cv
     for f in cv["folds"]:
-        print(f"  Fold {f['fold']}: Top3={f['top3']}, "
-              f"Sharpe={f['oos_sharpe']}, Return={f['oos_return_pct']:+.2f}%, "
-              f"Trades={f['oos_trades']}")
+        print(
+            f"  Fold {f['fold']}: Top3={f['top3']}, "
+            f"Sharpe={f['oos_sharpe']}, Return={f['oos_return_pct']:+.2f}%, "
+            f"Trades={f['oos_trades']}"
+        )
     print(f"  Mean CV Sharpe: {cv['mean_cv_sharpe']}")
     print(f"  Std CV Sharpe: {cv['std_cv_sharpe']}")
     print(f"  PASS (mean>0.3): {'YES' if cv['pass'] else 'NO'}")

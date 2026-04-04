@@ -99,8 +99,9 @@ class TestC03ReadyProbe:
     def _get_fn_body(self):
         content = MAIN_PATH.read_text(encoding="utf-8")
         fn_match = re.search(
-            r'async def readiness_probe.*?(?=\n@app\.|\nasync def startup_probe|\Z)',
-            content, re.DOTALL
+            r"async def readiness_probe.*?(?=\n@app\.|\nasync def startup_probe|\Z)",
+            content,
+            re.DOTALL,
         )
         assert fn_match, "readiness_probe function not found"
         return fn_match.group()
@@ -157,10 +158,7 @@ class TestC03StartupProbe:
 
     def _get_fn_body(self):
         content = MAIN_PATH.read_text(encoding="utf-8")
-        fn_match = re.search(
-            r'async def startup_probe.*?(?=\n@app\.|\Z)',
-            content, re.DOTALL
-        )
+        fn_match = re.search(r"async def startup_probe.*?(?=\n@app\.|\Z)", content, re.DOTALL)
         assert fn_match, "startup_probe function not found"
         return fn_match.group()
 
@@ -213,9 +211,16 @@ class TestC03ForbiddenFields:
         probe_start = content.index("# C-03:")
         probe_section = content[probe_start:]
         forbidden = [
-            'agent_analysis', 'raw_prompt', 'chain_of_thought',
-            'internal_reasoning', 'debug_trace', 'error_class',
-            'traceback', 'exception_type', 'stack', 'internal_state_dump',
+            "agent_analysis",
+            "raw_prompt",
+            "chain_of_thought",
+            "internal_reasoning",
+            "debug_trace",
+            "error_class",
+            "traceback",
+            "exception_type",
+            "stack",
+            "internal_state_dump",
         ]
         for f in forbidden:
             assert f not in probe_section, f"Forbidden string '{f}' in probe section"
@@ -225,7 +230,7 @@ class TestC03ForbiddenFields:
         content = MAIN_PATH.read_text(encoding="utf-8")
         probe_start = content.index("# C-03:")
         probe_section = content[probe_start:]
-        mutation_calls = ['.record_violation(', '.on_failure(', '.check(', '.ratify(']
+        mutation_calls = [".record_violation(", ".on_failure(", ".check(", ".ratify("]
         for mc in mutation_calls:
             assert mc not in probe_section, f"Mutation call '{mc}' found in probe section"
 

@@ -28,6 +28,7 @@ Policy rules:
   4. URGENCY MARKERS:
      critical tier → add "urgent" flag
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -39,18 +40,20 @@ from typing import Any, Optional
 # Configuration
 # ---------------------------------------------------------------------------
 
-DEFAULT_COOLDOWN_SECONDS = 300      # 5 min duplicate suppression
-DEFAULT_ESCALATION_THRESHOLD = 3   # consecutive degraded → escalate
+DEFAULT_COOLDOWN_SECONDS = 300  # 5 min duplicate suppression
+DEFAULT_ESCALATION_THRESHOLD = 3  # consecutive degraded → escalate
 
 
 # ---------------------------------------------------------------------------
 # Data models
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class PolicyDecision:
     """Result of applying escalation policy to a routing decision."""
-    action: str             # "send" | "suppress" | "escalate" | "resolve"
+
+    action: str  # "send" | "suppress" | "escalate" | "resolve"
     channels: list[str] = field(default_factory=list)
     severity_tier: str = ""
     reason: str = ""
@@ -61,6 +64,7 @@ class PolicyDecision:
 @dataclass
 class _PolicyState:
     """Internal state for duplicate suppression and escalation tracking."""
+
     last_severity: str = ""
     last_incident: str = ""
     last_sent_at: Optional[datetime] = None
@@ -71,6 +75,7 @@ class _PolicyState:
 # ---------------------------------------------------------------------------
 # Alert Policy Engine
 # ---------------------------------------------------------------------------
+
 
 class AlertPolicy:
     """

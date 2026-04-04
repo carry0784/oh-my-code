@@ -30,7 +30,6 @@ STORE_PATH = PROJECT_ROOT / "app" / "core" / "notification_receipt_store.py"
 # C18-1: ReceiptFileBackend CRUD
 # ===========================================================================
 class TestC18BackendCRUD:
-
     def test_append_returns_true(self, tmp_path):
         backend = ReceiptFileBackend(tmp_path / "test.jsonl")
         assert backend.append({"id": "RX-001"}) is True
@@ -78,7 +77,6 @@ class TestC18BackendCRUD:
 # C18-2: JSONL format
 # ===========================================================================
 class TestC18JSONLFormat:
-
     def test_each_line_is_valid_json(self, tmp_path):
         backend = ReceiptFileBackend(tmp_path / "test.jsonl")
         backend.append({"id": "RX-001"})
@@ -112,10 +110,10 @@ class TestC18JSONLFormat:
 # C18-3: Fail-closed
 # ===========================================================================
 class TestC18FailClosed:
-
     def test_append_to_readonly_returns_false(self, tmp_path):
         """쓰기 불가 경로에 쓰기 실패 시 False 반환."""
         import sys
+
         # Use a path that cannot be written on any OS
         if sys.platform == "win32":
             bad_path = "NUL:\\impossible\\path.jsonl"
@@ -133,7 +131,7 @@ class TestC18FailClosed:
         path = tmp_path / "test.jsonl"
         with open(path, "w") as f:
             f.write('{"id": "good"}\n')
-            f.write('NOT JSON\n')
+            f.write("NOT JSON\n")
             f.write('{"id": "also_good"}\n')
         backend = ReceiptFileBackend(path)
         entries = backend.load_all()
@@ -148,7 +146,6 @@ class TestC18FailClosed:
 # C18-4: ReceiptStore + file backend 통합
 # ===========================================================================
 class TestC18StoreIntegration:
-
     def test_store_with_backend_persists(self, tmp_path):
         path = tmp_path / "receipts.jsonl"
         backend = ReceiptFileBackend(path)
@@ -209,13 +206,16 @@ class TestC18StoreIntegration:
 # C18-5: 금지 조항
 # ===========================================================================
 class TestC18Forbidden:
-
     def test_no_forbidden_strings_in_backend(self):
         content = BACKEND_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace', 'agent_analysis', 'error_class',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
+            "agent_analysis",
+            "error_class",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

@@ -20,7 +20,7 @@ import pytest
 # Skip entire module when not in production environment (e.g. CI)
 pytestmark = pytest.mark.skipif(
     os.environ.get("APP_ENV", "development") != "production",
-    reason="F-02 production integrity audit requires APP_ENV=production"
+    reason="F-02 production integrity audit requires APP_ENV=production",
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -32,55 +32,62 @@ APP = PROJECT_ROOT / "app"
 # F02-1: Phase and config verification
 # ===========================================================================
 class TestF02PhaseConfig:
-
     def test_app_env_production(self):
         """APP_ENV must be production."""
         from app.core.config import Settings
+
         s = Settings()
         assert s.app_env == "production", f"APP_ENV={s.app_env}, expected production"
 
     def test_is_production_true(self):
         from app.core.config import Settings
+
         s = Settings()
         assert s.is_production is True
 
     def test_debug_disabled(self):
         from app.core.config import Settings
+
         s = Settings()
         assert s.debug is False
 
     def test_governance_enabled(self):
         from app.core.config import Settings
+
         s = Settings()
         assert s.governance_enabled is True
 
     def test_evidence_path_set(self):
         from app.core.config import Settings
+
         s = Settings()
         assert s.evidence_db_path != "", "Evidence DB path must be set in production"
 
     def test_receipt_path_set(self):
         from app.core.config import Settings
+
         s = Settings()
         assert s.receipt_file_path != "", "Receipt file path must be set in production"
 
     def test_log_path_set(self):
         from app.core.config import Settings
+
         s = Settings()
         assert s.log_file_path != "", "Log file path must be set in production"
 
     def test_no_default_secret_key(self):
         from app.core.config import Settings
+
         s = Settings()
-        assert s.secret_key != "change-me-in-production", \
+        assert s.secret_key != "change-me-in-production", (
             "Secret key must not be default in production"
+        )
 
 
 # ===========================================================================
 # F02-2: Constitution documents
 # ===========================================================================
 class TestF02ConstitutionDocs:
-
     def test_constitution(self):
         assert (DOCS / "system_final_constitution.md").exists()
 
@@ -95,7 +102,6 @@ class TestF02ConstitutionDocs:
 # F02-3: Law documents
 # ===========================================================================
 class TestF02LawDocs:
-
     def test_change_protocol(self):
         assert (DOCS / "law_change_protocol.md").exists()
 
@@ -113,7 +119,6 @@ class TestF02LawDocs:
 # F02-4: Seal documents
 # ===========================================================================
 class TestF02SealDocs:
-
     def test_retry_seal(self):
         assert (DOCS / "retry_layer_final_seal.md").exists()
 
@@ -134,7 +139,6 @@ class TestF02SealDocs:
 # F02-5: Prod operational docs
 # ===========================================================================
 class TestF02ProdDocs:
-
     def test_prod_runbook(self):
         assert (DOCS / "prod_operational_runbook.md").exists()
 
@@ -149,7 +153,6 @@ class TestF02ProdDocs:
 # F02-6: Audit/boundary tests present
 # ===========================================================================
 class TestF02AuditPresence:
-
     def test_a01_audit_exists(self):
         assert (PROJECT_ROOT / "tests" / "test_a01_constitution_audit.py").exists()
 
@@ -161,18 +164,20 @@ class TestF02AuditPresence:
 # F02-7: No illegal execution path
 # ===========================================================================
 class TestF02ExecutionIntegrity:
-
     def test_execute_single_plan_defined_once(self):
         core_files = list((APP / "core").glob("*.py"))
-        defining = [f.name for f in core_files
-                    if "def execute_single_plan(" in
-                    f.read_text(encoding="utf-8")]
+        defining = [
+            f.name
+            for f in core_files
+            if "def execute_single_plan(" in f.read_text(encoding="utf-8")
+        ]
         assert defining == ["retry_executor.py"]
 
     def test_orchestrator_no_direct_sender(self):
         content = (APP / "core" / "auto_retry_orchestrator.py").read_text(encoding="utf-8")
-        lines = [l for l in content.split("\n")
-                 if "get_sender" in l and not l.strip().startswith("#")]
+        lines = [
+            l for l in content.split("\n") if "get_sender" in l and not l.strip().startswith("#")
+        ]
         assert len(lines) == 0
 
 
@@ -180,7 +185,6 @@ class TestF02ExecutionIntegrity:
 # F02-8: No forbidden patterns
 # ===========================================================================
 class TestF02ForbiddenPatterns:
-
     def _scan(self, pattern):
         hits = []
         for fpath in APP.rglob("*.py"):
@@ -208,14 +212,15 @@ class TestF02ForbiddenPatterns:
 # F02-9: No dev/staging config drift
 # ===========================================================================
 class TestF02NoDrift:
-
     def test_not_development(self):
         from app.core.config import Settings
+
         s = Settings()
         assert s.app_env != "development"
 
     def test_not_staging(self):
         from app.core.config import Settings
+
         s = Settings()
         assert s.app_env != "staging"
 
@@ -230,7 +235,6 @@ class TestF02NoDrift:
 # F02-10: Production integrity classification
 # ===========================================================================
 class TestF02IntegrityClassification:
-
     def test_all_checks_pass(self):
         """
         Meta-test: if this file runs without failures,

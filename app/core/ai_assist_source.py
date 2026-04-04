@@ -44,6 +44,7 @@ def _collect_ops_summary() -> OpsSummary:
         # I-03 check
         try:
             from app.core.constitution_check_runner import run_daily_check
+
             check = run_daily_check()
             result.latest_check_grade = check.result.value
         except Exception:
@@ -52,6 +53,7 @@ def _collect_ops_summary() -> OpsSummary:
         # I-04 preflight
         try:
             from app.core.recovery_preflight import run_recovery_preflight
+
             pf = run_recovery_preflight()
             result.preflight_decision = pf.decision.value
         except Exception:
@@ -60,6 +62,7 @@ def _collect_ops_summary() -> OpsSummary:
         # I-05 gate
         try:
             from app.core.execution_gate import evaluate_execution_gate
+
             gate = evaluate_execution_gate()
             result.gate_decision = gate.decision.value
             result.gate_conditions_met = gate.conditions_met
@@ -70,6 +73,7 @@ def _collect_ops_summary() -> OpsSummary:
         # I-01 status (lightweight — from gate's internal checks)
         try:
             import app.main as main_module
+
             gate_obj = getattr(main_module.app.state, "governance_gate", None)
             if gate_obj and hasattr(gate_obj, "security_ctx"):
                 ctx = gate_obj._security_ctx
@@ -83,7 +87,9 @@ def _collect_ops_summary() -> OpsSummary:
                 elif state_val == "NORMAL" and not result.system_healthy:
                     result.status_word = "UNVERIFIED"
                 elif result.system_healthy:
-                    result.status_word = "HEALTHY" if result.ops_score_average >= 0.7 else "DEGRADED"
+                    result.status_word = (
+                        "HEALTHY" if result.ops_score_average >= 0.7 else "DEGRADED"
+                    )
                 else:
                     result.status_word = "UNVERIFIED"
         except Exception:
@@ -93,6 +99,7 @@ def _collect_ops_summary() -> OpsSummary:
         try:
             from app.core.operator_approval import issue_approval
             from app.schemas.operator_approval_schema import ApprovalScope
+
             apr = issue_approval(approval_scope=ApprovalScope.NO_EXECUTION)
             result.approval_decision = apr.decision.value
         except Exception:
@@ -101,6 +108,7 @@ def _collect_ops_summary() -> OpsSummary:
         # I-07 policy
         try:
             from app.core.execution_policy import evaluate_execution_policy
+
             pol = evaluate_execution_policy()
             result.policy_decision = pol.decision.value
         except Exception:
@@ -109,6 +117,7 @@ def _collect_ops_summary() -> OpsSummary:
         # I-02 alerts
         try:
             import app.main as main_module
+
             flow_log = getattr(main_module.app.state, "flow_log", None)
             if flow_log:
                 entries = flow_log.list_entries(limit=50)
@@ -127,8 +136,10 @@ def _collect_signal_pipeline() -> SignalPipelineSummary:
     """Signal pipeline 요약 수집. Fail-closed."""
     try:
         import app.main as main_module
+
         # Reuse dashboard helper pattern
         from app.api.routes.dashboard import _get_signal_summary
+
         # _get_signal_summary requires async — use sync-safe approach
         return SignalPipelineSummary()  # populated by v2 payload in async context
     except Exception:
@@ -148,6 +159,7 @@ def _collect_evidence_summary() -> EvidenceSummary:
     """Evidence 요약 수집. 원문 노출 없이 건수/존재 여부만. Fail-closed."""
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
 
         if gate is None:

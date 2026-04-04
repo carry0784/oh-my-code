@@ -27,6 +27,7 @@ class SimulationDecision(str, Enum):
 
 class RecoveryReceipt(BaseModel):
     """Receipt for rollback/retry — created for every attempt."""
+
     receipt_id: str = Field(description="Unique recovery receipt ID")
     recovery_type: str = Field(description="rollback | retry")
     action_id: str = Field(description="Linked original action ID")
@@ -43,6 +44,7 @@ class RecoveryReceipt(BaseModel):
 
 class SimulationReceipt(BaseModel):
     """Receipt for simulation — read-only chain check, no mutation."""
+
     receipt_id: str = Field(description="Unique simulation receipt ID")
     operator_id: str = Field(description="Who initiated simulation")
     timestamp: str = Field(description="ISO 8601")
@@ -59,6 +61,7 @@ class SimulationReceipt(BaseModel):
 
 class PreviewResult(BaseModel):
     """Preview — text-based action description, no computation."""
+
     operator_id: str = Field(default="")
     timestamp: str = Field(default="")
     action_summary: str = Field(default="No action to preview")

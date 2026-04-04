@@ -5,10 +5,19 @@ from unittest.mock import MagicMock
 
 # Stub external dependencies before imports
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp",
-    "celery", "redis", "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -83,9 +92,7 @@ class TestMarketStateBuilder:
     def test_sentiment_integration(self):
         data = _make_market_data()
         indicators = IndicatorSet()
-        sentiment = SentimentCollectionResult(
-            fear_greed_index=25, fear_greed_label="Extreme Fear"
-        )
+        sentiment = SentimentCollectionResult(fear_greed_index=25, fear_greed_label="Extreme Fear")
         result = self.builder.build(data, indicators, sentiment)
 
         assert result.sentiment.fear_greed_index == 25
@@ -102,7 +109,7 @@ class TestMarketStateBuilder:
         data = _make_market_data()
         indicators = IndicatorSet(
             sma_50=60000.0,  # price > sma_50
-            rsi_14=65.0,     # > 50
+            rsi_14=65.0,  # > 50
             macd_histogram=100.0,  # > 0
         )
         result = self.builder.build(data, indicators)
@@ -112,7 +119,7 @@ class TestMarketStateBuilder:
         data = _make_market_data()
         indicators = IndicatorSet(
             sma_50=70000.0,  # price < sma_50
-            rsi_14=35.0,     # < 50
+            rsi_14=35.0,  # < 50
             macd_histogram=-100.0,  # < 0
         )
         result = self.builder.build(data, indicators)
@@ -163,9 +170,7 @@ class TestMarketStateBuilder:
         assert result.microstructure.open_interest == 50000.0
 
     def test_no_ticker_zero_price(self):
-        data = MarketDataCollectionResult(
-            exchange="binance", symbol="BTC/USDT", ticker=None
-        )
+        data = MarketDataCollectionResult(exchange="binance", symbol="BTC/USDT", ticker=None)
         indicators = IndicatorSet()
         result = self.builder.build(data, indicators)
         assert result.price_data.price == 0.0
@@ -204,9 +209,7 @@ class TestMarketStateBuilder:
             btc_dominance=54.3,
             total_market_cap_usd=2_500_000_000_000,
         )
-        sentiment = SentimentCollectionResult(
-            fear_greed_index=50, on_chain=on_chain
-        )
+        sentiment = SentimentCollectionResult(fear_greed_index=50, on_chain=on_chain)
         result = self.builder.build(data, indicators, sentiment)
 
         assert result.on_chain.hash_rate == 500000.0

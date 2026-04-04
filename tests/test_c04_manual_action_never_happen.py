@@ -47,7 +47,7 @@ class TestC04NeverAutoExecute:
         c04_start = html.find('id="t3sc-c04"')
         if c04_start == -1:
             pytest.skip("t3sc-c04 element not found")
-        c04_section = html[c04_start:c04_start + 2000]
+        c04_section = html[c04_start : c04_start + 2000]
         assert "setInterval" not in c04_section
         assert "setTimeout" not in c04_section
 
@@ -156,12 +156,12 @@ class TestC04RegressionGuards:
     def test_c04_still_sealed(self):
         """C-04 카드에 t3sc-sealed 클래스가 유지되어야 한다."""
         html = _read_template()
-        assert 't3sc-sealed' in html
+        assert "t3sc-sealed" in html
 
     def test_c04_still_shows_not_enabled(self):
         """'Not enabled in this phase' 텍스트가 유지되어야 한다."""
         html = _read_template()
-        assert 'Not enabled in this phase' in html
+        assert "Not enabled in this phase" in html
 
     def test_render_c04_is_disabled_only(self):
         """_renderC04가 존재하더라도 disabled-only read-only renderer여야 한다.
@@ -169,24 +169,24 @@ class TestC04RegressionGuards:
         This is control reinforcement, not relaxation."""
         html = _read_template()
         # _renderC04 exists as sealed read-only renderer
-        assert '_renderC04' in html
+        assert "_renderC04" in html
         # Must NOT contain any action-capable patterns
         # Extract _renderC04 function body
-        start = html.find('function _renderC04')
+        start = html.find("function _renderC04")
         assert start != -1, "_renderC04 function not found"
         # Check ~2000 chars of function body for prohibited patterns
-        func_body = html[start:start + 2000].lower()
-        assert 'button' not in func_body, "_renderC04 must not contain button"
-        assert 'onclick' not in func_body, "_renderC04 must not contain onclick"
-        assert '<form' not in func_body, "_renderC04 must not contain form"
-        assert '.submit(' not in func_body, "_renderC04 must not contain .submit()"
+        func_body = html[start : start + 2000].lower()
+        assert "button" not in func_body, "_renderC04 must not contain button"
+        assert "onclick" not in func_body, "_renderC04 must not contain onclick"
+        assert "<form" not in func_body, "_renderC04 must not contain form"
+        assert ".submit(" not in func_body, "_renderC04 must not contain .submit()"
         assert 'type="submit"' not in func_body, "_renderC04 must not contain submit button"
-        assert 'fetch(' not in func_body, "_renderC04 must not contain fetch"
-        assert 'xmlhttprequest' not in func_body, "_renderC04 must not contain XHR"
-        assert '.dispatch(' not in func_body, "_renderC04 must not call dispatch()"
-        assert 'dispatchevent' not in func_body, "_renderC04 must not dispatchEvent"
-        assert 'hx-post' not in func_body, "_renderC04 must not contain hx-post"
-        assert 'data-action' not in func_body, "_renderC04 must not contain data-action"
+        assert "fetch(" not in func_body, "_renderC04 must not contain fetch"
+        assert "xmlhttprequest" not in func_body, "_renderC04 must not contain XHR"
+        assert ".dispatch(" not in func_body, "_renderC04 must not call dispatch()"
+        assert "dispatchevent" not in func_body, "_renderC04 must not dispatchEvent"
+        assert "hx-post" not in func_body, "_renderC04 must not contain hx-post"
+        assert "data-action" not in func_body, "_renderC04 must not contain data-action"
 
     def test_render_c04_controls_disabled_by_default(self):
         """C-04 카드의 버튼은 기본 disabled 상태여야 한다.
@@ -196,16 +196,18 @@ class TestC04RegressionGuards:
         # No inline onclick on any element
         c04_start = html.find('id="t3sc-c04"')
         next_card = html.find('id="t3sc-c05"', c04_start)
-        c04_section = html[c04_start:next_card] if next_card != -1 else html[c04_start:c04_start + 2000]
+        c04_section = (
+            html[c04_start:next_card] if next_card != -1 else html[c04_start : c04_start + 2000]
+        )
         c04_lower = c04_section.lower()
-        assert 'onclick' not in c04_lower
-        assert '<input' not in c04_lower
-        assert 'contenteditable' not in c04_lower
+        assert "onclick" not in c04_lower
+        assert "<input" not in c04_lower
+        assert "contenteditable" not in c04_lower
 
     def test_safe_cards_render_functions_intact(self):
         """기존 Safe Card 렌더 함수들이 유지되어야 한다."""
         html = _read_template()
-        for card_num in ['01', '02', '03', '05', '06', '07', '08', '09']:
-            assert f'_renderC{card_num}' in html, (
+        for card_num in ["01", "02", "03", "05", "06", "07", "08", "09"]:
+            assert f"_renderC{card_num}" in html, (
                 f"_renderC{card_num} missing — Safe Card regression"
             )

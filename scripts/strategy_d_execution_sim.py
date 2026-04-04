@@ -13,6 +13,7 @@ Tests:
 Usage:
     python scripts/strategy_d_execution_sim.py
 """
+
 from __future__ import annotations
 
 import json
@@ -66,34 +67,50 @@ def backtest_with_realism(
             pnl_pct = position * (closes[i] / entry_price - 1) * 100
 
             # Funding rate for shorts
-            if position == -1 and funding_rate_pct > 0 and bars_in_position % funding_interval_bars == 0:
+            if (
+                position == -1
+                and funding_rate_pct > 0
+                and bars_in_position % funding_interval_bars == 0
+            ):
                 pnl_pct -= funding_rate_pct
 
             if pnl_pct <= -stop_loss_pct or pnl_pct >= take_profit_pct:
                 exit_pnl = pnl_pct - fee_pct - slippage_pct
-                equity *= (1 + exit_pnl / 100)
-                trades.append(Trade(
-                    entry_idx=entry_idx, entry_price=entry_price,
-                    direction=position, exit_idx=i, exit_price=closes[i],
-                    pnl_pct=exit_pnl, indicator=name,
-                ))
+                equity *= 1 + exit_pnl / 100
+                trades.append(
+                    Trade(
+                        entry_idx=entry_idx,
+                        entry_price=entry_price,
+                        direction=position,
+                        exit_idx=i,
+                        exit_price=closes[i],
+                        pnl_pct=exit_pnl,
+                        indicator=name,
+                    )
+                )
                 position = 0
                 bars_in_position = 0
 
             elif signals[i] != 0 and signals[i] != position:
                 exit_pnl = pnl_pct - fee_pct - slippage_pct
-                equity *= (1 + exit_pnl / 100)
-                trades.append(Trade(
-                    entry_idx=entry_idx, entry_price=entry_price,
-                    direction=position, exit_idx=i, exit_price=closes[i],
-                    pnl_pct=exit_pnl, indicator=name,
-                ))
+                equity *= 1 + exit_pnl / 100
+                trades.append(
+                    Trade(
+                        entry_idx=entry_idx,
+                        entry_price=entry_price,
+                        direction=position,
+                        exit_idx=i,
+                        exit_price=closes[i],
+                        pnl_pct=exit_pnl,
+                        indicator=name,
+                    )
+                )
                 # Open reverse
                 position = signals[i]
                 delayed_i = min(i + entry_delay, n - 1)
                 entry_price = closes[delayed_i]
                 entry_idx = delayed_i
-                equity *= (1 - fee_pct / 100 - slippage_pct / 100)
+                equity *= 1 - fee_pct / 100 - slippage_pct / 100
                 bars_in_position = 0
 
         elif signals[i] != 0 and position == 0:
@@ -101,7 +118,7 @@ def backtest_with_realism(
             delayed_i = min(i + entry_delay, n - 1)
             entry_price = closes[delayed_i]
             entry_idx = delayed_i
-            equity *= (1 - fee_pct / 100 - slippage_pct / 100)
+            equity *= 1 - fee_pct / 100 - slippage_pct / 100
             bars_in_position = 0
 
         peak = max(peak, equity)
@@ -112,12 +129,18 @@ def backtest_with_realism(
     # Close remaining position
     if position != 0:
         pnl_pct = position * (closes[-1] / entry_price - 1) * 100 - fee_pct - slippage_pct
-        equity *= (1 + pnl_pct / 100)
-        trades.append(Trade(
-            entry_idx=entry_idx, entry_price=entry_price,
-            direction=position, exit_idx=n - 1, exit_price=closes[-1],
-            pnl_pct=pnl_pct, indicator=name,
-        ))
+        equity *= 1 + pnl_pct / 100
+        trades.append(
+            Trade(
+                entry_idx=entry_idx,
+                entry_price=entry_price,
+                direction=position,
+                exit_idx=n - 1,
+                exit_price=closes[-1],
+                pnl_pct=pnl_pct,
+                indicator=name,
+            )
+        )
 
     # Compute metrics
     result.total_trades = len(trades)
@@ -154,14 +177,14 @@ def test_asset(symbol, ohlcv):
     _, smc_sigs = calc_smc_pure_causal(highs, lows, closes)
     _, _, wt_sigs = calc_wavetrend(highs, lows, closes)
     core_signals = {"SMC": smc_sigs, "WaveTrend": wt_sigs}
-    composite = build_composite_strategy(closes, core_signals,
-                                         {"SMC": 1.0, "WaveTrend": 1.0}, threshold=2.0)
+    composite = build_composite_strategy(
+        closes, core_signals, {"SMC": 1.0, "WaveTrend": 1.0}, threshold=2.0
+    )
 
     results = {}
 
     # Baseline (current settings)
-    baseline = backtest_with_realism(closes, composite, f"{symbol}_baseline",
-                                     fee_pct=0.075)
+    baseline = backtest_with_realism(closes, composite, f"{symbol}_baseline", fee_pct=0.075)
     results["baseline"] = {
         "sharpe": round(baseline.sharpe_ratio, 2),
         "return_pct": round(baseline.total_return_pct, 2),
@@ -171,8 +194,9 @@ def test_asset(symbol, ohlcv):
     }
 
     # 4.1 Slippage
-    slip = backtest_with_realism(closes, composite, f"{symbol}_slippage",
-                                 fee_pct=0.075, slippage_pct=0.05)
+    slip = backtest_with_realism(
+        closes, composite, f"{symbol}_slippage", fee_pct=0.075, slippage_pct=0.05
+    )
     results["slippage"] = {
         "sharpe": round(slip.sharpe_ratio, 2),
         "return_pct": round(slip.total_return_pct, 2),
@@ -181,12 +205,18 @@ def test_asset(symbol, ohlcv):
     }
 
     # 4.2 Funding rate
-    fund = backtest_with_realism(closes, composite, f"{symbol}_funding",
-                                  fee_pct=0.075, funding_rate_pct=0.01,
-                                  funding_interval_bars=8)
+    fund = backtest_with_realism(
+        closes,
+        composite,
+        f"{symbol}_funding",
+        fee_pct=0.075,
+        funding_rate_pct=0.01,
+        funding_interval_bars=8,
+    )
     reduction = abs(baseline.total_return_pct - fund.total_return_pct)
-    reduction_pct = (reduction / abs(baseline.total_return_pct) * 100
-                     if baseline.total_return_pct != 0 else 0)
+    reduction_pct = (
+        reduction / abs(baseline.total_return_pct) * 100 if baseline.total_return_pct != 0 else 0
+    )
     results["funding"] = {
         "sharpe": round(fund.sharpe_ratio, 2),
         "return_pct": round(fund.total_return_pct, 2),
@@ -195,8 +225,9 @@ def test_asset(symbol, ohlcv):
     }
 
     # 4.3 Latency (1-bar delay)
-    latency = backtest_with_realism(closes, composite, f"{symbol}_latency",
-                                     fee_pct=0.075, entry_delay=1)
+    latency = backtest_with_realism(
+        closes, composite, f"{symbol}_latency", fee_pct=0.075, entry_delay=1
+    )
     results["latency"] = {
         "sharpe": round(latency.sharpe_ratio, 2),
         "return_pct": round(latency.total_return_pct, 2),
@@ -205,8 +236,7 @@ def test_asset(symbol, ohlcv):
     }
 
     # 4.4 Realistic fee (0.1% taker)
-    realfee = backtest_with_realism(closes, composite, f"{symbol}_realfee",
-                                    fee_pct=0.1)
+    realfee = backtest_with_realism(closes, composite, f"{symbol}_realfee", fee_pct=0.1)
     results["realistic_fee"] = {
         "sharpe": round(realfee.sharpe_ratio, 2),
         "return_pct": round(realfee.total_return_pct, 2),
@@ -215,9 +245,15 @@ def test_asset(symbol, ohlcv):
     }
 
     # Combined worst-case
-    worst = backtest_with_realism(closes, composite, f"{symbol}_worst_case",
-                                  fee_pct=0.1, slippage_pct=0.05,
-                                  funding_rate_pct=0.01, entry_delay=1)
+    worst = backtest_with_realism(
+        closes,
+        composite,
+        f"{symbol}_worst_case",
+        fee_pct=0.1,
+        slippage_pct=0.05,
+        funding_rate_pct=0.01,
+        entry_delay=1,
+    )
     results["worst_case"] = {
         "sharpe": round(worst.sharpe_ratio, 2),
         "return_pct": round(worst.total_return_pct, 2),
@@ -252,18 +288,24 @@ def main():
         all_results[symbol] = results
 
         bl = results["baseline"]
-        print(f"\n  Baseline: Sharpe={bl['sharpe']}, Return={bl['return_pct']:+.2f}%, "
-              f"PF={bl['pf']}, MDD={bl['mdd']}%, Trades={bl['trades']}")
+        print(
+            f"\n  Baseline: Sharpe={bl['sharpe']}, Return={bl['return_pct']:+.2f}%, "
+            f"PF={bl['pf']}, MDD={bl['mdd']}%, Trades={bl['trades']}"
+        )
 
         for test_name in ["slippage", "funding", "latency", "realistic_fee"]:
             t = results[test_name]
             pass_str = "PASS" if t["pass"] else "FAIL"
-            print(f"  4.{['slippage','funding','latency','realistic_fee'].index(test_name)+1} "
-                  f"{test_name}: Sharpe={t['sharpe']}, Return={t['return_pct']:+.2f}% [{pass_str}]")
+            print(
+                f"  4.{['slippage', 'funding', 'latency', 'realistic_fee'].index(test_name) + 1} "
+                f"{test_name}: Sharpe={t['sharpe']}, Return={t['return_pct']:+.2f}% [{pass_str}]"
+            )
 
         wc = results["worst_case"]
-        print(f"  Worst-case: Sharpe={wc['sharpe']}, Return={wc['return_pct']:+.2f}%, "
-              f"PF={wc['pf']}, MDD={wc['mdd']}%")
+        print(
+            f"  Worst-case: Sharpe={wc['sharpe']}, Return={wc['return_pct']:+.2f}%, "
+            f"PF={wc['pf']}, MDD={wc['mdd']}%"
+        )
 
     # Summary
     print(f"\n{'=' * 70}")

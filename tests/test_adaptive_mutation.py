@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -69,8 +78,8 @@ def test_update_plateau_increases_rate():
     schedule = MutationSchedule(
         current_rate=0.1,
         plateau_window=3,
-        plateau_threshold=0.1,   # large threshold so 0-delta counts as plateau
-        stagnation_window=10,    # require 10 bars for stagnation; we only have 3
+        plateau_threshold=0.1,  # large threshold so 0-delta counts as plateau
+        stagnation_window=10,  # require 10 bars for stagnation; we only have 3
     )
     controller = AdaptiveMutationController(schedule)
 
@@ -88,8 +97,8 @@ def test_update_stagnation_spikes_rate():
     schedule = MutationSchedule(
         current_rate=0.1,
         plateau_window=3,
-        plateau_threshold=0.1,   # large so flat values always hit plateau
-        stagnation_window=5,     # stagnation after 5 bars
+        plateau_threshold=0.1,  # large so flat values always hit plateau
+        stagnation_window=5,  # stagnation after 5 bars
         max_rate=0.5,
     )
     controller = AdaptiveMutationController(schedule)

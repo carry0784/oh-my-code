@@ -6,6 +6,7 @@ Governance layer package containing:
 - B1 Constitutional layer (immutable rules, forbidden actions, LOCKDOWN)
 - B2 Build Orchestration layer (pipeline assembly, change approval, layer attribution)
 """
+
 from kdexter.governance.doctrine import (
     ChangeAuthority,
     DoctrineArticle,

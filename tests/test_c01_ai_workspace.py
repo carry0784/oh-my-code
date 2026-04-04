@@ -96,10 +96,7 @@ class TestC01LoopMonitorHelper:
     def test_returns_unavailable_when_missing(self):
         """C01-1b: app.state.loop_monitor 미연결 시 available=False."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        fn_match = re.search(
-            r'def _get_loop_monitor_info.*?(?=\ndef |\Z)',
-            content, re.DOTALL
-        )
+        fn_match = re.search(r"def _get_loop_monitor_info.*?(?=\ndef |\Z)", content, re.DOTALL)
         assert fn_match
         fn_body = fn_match.group()
         assert '"available": False' in fn_body or "'available': False" in fn_body
@@ -107,10 +104,7 @@ class TestC01LoopMonitorHelper:
     def test_never_calls_check(self):
         """C01-1c: .check() 호출이 없고 .last_result만 사용한다."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        fn_match = re.search(
-            r'def _get_loop_monitor_info.*?(?=\ndef |\Z)',
-            content, re.DOTALL
-        )
+        fn_match = re.search(r"def _get_loop_monitor_info.*?(?=\ndef |\Z)", content, re.DOTALL)
         assert fn_match
         fn_body = fn_match.group()
         assert "last_result" in fn_body, "Must read last_result"
@@ -122,10 +116,7 @@ class TestC01LoopMonitorHelper:
     def test_serializes_loop_fields(self):
         """C01-1d: 루프별 health, max_usage_ratio, incident_count, incident_ceiling 직렬화."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        fn_match = re.search(
-            r'def _get_loop_monitor_info.*?(?=\ndef |\Z)',
-            content, re.DOTALL
-        )
+        fn_match = re.search(r"def _get_loop_monitor_info.*?(?=\ndef |\Z)", content, re.DOTALL)
         assert fn_match
         fn_body = fn_match.group()
         for field in ["health", "max_usage_ratio", "incident_count", "incident_ceiling"]:
@@ -134,10 +125,7 @@ class TestC01LoopMonitorHelper:
     def test_exception_returns_error(self):
         """C01-1e: 예외 시 available=False, error=True 반환."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        fn_match = re.search(
-            r'def _get_loop_monitor_info.*?(?=\ndef |\Z)',
-            content, re.DOTALL
-        )
+        fn_match = re.search(r"def _get_loop_monitor_info.*?(?=\ndef |\Z)", content, re.DOTALL)
         assert fn_match
         fn_body = fn_match.group()
         assert "except Exception" in fn_body
@@ -158,10 +146,7 @@ class TestC01WorkStateHelper:
     def test_returns_unavailable_when_missing(self):
         """C01-2b: app.state.work_state_ctx 미연결 시 available=False."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        fn_match = re.search(
-            r'def _get_work_state_info.*?(?=\ndef |\Z)',
-            content, re.DOTALL
-        )
+        fn_match = re.search(r"def _get_work_state_info.*?(?=\ndef |\Z)", content, re.DOTALL)
         assert fn_match
         fn_body = fn_match.group()
         assert '"available": False' in fn_body
@@ -169,10 +154,7 @@ class TestC01WorkStateHelper:
     def test_serializes_safe_fields_only(self):
         """C01-2c: current, previous, failed_check, validation_results만 노출."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        fn_match = re.search(
-            r'def _get_work_state_info.*?(?=\ndef |\Z)',
-            content, re.DOTALL
-        )
+        fn_match = re.search(r"def _get_work_state_info.*?(?=\ndef |\Z)", content, re.DOTALL)
         assert fn_match
         fn_body = fn_match.group()
         for field in ['"current"', '"previous"', '"failed_check"', '"validation_results"']:
@@ -181,10 +163,7 @@ class TestC01WorkStateHelper:
     def test_no_guard_internals_exposed(self):
         """C01-2d: GuardResult, message 등 guard 내부 노출 금지."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        fn_match = re.search(
-            r'def _get_work_state_info.*?(?=\ndef |\Z)',
-            content, re.DOTALL
-        )
+        fn_match = re.search(r"def _get_work_state_info.*?(?=\ndef |\Z)", content, re.DOTALL)
         assert fn_match
         fn_body = fn_match.group()
         # validation_results의 각 항목은 check+passed만 있어야 함
@@ -206,10 +185,7 @@ class TestC01TrustStateHelper:
     def test_returns_unavailable_when_missing(self):
         """C01-3b: trust_registry 미연결 시 available=False."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        fn_match = re.search(
-            r'def _get_trust_state_info.*?(?=\ndef |\Z)',
-            content, re.DOTALL
-        )
+        fn_match = re.search(r"def _get_trust_state_info.*?(?=\ndef |\Z)", content, re.DOTALL)
         assert fn_match
         fn_body = fn_match.group()
         assert '"available": False' in fn_body
@@ -217,10 +193,7 @@ class TestC01TrustStateHelper:
     def test_serializes_component_fields(self):
         """C01-3c: state, score, allows_execution, requires_monitoring 직렬화."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        fn_match = re.search(
-            r'def _get_trust_state_info.*?(?=\ndef |\Z)',
-            content, re.DOTALL
-        )
+        fn_match = re.search(r"def _get_trust_state_info.*?(?=\ndef |\Z)", content, re.DOTALL)
         assert fn_match
         fn_body = fn_match.group()
         for field in ['"state"', '"score"', '"allows_execution"', '"requires_monitoring"']:
@@ -229,10 +202,7 @@ class TestC01TrustStateHelper:
     def test_score_numeric_only(self):
         """C01-3d: score는 float 변환만 허용, repr/str 변환 금지."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        fn_match = re.search(
-            r'def _get_trust_state_info.*?(?=\ndef |\Z)',
-            content, re.DOTALL
-        )
+        fn_match = re.search(r"def _get_trust_state_info.*?(?=\ndef |\Z)", content, re.DOTALL)
         assert fn_match
         fn_body = fn_match.group()
         assert "float(score)" in fn_body or "float(" in fn_body, "Score must use float() conversion"
@@ -252,10 +222,7 @@ class TestC01DoctrineHelper:
     def test_fallback_sets_available_false(self):
         """C01-4b: fallback 시 available=False."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        fn_match = re.search(
-            r'def _get_doctrine_info.*?(?=\ndef |\Z)',
-            content, re.DOTALL
-        )
+        fn_match = re.search(r"def _get_doctrine_info.*?(?=\ndef |\Z)", content, re.DOTALL)
         assert fn_match
         fn_body = fn_match.group()
         assert "is_live = False" in fn_body, "Fallback must set is_live=False"
@@ -264,10 +231,7 @@ class TestC01DoctrineHelper:
     def test_recent_violations_capped_at_5(self):
         """C01-4c: recent_violations는 최근 5건으로 cap."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        fn_match = re.search(
-            r'def _get_doctrine_info.*?(?=\ndef |\Z)',
-            content, re.DOTALL
-        )
+        fn_match = re.search(r"def _get_doctrine_info.*?(?=\ndef |\Z)", content, re.DOTALL)
         assert fn_match
         fn_body = fn_match.group()
         assert "[-5:]" in fn_body, "recent_violations must be capped at 5"
@@ -275,10 +239,7 @@ class TestC01DoctrineHelper:
     def test_no_constraint_exposed(self):
         """C01-4d: constraint 필드가 직렬화에 포함되지 않는다."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        fn_match = re.search(
-            r'def _get_doctrine_info.*?(?=\ndef |\Z)',
-            content, re.DOTALL
-        )
+        fn_match = re.search(r"def _get_doctrine_info.*?(?=\ndef |\Z)", content, re.DOTALL)
         assert fn_match
         fn_body = fn_match.group()
         # doctrine 직렬화 dict에서 constraint 키가 없어야 함
@@ -315,8 +276,14 @@ class TestC01V2EndpointKeys:
     def test_existing_v2_keys_preserved(self):
         """C01-5e: 기존 v2 키(governance, recent_events 등)가 보존된다."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        for key in ['"governance"', '"recent_events"', '"open_orders"',
-                    '"signal_summary"', '"venue_freshness"', '"quote_data"']:
+        for key in [
+            '"governance"',
+            '"recent_events"',
+            '"open_orders"',
+            '"signal_summary"',
+            '"venue_freshness"',
+            '"quote_data"',
+        ]:
             assert key in content, f"Existing key {key} must be preserved"
 
 
@@ -353,10 +320,16 @@ class TestC01TemplateIntegration:
         legacy_start = content.index("function renderBinance")
         ai_section = content[ai_start:legacy_start]
         forbidden = [
-            'agent_analysis', 'raw_prompt', 'chain_of_thought',
-            'internal_reasoning', 'debug_trace', 'error_class',
-            'traceback', 'exception_type', 'stack',
-            'internal_state_dump',
+            "agent_analysis",
+            "raw_prompt",
+            "chain_of_thought",
+            "internal_reasoning",
+            "debug_trace",
+            "error_class",
+            "traceback",
+            "exception_type",
+            "stack",
+            "internal_state_dump",
         ]
         for f in forbidden:
             assert f not in ai_section, f"Forbidden string '{f}' found in AI render section"
@@ -368,8 +341,9 @@ class TestC01TemplateIntegration:
         legacy_start = content.index("function renderBinance")
         ai_section = content[ai_start:legacy_start]
         # verify + NOT AVAILABLE 패턴이 존재해야 함
-        assert "'verify'" in ai_section and "NOT AVAILABLE" in ai_section, \
+        assert "'verify'" in ai_section and "NOT AVAILABLE" in ai_section, (
             "Disconnected data must use verify tier with NOT AVAILABLE"
+        )
 
     def test_loop_exceeded_in_anomaly_render(self):
         """C01-6g: renderDetectedAnomalies에서 EXCEEDED 상태를 감지한다."""
@@ -398,9 +372,13 @@ class TestC01TemplateIntegration:
     def test_existing_ai_render_functions_preserved(self):
         """C01-6j: 기존 5개 AI 렌더 함수 이름이 보존된다."""
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        for fn_name in ['renderConfirmedFacts', 'renderDetectedAnomalies',
-                        'renderPossibleCauses', 'renderRiskWarnings',
-                        'renderRecommendedChecks']:
+        for fn_name in [
+            "renderConfirmedFacts",
+            "renderDetectedAnomalies",
+            "renderPossibleCauses",
+            "renderRiskWarnings",
+            "renderRecommendedChecks",
+        ]:
             assert f"function {fn_name}" in content, f"{fn_name} must be preserved"
 
 

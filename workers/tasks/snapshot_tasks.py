@@ -26,13 +26,9 @@ def record_asset_snapshot():
     try:
         # Aggregate total value from all positions
         positions = session.query(Position).all()
-        total_value = sum(
-            (p.entry_price or 0) * (p.quantity or 0) for p in positions
-        )
+        total_value = sum((p.entry_price or 0) * (p.quantity or 0) for p in positions)
         unrealized_pnl = sum(p.unrealized_pnl or 0 for p in positions)
-        total_balance = sum(
-            (p.current_price or 0) * (p.quantity or 0) for p in positions
-        )
+        total_balance = sum((p.current_price or 0) * (p.quantity or 0) for p in positions)
 
         # Total trade count
         trade_count = session.query(func.count(Trade.id)).scalar() or 0

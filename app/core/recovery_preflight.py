@@ -99,6 +99,7 @@ def _assess_item(defn: dict) -> PreflightCheckItem:
 
     try:
         import app.main as main_module
+
         app_inst = main_module.app
         gate = getattr(app_inst.state, "governance_gate", None)
 
@@ -115,43 +116,78 @@ def _assess_item(defn: dict) -> PreflightCheckItem:
                 from app.core.config import settings as _cfg
                 from app.models.position import Position
                 from datetime import datetime as _dt, timezone as _tz
+
                 _engine = create_engine(_cfg.database_url_sync)
                 try:
                     with SyncSession(_engine) as _sess:
-                        _latest = _sess.query(Position.updated_at).order_by(Position.updated_at.desc()).first()
+                        _latest = (
+                            _sess.query(Position.updated_at)
+                            .order_by(Position.updated_at.desc())
+                            .first()
+                        )
                         _ts = _latest[0] if _latest else None
                         if _ts is None:
                             from app.models.asset_snapshot import AssetSnapshot
-                            _snap = _sess.query(AssetSnapshot.snapshot_at).order_by(AssetSnapshot.snapshot_at.desc()).first()
+
+                            _snap = (
+                                _sess.query(AssetSnapshot.snapshot_at)
+                                .order_by(AssetSnapshot.snapshot_at.desc())
+                                .first()
+                            )
                             _ts = _snap[0] if _snap else None
                     if _ts is not None:
                         _age = int((_dt.now(_tz.utc) - _ts.replace(tzinfo=_tz.utc)).total_seconds())
                         if _age <= 300:
-                            return _make_pf_item(name, "pass", f"age={_age}s", expected,
-                                                 message=f"Snapshot fresh ({_age}s)")
+                            return _make_pf_item(
+                                name,
+                                "pass",
+                                f"age={_age}s",
+                                expected,
+                                message=f"Snapshot fresh ({_age}s)",
+                            )
                         else:
-                            return _make_pf_item(name, "fail", f"age={_age}s", expected,
-                                                 reason_codes=[PreflightReasonCode.STALE_SNAPSHOT],
-                                                 message=f"Snapshot stale ({_age}s > 300s)")
+                            return _make_pf_item(
+                                name,
+                                "fail",
+                                f"age={_age}s",
+                                expected,
+                                reason_codes=[PreflightReasonCode.STALE_SNAPSHOT],
+                                message=f"Snapshot stale ({_age}s > 300s)",
+                            )
                     else:
                         # CR-026: No snapshot data = cold-start. In Mode 1 (testnet),
                         # this is normal — no proposals flow, so no position/snapshot updates.
                         _is_testnet = getattr(_cfg, "binance_testnet", True)
                         if _is_testnet:
-                            return _make_pf_item(name, "pass", "cold_start", expected,
-                                                 message="Cold-start (Mode 1 testnet, no snapshot data yet)")
+                            return _make_pf_item(
+                                name,
+                                "pass",
+                                "cold_start",
+                                expected,
+                                message="Cold-start (Mode 1 testnet, no snapshot data yet)",
+                            )
                         else:
-                            return _make_pf_item(name, "fail", "no_data", expected,
-                                                 reason_codes=[PreflightReasonCode.STALE_SNAPSHOT],
-                                                 message="No snapshot data (production mode)")
+                            return _make_pf_item(
+                                name,
+                                "fail",
+                                "no_data",
+                                expected,
+                                reason_codes=[PreflightReasonCode.STALE_SNAPSHOT],
+                                message="No snapshot data (production mode)",
+                            )
                 finally:
                     _engine.dispose()  # CR-035: prevent connection leak
             except Exception:
                 pass
             observed = "unknown"
-            return _make_pf_item(name, "unknown", observed, expected,
-                                 reason_codes=[PreflightReasonCode.STALE_SNAPSHOT],
-                                 message="Snapshot freshness check failed")
+            return _make_pf_item(
+                name,
+                "unknown",
+                observed,
+                expected,
+                reason_codes=[PreflightReasonCode.STALE_SNAPSHOT],
+                message="Snapshot freshness check failed",
+            )
 
         if name == "open_orders":
             observed = "assumed_accessible"
@@ -159,43 +195,81 @@ def _assess_item(defn: dict) -> PreflightCheckItem:
 
         if name == "position_sync":
             observed = "assumed_synced"
-            return _make_pf_item(name, "pass", observed, expected,
-                                 message="Position sync assumed from running workers")
+            return _make_pf_item(
+                name,
+                "pass",
+                observed,
+                expected,
+                message="Position sync assumed from running workers",
+            )
 
         if name == "last_evidence":
             if gate and hasattr(gate, "evidence_store"):
                 count = gate.evidence_store.count()
                 if count > 0:
-                    return _make_pf_item(name, "pass", f"count={count}", expected,
-                                         basis_refs=[f"evidence_store:count={count}"])
-                return _make_pf_item(name, "fail", "count=0", expected,
-                                     reason_codes=[PreflightReasonCode.MISSING_EVIDENCE])
-            return _make_pf_item(name, "fail", "store_unavailable", expected,
-                                 reason_codes=[PreflightReasonCode.MISSING_EVIDENCE])
+                    return _make_pf_item(
+                        name,
+                        "pass",
+                        f"count={count}",
+                        expected,
+                        basis_refs=[f"evidence_store:count={count}"],
+                    )
+                return _make_pf_item(
+                    name,
+                    "fail",
+                    "count=0",
+                    expected,
+                    reason_codes=[PreflightReasonCode.MISSING_EVIDENCE],
+                )
+            return _make_pf_item(
+                name,
+                "fail",
+                "store_unavailable",
+                expected,
+                reason_codes=[PreflightReasonCode.MISSING_EVIDENCE],
+            )
 
         if name == "lock_reason_resolved":
             if gate and hasattr(gate, "security_ctx"):
                 ctx = gate.security_ctx
                 state_val = ctx.current.value if hasattr(ctx.current, "value") else str(ctx.current)
                 if state_val == "LOCKDOWN":
-                    return _make_pf_item(name, "fail", state_val, expected,
-                                         reason_codes=[PreflightReasonCode.LOCKDOWN_ACTIVE],
-                                         basis_refs=[f"security_ctx:{state_val}"])
+                    return _make_pf_item(
+                        name,
+                        "fail",
+                        state_val,
+                        expected,
+                        reason_codes=[PreflightReasonCode.LOCKDOWN_ACTIVE],
+                        basis_refs=[f"security_ctx:{state_val}"],
+                    )
                 if state_val in ("QUARANTINED", "RESTRICTED"):
-                    return _make_pf_item(name, "fail", state_val, expected,
-                                         reason_codes=[PreflightReasonCode.SECURITY_RESTRICTED],
-                                         basis_refs=[f"security_ctx:{state_val}"])
-                return _make_pf_item(name, "pass", state_val, expected,
-                                     basis_refs=[f"security_ctx:{state_val}"])
-            return _make_pf_item(name, "unknown", "no_security_ctx", expected,
-                                 reason_codes=[PreflightReasonCode.MISSING_EVIDENCE])
+                    return _make_pf_item(
+                        name,
+                        "fail",
+                        state_val,
+                        expected,
+                        reason_codes=[PreflightReasonCode.SECURITY_RESTRICTED],
+                        basis_refs=[f"security_ctx:{state_val}"],
+                    )
+                return _make_pf_item(
+                    name, "pass", state_val, expected, basis_refs=[f"security_ctx:{state_val}"]
+                )
+            return _make_pf_item(
+                name,
+                "unknown",
+                "no_security_ctx",
+                expected,
+                reason_codes=[PreflightReasonCode.MISSING_EVIDENCE],
+            )
 
         if name == "governance_active":
             if gate is not None:
-                return _make_pf_item(name, "pass", "true", expected,
-                                     basis_refs=["governance_gate:active"])
-            return _make_pf_item(name, "fail", "false", expected,
-                                 reason_codes=[PreflightReasonCode.MISSING_EVIDENCE])
+                return _make_pf_item(
+                    name, "pass", "true", expected, basis_refs=["governance_gate:active"]
+                )
+            return _make_pf_item(
+                name, "fail", "false", expected, reason_codes=[PreflightReasonCode.MISSING_EVIDENCE]
+            )
 
         if name == "recent_checks_green":
             if gate and hasattr(gate, "evidence_store"):
@@ -208,27 +282,57 @@ def _assess_item(defn: dict) -> PreflightCheckItem:
                 if checks:
                     latest = checks[-1]
                     after = latest.after_state if hasattr(latest, "after_state") else {}
-                    result = after.get("result", "UNKNOWN") if isinstance(after, dict) else "UNKNOWN"
+                    result = (
+                        after.get("result", "UNKNOWN") if isinstance(after, dict) else "UNKNOWN"
+                    )
                     if result == "OK":
-                        return _make_pf_item(name, "pass", result, expected,
-                                             basis_refs=[f"check:{latest.bundle_id}" if hasattr(latest, "bundle_id") else "check:latest"])
-                    return _make_pf_item(name, "fail", result, expected,
-                                         reason_codes=[PreflightReasonCode.CHECKS_NOT_GREEN],
-                                         basis_refs=[f"check:result={result}"])
-            return _make_pf_item(name, "unknown", "no_checks", expected,
-                                 reason_codes=[PreflightReasonCode.CHECKS_NOT_GREEN])
+                        return _make_pf_item(
+                            name,
+                            "pass",
+                            result,
+                            expected,
+                            basis_refs=[
+                                f"check:{latest.bundle_id}"
+                                if hasattr(latest, "bundle_id")
+                                else "check:latest"
+                            ],
+                        )
+                    return _make_pf_item(
+                        name,
+                        "fail",
+                        result,
+                        expected,
+                        reason_codes=[PreflightReasonCode.CHECKS_NOT_GREEN],
+                        basis_refs=[f"check:result={result}"],
+                    )
+            return _make_pf_item(
+                name,
+                "unknown",
+                "no_checks",
+                expected,
+                reason_codes=[PreflightReasonCode.CHECKS_NOT_GREEN],
+            )
 
     except Exception as e:
-        return _make_pf_item(name, "fail", f"error:{e}", expected,
-                             reason_codes=[PreflightReasonCode.MISSING_EVIDENCE],
-                             message=f"Assessment failed: {e}")
+        return _make_pf_item(
+            name,
+            "fail",
+            f"error:{e}",
+            expected,
+            reason_codes=[PreflightReasonCode.MISSING_EVIDENCE],
+            message=f"Assessment failed: {e}",
+        )
 
-    return _make_pf_item(name, "unknown", "unhandled", expected,
-                         reason_codes=[PreflightReasonCode.MISSING_EVIDENCE])
+    return _make_pf_item(
+        name, "unknown", "unhandled", expected, reason_codes=[PreflightReasonCode.MISSING_EVIDENCE]
+    )
 
 
 def _make_pf_item(
-    name: str, status: str, observed: str, expected: str,
+    name: str,
+    status: str,
+    observed: str,
+    expected: str,
     reason_codes: list | None = None,
     basis_refs: list | None = None,
     message: str = "",
@@ -254,11 +358,13 @@ def _store_preflight_evidence(
     """Store preflight result to evidence store. Append-only."""
     try:
         import app.main as main_module
+
         gate = getattr(main_module.app.state, "governance_gate", None)
         if gate is None or not hasattr(gate, "evidence_store"):
             return f"fallback-pf-{uuid.uuid4().hex[:8]}"
 
         from kdexter.audit.evidence_store import EvidenceBundle
+
         bundle = EvidenceBundle(
             bundle_id=str(uuid.uuid4()),
             created_at=now,

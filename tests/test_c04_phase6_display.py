@@ -32,7 +32,6 @@ def _route():
 # P67-1: Phase 7 recovery UI elements exist
 # ===========================================================================
 class TestC04Phase7UIExists:
-
     def test_p7_container_exists(self):
         assert 'id="t3sc-c04-p7"' in _html()
 
@@ -52,14 +51,13 @@ class TestC04Phase7UIExists:
         assert 'id="t3sc-c04-p7-result"' in _html()
 
     def test_render_function_exists(self):
-        assert '_renderC04Phase6' in _html()
+        assert "_renderC04Phase6" in _html()
 
 
 # ===========================================================================
 # P67-2: Recovery endpoints are chain-gated
 # ===========================================================================
 class TestC04Phase7Endpoints:
-
     def test_rollback_endpoint_exists(self):
         assert "manual-action/rollback" in _route()
 
@@ -94,7 +92,6 @@ class TestC04Phase7Endpoints:
 # P67-3: No auto/background/queue
 # ===========================================================================
 class TestC04Phase7NoAuto:
-
     def test_no_auto_rollback(self):
         content = RECOVERY_PATH.read_text(encoding="utf-8")
         assert "def auto_rollback" not in content
@@ -125,11 +122,13 @@ class TestC04Phase7NoAuto:
 # P67-4: Simulation is read-only
 # ===========================================================================
 class TestC04Phase7Simulation:
-
     def test_simulation_note_in_schema(self):
         from app.schemas.manual_recovery_schema import SimulationReceipt
+
         r = SimulationReceipt(
-            receipt_id="test", operator_id="op", timestamp="2026-01-01",
+            receipt_id="test",
+            operator_id="op",
+            timestamp="2026-01-01",
             decision="SIMULATED",
         )
         assert "SIMULATED" in r.simulation_note
@@ -137,5 +136,6 @@ class TestC04Phase7Simulation:
 
     def test_preview_note_in_schema(self):
         from app.schemas.manual_recovery_schema import PreviewResult
+
         r = PreviewResult()
         assert "not guarantee" in r.preview_note.lower()

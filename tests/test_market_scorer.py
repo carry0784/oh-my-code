@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp",
-    "celery", "redis", "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -36,10 +45,15 @@ class TestMarketScorerGrades:
     def test_strong_bull(self):
         price = PriceData(price=65000)
         indicators = IndicatorSet(
-            rsi_14=75, macd_histogram=500,
-            sma_20=60000, sma_50=58000, sma_200=50000,
-            ema_12=64000, ema_26=62000,
-            bb_upper=68000, bb_lower=60000,
+            rsi_14=75,
+            macd_histogram=500,
+            sma_20=60000,
+            sma_50=58000,
+            sma_200=50000,
+            ema_12=64000,
+            ema_26=62000,
+            bb_upper=68000,
+            bb_lower=60000,
         )
         sentiment = SentimentData(fear_greed_index=80)
         on_chain = OnChainData(hash_rate=500000, btc_dominance=55)
@@ -50,10 +64,15 @@ class TestMarketScorerGrades:
     def test_strong_bear(self):
         price = PriceData(price=55000)
         indicators = IndicatorSet(
-            rsi_14=20, macd_histogram=-500,
-            sma_20=60000, sma_50=62000, sma_200=65000,
-            ema_12=56000, ema_26=58000,
-            bb_upper=62000, bb_lower=54000,
+            rsi_14=20,
+            macd_histogram=-500,
+            sma_20=60000,
+            sma_50=62000,
+            sma_200=65000,
+            ema_12=56000,
+            ema_26=58000,
+            bb_upper=62000,
+            bb_lower=54000,
         )
         sentiment = SentimentData(fear_greed_index=10)
         result = self.scorer.score(price, indicators, sentiment)
@@ -71,8 +90,11 @@ class TestMarketScorerGrades:
     def test_bull(self):
         price = PriceData(price=65000)
         indicators = IndicatorSet(
-            rsi_14=60, macd_histogram=100,
-            sma_50=62000, ema_12=64500, ema_26=63000,
+            rsi_14=60,
+            macd_histogram=100,
+            sma_50=62000,
+            ema_12=64500,
+            ema_26=63000,
         )
         sentiment = SentimentData(fear_greed_index=65)
         result = self.scorer.score(price, indicators, sentiment)
@@ -82,8 +104,11 @@ class TestMarketScorerGrades:
     def test_bear(self):
         price = PriceData(price=55000)
         indicators = IndicatorSet(
-            rsi_14=35, macd_histogram=-100,
-            sma_50=60000, ema_12=56000, ema_26=58000,
+            rsi_14=35,
+            macd_histogram=-100,
+            sma_50=60000,
+            ema_12=56000,
+            ema_26=58000,
         )
         sentiment = SentimentData(fear_greed_index=30)
         result = self.scorer.score(price, indicators, sentiment)
@@ -144,10 +169,15 @@ class TestMarketScorerRange:
         """Score should always be in [-100, +100]."""
         price = PriceData(price=65000)
         indicators = IndicatorSet(
-            rsi_14=99, macd_histogram=10000,
-            sma_20=10000, sma_50=10000, sma_200=10000,
-            ema_12=64000, ema_26=60000,
-            bb_upper=70000, bb_lower=60000,
+            rsi_14=99,
+            macd_histogram=10000,
+            sma_20=10000,
+            sma_50=10000,
+            sma_200=10000,
+            ema_12=64000,
+            ema_26=60000,
+            bb_upper=70000,
+            bb_lower=60000,
         )
         sentiment = SentimentData(fear_greed_index=100)
         result = self.scorer.score(price, indicators, sentiment)
@@ -156,9 +186,13 @@ class TestMarketScorerRange:
     def test_extreme_bear_bounded(self):
         price = PriceData(price=65000)
         indicators = IndicatorSet(
-            rsi_14=1, macd_histogram=-10000,
-            sma_20=90000, sma_50=95000, sma_200=100000,
-            ema_12=66000, ema_26=68000,
+            rsi_14=1,
+            macd_histogram=-10000,
+            sma_20=90000,
+            sma_50=95000,
+            sma_200=100000,
+            ema_12=66000,
+            ema_26=68000,
         )
         sentiment = SentimentData(fear_greed_index=0)
         result = self.scorer.score(price, indicators, sentiment)
@@ -174,7 +208,8 @@ class TestMarketScorerRange:
         """Price at upper BB should score bullish."""
         price = PriceData(price=69000)
         indicators = IndicatorSet(
-            bb_upper=70000, bb_lower=60000,
+            bb_upper=70000,
+            bb_lower=60000,
         )
         result = self.scorer.score(price, indicators)
         assert result.technical > 0  # Near top of BB range
@@ -183,7 +218,8 @@ class TestMarketScorerRange:
         """Price at lower BB should score bearish."""
         price = PriceData(price=61000)
         indicators = IndicatorSet(
-            bb_upper=70000, bb_lower=60000,
+            bb_upper=70000,
+            bb_lower=60000,
         )
         result = self.scorer.score(price, indicators)
         assert result.technical < 0  # Near bottom of BB range

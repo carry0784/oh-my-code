@@ -14,6 +14,7 @@ Design rules:
       decision_card = DERIVED UI view (from decision_card_schema.py)
   - No action verbs, no execution triggers, no write paths
 """
+
 from __future__ import annotations
 
 from enum import Enum
@@ -22,8 +23,10 @@ from pydantic import BaseModel, Field
 
 # -- Enums ----------------------------------------------------------------- #
 
+
 class PostureEnum(str, Enum):
     """Recommended operator posture levels."""
+
     MONITOR = "MONITOR"
     REVIEW = "REVIEW"
     MANUAL_CHECK = "MANUAL_CHECK"
@@ -32,6 +35,7 @@ class PostureEnum(str, Enum):
 
 class RiskLevelEnum(str, Enum):
     """Risk classification levels."""
+
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
@@ -39,6 +43,7 @@ class RiskLevelEnum(str, Enum):
 
 class PressureEnum(str, Enum):
     """Cleanup pressure levels (from observation summary)."""
+
     LOW = "LOW"
     MODERATE = "MODERATE"
     HIGH = "HIGH"
@@ -47,6 +52,7 @@ class PressureEnum(str, Enum):
 
 # -- Safety sub-model ------------------------------------------------------ #
 
+
 class DecisionSafety(BaseModel):
     """
     Structurally fixed safety labels.
@@ -54,12 +60,18 @@ class DecisionSafety(BaseModel):
     action_allowed is ALWAYS False. This is not a computed value —
     it is a constitutional constraint. NEVER set to True.
     """
-    action_allowed: bool = Field(default=False, description="ALWAYS False. Constitutional constraint.")
-    suggestion_only: bool = Field(default=True, description="ALWAYS True. This is guidance, not instruction.")
+
+    action_allowed: bool = Field(
+        default=False, description="ALWAYS False. Constitutional constraint."
+    )
+    suggestion_only: bool = Field(
+        default=True, description="ALWAYS True. This is guidance, not instruction."
+    )
     read_only: bool = Field(default=True, description="ALWAYS True. No mutations performed.")
 
 
 # -- Main schema ----------------------------------------------------------- #
+
 
 class DecisionSummarySchema(BaseModel):
     """
@@ -71,6 +83,7 @@ class DecisionSummarySchema(BaseModel):
     Relationship:
       DecisionSummarySchema (source) → DecisionCard (derived UI view)
     """
+
     recommended_posture: PostureEnum = PostureEnum.MONITOR
     risk_level: RiskLevelEnum = RiskLevelEnum.LOW
     reason_chain: list[str] = Field(default_factory=list)

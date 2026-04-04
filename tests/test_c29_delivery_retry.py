@@ -33,7 +33,6 @@ POLICY_PATH = PROJECT_ROOT / "app" / "core" / "delivery_retry_policy.py"
 # C29-1: 모듈 구조
 # ===========================================================================
 class TestC29ModuleStructure:
-
     def test_module_exists(self):
         assert POLICY_PATH.exists()
 
@@ -43,8 +42,9 @@ class TestC29ModuleStructure:
         assert e.eligible is True
 
     def test_retry_receipt_dataclass(self):
-        r = RetryReceipt(channel="ext", attempted=True, attempt_number=1,
-                         eligible=True, reason="retry")
+        r = RetryReceipt(
+            channel="ext", attempted=True, attempt_number=1, eligible=True, reason="retry"
+        )
         assert r.attempt_number == 1
 
     def test_default_max_retries(self):
@@ -62,7 +62,6 @@ class TestC29ModuleStructure:
 # C29-2: Retry eligibility rules
 # ===========================================================================
 class TestC29EligibilityRules:
-
     def test_delivered_not_eligible(self):
         policy = DeliveryRetryPolicy()
         result = policy.check_eligibility("external", delivered=True, detail="ok")
@@ -76,8 +75,9 @@ class TestC29EligibilityRules:
 
     def test_suppressed_not_eligible(self):
         policy = DeliveryRetryPolicy()
-        result = policy.check_eligibility("external", delivered=False,
-                                          detail="timeout", policy_action="suppress")
+        result = policy.check_eligibility(
+            "external", delivered=False, detail="timeout", policy_action="suppress"
+        )
         assert result.eligible is False
         assert "suppressed" in result.reason
 
@@ -86,24 +86,26 @@ class TestC29EligibilityRules:
 # C29-3: Permanent failure detection
 # ===========================================================================
 class TestC29PermanentFailure:
-
     def test_not_configured_is_permanent(self):
         policy = DeliveryRetryPolicy()
-        result = policy.check_eligibility("external", delivered=False,
-                                          detail="external notifier not configured (stub)")
+        result = policy.check_eligibility(
+            "external", delivered=False, detail="external notifier not configured (stub)"
+        )
         assert result.eligible is False
         assert "permanent_failure" in result.reason
 
     def test_stub_is_permanent(self):
         policy = DeliveryRetryPolicy()
-        result = policy.check_eligibility("slack", delivered=False,
-                                          detail="slack notifier not configured (stub)")
+        result = policy.check_eligibility(
+            "slack", delivered=False, detail="slack notifier not configured (stub)"
+        )
         assert result.eligible is False
 
     def test_timeout_is_not_permanent(self):
         policy = DeliveryRetryPolicy(cooldown_seconds=0)
-        result = policy.check_eligibility("external", delivered=False,
-                                          detail="webhook delivery failed")
+        result = policy.check_eligibility(
+            "external", delivered=False, detail="webhook delivery failed"
+        )
         assert result.eligible is True
 
 
@@ -111,7 +113,6 @@ class TestC29PermanentFailure:
 # C29-4: Max retries + cooldown
 # ===========================================================================
 class TestC29MaxRetriesAndCooldown:
-
     def test_max_retries_exceeded(self):
         policy = DeliveryRetryPolicy(max_retries=2, cooldown_seconds=0)
         policy.record_attempt("external")
@@ -139,7 +140,6 @@ class TestC29MaxRetriesAndCooldown:
 # C29-5: Record attempt + state tracking
 # ===========================================================================
 class TestC29StateTracking:
-
     def test_record_attempt_returns_receipt(self):
         policy = DeliveryRetryPolicy()
         receipt = policy.record_attempt("external")
@@ -183,7 +183,6 @@ class TestC29StateTracking:
 # C29-6: Fail-closed
 # ===========================================================================
 class TestC29FailClosed:
-
     def test_error_returns_not_eligible(self):
         """check_eligibility는 예외를 전파하지 않는다."""
         policy = DeliveryRetryPolicy()
@@ -204,13 +203,16 @@ class TestC29FailClosed:
 # C29-7: 금지 조항
 # ===========================================================================
 class TestC29Forbidden:
-
     def test_no_forbidden_strings(self):
         content = POLICY_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace', 'agent_analysis', 'error_class',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
+            "agent_analysis",
+            "error_class",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

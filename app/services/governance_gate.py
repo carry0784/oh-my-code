@@ -58,7 +58,9 @@ class GovernanceGate:
                 decision.operator_required = True
             elif fitness >= self.auto_approve_threshold:
                 decision.decision = "APPROVED"
-                decision.reason = f"Fitness {fitness:.4f} >= threshold {self.auto_approve_threshold}"
+                decision.reason = (
+                    f"Fitness {fitness:.4f} >= threshold {self.auto_approve_threshold}"
+                )
                 decision.auto_decided = True
             else:
                 decision.decision = "PENDING_OPERATOR"
@@ -79,10 +81,12 @@ class GovernanceGate:
             decision.reason = f"Unknown transition to {request.to_state.value}"
 
         self.decision_log.append(decision)
-        logger.info("governance_decision",
-                     decision=decision.decision,
-                     to_state=request.to_state.value,
-                     auto=decision.auto_decided)
+        logger.info(
+            "governance_decision",
+            decision=decision.decision,
+            to_state=request.to_state.value,
+            auto=decision.auto_decided,
+        )
         return decision
 
     def get_pending(self) -> list[GovernanceDecision]:

@@ -210,15 +210,15 @@ class TestStateRendering:
         """T-D03-e: disconnected 상태가 적색 계열을 사용한다."""
         css = CSS_PATH.read_text(encoding="utf-8")
         # st-disconnected uses --accent-red
-        disconnected_section = css[css.index(".st-disconnected"):]
-        disconnected_rule = disconnected_section[:disconnected_section.index("}") + 1]
+        disconnected_section = css[css.index(".st-disconnected") :]
+        disconnected_rule = disconnected_section[: disconnected_section.index("}") + 1]
         assert "accent-red" in disconnected_rule
 
     def test_loading_uses_amber(self):
         """T-D03-f: loading 상태가 amber 계열을 사용한다."""
         css = CSS_PATH.read_text(encoding="utf-8")
-        loading_section = css[css.index(".st-loading"):]
-        loading_rule = loading_section[:loading_section.index("}") + 1]
+        loading_section = css[css.index(".st-loading") :]
+        loading_rule = loading_section[: loading_section.index("}") + 1]
         assert "status-loading" in loading_rule or "accent-amber" in loading_rule
 
     def test_template_has_all_four_states_in_html(self):
@@ -226,7 +226,9 @@ class TestStateRendering:
         html = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert "st-disconnected" in html, "disconnected state not used in template"
         assert "st-loading" in html, "loading state not used in template"
-        assert "conn-connected" in html or "st-empty" in html, "connected/empty state not in template"
+        assert "conn-connected" in html or "st-empty" in html, (
+            "connected/empty state not in template"
+        )
 
     def test_js_renders_empty_state(self):
         """T-D03-h: JS에서 포지션 0건일 때 st-empty 표시."""
@@ -255,7 +257,7 @@ class TestGovernanceVisualSeparation:
         """T-D04-b: BLOCKED는 amber 계열이며 녹색이 아니다 (P-01 준수)."""
         css = CSS_PATH.read_text(encoding="utf-8")
         blocked_idx = css.index(".gov-blocked")
-        blocked_rule = css[blocked_idx:css.index("}", blocked_idx) + 1]
+        blocked_rule = css[blocked_idx : css.index("}", blocked_idx) + 1]
         assert "blocked-bg" in blocked_rule or "blocked-text" in blocked_rule
         # Verify --blocked-text is amber, not green
         assert "--blocked-text: #f59e0b" in css, "BLOCKED text must be amber (#f59e0b)"
@@ -274,14 +276,16 @@ class TestGovernanceVisualSeparation:
         blocked_text_match = re.search(r"--blocked-text:\s*(#[0-9a-fA-F]+)", css)
         failed_text_match = re.search(r"--failed-text:\s*(#[0-9a-fA-F]+)", css)
         assert blocked_text_match and failed_text_match
-        assert blocked_text_match.group(1) != failed_text_match.group(1), \
+        assert blocked_text_match.group(1) != failed_text_match.group(1), (
             "BLOCKED and FAILED must have different colors"
+        )
 
         blocked_bg_match = re.search(r"--blocked-bg:\s*(#[0-9a-fA-F]+)", css)
         failed_bg_match = re.search(r"--failed-bg:\s*(#[0-9a-fA-F]+)", css)
         assert blocked_bg_match and failed_bg_match
-        assert blocked_bg_match.group(1) != failed_bg_match.group(1), \
+        assert blocked_bg_match.group(1) != failed_bg_match.group(1), (
             "BLOCKED and FAILED backgrounds must differ"
+        )
 
     def test_allowed_uses_green(self):
         """T-D04-e: ALLOWED는 녹색 계열이다."""
@@ -300,7 +304,7 @@ class TestGovernanceVisualSeparation:
         """T-D04-g: LOCKDOWN 상태는 점멸 애니메이션이 있다."""
         css = CSS_PATH.read_text(encoding="utf-8")
         lockdown_idx = css.index(".l0-banner.lockdown")
-        lockdown_rule = css[lockdown_idx:css.index("}", lockdown_idx) + 1]
+        lockdown_rule = css[lockdown_idx : css.index("}", lockdown_idx) + 1]
         assert "blink" in lockdown_rule, "LOCKDOWN banner must blink"
 
 
@@ -325,11 +329,17 @@ class TestOrphanCountExposure:
         """T-D05-c: _get_governance_info()가 orphan_count 필드를 항상 반환한다."""
         route_code = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         # All return paths in _get_governance_info must include orphan_count
-        returns = [m.start() for m in re.finditer(r'return\s*\{', route_code[route_code.index("_get_governance_info"):])]
+        returns = [
+            m.start()
+            for m in re.finditer(
+                r"return\s*\{", route_code[route_code.index("_get_governance_info") :]
+            )
+        ]
         assert len(returns) >= 2, "Must have multiple return paths (success + fallback)"
-        gov_section = route_code[route_code.index("_get_governance_info"):]
-        assert gov_section.count('"orphan_count"') >= 3, \
+        gov_section = route_code[route_code.index("_get_governance_info") :]
+        assert gov_section.count('"orphan_count"') >= 3, (
             "All return paths in _get_governance_info must include orphan_count"
+        )
 
 
 # ===========================================================================
@@ -384,7 +394,7 @@ class TestSensitiveDataNonExposure:
         gov_section = route_code[gov_fn_start:next_fn]
         # Extract only the return dict keys (lines with "key": value pattern inside return blocks)
         # Find return { ... } blocks in this function only
-        return_dicts = re.findall(r'return\s*\{([^}]+)\}', gov_section)
+        return_dicts = re.findall(r"return\s*\{([^}]+)\}", gov_section)
         allowed_fields = {"security_state", "orphan_count", "evidence_total", "enabled"}
         for return_dict in return_dicts:
             keys = set(re.findall(r'"(\w+)"\s*:', return_dict))
@@ -442,7 +452,7 @@ class TestGovernanceFieldRestriction:
         # Internal processing (reading artifacts for orphan counting) is allowed
         gov_fn_start = route_code.index("def _get_governance_info")
         gov_section = route_code[gov_fn_start:]
-        return_dicts = re.findall(r'return\s*\{([^}]+)\}', gov_section)
+        return_dicts = re.findall(r"return\s*\{([^}]+)\}", gov_section)
         for return_dict in return_dicts:
             keys = set(re.findall(r'"(\w+)"\s*:', return_dict))
             assert "artifacts" not in keys, "API must not return raw artifacts"
@@ -459,12 +469,14 @@ class TestGovernanceFieldRestriction:
     def test_counts_only_no_content(self):
         """T-D08-c: evidence는 건수만 반환하고 내용은 반환하지 않는다."""
         route_code = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        gov_section = route_code[route_code.index("_get_governance_info"):]
+        gov_section = route_code[route_code.index("_get_governance_info") :]
         # orphan_count and evidence_total are counts
         assert "orphan_count" in gov_section
         assert "evidence_total" in gov_section
         # No bundle content iteration for API output
-        assert "bundle_id" not in gov_section.split("return")[0].split("orphan_count = len")[0] or True
+        assert (
+            "bundle_id" not in gov_section.split("return")[0].split("orphan_count = len")[0] or True
+        )
 
 
 # ===========================================================================
@@ -508,14 +520,14 @@ class TestUpbitPanelIntegration:
         html = TEMPLATE_PATH.read_text(encoding="utf-8")
         # renderUpbit function sets connected indicator
         upbit_fn_start = html.index("function renderUpbit")
-        upbit_fn = html[upbit_fn_start:html.index("function renderStats")]
+        upbit_fn = html[upbit_fn_start : html.index("function renderStats")]
         assert "conn-connected" in upbit_fn
 
     def test_upbit_disconnected_state_rendering(self):
         """T-D10-g: UpBit 연결 실패 시 conn-disconnected + st-disconnected 표시."""
         html = TEMPLATE_PATH.read_text(encoding="utf-8")
         upbit_fn_start = html.index("function renderUpbit")
-        upbit_fn = html[upbit_fn_start:html.index("function renderStats")]
+        upbit_fn = html[upbit_fn_start : html.index("function renderStats")]
         assert "conn-disconnected" in upbit_fn
         assert "st-disconnected" in upbit_fn
 
@@ -523,7 +535,7 @@ class TestUpbitPanelIntegration:
         """T-D10-h: UpBit 보유 종목 0건 시 st-empty 표시."""
         html = TEMPLATE_PATH.read_text(encoding="utf-8")
         upbit_fn_start = html.index("function renderUpbit")
-        upbit_fn = html[upbit_fn_start:html.index("function renderStats")]
+        upbit_fn = html[upbit_fn_start : html.index("function renderStats")]
         assert "st-empty" in upbit_fn
 
     def test_upbit_loading_state_initial(self):
@@ -531,7 +543,7 @@ class TestUpbitPanelIntegration:
         html = TEMPLATE_PATH.read_text(encoding="utf-8")
         # Initial HTML for upbit panel should show loading
         panel_start = html.index('id="panel-upbit"')
-        panel_section = html[panel_start:html.index('id="panel-stats"')]
+        panel_section = html[panel_start : html.index('id="panel-stats"')]
         assert "conn-loading" in panel_section
         assert "st-loading" in panel_section
 
@@ -539,7 +551,7 @@ class TestUpbitPanelIntegration:
         """T-D10-j: UpBit 렌더링에 민감정보가 노출되지 않는다."""
         html = TEMPLATE_PATH.read_text(encoding="utf-8")
         upbit_fn_start = html.index("function renderUpbit")
-        upbit_fn = html[upbit_fn_start:html.index("function renderStats")]
+        upbit_fn = html[upbit_fn_start : html.index("function renderStats")]
         assert "api_key" not in upbit_fn.lower()
         assert "api_secret" not in upbit_fn.lower()
         assert "prompt" not in upbit_fn.lower()
@@ -549,7 +561,7 @@ class TestUpbitPanelIntegration:
         """T-D10-k: UpBit 매수가가 없을 때 '-'로 표시한다 (0 위장 금지)."""
         html = TEMPLATE_PATH.read_text(encoding="utf-8")
         upbit_fn_start = html.index("function renderUpbit")
-        upbit_fn = html[upbit_fn_start:html.index("function renderStats")]
+        upbit_fn = html[upbit_fn_start : html.index("function renderStats")]
         # entry_price unavailable case should show dash
         assert "entry_price" in upbit_fn
         assert "'-'" in upbit_fn or '"-"' in upbit_fn
@@ -1230,7 +1242,9 @@ class TestAssetSnapshotInfra:
 
     def test_snapshot_task_is_read_only(self):
         """T-D19-g: 스냅샷 작업이 거래소 API를 호출하지 않는다 (DB만 읽음)."""
-        task = (PROJECT_ROOT / "workers" / "tasks" / "snapshot_tasks.py").read_text(encoding="utf-8")
+        task = (PROJECT_ROOT / "workers" / "tasks" / "snapshot_tasks.py").read_text(
+            encoding="utf-8"
+        )
         assert "ExchangeFactory" not in task or "fetch" not in task
         # It reads from DB models, doesn't call exchange APIs
         assert "Position" in task
@@ -1238,7 +1252,9 @@ class TestAssetSnapshotInfra:
 
     def test_snapshot_task_no_order_execution(self):
         """T-D19-h: 스냅샷 작업에서 주문/거래 실행이 없다."""
-        task = (PROJECT_ROOT / "workers" / "tasks" / "snapshot_tasks.py").read_text(encoding="utf-8")
+        task = (PROJECT_ROOT / "workers" / "tasks" / "snapshot_tasks.py").read_text(
+            encoding="utf-8"
+        )
         assert "create_order" not in task
         assert "cancel_order" not in task
         assert "submit_order" not in task
@@ -1270,31 +1286,41 @@ class TestAlembicMigration:
 
     def test_migration_has_upgrade(self):
         """T-D20-b: migration에 upgrade 함수가 있다."""
-        migration = (PROJECT_ROOT / "alembic" / "versions" / "001_add_asset_snapshots.py").read_text(encoding="utf-8")
+        migration = (
+            PROJECT_ROOT / "alembic" / "versions" / "001_add_asset_snapshots.py"
+        ).read_text(encoding="utf-8")
         assert "def upgrade" in migration
         assert "create_table" in migration
         assert "asset_snapshots" in migration
 
     def test_migration_has_downgrade(self):
         """T-D20-c: migration에 downgrade 함수가 있다."""
-        migration = (PROJECT_ROOT / "alembic" / "versions" / "001_add_asset_snapshots.py").read_text(encoding="utf-8")
+        migration = (
+            PROJECT_ROOT / "alembic" / "versions" / "001_add_asset_snapshots.py"
+        ).read_text(encoding="utf-8")
         assert "def downgrade" in migration
         assert "drop_table" in migration
 
     def test_migration_creates_index(self):
         """T-D20-d: migration이 snapshot_at 인덱스를 생성한다."""
-        migration = (PROJECT_ROOT / "alembic" / "versions" / "001_add_asset_snapshots.py").read_text(encoding="utf-8")
+        migration = (
+            PROJECT_ROOT / "alembic" / "versions" / "001_add_asset_snapshots.py"
+        ).read_text(encoding="utf-8")
         assert "create_index" in migration
         assert "snapshot_at" in migration
 
     def test_migration_drops_index_on_downgrade(self):
         """T-D20-e: downgrade 시 인덱스도 삭제한다."""
-        migration = (PROJECT_ROOT / "alembic" / "versions" / "001_add_asset_snapshots.py").read_text(encoding="utf-8")
+        migration = (
+            PROJECT_ROOT / "alembic" / "versions" / "001_add_asset_snapshots.py"
+        ).read_text(encoding="utf-8")
         assert "drop_index" in migration
 
     def test_migration_has_all_columns(self):
         """T-D20-f: migration에 모델 필드가 모두 포함된다."""
-        migration = (PROJECT_ROOT / "alembic" / "versions" / "001_add_asset_snapshots.py").read_text(encoding="utf-8")
+        migration = (
+            PROJECT_ROOT / "alembic" / "versions" / "001_add_asset_snapshots.py"
+        ).read_text(encoding="utf-8")
         for col in ["total_value", "trade_count", "total_balance", "unrealized_pnl", "snapshot_at"]:
             assert col in migration, f"Column {col} not in migration"
 
@@ -1354,36 +1380,40 @@ class TestV2APIStructure:
         """T-D11-g: _get_recent_events 반환 dict에 agent_analysis 키가 없다."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         import re
+
         fn_match = re.search(
-            r'async def _get_recent_events.*?(?=\nasync def |\ndef |\Z)',
-            content, re.DOTALL
+            r"async def _get_recent_events.*?(?=\nasync def |\ndef |\Z)", content, re.DOTALL
         )
         assert fn_match, "_get_recent_events function not found"
         fn_body = fn_match.group()
         # The dict keys in events.append() must not include agent_analysis
-        assert '"agent_analysis"' not in fn_body, \
+        assert '"agent_analysis"' not in fn_body, (
             "agent_analysis must not be a dict key in _get_recent_events output"
+        )
 
     def test_no_agent_analysis_in_signal_summary_dict(self):
         """T-D11-h: _get_signal_summary 반환 dict에 agent_analysis 키가 없다."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         import re
+
         fn_match = re.search(
-            r'async def _get_signal_summary.*?(?=\nasync def |\ndef |\Z)',
-            content, re.DOTALL
+            r"async def _get_signal_summary.*?(?=\nasync def |\ndef |\Z)", content, re.DOTALL
         )
         assert fn_match, "_get_signal_summary function not found"
         fn_body = fn_match.group()
-        assert '"agent_analysis"' not in fn_body, \
+        assert '"agent_analysis"' not in fn_body, (
             "agent_analysis must not be a dict key in _get_signal_summary output"
+        )
 
     def test_no_signal_id_in_open_orders(self):
         """T-D11-i: _get_open_orders_by_exchange에 signal_id가 노출되지 않는다."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         import re
+
         fn_match = re.search(
-            r'async def _get_open_orders_by_exchange.*?(?=\nasync def |\ndef |\Z)',
-            content, re.DOTALL
+            r"async def _get_open_orders_by_exchange.*?(?=\nasync def |\ndef |\Z)",
+            content,
+            re.DOTALL,
         )
         assert fn_match, "_get_open_orders_by_exchange function not found"
         fn_body = fn_match.group()
@@ -1394,9 +1424,9 @@ class TestV2APIStructure:
         """T-D11-j: venue_freshness가 상태 판정 없이 raw data만 반환한다."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         import re
+
         fn_match = re.search(
-            r'async def _get_venue_freshness.*?(?=\nasync def |\ndef |\Z)',
-            content, re.DOTALL
+            r"async def _get_venue_freshness.*?(?=\nasync def |\ndef |\Z)", content, re.DOTALL
         )
         assert fn_match, "_get_venue_freshness function not found"
         fn_body = fn_match.group()
@@ -1459,26 +1489,32 @@ class TestDashboard2Structure:
     def test_t2_workspace_exists(self):
         """T-D13-a: t2-workspace 엘리먼트가 존재한다."""
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        assert 't2-workspace' in content
+        assert "t2-workspace" in content
 
     def test_t2_left_right_exists(self):
         """T-D13-b: t2-left, t2-right 영역이 존재한다."""
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        assert 't2-left' in content
-        assert 't2-right' in content
+        assert "t2-left" in content
+        assert "t2-right" in content
 
     def test_ai_blocks_exist(self):
         """T-D13-c: AI assist 블록이 존재한다."""
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        for block_id in ['ai-summary-block', 'anomaly-block', 'causes-block',
-                         'risk-warn-block', 'check-order-block']:
+        for block_id in [
+            "ai-summary-block",
+            "anomaly-block",
+            "causes-block",
+            "risk-warn-block",
+            "check-order-block",
+        ]:
             assert block_id in content, f"AI block {block_id} not found"
 
     def test_ai_blocks_default_no_source(self):
         """T-D13-d: AI 블록 기본값이 DATA SOURCE NOT CONNECTED이다."""
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        assert content.count("DATA SOURCE NOT CONNECTED") >= 5, \
+        assert content.count("DATA SOURCE NOT CONNECTED") >= 5, (
             "All 5 AI blocks must default to DATA SOURCE NOT CONNECTED"
+        )
 
     def test_actions_box_exists(self):
         """T-D13-e: immediate actions box가 존재한다."""
@@ -1520,7 +1556,8 @@ class TestGlobalBannerLogic:
         assert "gbanner-normal" in css
         # Must reference allowed (green) colors
         import re
-        m = re.search(r'\.gbanner-normal\s*\{([^}]+)\}', css)
+
+        m = re.search(r"\.gbanner-normal\s*\{([^}]+)\}", css)
         assert m, "gbanner-normal rule not found"
         assert "allowed" in m.group(1), "gbanner-normal must use allowed (green) colors"
 
@@ -1528,7 +1565,8 @@ class TestGlobalBannerLogic:
         """T-D14-b: gbanner-degraded가 amber 계열이다."""
         css = CSS_PATH.read_text(encoding="utf-8")
         import re
-        m = re.search(r'\.gbanner-degraded\s*\{([^}]+)\}', css)
+
+        m = re.search(r"\.gbanner-degraded\s*\{([^}]+)\}", css)
         assert m, "gbanner-degraded rule not found"
         assert "blocked" in m.group(1), "gbanner-degraded must use blocked (amber) colors"
 
@@ -1536,7 +1574,8 @@ class TestGlobalBannerLogic:
         """T-D14-c: gbanner-stale가 amber 계열이다."""
         css = CSS_PATH.read_text(encoding="utf-8")
         import re
-        m = re.search(r'\.gbanner-stale\s*\{([^}]+)\}', css)
+
+        m = re.search(r"\.gbanner-stale\s*\{([^}]+)\}", css)
         assert m, "gbanner-stale rule not found"
         assert "blocked" in m.group(1), "gbanner-stale must use blocked (amber) colors"
 
@@ -1544,7 +1583,8 @@ class TestGlobalBannerLogic:
         """T-D14-d: gbanner-unreliable이 red 계열이다."""
         css = CSS_PATH.read_text(encoding="utf-8")
         import re
-        m = re.search(r'\.gbanner-unreliable\s*\{([^}]+)\}', css)
+
+        m = re.search(r"\.gbanner-unreliable\s*\{([^}]+)\}", css)
         assert m, "gbanner-unreliable rule not found"
         assert "failed" in m.group(1), "gbanner-unreliable must use failed (red) colors"
 
@@ -1590,7 +1630,8 @@ class TestDataMeaningRules:
         """T-D15-f: val-disconnected CSS 클래스가 red 계열이다."""
         css = CSS_PATH.read_text(encoding="utf-8")
         import re
-        m = re.search(r'\.val-disconnected\s*\{([^}]+)\}', css)
+
+        m = re.search(r"\.val-disconnected\s*\{([^}]+)\}", css)
         assert m, "val-disconnected rule not found"
         assert "red" in m.group(1), "val-disconnected must be red"
 
@@ -1622,7 +1663,8 @@ class TestNoSourceFields:
         """T-D16-d: val-no-source가 muted/gray 색상을 사용한다."""
         css = CSS_PATH.read_text(encoding="utf-8")
         import re
-        m = re.search(r'\.val-no-source\s*\{([^}]+)\}', css)
+
+        m = re.search(r"\.val-no-source\s*\{([^}]+)\}", css)
         assert m, "val-no-source CSS rule not found"
         rule = m.group(1)
         assert "muted" in rule or "italic" in rule, "val-no-source must use muted/gray style"
@@ -1674,7 +1716,11 @@ class TestSensitiveFieldBlocklistV2:
     def test_sensitive_field_blocklist_comment(self):
         """T-D17-f: route에 민감 필드 차단 목록 주석이 있다."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        assert "N-01" in content or "Sensitive field blocklist" in content or "blocked-fields" in content
+        assert (
+            "N-01" in content
+            or "Sensitive field blocklist" in content
+            or "blocked-fields" in content
+        )
 
 
 # ===========================================================================
@@ -1692,7 +1738,7 @@ class TestFailClosedTransition:
         """T-D18x-b: markAllStale가 UNRELIABLE 배너를 설정한다."""
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         fn_start = content.index("function markAllStale")
-        fn_section = content[fn_start:fn_start + 3000]
+        fn_section = content[fn_start : fn_start + 3000]
         assert "UNRELIABLE" in fn_section
         assert "gbanner-unreliable" in fn_section
 
@@ -1700,21 +1746,21 @@ class TestFailClosedTransition:
         """T-D18x-c: markAllStale가 venue card를 API UNAVAILABLE로 전이한다."""
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         fn_start = content.index("function markAllStale")
-        fn_section = content[fn_start:fn_start + 3000]
+        fn_section = content[fn_start : fn_start + 3000]
         assert "API UNAVAILABLE" in fn_section
 
     def test_mark_all_stale_shows_poll_failed(self):
         """T-D18x-d: markAllStale가 LAST POLL에 실패 표시를 한다."""
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         fn_start = content.index("function markAllStale")
-        fn_section = content[fn_start:fn_start + 3000]
+        fn_section = content[fn_start : fn_start + 3000]
         assert "POLL FAILED" in fn_section or "NEVER CONNECTED" in fn_section
 
     def test_mark_all_stale_shows_backend_unavailable(self):
         """T-D18x-e: markAllStale가 TRUST에 BACKEND UNAVAILABLE을 표시한다."""
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         fn_start = content.index("function markAllStale")
-        fn_section = content[fn_start:fn_start + 3000]
+        fn_section = content[fn_start : fn_start + 3000]
         assert "BACKEND UNAVAILABLE" in fn_section
 
     def test_consecutive_failures_tracked(self):
@@ -1733,7 +1779,7 @@ class TestFailClosedTransition:
         # API UNAVAILABLE uses conn-disconnected (red)
         # proxy freshness uses deriveConnectionState (green/amber/gray)
         fn_start = content.index("function markAllStale")
-        fn_section = content[fn_start:fn_start + 3000]
+        fn_section = content[fn_start : fn_start + 3000]
         assert "conn-disconnected" in fn_section
         assert "API UNAVAILABLE" in fn_section
         # proxy freshness uses different function
@@ -1749,8 +1795,13 @@ class TestAIWorkspaceConnection:
     def test_ai_blocks_have_dynamic_ids(self):
         """T-D19-a: AI 블록에 동적 렌더링 대상 ID가 있다."""
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        for bid in ['ai-summary-body', 'anomaly-body', 'causes-body',
-                     'risk-warn-body', 'check-order-body']:
+        for bid in [
+            "ai-summary-body",
+            "anomaly-body",
+            "causes-body",
+            "risk-warn-body",
+            "check-order-body",
+        ]:
             assert f'id="{bid}"' in content, f"AI block {bid} dynamic ID not found"
 
     def test_render_ai_workspace_function_exists(self):
@@ -1791,15 +1842,15 @@ class TestAIWorkspaceConnection:
     def test_tier_labels_used_in_ai_blocks(self):
         """T-D19-i: AI 블록에서 tier-fact/tier-estimate/tier-verify 라벨이 사용된다."""
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        assert "_aiRow('fact'" in content or "_aiRow(\"fact\"" in content
-        assert "_aiRow('estimate'" in content or "_aiRow(\"estimate\"" in content
-        assert "_aiRow('verify'" in content or "_aiRow(\"verify\"" in content
+        assert "_aiRow('fact'" in content or '_aiRow("fact"' in content
+        assert "_aiRow('estimate'" in content or '_aiRow("estimate"' in content
+        assert "_aiRow('verify'" in content or '_aiRow("verify"' in content
 
     def test_ai_fail_closed_on_backend_unavailable(self):
         """T-D19-j: backend unavailable 시 AI 블록도 fail-closed 처리된다."""
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         fn_start = content.index("function markAllStale")
-        fn_section = content[fn_start:fn_start + 4000]
+        fn_section = content[fn_start : fn_start + 4000]
         assert "ai-summary-body" in fn_section
         assert "BACKEND UNAVAILABLE" in fn_section
 
@@ -1819,8 +1870,13 @@ class TestAIWorkspaceConnection:
         ai_start = content.index("function renderAIWorkspace")
         legacy_start = content.index("function renderBinance")
         ai_section = content[ai_start:legacy_start]
-        for forbidden in ['raw_prompt', 'chain_of_thought', 'internal_reasoning',
-                          'debug_trace', 'error_class']:
+        for forbidden in [
+            "raw_prompt",
+            "chain_of_thought",
+            "internal_reasoning",
+            "debug_trace",
+            "error_class",
+        ]:
             assert forbidden not in ai_section, f"Forbidden field {forbidden} in AI render"
 
     def test_causes_block_uses_estimate_tier(self):
@@ -1857,16 +1913,29 @@ class TestQuoteTruthBackend:
     def test_quote_data_has_6_tuple_fields(self):
         """T-D20-c: quote 반환 구조에 6-tuple 필드가 포함된다."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        for field in ['"bid"', '"ask"', '"spread"', '"as_of"',
-                      '"age_seconds"', '"trust_state"', '"source_venue"',
-                      '"timestamp_origin"']:
+        for field in [
+            '"bid"',
+            '"ask"',
+            '"spread"',
+            '"as_of"',
+            '"age_seconds"',
+            '"trust_state"',
+            '"source_venue"',
+            '"timestamp_origin"',
+        ]:
             assert field in content, f"Quote 6-tuple field {field} missing"
 
     def test_trust_states_defined(self):
         """T-D20-d: 6개 trust_state가 정의되어 있다."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
-        for state in ['LIVE', 'STALE', 'DISCONNECTED', 'UNAVAILABLE',
-                      'NOT_AVAILABLE', 'NOT_QUERIED']:
+        for state in [
+            "LIVE",
+            "STALE",
+            "DISCONNECTED",
+            "UNAVAILABLE",
+            "NOT_AVAILABLE",
+            "NOT_QUERIED",
+        ]:
             assert f'"{state}"' in content, f"Trust state {state} not defined"
 
     def test_bid_ask_not_supported_list(self):
@@ -1892,27 +1961,31 @@ class TestQuoteTruthBackend:
         """T-D20-h: quote 함수에 write action이 없다."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         import re
-        fn_match = re.search(
-            r'async def _get_quote_data.*?(?=\n# ---|\Z)',
-            content, re.DOTALL
-        )
+
+        fn_match = re.search(r"async def _get_quote_data.*?(?=\n# ---|\Z)", content, re.DOTALL)
         assert fn_match
         fn_body = fn_match.group()
-        for forbidden in ['create_order', 'cancel_order', 'db.add', 'db.commit',
-                          'session.add', '.post(', '.put(', '.delete(']:
+        for forbidden in [
+            "create_order",
+            "cancel_order",
+            "db.add",
+            "db.commit",
+            "session.add",
+            ".post(",
+            ".put(",
+            ".delete(",
+        ]:
             assert forbidden not in fn_body, f"Write action {forbidden} in quote code"
 
     def test_no_sensitive_fields_in_quote(self):
         """T-D20-i: quote 함수에 민감 필드 참조가 없다."""
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         import re
-        fn_match = re.search(
-            r'async def _get_quote_data.*?(?=\n# ---|\Z)',
-            content, re.DOTALL
-        )
+
+        fn_match = re.search(r"async def _get_quote_data.*?(?=\n# ---|\Z)", content, re.DOTALL)
         assert fn_match
         fn_body = fn_match.group()
-        for forbidden in ['agent_analysis', 'reasoning', 'error_class']:
+        for forbidden in ["agent_analysis", "reasoning", "error_class"]:
             assert forbidden not in fn_body
 
 

@@ -20,4 +20,6 @@ class AssetSnapshot(Base):
     trade_count: Mapped[int] = mapped_column(Integer, default=0)
     total_balance: Mapped[float] = mapped_column(Float, default=0.0)
     unrealized_pnl: Mapped[float] = mapped_column(Float, default=0.0)
-    snapshot_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    snapshot_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), index=True
+    )

@@ -24,6 +24,7 @@ Mandatory items applied (all 18 — no exemptions for Evolution):
 
 Loop ceiling (thresholds.py): per_incident=1, per_day=2, per_week=3
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -36,11 +37,16 @@ from typing import Optional, Callable, Awaitable
 from kdexter.audit.evidence_store import EvidenceBundle, EvidenceStore
 from kdexter.governance.doctrine import DoctrineRegistry
 from kdexter.ledger.rule_ledger import (
-    Rule, RuleLedger, RuleProvenance,
+    Rule,
+    RuleLedger,
+    RuleProvenance,
 )
 from kdexter.loops.concurrency import (
-    LoopCounter, LoopCeilingExceededError,
-    LoopPriority, LoopPriorityQueue, RuleLedgerLock,
+    LoopCounter,
+    LoopCeilingExceededError,
+    LoopPriority,
+    LoopPriorityQueue,
+    RuleLedgerLock,
 )
 from kdexter.state_machine.security_state import SecurityStateContext
 
@@ -48,6 +54,7 @@ from kdexter.state_machine.security_state import SecurityStateContext
 # ─────────────────────────────────────────────────────────────────────────── #
 # Phase enum
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 class EvoPhase(Enum):
     IDLE = "IDLE"
@@ -63,33 +70,37 @@ class EvoPhase(Enum):
 # Data models
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass
 class StrategyCandidate:
     """A candidate strategy variant produced by the Generate phase."""
+
     candidate_id: str = field(default_factory=lambda: f"SC-{uuid.uuid4().hex[:8].upper()}")
     name: str = ""
     description: str = ""
-    parameters: dict = field(default_factory=dict)   # strategy parameters
-    source: str = "MUTATION"    # "MUTATION" | "LLM" | "CROSSOVER"
+    parameters: dict = field(default_factory=dict)  # strategy parameters
+    source: str = "MUTATION"  # "MUTATION" | "LLM" | "CROSSOVER"
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 @dataclass
 class SandboxResult:
     """Result of running a candidate in the sandbox."""
+
     candidate_id: str = ""
     win_rate: float = 0.0
     avg_return: float = 0.0
     max_drawdown: float = 0.0
     sharpe_ratio: float = 0.0
     total_trades: int = 0
-    fitness_score: float = 0.0      # composite fitness (0.0~1.0)
+    fitness_score: float = 0.0  # composite fitness (0.0~1.0)
     passed_sandbox: bool = False
 
 
 @dataclass
 class EvoResult:
     """Result of one Evolution cycle."""
+
     cycle_id: str
     incident_id: str
     phase_reached: EvoPhase
@@ -111,12 +122,14 @@ class EvoResult:
 # Hooks (dependency injection)
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass
 class EvoHooks:
     """
     Injectable callbacks for Evolution Loop.
     Default: stubs that produce minimal candidates.
     """
+
     # Generate: produce strategy candidates
     generate: Callable[[list[str]], Awaitable[list[StrategyCandidate]]] = None
 
@@ -131,15 +144,20 @@ class EvoHooks:
 
     def __post_init__(self) -> None:
         if self.generate is None:
+
             async def _default_generate(failure_ids: list[str]) -> list[StrategyCandidate]:
-                return [StrategyCandidate(
-                    name="default_variant",
-                    description="mutation of current strategy",
-                    parameters={"adjustment": 0.01},
-                )]
+                return [
+                    StrategyCandidate(
+                        name="default_variant",
+                        description="mutation of current strategy",
+                        parameters={"adjustment": 0.01},
+                    )
+                ]
+
             self.generate = _default_generate
 
         if self.sandbox is None:
+
             async def _default_sandbox(candidate: StrategyCandidate) -> SandboxResult:
                 return SandboxResult(
                     candidate_id=candidate.candidate_id,
@@ -151,16 +169,21 @@ class EvoHooks:
                     fitness_score=0.7,
                     passed_sandbox=True,
                 )
+
             self.sandbox = _default_sandbox
 
         if self.check_risk is None:
+
             async def _default_risk() -> bool:
                 return True
+
             self.check_risk = _default_risk
 
         if self.check_security is None:
+
             async def _default_security() -> bool:
                 return True
+
             self.check_security = _default_security
 
 
@@ -178,6 +201,7 @@ PROMOTION_FITNESS_THRESHOLD: float = 0.6
 # ─────────────────────────────────────────────────────────────────────────── #
 # Evolution Loop
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 class EvolutionLoop:
     """
@@ -333,11 +357,14 @@ class EvolutionLoop:
 
         candidates = await self._hooks.generate(self._trigger_failures)
 
-        self._emit("GENERATE_COMPLETE", {
-            "candidate_count": len(candidates),
-            "candidates": [c.candidate_id for c in candidates],
-            "trigger_failures": self._trigger_failures,
-        })
+        self._emit(
+            "GENERATE_COMPLETE",
+            {
+                "candidate_count": len(candidates),
+                "candidates": [c.candidate_id for c in candidates],
+                "trigger_failures": self._trigger_failures,
+            },
+        )
         return candidates
 
     async def _phase_sandbox(
@@ -354,13 +381,16 @@ class EvolutionLoop:
             sr.passed_sandbox = sr.fitness_score >= SANDBOX_FITNESS_THRESHOLD
             sandbox_results.append(sr)
 
-            self._emit("SANDBOX_RESULT", {
-                "candidate_id": sr.candidate_id,
-                "fitness_score": sr.fitness_score,
-                "passed": sr.passed_sandbox,
-                "win_rate": sr.win_rate,
-                "sharpe_ratio": sr.sharpe_ratio,
-            })
+            self._emit(
+                "SANDBOX_RESULT",
+                {
+                    "candidate_id": sr.candidate_id,
+                    "fitness_score": sr.fitness_score,
+                    "passed": sr.passed_sandbox,
+                    "win_rate": sr.win_rate,
+                    "sharpe_ratio": sr.sharpe_ratio,
+                },
+            )
 
         return sandbox_results
 
@@ -376,11 +406,14 @@ class EvolutionLoop:
         ranked = sorted(passed, key=lambda sr: sr.fitness_score, reverse=True)
         best = ranked[0]
 
-        self._emit("EVALUATE_COMPLETE", {
-            "best_candidate_id": best.candidate_id,
-            "best_fitness": best.fitness_score,
-            "total_evaluated": len(ranked),
-        })
+        self._emit(
+            "EVALUATE_COMPLETE",
+            {
+                "best_candidate_id": best.candidate_id,
+                "best_fitness": best.fitness_score,
+                "total_evaluated": len(ranked),
+            },
+        )
         return best
 
     async def _phase_gate(
@@ -399,11 +432,14 @@ class EvolutionLoop:
 
         # Fitness threshold for promotion
         if best.fitness_score < PROMOTION_FITNESS_THRESHOLD:
-            self._emit("GATE_FITNESS_FAIL", {
-                "candidate_id": best.candidate_id,
-                "fitness": best.fitness_score,
-                "threshold": PROMOTION_FITNESS_THRESHOLD,
-            })
+            self._emit(
+                "GATE_FITNESS_FAIL",
+                {
+                    "candidate_id": best.candidate_id,
+                    "fitness": best.fitness_score,
+                    "threshold": PROMOTION_FITNESS_THRESHOLD,
+                },
+            )
             return False
 
         # B1 doctrine compliance check
@@ -420,16 +456,22 @@ class EvolutionLoop:
         }
         violations = self._doctrine.check_compliance(context)
         if violations:
-            self._emit("GATE_DOCTRINE_FAIL", {
-                "candidate_id": best.candidate_id,
-                "violations": [v.doctrine_id for v in violations],
-            })
+            self._emit(
+                "GATE_DOCTRINE_FAIL",
+                {
+                    "candidate_id": best.candidate_id,
+                    "violations": [v.doctrine_id for v in violations],
+                },
+            )
             return False
 
-        self._emit("GATE_PASSED", {
-            "candidate_id": best.candidate_id,
-            "fitness": best.fitness_score,
-        })
+        self._emit(
+            "GATE_PASSED",
+            {
+                "candidate_id": best.candidate_id,
+                "fitness": best.fitness_score,
+            },
+        )
         return True
 
     async def _phase_promote(
@@ -464,12 +506,15 @@ class EvolutionLoop:
 
         await self._ledger.create(rule, LoopPriority.EVOLUTION)
 
-        self._emit("PROMOTE_COMPLETE", {
-            "candidate_id": candidate.candidate_id,
-            "rule_id": rule.rule_id,
-            "fitness": best.fitness_score,
-            "parameters": candidate.parameters,
-        })
+        self._emit(
+            "PROMOTE_COMPLETE",
+            {
+                "candidate_id": candidate.candidate_id,
+                "rule_id": rule.rule_id,
+                "fitness": best.fitness_score,
+                "parameters": candidate.parameters,
+            },
+        )
 
     # ── Helpers ──────────────────────────────────────────────────────────── #
 
@@ -498,6 +543,8 @@ class EvolutionLoop:
 # Exceptions
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 class EvoFailureError(Exception):
     """Evolution Loop phase failure."""
+
     pass

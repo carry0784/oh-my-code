@@ -63,12 +63,8 @@ class ExecutionPolicyResult(BaseModel):
     summary: str
     items: list[PolicyCheckItem] = Field(default_factory=list)
     drift_reasons: list[PolicyDriftReason] = Field(default_factory=list)
-    approval_receipt_hash: str = Field(
-        default="", description="SHA-256 of approval receipt fields"
-    )
-    current_hash: str = Field(
-        default="", description="SHA-256 of current state fields"
-    )
+    approval_receipt_hash: str = Field(default="", description="SHA-256 of approval receipt fields")
+    current_hash: str = Field(default="", description="SHA-256 of current state fields")
     evidence_id: str = ""
     rule_refs: list[str] = Field(default_factory=list)
     operator_action_required: bool = False

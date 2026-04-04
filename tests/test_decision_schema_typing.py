@@ -13,6 +13,7 @@ Tests the typed DecisionSummarySchema:
 
 Run: pytest tests/test_decision_schema_typing.py -v
 """
+
 import sys
 import json
 import inspect
@@ -27,16 +28,32 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services.order_service", "app.services.position_service",
-    "app.services.signal_service", "ccxt", "ccxt.async_support",
-    "redis", "celery", "asyncpg",
-    "kdexter", "kdexter.ledger", "kdexter.ledger.forbidden_ledger",
-    "kdexter.audit", "kdexter.audit.evidence_store",
-    "kdexter.state_machine", "kdexter.state_machine.security_state",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
+    "kdexter",
+    "kdexter.ledger",
+    "kdexter.ledger.forbidden_ledger",
+    "kdexter.audit",
+    "kdexter.audit.evidence_store",
+    "kdexter.state_machine",
+    "kdexter.state_machine.security_state",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -73,23 +90,33 @@ from app.services.observation_summary_service import (
 
 # -- Helpers ---------------------------------------------------------------- #
 
+
 def _now_iso():
     return datetime.now(timezone.utc).isoformat()
 
+
 def _past_iso(seconds_ago):
     return (datetime.now(timezone.utc) - timedelta(seconds=seconds_ago)).isoformat()
+
 
 class _FakeLedger:
     def __init__(self, proposals=None, stale_count=0):
         self._data = proposals or []
         self._stale_count = stale_count
+
     def get_proposals(self):
         return self._data
+
     def get_board(self):
         return {
-            "total": len(self._data), "receipted_count": 0, "blocked_count": 0,
-            "failed_count": 0, "orphan_count": 0, "stale_count": self._stale_count,
-            "stale_threshold_seconds": 600.0, "guard_reason_top": [],
+            "total": len(self._data),
+            "receipted_count": 0,
+            "blocked_count": 0,
+            "failed_count": 0,
+            "orphan_count": 0,
+            "stale_count": self._stale_count,
+            "stale_threshold_seconds": 600.0,
+            "guard_reason_top": [],
         }
 
 
@@ -97,8 +124,8 @@ class _FakeLedger:
 # AXIS 1: Enum Constraints                                                     #
 # =========================================================================== #
 
-class TestEnumConstraints:
 
+class TestEnumConstraints:
     def test_posture_enum_values(self):
         assert PostureEnum.MONITOR.value == "MONITOR"
         assert PostureEnum.REVIEW.value == "REVIEW"
@@ -142,8 +169,8 @@ class TestEnumConstraints:
 # AXIS 2: DecisionSafety Sub-model                                             #
 # =========================================================================== #
 
-class TestDecisionSafety:
 
+class TestDecisionSafety:
     def test_default_action_allowed_false(self):
         safety = DecisionSafety()
         assert safety.action_allowed is False
@@ -170,6 +197,7 @@ class TestDecisionSafety:
     def test_schema_source_no_action_allowed_true(self):
         """Schema source must never set action_allowed=True."""
         import app.schemas.decision_summary_schema as mod
+
         source = inspect.getsource(mod)
         # Only default=False should appear, never True assignment
         assert "action_allowed=True" not in source
@@ -180,8 +208,8 @@ class TestDecisionSafety:
 # AXIS 3: Schema Field Completeness                                            #
 # =========================================================================== #
 
-class TestSchemaFieldCompleteness:
 
+class TestSchemaFieldCompleteness:
     def test_has_posture(self):
         assert "recommended_posture" in DecisionSummarySchema.model_fields
 
@@ -220,8 +248,8 @@ class TestSchemaFieldCompleteness:
 # AXIS 4: Dataclass ↔ Schema Conversion                                       #
 # =========================================================================== #
 
-class TestDataclassSchemaConversion:
 
+class TestDataclassSchemaConversion:
     def test_to_schema_returns_typed(self):
         decision = build_decision_summary()
         schema = decision.to_schema()
@@ -250,12 +278,16 @@ class TestDataclassSchemaConversion:
         assert schema.safety.read_only is True
 
     def test_to_schema_with_elevated_data(self):
-        action = _FakeLedger([
-            {"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}]
+        )
         exec_proposals = [
-            {"proposal_id": f"EP-{i}", "agent_proposal_id": f"AP-GONE-{i}",
-             "status": "EXEC_GUARDED", "created_at": _past_iso(500)}
+            {
+                "proposal_id": f"EP-{i}",
+                "agent_proposal_id": f"AP-GONE-{i}",
+                "status": "EXEC_GUARDED",
+                "created_at": _past_iso(500),
+            }
             for i in range(12)
         ]
         execution = _FakeLedger(exec_proposals, stale_count=12)
@@ -277,21 +309,24 @@ class TestDataclassSchemaConversion:
 # AXIS 5: Board Integration (typed, not dict)                                  #
 # =========================================================================== #
 
-class TestBoardIntegrationTyped:
 
+class TestBoardIntegrationTyped:
     def test_board_decision_summary_is_typed(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert isinstance(board.decision_summary, DecisionSummarySchema)
 
     def test_board_decision_summary_has_safety(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert isinstance(board.decision_summary.safety, DecisionSafety)
         assert board.decision_summary.safety.action_allowed is False
 
     def test_board_serializable_with_typed_summary(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         d = board.model_dump()
         s = json.dumps(d)
@@ -301,6 +336,7 @@ class TestBoardIntegrationTyped:
 
     def test_board_schema_field_type(self):
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         field = FourTierBoardResponse.model_fields["decision_summary"]
         assert field.annotation is DecisionSummarySchema
 
@@ -309,22 +345,30 @@ class TestBoardIntegrationTyped:
 # AXIS 6: Source/Derived Relationship                                          #
 # =========================================================================== #
 
-class TestSourceDerivedRelationship:
 
+class TestSourceDerivedRelationship:
     def test_card_derived_from_summary_posture(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
-        assert board.decision_card.posture_badge.posture == board.decision_summary.recommended_posture
+        assert (
+            board.decision_card.posture_badge.posture == board.decision_summary.recommended_posture
+        )
 
     def test_card_derived_from_summary_risk(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
         assert board.decision_card.risk_badge.risk_level == board.decision_summary.risk_level
 
     def test_card_safety_matches_summary_safety(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()
-        assert board.decision_card.safety_bar.action_allowed == board.decision_summary.safety.action_allowed
+        assert (
+            board.decision_card.safety_bar.action_allowed
+            == board.decision_summary.safety.action_allowed
+        )
         assert board.decision_card.safety_bar.read_only == board.decision_summary.safety.read_only
 
     def test_schema_docstring_declares_source(self):

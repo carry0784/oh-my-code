@@ -12,6 +12,7 @@ Properties:
 
 This is NOT a storage layer. It is a volatile observation buffer.
 """
+
 from __future__ import annotations
 
 from collections import deque
@@ -23,6 +24,7 @@ from typing import Optional
 @dataclass(frozen=True)
 class MetricSnapshot:
     """Single point-in-time metric snapshot."""
+
     timestamp: datetime
     blocked_total: int = 0
     pending_retry_total: int = 0

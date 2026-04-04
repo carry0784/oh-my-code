@@ -14,6 +14,7 @@ Safety:
   - No action verbs in labels or descriptions
   - No import of any Ledger or write-capable service
 """
+
 from __future__ import annotations
 
 from app.schemas.decision_card_schema import (
@@ -90,6 +91,7 @@ def _build_reason_compact(reason_chain: list) -> ReasonCompact:
 
 
 # -- Main builder ----------------------------------------------------------- #
+
 
 def build_decision_card(decision: DecisionSummary) -> DecisionCard:
     """

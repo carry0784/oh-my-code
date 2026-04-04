@@ -9,6 +9,7 @@ Output: resource_usage_ratio (float) -> EvaluationContext.resource_usage_ratio -
 Governance: B2 (governance_layer_map.md -- L29)
 Gate: G-22 BUDGET_CHECK at VALIDATING[7]
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -20,12 +21,14 @@ from typing import Optional
 # Data models
 # ------------------------------------------------------------------ #
 
+
 @dataclass
 class ResourceBudget:
     """Budget definition for a single resource type."""
-    resource_type: str         # "API_CALLS", "COMPUTE_SECONDS", "USD_COST", etc.
-    limit: float               # max allowed
-    current: float = 0.0       # current usage
+
+    resource_type: str  # "API_CALLS", "COMPUTE_SECONDS", "USD_COST", etc.
+    limit: float  # max allowed
+    current: float = 0.0  # current usage
 
     @property
     def usage_ratio(self) -> float:
@@ -45,16 +48,18 @@ class ResourceBudget:
 @dataclass
 class CostCheckResult:
     """Result of a budget check."""
-    resource_usage_ratio: float   # max ratio across all resources
-    budgets: dict[str, float]     # resource_type -> usage_ratio
-    exceeded: list[str]           # resource types over budget
-    passed_gate: bool             # max ratio <= 1.0
+
+    resource_usage_ratio: float  # max ratio across all resources
+    budgets: dict[str, float]  # resource_type -> usage_ratio
+    exceeded: list[str]  # resource types over budget
+    passed_gate: bool  # max ratio <= 1.0
     checked_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ------------------------------------------------------------------ #
 # L29 Cost Controller
 # ------------------------------------------------------------------ #
+
 
 class CostController:
     """

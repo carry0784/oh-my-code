@@ -14,6 +14,7 @@ Design:
   - Reuses C-32 manual entrypoint and C-30 store
   - No daemon, scheduler, background worker, startup hook
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -28,10 +29,12 @@ router = APIRouter(prefix="/api/operator", tags=["operator"])
 # Singleton-safe store access (lazy, fail-closed)
 # ---------------------------------------------------------------------------
 
+
 def _get_plan_store() -> Any:
     """Get or create the global RetryPlanStore. Fail-closed."""
     try:
         from app.core.retry_plan_store import RetryPlanStore
+
         if not hasattr(_get_plan_store, "_instance"):
             _get_plan_store._instance = RetryPlanStore()
         return _get_plan_store._instance
@@ -42,6 +45,7 @@ def _get_plan_store() -> Any:
 # ---------------------------------------------------------------------------
 # POST /api/operator/retry-pass — Manual retry trigger
 # ---------------------------------------------------------------------------
+
 
 @router.post("/retry-pass", include_in_schema=False)
 async def operator_retry_pass(max_executions: int = 5) -> dict[str, Any]:
@@ -68,6 +72,7 @@ async def operator_retry_pass(max_executions: int = 5) -> dict[str, Any]:
 
     try:
         from app.core.notification_flow import run_manual_retry_pass
+
         result = run_manual_retry_pass(
             plan_store=store,
             max_executions=max_executions,
@@ -89,6 +94,7 @@ async def operator_retry_pass(max_executions: int = 5) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # GET /api/operator/retry-status — Retry queue summary
 # ---------------------------------------------------------------------------
+
 
 @router.get("/retry-status", include_in_schema=False)
 async def operator_retry_status() -> dict[str, Any]:

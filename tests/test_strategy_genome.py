@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp", "celery", "redis",
-    "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -43,8 +52,9 @@ def test_gene_mutation_within_bounds():
 
 
 def test_gene_integer_mutation_rounds():
-    gene = Gene(name="period", value=10.0, min_val=3.0, max_val=50.0,
-                mutation_rate=1.0, is_integer=True)
+    gene = Gene(
+        name="period", value=10.0, min_val=3.0, max_val=50.0, mutation_rate=1.0, is_integer=True
+    )
     rng = np.random.RandomState(7)
     for _ in range(30):
         mutated = gene.mutate(rng)
@@ -157,6 +167,7 @@ def test_factory_create_population_size():
 
 
 # ── CR-045: strategy_type gene tests ──
+
 
 def test_genome_has_strategy_type_gene():
     """CR-045: strategy_type gene must exist in indicator_genes."""

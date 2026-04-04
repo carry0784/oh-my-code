@@ -24,6 +24,7 @@ logger = get_logger(__name__)
 @dataclass
 class StrategyAllocation:
     """Single strategy allocation in the portfolio."""
+
     genome_id: str = ""
     weight: float = 0.0
     risk_budget_pct: float = 0.0
@@ -33,6 +34,7 @@ class StrategyAllocation:
 @dataclass
 class PortfolioConstructionResult:
     """Complete portfolio construction result."""
+
     allocations: list[StrategyAllocation] = field(default_factory=list)
     correlation: CorrelationMatrix | None = None
     risk_budget: RiskBudget | None = None
@@ -125,14 +127,14 @@ class PortfolioConstructor:
         result.strategy_count = len(result.allocations)
 
         # 6. Portfolio performance
-        result.performance = self.metrics_calc.calculate(
-            weights, equity_curves, capital
-        )
+        result.performance = self.metrics_calc.calculate(weights, equity_curves, capital)
 
-        logger.info("portfolio_constructed",
-                     method=method,
-                     strategies=result.strategy_count,
-                     sharpe=round(result.performance.portfolio_sharpe, 4) if result.performance else 0.0)
+        logger.info(
+            "portfolio_constructed",
+            method=method,
+            strategies=result.strategy_count,
+            sharpe=round(result.performance.portfolio_sharpe, 4) if result.performance else 0.0,
+        )
         return result
 
     def rebalance_check(
@@ -147,8 +149,6 @@ class PortfolioConstructor:
             current = current_weights.get(gid, 0.0)
             drift = abs(target - current) * 100
             if drift > threshold_pct:
-                logger.info("rebalance_triggered",
-                           genome_id=gid,
-                           drift=round(drift, 2))
+                logger.info("rebalance_triggered", genome_id=gid, drift=round(drift, 2))
                 return True
         return False

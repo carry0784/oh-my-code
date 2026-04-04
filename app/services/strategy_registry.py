@@ -25,6 +25,7 @@ logger = get_logger(__name__)
 @dataclass
 class RegistryEntry:
     """Single entry in the strategy registry."""
+
     genome: StrategyGenome
     registered_at: str = ""
     validation_status: str = ""
@@ -57,9 +58,7 @@ class StrategyRegistry:
         entry = RegistryEntry(
             genome=copy.deepcopy(genome),
             registered_at=datetime.now(timezone.utc).isoformat(),
-            validation_status=(
-                validation.overall_status.value if validation else "unvalidated"
-            ),
+            validation_status=(validation.overall_status.value if validation else "unvalidated"),
             regime_tag=genome.regime_tag,
             lifetime_fitness=genome.fitness,
         )
@@ -74,11 +73,13 @@ class StrategyRegistry:
         if len(self.entries) > self.max_entries:
             self.entries = self.entries[: self.max_entries]
 
-        logger.info("registry_entry_added",
-                    genome_id=genome.id,
-                    fitness=round(genome.fitness, 4),
-                    rank=entry.rank,
-                    total=len(self.entries))
+        logger.info(
+            "registry_entry_added",
+            genome_id=genome.id,
+            fitness=round(genome.fitness, 4),
+            rank=entry.rank,
+            total=len(self.entries),
+        )
         return entry
 
     def get_top_n(self, n: int, regime: str | None = None) -> list[RegistryEntry]:

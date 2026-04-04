@@ -22,13 +22,26 @@ import pytest
 # Stub heavy modules
 # ---------------------------------------------------------------------------
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services", "app.services.order_service",
-    "app.services.position_service", "app.services.signal_service",
-    "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -60,7 +73,6 @@ def _get_fn_body():
 # C06-1: Operator Panel 블록
 # ===========================================================================
 class TestC06VenueStatusBlock:
-
     def test_venue_status_body_exists(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert 'id="venue-status-body"' in content
@@ -78,7 +90,6 @@ class TestC06VenueStatusBlock:
 # C06-2: JS 렌더링 함수
 # ===========================================================================
 class TestC06RenderFunction:
-
     def test_function_exists(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert "function renderVenueStatusMonitor" in content
@@ -98,7 +109,7 @@ class TestC06RenderFunction:
     def test_derives_connection_state(self):
         """연결 상태 판별 로직이 존재한다."""
         fn_body = _get_fn_body()
-        for state in ['CONNECTED', 'DEGRADED', 'STALE', 'DISCONNECTED', 'NO_POSITIONS']:
+        for state in ["CONNECTED", "DEGRADED", "STALE", "DISCONNECTED", "NO_POSITIONS"]:
             assert state in fn_body, f"Connection state {state} must be referenced"
 
     def test_not_available_fallback(self):
@@ -115,9 +126,16 @@ class TestC06RenderFunction:
     def test_no_forbidden_strings(self):
         fn_body = _get_fn_body()
         forbidden = [
-            'agent_analysis', 'raw_prompt', 'chain_of_thought',
-            'internal_reasoning', 'debug_trace', 'error_class',
-            'traceback', 'exception_type', 'stack', 'internal_state_dump',
+            "agent_analysis",
+            "raw_prompt",
+            "chain_of_thought",
+            "internal_reasoning",
+            "debug_trace",
+            "error_class",
+            "traceback",
+            "exception_type",
+            "stack",
+            "internal_state_dump",
         ]
         for f in forbidden:
             assert f not in fn_body, f"Forbidden string '{f}' in venue status render"
@@ -127,7 +145,6 @@ class TestC06RenderFunction:
 # C06-3: CSS
 # ===========================================================================
 class TestC06CSS:
-
     def test_venue_row_class(self):
         content = CSS_PATH.read_text(encoding="utf-8")
         assert ".vs-venue-row" in content
@@ -138,7 +155,7 @@ class TestC06CSS:
 
     def test_connection_state_colors(self):
         content = CSS_PATH.read_text(encoding="utf-8")
-        for cls in ['.vs-connected', '.vs-degraded', '.vs-stale', '.vs-disconnected']:
+        for cls in [".vs-connected", ".vs-degraded", ".vs-stale", ".vs-disconnected"]:
             assert cls in content, f"CSS class {cls} must exist"
 
     def test_overall_class(self):
@@ -150,7 +167,6 @@ class TestC06CSS:
 # C06-4: Tab 2 통합
 # ===========================================================================
 class TestC06Integration:
-
     def test_called_from_render_tab2(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert "renderVenueStatusMonitor(data)" in content
@@ -164,11 +180,15 @@ class TestC06Integration:
 
     def test_existing_blocks_preserved(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        for bid in ['key-facts-block', 'loop-ceiling-block', 'quote-feed-block', 'event-log-block']:
+        for bid in ["key-facts-block", "loop-ceiling-block", "quote-feed-block", "event-log-block"]:
             assert f'id="{bid}"' in content, f"Block {bid} must be preserved"
 
     def test_existing_functions_preserved(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        for fn in ['renderLoopCeilingMonitor', 'renderQuoteFeedMonitor',
-                    'renderAIWorkspace', 'renderQuoteFields']:
+        for fn in [
+            "renderLoopCeilingMonitor",
+            "renderQuoteFeedMonitor",
+            "renderAIWorkspace",
+            "renderQuoteFields",
+        ]:
             assert f"function {fn}" in content, f"{fn} must be preserved"

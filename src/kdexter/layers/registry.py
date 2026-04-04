@@ -16,6 +16,7 @@ and manages lifecycle state. Actual layer logic lives in their own modules.
 
 SSOT for layer names: docs/architecture/governance_layer_map.md Section 2.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -29,18 +30,21 @@ from typing import Optional, Any, Protocol
 # Layer lifecycle
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 class LayerStatus(Enum):
     """Lifecycle status of a layer instance."""
-    REGISTERED = "REGISTERED"   # registered but not yet initialized
-    INIT = "INIT"               # initializing
-    READY = "READY"             # initialized, waiting to start
-    RUNNING = "RUNNING"         # actively running
-    STOPPED = "STOPPED"         # gracefully stopped
-    ERROR = "ERROR"             # encountered an error
+
+    REGISTERED = "REGISTERED"  # registered but not yet initialized
+    INIT = "INIT"  # initializing
+    READY = "READY"  # initialized, waiting to start
+    RUNNING = "RUNNING"  # actively running
+    STOPPED = "STOPPED"  # gracefully stopped
+    ERROR = "ERROR"  # encountered an error
 
 
 class HealthStatus(Enum):
     """Health of a running layer."""
+
     HEALTHY = "HEALTHY"
     DEGRADED = "DEGRADED"
     UNHEALTHY = "UNHEALTHY"
@@ -51,12 +55,14 @@ class HealthStatus(Enum):
 # Layer protocol — what a layer implementation must provide
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 class LayerProtocol(Protocol):
     """
     Interface a layer implementation should satisfy.
     Not all layers need to implement all methods — the registry
     uses duck typing and gracefully handles missing methods.
     """
+
     async def init(self) -> None: ...
     async def start(self) -> None: ...
     async def stop(self) -> None: ...
@@ -67,15 +73,17 @@ class LayerProtocol(Protocol):
 # Layer descriptor
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 @dataclass
 class LayerDescriptor:
     """Metadata and runtime state for a registered layer."""
-    layer_id: str                               # "L1" ~ "L30"
-    name: str                                   # human-readable name
-    governance_tier: str                         # "B1", "B2", "A"
+
+    layer_id: str  # "L1" ~ "L30"
+    name: str  # human-readable name
+    governance_tier: str  # "B1", "B2", "A"
     status: LayerStatus = LayerStatus.REGISTERED
     health: HealthStatus = HealthStatus.UNKNOWN
-    instance: Optional[Any] = None              # actual layer object
+    instance: Optional[Any] = None  # actual layer object
     registered_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     started_at: Optional[datetime] = None
     stopped_at: Optional[datetime] = None
@@ -88,42 +96,43 @@ class LayerDescriptor:
 # ─────────────────────────────────────────────────────────────────────────── #
 
 _LAYER_CATALOG: list[tuple[str, str, str]] = [
-    ("L1",  "Human Decision",          "B1"),
-    ("L2",  "Doctrine & Policy",       "B1"),
-    ("L3",  "Security & Isolation",    "B1"),
-    ("L4",  "Clarify & Spec",          "B2"),
-    ("L5",  "Harness / Scheduler",     "B2"),
-    ("L6",  "Parallel Agent",          "A"),
-    ("L7",  "Evaluation",              "A"),
-    ("L8",  "Execution Cell",          "A"),
-    ("L9",  "Self-Improvement Engine", "B2"),
-    ("L10", "Audit / Evidence Store",  "A"),
-    ("L11", "Rule Ledger",             "B2"),
-    ("L12", "Rule Provenance Store",   "B2"),
-    ("L13", "Compliance Engine",       "B2"),
-    ("L14", "Operation Evolution",     "B2"),
-    ("L15", "Intent Drift Engine",     "B2"),
-    ("L16", "Rule Conflict Engine",    "B2"),
-    ("L17", "Failure Pattern Memory",  "B2"),
+    ("L1", "Human Decision", "B1"),
+    ("L2", "Doctrine & Policy", "B1"),
+    ("L3", "Security & Isolation", "B1"),
+    ("L4", "Clarify & Spec", "B2"),
+    ("L5", "Harness / Scheduler", "B2"),
+    ("L6", "Parallel Agent", "A"),
+    ("L7", "Evaluation", "A"),
+    ("L8", "Execution Cell", "A"),
+    ("L9", "Self-Improvement Engine", "B2"),
+    ("L10", "Audit / Evidence Store", "A"),
+    ("L11", "Rule Ledger", "B2"),
+    ("L12", "Rule Provenance Store", "B2"),
+    ("L13", "Compliance Engine", "B2"),
+    ("L14", "Operation Evolution", "B2"),
+    ("L15", "Intent Drift Engine", "B2"),
+    ("L16", "Rule Conflict Engine", "B2"),
+    ("L17", "Failure Pattern Memory", "B2"),
     ("L18", "Budget Evolution Engine", "B2"),
-    ("L19", "Trust Decay Engine",      "B2"),
-    ("L20", "Meta Loop Controller",    "B2"),
-    ("L21", "Completion Engine",       "B2"),
-    ("L22", "Spec Lock System",        "B1"),
-    ("L23", "Research Engine",         "B2"),
-    ("L24", "Knowledge Engine",        "B2"),
-    ("L25", "Scheduler Engine",        "B2"),
-    ("L26", "Recovery Engine",         "A"),
-    ("L27", "Override Controller",     "B1"),
-    ("L28", "Loop Monitor",            "B2"),
-    ("L29", "Cost Controller",         "B2"),
-    ("L30", "Progress Engine",         "B2"),
+    ("L19", "Trust Decay Engine", "B2"),
+    ("L20", "Meta Loop Controller", "B2"),
+    ("L21", "Completion Engine", "B2"),
+    ("L22", "Spec Lock System", "B1"),
+    ("L23", "Research Engine", "B2"),
+    ("L24", "Knowledge Engine", "B2"),
+    ("L25", "Scheduler Engine", "B2"),
+    ("L26", "Recovery Engine", "A"),
+    ("L27", "Override Controller", "B1"),
+    ("L28", "Loop Monitor", "B2"),
+    ("L29", "Cost Controller", "B2"),
+    ("L30", "Progress Engine", "B2"),
 ]
 
 
 # ─────────────────────────────────────────────────────────────────────────── #
 # Layer Registry
 # ─────────────────────────────────────────────────────────────────────────── #
+
 
 class LayerRegistry:
     """
@@ -234,8 +243,7 @@ class LayerRegistry:
         desc = self._get_or_raise(layer_id)
         if desc.status not in (LayerStatus.READY, LayerStatus.STOPPED):
             raise LayerLifecycleError(
-                f"Cannot start {layer_id} in status {desc.status.value}. "
-                f"Must be READY or STOPPED."
+                f"Cannot start {layer_id} in status {desc.status.value}. Must be READY or STOPPED."
             )
 
         try:
@@ -368,16 +376,20 @@ class LayerRegistry:
 # Exceptions
 # ─────────────────────────────────────────────────────────────────────────── #
 
+
 class LayerNotFoundError(Exception):
     """Layer ID not in the registry."""
+
     pass
 
 
 class LayerNotBoundError(Exception):
     """Layer has no instance bound."""
+
     pass
 
 
 class LayerLifecycleError(Exception):
     """Invalid lifecycle transition attempted."""
+
     pass

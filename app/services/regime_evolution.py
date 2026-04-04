@@ -23,6 +23,7 @@ logger = get_logger(__name__)
 @dataclass
 class RegimeSegment:
     """A segment of OHLCV data belonging to a specific regime."""
+
     regime: str
     start_idx: int
     end_idx: int
@@ -64,17 +65,23 @@ class RegimeEvolutionManager:
 
             # Build IndicatorSet from optional per-bar dict
             ind_dict = indicator_sets[i] if indicator_sets and i < len(indicator_sets) else {}
-            indicators = IndicatorSet(**{
-                k: v for k, v in ind_dict.items()
-                if k in IndicatorSet.model_fields
-            }) if ind_dict else IndicatorSet()
+            indicators = (
+                IndicatorSet(
+                    **{k: v for k, v in ind_dict.items() if k in IndicatorSet.model_fields}
+                )
+                if ind_dict
+                else IndicatorSet()
+            )
 
             # Build SentimentData from optional per-bar dict
             sent_dict = sentiment_sets[i] if sentiment_sets and i < len(sentiment_sets) else {}
-            sentiment = SentimentData(**{
-                k: v for k, v in sent_dict.items()
-                if k in SentimentData.model_fields
-            }) if sent_dict else SentimentData()
+            sentiment = (
+                SentimentData(
+                    **{k: v for k, v in sent_dict.items() if k in SentimentData.model_fields}
+                )
+                if sent_dict
+                else SentimentData()
+            )
 
             regime_result = self.detector.detect(price_data, indicators, sentiment)
             tag = regime_result.regime
@@ -83,12 +90,16 @@ class RegimeEvolutionManager:
                 regime_buckets[tag] = []
             regime_buckets[tag].append(bar)
 
-        logger.info("regime_partition_complete",
-                    regimes=list(regime_buckets.keys()),
-                    sizes={k: len(v) for k, v in regime_buckets.items()})
+        logger.info(
+            "regime_partition_complete",
+            regimes=list(regime_buckets.keys()),
+            sizes={k: len(v) for k, v in regime_buckets.items()},
+        )
         return regime_buckets
 
-    def identify_regime_segments(self, ohlcv: list[list], regimes: list[str]) -> list[RegimeSegment]:
+    def identify_regime_segments(
+        self, ohlcv: list[list], regimes: list[str]
+    ) -> list[RegimeSegment]:
         """
         Identify contiguous segments of the same regime.
 
@@ -116,12 +127,14 @@ class RegimeEvolutionManager:
                 start_idx = i
 
         # Last segment
-        segments.append(RegimeSegment(
-            regime=current_regime,
-            start_idx=start_idx,
-            end_idx=len(regimes) - 1,
-            bars=ohlcv[start_idx:len(regimes)],
-        ))
+        segments.append(
+            RegimeSegment(
+                regime=current_regime,
+                start_idx=start_idx,
+                end_idx=len(regimes) - 1,
+                bars=ohlcv[start_idx : len(regimes)],
+            )
+        )
 
         logger.info("regime_segments_identified", count=len(segments))
         return segments

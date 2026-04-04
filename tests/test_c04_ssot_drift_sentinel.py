@@ -20,13 +20,26 @@ from unittest.mock import MagicMock
 
 # Stub heavy dependencies
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services", "app.services.order_service",
-    "app.services.position_service", "app.services.signal_service",
-    "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
 ]
 for m in _STUB_MODULES:
     if m not in sys.modules:
@@ -49,70 +62,74 @@ class TestSSOTSourcePathAlignment:
         """Gate _check_ops_score must query Position.updated_at."""
         src = Path(PROJECT_ROOT / "app/core/execution_gate.py").read_text(encoding="utf-8")
         fn_start = src.find("def _check_ops_score")
-        fn_body = src[fn_start:src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
+        fn_body = src[fn_start : src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
         assert "Position.updated_at" in fn_body or "Position" in fn_body
 
     def test_gate_uses_asset_snapshot_fallback(self):
         """Gate must fall back to AssetSnapshot when Position is empty."""
         src = Path(PROJECT_ROOT / "app/core/execution_gate.py").read_text(encoding="utf-8")
         fn_start = src.find("def _check_ops_score")
-        fn_body = src[fn_start:src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
+        fn_body = src[fn_start : src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
         assert "AssetSnapshot" in fn_body
 
     def test_approval_uses_position_query(self):
         """Approval _collect_ops_score must query Position.updated_at."""
         src = Path(PROJECT_ROOT / "app/core/operator_approval.py").read_text(encoding="utf-8")
         fn_start = src.find("def _collect_ops_score")
-        fn_body = src[fn_start:src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
+        fn_body = src[fn_start : src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
         assert "Position.updated_at" in fn_body or "Position" in fn_body
 
     def test_approval_uses_asset_snapshot_fallback(self):
         """Approval must fall back to AssetSnapshot."""
         src = Path(PROJECT_ROOT / "app/core/operator_approval.py").read_text(encoding="utf-8")
         fn_start = src.find("def _collect_ops_score")
-        fn_body = src[fn_start:src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
+        fn_body = src[fn_start : src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
         assert "AssetSnapshot" in fn_body
 
     def test_policy_uses_position_query(self):
         """Policy _recheck_ops_score must query Position.updated_at."""
         src = Path(PROJECT_ROOT / "app/core/execution_policy.py").read_text(encoding="utf-8")
         fn_start = src.find("def _recheck_ops_score")
-        fn_body = src[fn_start:src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
+        fn_body = src[fn_start : src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
         assert "Position.updated_at" in fn_body or "Position" in fn_body
 
     def test_policy_uses_asset_snapshot_fallback(self):
         """Policy must fall back to AssetSnapshot."""
         src = Path(PROJECT_ROOT / "app/core/execution_policy.py").read_text(encoding="utf-8")
         fn_start = src.find("def _recheck_ops_score")
-        fn_body = src[fn_start:src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
+        fn_body = src[fn_start : src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
         assert "AssetSnapshot" in fn_body
 
     def test_dashboard_uses_position_query(self):
         """Dashboard _compute_integrity_panel must query Position.updated_at."""
         src = Path(PROJECT_ROOT / "app/api/routes/dashboard.py").read_text(encoding="utf-8")
         fn_start = src.find("def _compute_integrity_panel")
-        fn_body = src[fn_start:src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
+        fn_body = src[fn_start : src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
         assert "Position.updated_at" in fn_body
 
     def test_dashboard_uses_asset_snapshot_fallback(self):
         """Dashboard must fall back to AssetSnapshot."""
         src = Path(PROJECT_ROOT / "app/api/routes/dashboard.py").read_text(encoding="utf-8")
         fn_start = src.find("def _compute_integrity_panel")
-        fn_body = src[fn_start:src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
+        fn_body = src[fn_start : src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
         assert "AssetSnapshot" in fn_body
 
     def test_check_runner_uses_position_query(self):
         """CheckRunner _get_snapshot_age_sync must query Position.updated_at."""
-        src = Path(PROJECT_ROOT / "app/core/constitution_check_runner.py").read_text(encoding="utf-8")
+        src = Path(PROJECT_ROOT / "app/core/constitution_check_runner.py").read_text(
+            encoding="utf-8"
+        )
         fn_start = src.find("def _get_snapshot_age_sync")
-        fn_body = src[fn_start:src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
+        fn_body = src[fn_start : src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
         assert "Position.updated_at" in fn_body or "Position" in fn_body
 
     def test_check_runner_uses_asset_snapshot_fallback(self):
         """CheckRunner must fall back to AssetSnapshot."""
-        src = Path(PROJECT_ROOT / "app/core/constitution_check_runner.py").read_text(encoding="utf-8")
+        src = Path(PROJECT_ROOT / "app/core/constitution_check_runner.py").read_text(
+            encoding="utf-8"
+        )
         fn_start = src.find("def _get_snapshot_age_sync")
-        fn_body = src[fn_start:src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
+        fn_body = src[fn_start : src.find("\ndef ", fn_start + 20)] if fn_start != -1 else ""
         assert "AssetSnapshot" in fn_body
 
 
@@ -133,7 +150,10 @@ class TestSSOTNoHardcodedNull:
         lines = fn_body.split("\n")
         for line in lines:
             stripped = line.strip()
-            if "snapshot_age_seconds=None" in stripped and "IntegrityPanel" in fn_body[: fn_body.find(stripped)]:
+            if (
+                "snapshot_age_seconds=None" in stripped
+                and "IntegrityPanel" in fn_body[: fn_body.find(stripped)]
+            ):
                 # Check it's not in a fallback/except block
                 if "except" not in stripped and "# fallback" not in stripped.lower():
                     pytest.fail(f"Hardcoded snapshot_age_seconds=None found in {fn_name}")

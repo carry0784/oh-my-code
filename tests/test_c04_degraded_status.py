@@ -76,10 +76,7 @@ MAIN_PATH = PROJECT_ROOT / "app" / "main.py"
 
 def _get_status_fn_body():
     content = MAIN_PATH.read_text(encoding="utf-8")
-    fn_match = re.search(
-        r'async def degraded_status.*?(?=\n@app\.|\Z)',
-        content, re.DOTALL
-    )
+    fn_match = re.search(r"async def degraded_status.*?(?=\n@app\.|\Z)", content, re.DOTALL)
     assert fn_match, "degraded_status function not found"
     return fn_match.group()
 
@@ -105,7 +102,7 @@ class TestC04StatusEndpoint:
         content = MAIN_PATH.read_text(encoding="utf-8")
         # Find the decorator line before degraded_status
         idx = content.index("async def degraded_status")
-        preceding = content[max(0, idx - 100):idx]
+        preceding = content[max(0, idx - 100) : idx]
         assert "@app.get" in preceding
 
     def test_status_returns_200_always(self):
@@ -254,9 +251,16 @@ class TestC04ForbiddenFields:
         """C04-5a: /status 함수에 금지 문자열이 없다."""
         fn_body = _get_status_fn_body()
         forbidden = [
-            'agent_analysis', 'raw_prompt', 'chain_of_thought',
-            'internal_reasoning', 'debug_trace', 'error_class',
-            'traceback', 'exception_type', 'stack', 'internal_state_dump',
+            "agent_analysis",
+            "raw_prompt",
+            "chain_of_thought",
+            "internal_reasoning",
+            "debug_trace",
+            "error_class",
+            "traceback",
+            "exception_type",
+            "stack",
+            "internal_state_dump",
         ]
         for f in forbidden:
             assert f not in fn_body, f"Forbidden string '{f}' in status endpoint"
@@ -264,7 +268,7 @@ class TestC04ForbiddenFields:
     def test_no_runtime_mutation(self):
         """C04-5b: 런타임 상태를 변경하지 않는다."""
         fn_body = _get_status_fn_body()
-        mutation_calls = ['.record_violation(', '.on_failure(', '.check(', '.ratify(']
+        mutation_calls = [".record_violation(", ".on_failure(", ".check(", ".ratify("]
         for mc in mutation_calls:
             assert mc not in fn_body, f"Mutation call '{mc}' found in status endpoint"
 
@@ -286,7 +290,15 @@ class TestC04ForbiddenFields:
         code_only = " ".join(code_lines)
         # Word-boundary check to avoid false positives (e.g. "health" matching "heal")
         import re as _re
-        recovery_patterns = [r'\brecover\b', r'\brestart\b', r'\breset\b', r'\bretry\b', r'\bheal\b']
+
+        recovery_patterns = [
+            r"\brecover\b",
+            r"\brestart\b",
+            r"\breset\b",
+            r"\bretry\b",
+            r"\bheal\b",
+        ]
         for pattern in recovery_patterns:
-            assert not _re.search(pattern, code_only), \
+            assert not _re.search(pattern, code_only), (
                 f"Recovery term '{pattern}' found — /status should observe only"
+            )

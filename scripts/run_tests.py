@@ -77,14 +77,18 @@ def detect_scope_from_changed_files() -> str | None:
     try:
         result = subprocess.run(
             ["git", "diff", "--name-only", "HEAD"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         changed = [f.strip() for f in result.stdout.splitlines() if f.strip()]
 
         # Also check staged
         result2 = subprocess.run(
             ["git", "diff", "--name-only", "--cached"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         changed.extend(f.strip() for f in result2.stdout.splitlines() if f.strip())
 
@@ -132,7 +136,9 @@ def run_tests(scope: str, verbose: bool = False) -> dict:
         }
 
     cmd = [
-        sys.executable, "-m", "pytest",
+        sys.executable,
+        "-m",
+        "pytest",
         *existing,
         "--tb=short",
         "-q",
@@ -208,11 +214,14 @@ def run_tests(scope: str, verbose: bool = False) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description="K-Dexter Test Runner")
-    parser.add_argument("--scope", default=None, choices=list(SCOPES.keys()),
-                        help="Test scope to run (default: auto-detect from changed files)")
+    parser.add_argument(
+        "--scope",
+        default=None,
+        choices=list(SCOPES.keys()),
+        help="Test scope to run (default: auto-detect from changed files)",
+    )
     parser.add_argument("--verbose", "-v", action="store_true")
-    parser.add_argument("--output", "-o", default=None,
-                        help="Output JSON file path")
+    parser.add_argument("--output", "-o", default=None, help="Output JSON file path")
     args = parser.parse_args()
 
     # Auto-detect scope from changed files if not specified
@@ -229,9 +238,11 @@ def main():
 
     # Always print summary to stdout
     icon = {"PASS": "[OK]", "FAIL": "[XX]", "SKIP": "[--]"}[result["status"]]
-    print(f"{icon} {result['scope']}: {result['passed']} passed, "
-          f"{result['failed']} failed, {result['errors']} errors "
-          f"(total {result['total']})")
+    print(
+        f"{icon} {result['scope']}: {result['passed']} passed, "
+        f"{result['failed']} failed, {result['errors']} errors "
+        f"(total {result['total']})"
+    )
 
     if result["failures"]:
         print("\nFailures:")

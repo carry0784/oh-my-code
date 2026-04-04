@@ -26,7 +26,6 @@ def _route():
 # P8-1: Phase 8 UI elements exist
 # ===========================================================================
 class TestP8UIExists:
-
     def test_p8_container_exists(self):
         assert 'id="t3sc-c04-p8"' in _html()
 
@@ -55,38 +54,37 @@ class TestP8UIExists:
         assert 'id="t3sc-c04-p8-refresh-btn"' in _html()
 
     def test_render_function_exists(self):
-        assert '_renderC04Phase8' in _html()
+        assert "_renderC04Phase8" in _html()
 
 
 # ===========================================================================
 # P8-2: Guard text content
 # ===========================================================================
 class TestP8GuardContent:
-
     def test_sealed_shows_yes(self):
         html = _html()
         # The sealed row should show YES
         idx = html.find('id="t3sc-c04-p8-sealed"')
         assert idx != -1
-        row = html[idx:idx + 200]
+        row = html[idx : idx + 200]
         assert "YES" in row
 
     def test_phase_shows_8(self):
         html = _html()
         idx = html.find('id="t3sc-c04-p8-phase"')
-        row = html[idx:idx + 200]
+        row = html[idx : idx + 200]
         assert "8" in row
 
     def test_scope_shows_manual(self):
         html = _html()
         idx = html.find('id="t3sc-c04-p8-scope"')
-        row = html[idx:idx + 200]
+        row = html[idx : idx + 200]
         assert "Manual" in row
 
     def test_forbidden_shows_auto(self):
         html = _html()
         idx = html.find('id="t3sc-c04-p8-forbidden"')
-        row = html[idx:idx + 200]
+        row = html[idx : idx + 200]
         assert "Auto" in row
 
     def test_read_only_indicator(self):
@@ -98,7 +96,6 @@ class TestP8GuardContent:
 # P8-3: No new endpoint
 # ===========================================================================
 class TestP8NoNewEndpoint:
-
     def test_post_count_unchanged(self):
         """Write path must remain exactly 5 POST."""
         route = _route()
@@ -116,7 +113,9 @@ class TestP8NoNewEndpoint:
     def test_no_new_manual_endpoint(self):
         """No new manual-action sub-endpoint beyond execute/rollback/retry/simulate/preview."""
         route = _route()
-        manual_posts = [l for l in route.split("\n") if "@router.post" in l and "manual-action" in l]
+        manual_posts = [
+            l for l in route.split("\n") if "@router.post" in l and "manual-action" in l
+        ]
         assert len(manual_posts) == 5
 
 
@@ -124,13 +123,12 @@ class TestP8NoNewEndpoint:
 # P8-4: Manual refresh uses existing fetch only
 # ===========================================================================
 class TestP8ManualRefresh:
-
     def test_refresh_calls_existing_function(self):
         """Manual refresh calls renderTab3SafeCards (existing), not a new POST."""
         html = _html()
         start = html.find("t3sc-c04-p8-refresh-btn")
         # Find the click handler
-        handler_area = html[start:start + 1000]
+        handler_area = html[start : start + 1000]
         assert "renderTab3SafeCards" in handler_area or "renderTab3SafeCards" in html
 
     def test_refresh_button_disabled_by_default(self):
@@ -142,7 +140,7 @@ class TestP8ManualRefresh:
         # Find Phase 8 refresh handler
         start = html.find("t3sc-c04-p8-refresh-btn")
         # The handler should use renderTab3SafeCards, not fetch
-        p8_area = html[start:start + 500].lower()
+        p8_area = html[start : start + 500].lower()
         assert "fetch(" not in p8_area or "post" not in p8_area
 
 
@@ -150,21 +148,20 @@ class TestP8ManualRefresh:
 # P8-5: No execution/mutation
 # ===========================================================================
 class TestP8NoExecution:
-
     def test_render_p8_has_no_fetch(self):
         """_renderC04Phase8 must not call fetch."""
         html = _html()
         start = html.find("function _renderC04Phase8")
         assert start != -1
         end = html.find("\nfunction ", start + 30)
-        body = html[start:end].lower() if end != -1 else html[start:start + 2000].lower()
+        body = html[start:end].lower() if end != -1 else html[start : start + 2000].lower()
         assert "fetch(" not in body
 
     def test_render_p8_has_no_mutation(self):
         html = _html()
         start = html.find("function _renderC04Phase8")
         end = html.find("\nfunction ", start + 30)
-        body = html[start:end].lower() if end != -1 else html[start:start + 2000].lower()
+        body = html[start:end].lower() if end != -1 else html[start : start + 2000].lower()
         assert ".post(" not in body
         assert ".put(" not in body
 
@@ -177,7 +174,7 @@ class TestP8NoExecution:
         html = _html()
         start = html.find("function _renderC04Phase8")
         end = html.find("\nfunction ", start + 30)
-        body = html[start:end].lower() if end != -1 else html[start:start + 2000].lower()
+        body = html[start:end].lower() if end != -1 else html[start : start + 2000].lower()
         assert "statemachine" not in body
         assert "state_machine" not in body
 
@@ -186,9 +183,8 @@ class TestP8NoExecution:
 # P8-6: Phase boundary preserved
 # ===========================================================================
 class TestP8PhaseBoundary:
-
     def test_c04_still_sealed_class(self):
-        assert 't3sc-sealed' in _html()
+        assert "t3sc-sealed" in _html()
 
     def test_c04_still_has_sealed_badge(self):
         assert 'id="t3sc-c04-badge"' in _html()
@@ -205,5 +201,5 @@ class TestP8PhaseBoundary:
 
     def test_safe_cards_intact(self):
         html = _html()
-        for n in ['01', '02', '03', '05', '06', '07', '08', '09']:
+        for n in ["01", "02", "03", "05", "06", "07", "08", "09"]:
             assert f'id="t3sc-c{n}"' in html

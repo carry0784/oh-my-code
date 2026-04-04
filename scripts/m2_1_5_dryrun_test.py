@@ -16,6 +16,7 @@ Verifies all 10 items from A's checklist:
 9. Post-test state recovery
 10. Side-effect 0
 """
+
 import asyncio
 import sys
 
@@ -159,12 +160,14 @@ def main():
     from app.services.order_executor import OrderExecutor
 
     oe = OrderExecutor()
-    order_result = asyncio.run(oe.execute_order(
-        submit_proposal=sproposal,
-        side="buy",
-        order_type="market",
-        dry_run=True,
-    ))
+    order_result = asyncio.run(
+        oe.execute_order(
+            submit_proposal=sproposal,
+            side="buy",
+            order_type="market",
+            dry_run=True,
+        )
+    )
 
     print(f"  order_id: {order_result.order_id}")
     print(f"  status: {order_result.status}")
@@ -199,11 +202,17 @@ def main():
     print("BOARD SUMMARY")
     print("=" * 60)
     ab = al.get_board()
-    print(f"  ActionLedger:    total={ab['total']}, receipted={ab['receipted_count']}, blocked={ab['blocked_count']}, orphan={ab['orphan_count']}")
+    print(
+        f"  ActionLedger:    total={ab['total']}, receipted={ab['receipted_count']}, blocked={ab['blocked_count']}, orphan={ab['orphan_count']}"
+    )
     eb = el.get_board()
-    print(f"  ExecutionLedger: total={eb['total']}, receipted={eb['receipted_count']}, blocked={eb['blocked_count']}, orphan={eb['orphan_count']}")
+    print(
+        f"  ExecutionLedger: total={eb['total']}, receipted={eb['receipted_count']}, blocked={eb['blocked_count']}, orphan={eb['orphan_count']}"
+    )
     sb = sl.get_board()
-    print(f"  SubmitLedger:    total={sb['total']}, receipted={sb['receipted_count']}, blocked={sb['blocked_count']}, orphan={sb['orphan_count']}")
+    print(
+        f"  SubmitLedger:    total={sb['total']}, receipted={sb['receipted_count']}, blocked={sb['blocked_count']}, orphan={sb['orphan_count']}"
+    )
     oh = oe.get_history()
     print(f"  OrderExecutor:   total={len(oh)}, dry_run={oh[0]['dry_run'] if oh else 'N/A'}")
 
@@ -215,8 +224,11 @@ def main():
     # Test: duplicate proposal suppression
     print("\n[ABORT-1] Duplicate proposal suppression:")
     dp_passed, dp_prop = al.propose_and_guard(
-        task_type="order_execution", symbol="BTC/USDT", exchange="binance",
-        risk_result=risk_result, pre_evidence_id=pre_evidence_id,
+        task_type="order_execution",
+        symbol="BTC/USDT",
+        exchange="binance",
+        risk_result=risk_result,
+        pre_evidence_id=pre_evidence_id,
     )
     print(f"  passed={dp_passed}, status={dp_prop.status}")
     assert not dp_passed and dp_prop.status == "BLOCKED"
@@ -224,9 +236,14 @@ def main():
 
     # Test: idempotency guard
     print("\n[ABORT-2] OrderExecutor idempotency:")
-    order_result_2 = asyncio.run(oe.execute_order(
-        submit_proposal=sproposal, side="buy", order_type="market", dry_run=True,
-    ))
+    order_result_2 = asyncio.run(
+        oe.execute_order(
+            submit_proposal=sproposal,
+            side="buy",
+            order_type="market",
+            dry_run=True,
+        )
+    )
     print(f"  Returned same order_id: {order_result_2.order_id == order_result.order_id}")
     assert order_result_2.order_id == order_result.order_id
     print("  RESULT: PASS (idempotent, same order_id)")
@@ -235,8 +252,14 @@ def main():
     print("\n[ABORT-3] ExecutionDeniedError on submit_ready=False:")
     from app.services.order_executor import ExecutionDeniedError
     from app.services.submit_ledger import SubmitProposal as SP
-    fake = SP(proposal_id="FAKE", agent_proposal_id="FAKE",
-              execution_proposal_id="FAKE", task_type="test", status="SUBMIT_PROPOSED")
+
+    fake = SP(
+        proposal_id="FAKE",
+        agent_proposal_id="FAKE",
+        execution_proposal_id="FAKE",
+        task_type="test",
+        status="SUBMIT_PROPOSED",
+    )
     try:
         asyncio.run(oe.execute_order(submit_proposal=fake, side="buy", dry_run=True))
         print("  ERROR: Should have raised ExecutionDeniedError!")

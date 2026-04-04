@@ -44,15 +44,9 @@ class ConstitutionAlert(BaseModel):
     event_name: str = Field(description="사건명")
     occurred_at: str = Field(description="발생 시각 (ISO 8601)")
     impact_scope: Optional[str] = Field(default=None, description="영향 범위")
-    auto_action_result: Optional[str] = Field(
-        default=None, description="자동 조치 결과"
-    )
-    operator_action_required: bool = Field(
-        description="운영자 해야 할 일 (WARNING 이상 필수)"
-    )
-    evidence_receipt_id: Optional[str] = Field(
-        default=None, description="Evidence/Receipt ID"
-    )
+    auto_action_result: Optional[str] = Field(default=None, description="자동 조치 결과")
+    operator_action_required: bool = Field(description="운영자 해야 할 일 (WARNING 이상 필수)")
+    evidence_receipt_id: Optional[str] = Field(default=None, description="Evidence/Receipt ID")
 
 
 # ---------------------------------------------------------------------------
@@ -65,16 +59,10 @@ class AlertSummaryResponse(BaseModel):
     자동 실행 권한 없음.
     """
 
-    alerts: list[ConstitutionAlert] = Field(
-        default_factory=list, description="최근 알림 목록"
-    )
+    alerts: list[ConstitutionAlert] = Field(default_factory=list, description="최근 알림 목록")
     total_count: int = Field(default=0, description="전체 알림 건수")
-    suppressed_count: int = Field(
-        default=0, description="억제된 알림 건수 (제22조 억제 규칙)"
-    )
-    recovery_count: int = Field(
-        default=0, description="복구 알림 건수 (제22조 복구 알림 필수)"
-    )
+    suppressed_count: int = Field(default=0, description="억제된 알림 건수 (제22조 억제 규칙)")
+    recovery_count: int = Field(default=0, description="복구 알림 건수 (제22조 복구 알림 필수)")
     note: str = Field(
         default="알림은 운영 개입 유도 장치이며, 자동 실행 권한을 가지지 않는다.",
         description="제14조 원칙",

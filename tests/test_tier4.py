@@ -12,6 +12,7 @@ Tests:
 
 Run: python tests/test_tier4.py
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -30,8 +31,10 @@ from kdexter.layers.registry import (
 
 # ── Mock layer implementations ──────────────────────────────────────────── #
 
+
 class GoodLayer:
     """A layer that works correctly."""
+
     def __init__(self):
         self.initialized = False
         self.started = False
@@ -52,15 +55,23 @@ class GoodLayer:
 
 class DegradedLayer:
     """A layer that reports degraded health."""
-    async def init(self): pass
-    async def start(self): pass
-    async def stop(self): pass
+
+    async def init(self):
+        pass
+
+    async def start(self):
+        pass
+
+    async def stop(self):
+        pass
+
     async def health_check(self) -> HealthStatus:
         return HealthStatus.DEGRADED
 
 
 class FailingLayer:
     """A layer that fails on init."""
+
     async def init(self):
         raise RuntimeError("init explosion")
 
@@ -70,12 +81,14 @@ class FailingLayer:
 
 class MinimalLayer:
     """A layer with no lifecycle methods."""
+
     pass
 
 
 # ======================================================================== #
 # 1. Catalog
 # ======================================================================== #
+
 
 def test_30_layers_registered():
     reg = LayerRegistry()
@@ -98,9 +111,9 @@ def test_tier_counts():
     b1 = reg.list_by_tier("B1")
     b2 = reg.list_by_tier("B2")
     a = reg.list_by_tier("A")
-    assert len(b1) == 5   # L1, L2, L3, L22, L27
-    assert len(a) == 5     # L6, L7, L8, L10, L26
-    assert len(b2) == 20   # the rest
+    assert len(b1) == 5  # L1, L2, L3, L22, L27
+    assert len(a) == 5  # L6, L7, L8, L10, L26
+    assert len(b2) == 20  # the rest
     assert len(b1) + len(b2) + len(a) == 30
     print("  [3] Tier counts B1=5 B2=20 A=5  OK")
 
@@ -122,6 +135,7 @@ def test_a_layers():
 # ======================================================================== #
 # 2. Binding
 # ======================================================================== #
+
 
 def test_bind_instance():
     reg = LayerRegistry()
@@ -163,6 +177,7 @@ def test_list_bound_unbound():
 # ======================================================================== #
 # 3. Lifecycle
 # ======================================================================== #
+
 
 def test_lifecycle_full():
     reg = LayerRegistry()
@@ -250,6 +265,7 @@ def test_minimal_layer_lifecycle():
 # 4. Health
 # ======================================================================== #
 
+
 def test_health_check_healthy():
     reg = LayerRegistry()
     reg.bind("L10", GoodLayer())
@@ -294,6 +310,7 @@ def test_health_check_unbound():
 # ======================================================================== #
 # 5. Batch operations
 # ======================================================================== #
+
 
 def test_init_all_bound():
     reg = LayerRegistry()
@@ -353,6 +370,7 @@ def test_check_all_health():
 # 6. Summary & Lookup
 # ======================================================================== #
 
+
 def test_summary():
     reg = LayerRegistry()
     reg.bind("L10", GoodLayer())
@@ -399,44 +417,62 @@ if __name__ == "__main__":
     print("=" * 60)
 
     tests = [
-        ("Catalog", [
-            test_30_layers_registered,
-            test_layer_ids,
-            test_tier_counts,
-            test_b1_layers,
-            test_a_layers,
-        ]),
-        ("Binding", [
-            test_bind_instance,
-            test_unbind_instance,
-            test_bind_unknown_layer,
-            test_list_bound_unbound,
-        ]),
-        ("Lifecycle", [
-            test_lifecycle_full,
-            test_init_without_bind,
-            test_init_failure,
-            test_start_requires_ready,
-            test_restart_stopped_layer,
-            test_minimal_layer_lifecycle,
-        ]),
-        ("Health", [
-            test_health_check_healthy,
-            test_health_check_degraded,
-            test_health_check_no_method,
-            test_health_check_unbound,
-        ]),
-        ("Batch", [
-            test_init_all_bound,
-            test_start_all_ready,
-            test_stop_all_running,
-            test_check_all_health,
-        ]),
-        ("Summary & Lookup", [
-            test_summary,
-            test_list_by_status,
-            test_layer_names,
-        ]),
+        (
+            "Catalog",
+            [
+                test_30_layers_registered,
+                test_layer_ids,
+                test_tier_counts,
+                test_b1_layers,
+                test_a_layers,
+            ],
+        ),
+        (
+            "Binding",
+            [
+                test_bind_instance,
+                test_unbind_instance,
+                test_bind_unknown_layer,
+                test_list_bound_unbound,
+            ],
+        ),
+        (
+            "Lifecycle",
+            [
+                test_lifecycle_full,
+                test_init_without_bind,
+                test_init_failure,
+                test_start_requires_ready,
+                test_restart_stopped_layer,
+                test_minimal_layer_lifecycle,
+            ],
+        ),
+        (
+            "Health",
+            [
+                test_health_check_healthy,
+                test_health_check_degraded,
+                test_health_check_no_method,
+                test_health_check_unbound,
+            ],
+        ),
+        (
+            "Batch",
+            [
+                test_init_all_bound,
+                test_start_all_ready,
+                test_stop_all_running,
+                test_check_all_health,
+            ],
+        ),
+        (
+            "Summary & Lookup",
+            [
+                test_summary,
+                test_list_by_status,
+                test_layer_names,
+            ],
+        ),
     ]
 
     total = 0

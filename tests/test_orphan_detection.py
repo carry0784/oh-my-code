@@ -13,6 +13,7 @@ Tests the cross-tier lineage verification for orphan proposal detection:
 
 Run: pytest tests/test_orphan_detection.py -v
 """
+
 import sys
 import inspect
 from pathlib import Path
@@ -64,6 +65,7 @@ for mod_name in _STUB_MODULES:
 
 # -- Helpers ---------------------------------------------------------------- #
 
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -80,7 +82,12 @@ def _make_action_proposals(*ids: str) -> list[dict]:
 def _make_exec_proposals(pairs: list[tuple[str, str]]) -> list[dict]:
     """Create ExecutionLedger-style proposals: (proposal_id, agent_proposal_id)."""
     return [
-        {"proposal_id": pid, "agent_proposal_id": apid, "status": "EXEC_RECEIPTED", "created_at": _now_iso()}
+        {
+            "proposal_id": pid,
+            "agent_proposal_id": apid,
+            "status": "EXEC_RECEIPTED",
+            "created_at": _now_iso(),
+        }
         for pid, apid in pairs
     ]
 
@@ -88,13 +95,19 @@ def _make_exec_proposals(pairs: list[tuple[str, str]]) -> list[dict]:
 def _make_submit_proposals(pairs: list[tuple[str, str]]) -> list[dict]:
     """Create SubmitLedger-style proposals: (proposal_id, execution_proposal_id)."""
     return [
-        {"proposal_id": pid, "execution_proposal_id": epid, "status": "SUBMIT_RECEIPTED", "created_at": _now_iso()}
+        {
+            "proposal_id": pid,
+            "execution_proposal_id": epid,
+            "status": "SUBMIT_RECEIPTED",
+            "created_at": _now_iso(),
+        }
         for pid, epid in pairs
     ]
 
 
 class _FakeLedger:
     """Minimal ledger mock that returns proposals from get_proposals()."""
+
     def __init__(self, proposals: list[dict]):
         self._proposals_data = proposals
 
@@ -104,12 +117,18 @@ class _FakeLedger:
 
 # -- Import service --------------------------------------------------------- #
 
-from app.services.orphan_detection_service import detect_orphans, OrphanReport, OrphanEntry, _SENTINEL_IDS
+from app.services.orphan_detection_service import (
+    detect_orphans,
+    OrphanReport,
+    OrphanEntry,
+    _SENTINEL_IDS,
+)
 
 
 # =========================================================================== #
 # AXIS 1: Orphan Detection Accuracy                                           #
 # =========================================================================== #
+
 
 class TestOrphanDetectionAccuracy:
     """Valid lineage = not orphan, broken lineage = orphan."""
@@ -159,17 +178,22 @@ class TestOrphanDetectionAccuracy:
 # AXIS 2: Cross-Ledger Verification                                           #
 # =========================================================================== #
 
+
 class TestCrossLedgerVerification:
     """Exec→Agent and Submit→Exec verification paths."""
 
     def test_exec_checks_against_action_ids(self):
         """Execution orphan detection uses ActionLedger proposal IDs."""
         action = _FakeLedger(_make_action_proposals("AP-100", "AP-200"))
-        execution = _FakeLedger(_make_exec_proposals([
-            ("EP-1", "AP-100"),
-            ("EP-2", "AP-200"),
-            ("EP-3", "AP-999"),
-        ]))
+        execution = _FakeLedger(
+            _make_exec_proposals(
+                [
+                    ("EP-1", "AP-100"),
+                    ("EP-2", "AP-200"),
+                    ("EP-3", "AP-999"),
+                ]
+            )
+        )
 
         report = detect_orphans(action, execution, None)
         assert report.execution_orphan_count == 1
@@ -179,11 +203,15 @@ class TestCrossLedgerVerification:
     def test_submit_checks_against_execution_ids(self):
         """Submit orphan detection uses ExecutionLedger proposal IDs."""
         execution = _FakeLedger(_make_exec_proposals([("EP-A", "AP-1")]))
-        submit = _FakeLedger(_make_submit_proposals([
-            ("SP-1", "EP-A"),
-            ("SP-2", "EP-B"),
-            ("SP-3", "EP-C"),
-        ]))
+        submit = _FakeLedger(
+            _make_submit_proposals(
+                [
+                    ("SP-1", "EP-A"),
+                    ("SP-2", "EP-B"),
+                    ("SP-3", "EP-C"),
+                ]
+            )
+        )
 
         report = detect_orphans(None, execution, submit)
         assert report.submit_orphan_count == 2
@@ -220,6 +248,7 @@ class TestCrossLedgerVerification:
 # =========================================================================== #
 # AXIS 3: Empty/None Ledger Handling                                          #
 # =========================================================================== #
+
 
 class TestEmptyNoneLedgerHandling:
     """Fail-safe: missing or None ledgers skip verification."""
@@ -258,30 +287,35 @@ class TestEmptyNoneLedgerHandling:
 # AXIS 4: Read-Only Guarantee                                                 #
 # =========================================================================== #
 
+
 class TestReadOnlyGuarantee:
     """Orphan detection service must be strictly read-only."""
 
     def test_source_has_no_propose_and_guard(self):
         """Service source must not call .propose_and_guard("""
         import app.services.orphan_detection_service as mod
+
         source = inspect.getsource(mod)
         assert ".propose_and_guard(" not in source
 
     def test_source_has_no_record_receipt(self):
         """Service source must not call .record_receipt("""
         import app.services.orphan_detection_service as mod
+
         source = inspect.getsource(mod)
         assert ".record_receipt(" not in source
 
     def test_source_has_no_transition_to(self):
         """Service source must not call .transition_to("""
         import app.services.orphan_detection_service as mod
+
         source = inspect.getsource(mod)
         assert ".transition_to(" not in source
 
     def test_source_has_no_underscore_proposals_access(self):
         """Service source must not directly access ._proposals"""
         import app.services.orphan_detection_service as mod
+
         source = inspect.getsource(mod)
         assert "._proposals" not in source
 
@@ -290,12 +324,14 @@ class TestReadOnlyGuarantee:
 # AXIS 5: 4-Tier Board Integration                                            #
 # =========================================================================== #
 
+
 class TestFourTierBoardIntegration:
     """Orphan detection results appear in the dashboard board."""
 
     def test_board_response_has_cross_tier_orphan_fields(self):
         """FourTierBoardResponse schema includes cross-tier orphan fields."""
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         fields = FourTierBoardResponse.model_fields
         assert "cross_tier_orphan_count" in fields
 
@@ -306,17 +342,27 @@ class TestFourTierBoardIntegration:
         # Mock ledgers with get_board() and get_proposals()
         al = MagicMock()
         al.get_board.return_value = {
-            "total": 1, "receipted_count": 1, "blocked_count": 0,
-            "failed_count": 0, "orphan_count": 0, "stale_count": 0,
-            "stale_threshold_seconds": 600.0, "guard_reason_top": [],
+            "total": 1,
+            "receipted_count": 1,
+            "blocked_count": 0,
+            "failed_count": 0,
+            "orphan_count": 0,
+            "stale_count": 0,
+            "stale_threshold_seconds": 600.0,
+            "guard_reason_top": [],
         }
         al.get_proposals.return_value = [{"proposal_id": "AP-1", "status": "RECEIPTED"}]
 
         el = MagicMock()
         el.get_board.return_value = {
-            "total": 1, "receipted_count": 1, "blocked_count": 0,
-            "failed_count": 0, "orphan_count": 0, "stale_count": 0,
-            "stale_threshold_seconds": 300.0, "guard_reason_top": [],
+            "total": 1,
+            "receipted_count": 1,
+            "blocked_count": 0,
+            "failed_count": 0,
+            "orphan_count": 0,
+            "stale_count": 0,
+            "stale_threshold_seconds": 300.0,
+            "guard_reason_top": [],
         }
         el.get_proposals.return_value = [
             {"proposal_id": "EP-1", "agent_proposal_id": "AP-MISSING", "status": "EXEC_RECEIPTED"}
@@ -324,9 +370,14 @@ class TestFourTierBoardIntegration:
 
         sl = MagicMock()
         sl.get_board.return_value = {
-            "total": 0, "receipted_count": 0, "blocked_count": 0,
-            "failed_count": 0, "orphan_count": 0, "stale_count": 0,
-            "stale_threshold_seconds": 180.0, "guard_reason_top": [],
+            "total": 0,
+            "receipted_count": 0,
+            "blocked_count": 0,
+            "failed_count": 0,
+            "orphan_count": 0,
+            "stale_count": 0,
+            "stale_threshold_seconds": 180.0,
+            "guard_reason_top": [],
         }
         sl.get_proposals.return_value = []
 
@@ -339,6 +390,7 @@ class TestFourTierBoardIntegration:
     def test_board_schema_orphan_detail_field(self):
         """FourTierBoardResponse has cross_tier_orphan_detail list."""
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         fields = FourTierBoardResponse.model_fields
         assert "cross_tier_orphan_detail" in fields
 
@@ -347,63 +399,102 @@ class TestFourTierBoardIntegration:
 # AXIS 6: Edge Cases                                                          #
 # =========================================================================== #
 
+
 class TestEdgeCases:
     """Sentinel IDs, duplicates, terminal orphans, boundary conditions."""
 
     def test_sentinel_none_treated_as_orphan(self):
         """agent_proposal_id=None → orphan."""
         action = _FakeLedger(_make_action_proposals("AP-1"))
-        execution = _FakeLedger([
-            {"proposal_id": "EP-1", "agent_proposal_id": None, "status": "EXEC_GUARDED", "created_at": _now_iso()}
-        ])
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-1",
+                    "agent_proposal_id": None,
+                    "status": "EXEC_GUARDED",
+                    "created_at": _now_iso(),
+                }
+            ]
+        )
         report = detect_orphans(action, execution, None)
         assert report.execution_orphan_count == 1
 
     def test_sentinel_empty_string_treated_as_orphan(self):
         """agent_proposal_id="" → orphan."""
         action = _FakeLedger(_make_action_proposals("AP-1"))
-        execution = _FakeLedger([
-            {"proposal_id": "EP-1", "agent_proposal_id": "", "status": "EXEC_GUARDED", "created_at": _now_iso()}
-        ])
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-1",
+                    "agent_proposal_id": "",
+                    "status": "EXEC_GUARDED",
+                    "created_at": _now_iso(),
+                }
+            ]
+        )
         report = detect_orphans(action, execution, None)
         assert report.execution_orphan_count == 1
 
     def test_sentinel_NONE_string_treated_as_orphan(self):
         """agent_proposal_id="NONE" → orphan."""
         action = _FakeLedger(_make_action_proposals("AP-1"))
-        execution = _FakeLedger([
-            {"proposal_id": "EP-1", "agent_proposal_id": "NONE", "status": "EXEC_GUARDED", "created_at": _now_iso()}
-        ])
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-1",
+                    "agent_proposal_id": "NONE",
+                    "status": "EXEC_GUARDED",
+                    "created_at": _now_iso(),
+                }
+            ]
+        )
         report = detect_orphans(action, execution, None)
         assert report.execution_orphan_count == 1
 
     def test_sentinel_UNKNOWN_string_treated_as_orphan(self):
         """agent_proposal_id="UNKNOWN" → orphan."""
         action = _FakeLedger(_make_action_proposals("AP-1"))
-        execution = _FakeLedger([
-            {"proposal_id": "EP-1", "agent_proposal_id": "UNKNOWN", "status": "EXEC_GUARDED", "created_at": _now_iso()}
-        ])
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-1",
+                    "agent_proposal_id": "UNKNOWN",
+                    "status": "EXEC_GUARDED",
+                    "created_at": _now_iso(),
+                }
+            ]
+        )
         report = detect_orphans(action, execution, None)
         assert report.execution_orphan_count == 1
 
     def test_duplicate_parent_ids_no_false_positive(self):
         """Multiple exec proposals referencing same valid parent → no orphans."""
         action = _FakeLedger(_make_action_proposals("AP-1"))
-        execution = _FakeLedger(_make_exec_proposals([
-            ("EP-1", "AP-1"),
-            ("EP-2", "AP-1"),
-            ("EP-3", "AP-1"),
-        ]))
+        execution = _FakeLedger(
+            _make_exec_proposals(
+                [
+                    ("EP-1", "AP-1"),
+                    ("EP-2", "AP-1"),
+                    ("EP-3", "AP-1"),
+                ]
+            )
+        )
         report = detect_orphans(action, execution, None)
         assert report.execution_orphan_count == 0
 
     def test_terminal_status_orphan_still_detected(self):
         """Orphan detection checks lineage regardless of status (even terminal)."""
         action = _FakeLedger(_make_action_proposals("AP-1"))
-        execution = _FakeLedger([
-            {"proposal_id": "EP-done", "agent_proposal_id": "AP-GONE",
-             "status": "EXEC_RECEIPTED", "created_at": _now_iso()}
-        ])
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-done",
+                    "agent_proposal_id": "AP-GONE",
+                    "status": "EXEC_RECEIPTED",
+                    "created_at": _now_iso(),
+                }
+            ]
+        )
         report = detect_orphans(action, execution, None)
         # Even terminal proposals with broken lineage should be detected
         assert report.execution_orphan_count == 1

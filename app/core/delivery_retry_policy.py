@@ -22,6 +22,7 @@ Retry eligibility rules:
   4. Time since last attempt must exceed cooldown
   5. Policy action must not be "suppress"
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -37,20 +38,24 @@ DEFAULT_MAX_RETRIES = 3
 DEFAULT_RETRY_COOLDOWN_S = 60
 
 # Permanent failure patterns — these should never be retried
-_PERMANENT_FAILURE_PATTERNS = frozenset({
-    "not configured",
-    "stub",
-    "structurally unsupported",
-})
+_PERMANENT_FAILURE_PATTERNS = frozenset(
+    {
+        "not configured",
+        "stub",
+        "structurally unsupported",
+    }
+)
 
 
 # ---------------------------------------------------------------------------
 # Data models
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class RetryEligibility:
     """Result of a retry eligibility check for one channel."""
+
     channel: str
     eligible: bool
     reason: str
@@ -61,6 +66,7 @@ class RetryEligibility:
 @dataclass
 class RetryReceipt:
     """Record of a retry decision."""
+
     channel: str
     attempted: bool
     attempt_number: int
@@ -73,6 +79,7 @@ class RetryReceipt:
 # Retry state tracker
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class _ChannelRetryState:
     attempts: int = 0
@@ -82,6 +89,7 @@ class _ChannelRetryState:
 # ---------------------------------------------------------------------------
 # Delivery Retry Policy
 # ---------------------------------------------------------------------------
+
 
 class DeliveryRetryPolicy:
     """

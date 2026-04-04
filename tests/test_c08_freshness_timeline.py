@@ -20,13 +20,26 @@ from unittest.mock import MagicMock
 import pytest
 
 _STUB_MODULES = [
-    "app.core.database", "app.models", "app.models.order",
-    "app.models.position", "app.models.signal", "app.models.trade",
-    "app.models.asset_snapshot", "app.exchanges", "app.exchanges.factory",
-    "app.exchanges.base", "app.exchanges.binance",
-    "app.services", "app.services.order_service",
-    "app.services.position_service", "app.services.signal_service",
-    "ccxt", "ccxt.async_support", "redis", "celery", "asyncpg",
+    "app.core.database",
+    "app.models",
+    "app.models.order",
+    "app.models.position",
+    "app.models.signal",
+    "app.models.trade",
+    "app.models.asset_snapshot",
+    "app.exchanges",
+    "app.exchanges.factory",
+    "app.exchanges.base",
+    "app.exchanges.binance",
+    "app.services",
+    "app.services.order_service",
+    "app.services.position_service",
+    "app.services.signal_service",
+    "ccxt",
+    "ccxt.async_support",
+    "redis",
+    "celery",
+    "asyncpg",
 ]
 for mod_name in _STUB_MODULES:
     if mod_name not in sys.modules:
@@ -51,12 +64,10 @@ DASHBOARD_ROUTE_PATH = PROJECT_ROOT / "app" / "api" / "routes" / "dashboard.py"
 # C08-1: API source_freshness 헬퍼
 # ===========================================================================
 class TestC08APIHelper:
-
     def _get_fn_body(self):
         content = DASHBOARD_ROUTE_PATH.read_text(encoding="utf-8")
         fn_match = re.search(
-            r'def _get_source_freshness_summary.*?(?=\ndef |\Z)',
-            content, re.DOTALL
+            r"def _get_source_freshness_summary.*?(?=\ndef |\Z)", content, re.DOTALL
         )
         assert fn_match, "_get_source_freshness_summary not found"
         return fn_match.group()
@@ -112,7 +123,6 @@ class TestC08APIHelper:
 # C08-2: Operator Panel 블록
 # ===========================================================================
 class TestC08FreshnessBlock:
-
     def test_block_exists(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert 'id="freshness-timeline-block"' in content
@@ -130,7 +140,6 @@ class TestC08FreshnessBlock:
 # C08-3: JS 렌더링 함수
 # ===========================================================================
 class TestC08RenderFunction:
-
     def _get_fn_body(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         fn_start = content.index("function renderFreshnessTimeline")
@@ -171,9 +180,16 @@ class TestC08RenderFunction:
     def test_no_forbidden_strings(self):
         fn_body = self._get_fn_body()
         forbidden = [
-            'agent_analysis', 'raw_prompt', 'chain_of_thought',
-            'internal_reasoning', 'debug_trace', 'error_class',
-            'traceback', 'exception_type', 'stack', 'internal_state_dump',
+            "agent_analysis",
+            "raw_prompt",
+            "chain_of_thought",
+            "internal_reasoning",
+            "debug_trace",
+            "error_class",
+            "traceback",
+            "exception_type",
+            "stack",
+            "internal_state_dump",
         ]
         for f in forbidden:
             assert f not in fn_body, f"Forbidden string '{f}' in freshness timeline"
@@ -183,7 +199,6 @@ class TestC08RenderFunction:
 # C08-4: CSS
 # ===========================================================================
 class TestC08CSS:
-
     def test_source_row_class(self):
         content = CSS_PATH.read_text(encoding="utf-8")
         assert ".ft-source-row" in content
@@ -194,7 +209,7 @@ class TestC08CSS:
 
     def test_status_colors(self):
         content = CSS_PATH.read_text(encoding="utf-8")
-        for cls in ['.ft-fresh', '.ft-stale', '.ft-disconnected', '.ft-unknown']:
+        for cls in [".ft-fresh", ".ft-stale", ".ft-disconnected", ".ft-unknown"]:
             assert cls in content, f"CSS class {cls} must exist"
 
     def test_summary_class(self):
@@ -206,7 +221,6 @@ class TestC08CSS:
 # C08-5: Tab 2 통합
 # ===========================================================================
 class TestC08Integration:
-
     def test_called_from_render_tab2(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
         assert "renderFreshnessTimeline(data)" in content
@@ -220,8 +234,14 @@ class TestC08Integration:
 
     def test_existing_blocks_preserved(self):
         content = TEMPLATE_PATH.read_text(encoding="utf-8")
-        for bid in ['key-facts-block', 'loop-ceiling-block', 'quote-feed-block',
-                     'venue-status-block', 'event-log-block', 'incident-overlay']:
+        for bid in [
+            "key-facts-block",
+            "loop-ceiling-block",
+            "quote-feed-block",
+            "venue-status-block",
+            "event-log-block",
+            "incident-overlay",
+        ]:
             assert bid in content, f"{bid} must be preserved"
 
     def test_existing_venue_freshness_preserved(self):

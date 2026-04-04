@@ -25,6 +25,7 @@ Flow:
      d. On failure: increment attempt, re-enqueue or mark_expired
   4. Return execution summary
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
@@ -43,9 +44,11 @@ DEFAULT_MAX_EXECUTIONS = 5
 # Data models
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class RetryAttemptResult:
     """Result of a single retry attempt."""
+
     retry_id: str
     channel: str
     success: bool
@@ -56,6 +59,7 @@ class RetryAttemptResult:
 @dataclass
 class RetryPassResult:
     """Result of a complete retry execution pass."""
+
     executed_at: str = ""
     plans_checked: int = 0
     plans_eligible: int = 0
@@ -73,6 +77,7 @@ class RetryPassResult:
 # ---------------------------------------------------------------------------
 # Retry Executor
 # ---------------------------------------------------------------------------
+
 
 def execute_retry_pass(
     plan_store: Any,
@@ -205,6 +210,7 @@ def execute_single_plan(
     try:
         # Get sender from registry
         from app.core.notification_sender import get_sender
+
         sender = get_sender(channel)
 
         if sender is None:
@@ -226,12 +232,16 @@ def execute_single_plan(
         }
 
         # Use provided snapshot or minimal stub
-        send_snapshot = snapshot if snapshot else {
-            "overall_status": "RETRY",
-            "highest_incident": plan.get("incident", "UNKNOWN"),
-            "snapshot_version": "retry",
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-        }
+        send_snapshot = (
+            snapshot
+            if snapshot
+            else {
+                "overall_status": "RETRY",
+                "highest_incident": plan.get("incident", "UNKNOWN"),
+                "snapshot_version": "retry",
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )
 
         # Execute send
         channel_result = sender(send_snapshot, routing)

@@ -25,7 +25,6 @@ ROUTE_PATH = PROJECT_ROOT / "app" / "api" / "routes" / "operator_retry.py"
 # C33-1: 모듈 구조
 # ===========================================================================
 class TestC33ModuleStructure:
-
     def test_module_exists(self):
         assert ROUTE_PATH.exists()
 
@@ -39,6 +38,7 @@ class TestC33ModuleStructure:
 
     def test_has_router(self):
         from app.api.routes.operator_retry import router
+
         assert router is not None
 
     def test_docstring_forbids_auto(self):
@@ -50,10 +50,10 @@ class TestC33ModuleStructure:
 # C33-2: POST retry-pass
 # ===========================================================================
 class TestC33RetryPassEndpoint:
-
     @pytest.mark.asyncio
     async def test_retry_pass_returns_dict(self):
         from app.api.routes.operator_retry import operator_retry_pass
+
         result = await operator_retry_pass(max_executions=1)
         assert isinstance(result, dict)
         assert "triggered_at" in result
@@ -61,12 +61,14 @@ class TestC33RetryPassEndpoint:
     @pytest.mark.asyncio
     async def test_retry_pass_has_success_field(self):
         from app.api.routes.operator_retry import operator_retry_pass
+
         result = await operator_retry_pass()
         assert "success" in result
 
     @pytest.mark.asyncio
     async def test_retry_pass_calls_manual_entrypoint(self):
         from app.api.routes.operator_retry import operator_retry_pass
+
         with patch("app.core.notification_flow.run_manual_retry_pass") as mock:
             mock.return_value = {"plans_attempted": 0, "plans_succeeded": 0}
             result = await operator_retry_pass()
@@ -75,6 +77,7 @@ class TestC33RetryPassEndpoint:
     @pytest.mark.asyncio
     async def test_retry_pass_respects_max_executions(self):
         from app.api.routes.operator_retry import operator_retry_pass
+
         with patch("app.core.notification_flow.run_manual_retry_pass") as mock:
             mock.return_value = {"plans_attempted": 2}
             await operator_retry_pass(max_executions=2)
@@ -86,22 +89,24 @@ class TestC33RetryPassEndpoint:
 # C33-3: GET retry-status
 # ===========================================================================
 class TestC33RetryStatusEndpoint:
-
     @pytest.mark.asyncio
     async def test_retry_status_returns_dict(self):
         from app.api.routes.operator_retry import operator_retry_status
+
         result = await operator_retry_status()
         assert isinstance(result, dict)
 
     @pytest.mark.asyncio
     async def test_retry_status_has_available(self):
         from app.api.routes.operator_retry import operator_retry_status
+
         result = await operator_retry_status()
         assert "available" in result
 
     @pytest.mark.asyncio
     async def test_retry_status_shows_counts(self):
         from app.api.routes.operator_retry import operator_retry_status
+
         result = await operator_retry_status()
         if result.get("available"):
             assert "pending" in result
@@ -112,10 +117,10 @@ class TestC33RetryStatusEndpoint:
 # C33-4: fail-closed
 # ===========================================================================
 class TestC33FailClosed:
-
     @pytest.mark.asyncio
     async def test_store_unavailable_handled(self):
         from app.api.routes.operator_retry import operator_retry_pass, _get_plan_store
+
         original = getattr(_get_plan_store, "_instance", None)
         try:
             _get_plan_store._instance = None
@@ -130,6 +135,7 @@ class TestC33FailClosed:
     @pytest.mark.asyncio
     async def test_status_store_unavailable(self):
         from app.api.routes.operator_retry import operator_retry_status
+
         with patch("app.api.routes.operator_retry._get_plan_store", return_value=None):
             result = await operator_retry_status()
             assert result["available"] is False
@@ -137,8 +143,10 @@ class TestC33FailClosed:
     @pytest.mark.asyncio
     async def test_flow_error_handled(self):
         from app.api.routes.operator_retry import operator_retry_pass
-        with patch("app.core.notification_flow.run_manual_retry_pass",
-                    side_effect=RuntimeError("boom")):
+
+        with patch(
+            "app.core.notification_flow.run_manual_retry_pass", side_effect=RuntimeError("boom")
+        ):
             result = await operator_retry_pass()
             assert result["success"] is False
             assert "error" in result
@@ -148,7 +156,6 @@ class TestC33FailClosed:
 # C33-5: 자동 실행 없음
 # ===========================================================================
 class TestC33NoAutoExecution:
-
     def test_import_no_side_effect(self):
         import app.api.routes.operator_retry  # noqa: F401
         # No exception = no auto execution
@@ -168,13 +175,14 @@ class TestC33NoAutoExecution:
 # C33-6: 금지 조항
 # ===========================================================================
 class TestC33Forbidden:
-
     def test_no_forbidden_strings(self):
         content = ROUTE_PATH.read_text(encoding="utf-8")
         body = content.split('"""', 2)[-1] if '"""' in content else content
         forbidden = [
-            'chain_of_thought', 'raw_prompt', 'internal_reasoning',
-            'debug_trace',
+            "chain_of_thought",
+            "raw_prompt",
+            "internal_reasoning",
+            "debug_trace",
         ]
         for f in forbidden:
             assert f not in body, f"Forbidden string '{f}'"

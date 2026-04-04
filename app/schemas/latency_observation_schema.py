@@ -13,6 +13,7 @@ Safety:
   - No prediction: no SLA, no scoring, no threshold judgment
   - No recommendation: no action trigger, no escalation
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
@@ -20,6 +21,7 @@ from pydantic import BaseModel, Field
 
 class TierLatency(BaseModel):
     """Per-tier elapsed time observation."""
+
     tier_name: str = ""
     tier_number: int = 0
     measured: bool = False
@@ -33,6 +35,7 @@ class TierLatency(BaseModel):
 
 class LatencyDensitySignal(BaseModel):
     """Descriptive density signal for latency observation."""
+
     has_measurements: bool = False
     tiers_measured: int = 0
     slowest_tier: str = ""
@@ -42,6 +45,7 @@ class LatencyDensitySignal(BaseModel):
 
 class LatencySafety(BaseModel):
     """Safety invariant — observation layer standard (4 fields)."""
+
     read_only: bool = True
     simulation_only: bool = True
     no_action_executed: bool = True
@@ -55,9 +59,18 @@ class LatencyObservationSchema(BaseModel):
     Each tier measures elapsed seconds from proposal creation
     to receipt milestone. No end-to-end, no percentiles, no mean.
     """
-    agent_latency: TierLatency = Field(default_factory=lambda: TierLatency(tier_name="Agent", tier_number=1))
-    execution_latency: TierLatency = Field(default_factory=lambda: TierLatency(tier_name="Execution", tier_number=2))
-    submit_latency: TierLatency = Field(default_factory=lambda: TierLatency(tier_name="Submit", tier_number=3))
-    order_latency: TierLatency = Field(default_factory=lambda: TierLatency(tier_name="Orders", tier_number=4))
+
+    agent_latency: TierLatency = Field(
+        default_factory=lambda: TierLatency(tier_name="Agent", tier_number=1)
+    )
+    execution_latency: TierLatency = Field(
+        default_factory=lambda: TierLatency(tier_name="Execution", tier_number=2)
+    )
+    submit_latency: TierLatency = Field(
+        default_factory=lambda: TierLatency(tier_name="Submit", tier_number=3)
+    )
+    order_latency: TierLatency = Field(
+        default_factory=lambda: TierLatency(tier_name="Orders", tier_number=4)
+    )
     density: LatencyDensitySignal = Field(default_factory=LatencyDensitySignal)
     safety: LatencySafety = Field(default_factory=LatencySafety)

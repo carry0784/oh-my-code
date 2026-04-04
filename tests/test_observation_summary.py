@@ -14,6 +14,7 @@ Tests the observation summary service:
 
 Run: pytest tests/test_observation_summary.py -v
 """
+
 import sys
 import inspect
 from pathlib import Path
@@ -65,6 +66,7 @@ for mod_name in _STUB_MODULES:
 
 # -- Helpers ---------------------------------------------------------------- #
 
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -75,6 +77,7 @@ def _past_iso(seconds_ago: float) -> str:
 
 class _FakeLedger:
     """Minimal ledger mock."""
+
     def __init__(self, proposals: list[dict], stale_count: int = 0):
         self._data = proposals
         self._stale_count = stale_count
@@ -84,9 +87,14 @@ class _FakeLedger:
 
     def get_board(self) -> dict:
         return {
-            "total": len(self._data), "receipted_count": 0, "blocked_count": 0,
-            "failed_count": 0, "orphan_count": 0, "stale_count": self._stale_count,
-            "stale_threshold_seconds": 600.0, "guard_reason_top": [],
+            "total": len(self._data),
+            "receipted_count": 0,
+            "blocked_count": 0,
+            "failed_count": 0,
+            "orphan_count": 0,
+            "stale_count": self._stale_count,
+            "stale_threshold_seconds": 600.0,
+            "guard_reason_top": [],
         }
 
 
@@ -114,6 +122,7 @@ from app.services.cleanup_simulation_service import (
 # =========================================================================== #
 # AXIS 1: Pressure Decision Accuracy                                           #
 # =========================================================================== #
+
 
 class TestPressureDecision:
     """LOW/MODERATE/HIGH/CRITICAL boundary values."""
@@ -170,6 +179,7 @@ class TestPressureDecision:
 # AXIS 2: Stale Distribution                                                   #
 # =========================================================================== #
 
+
 class TestStaleDistribution:
     """stale_by_tier aggregation from get_board()."""
 
@@ -199,6 +209,7 @@ class TestStaleDistribution:
 # AXIS 3: Reason x Action Cross Table                                          #
 # =========================================================================== #
 
+
 class TestReasonActionMatrix:
     """Matrix structure and sum consistency."""
 
@@ -223,8 +234,16 @@ class TestReasonActionMatrix:
             total_candidates=3,
             candidates=[
                 {"reason_code": "STALE_AGENT", "action_class": "WATCH", "stale_age_seconds": 0},
-                {"reason_code": "ORPHAN_EXEC_PARENT", "action_class": "REVIEW", "stale_age_seconds": 0},
-                {"reason_code": "STALE_AND_ORPHAN", "action_class": "MANUAL_CLEANUP_CANDIDATE", "stale_age_seconds": 0},
+                {
+                    "reason_code": "ORPHAN_EXEC_PARENT",
+                    "action_class": "REVIEW",
+                    "stale_age_seconds": 0,
+                },
+                {
+                    "reason_code": "STALE_AND_ORPHAN",
+                    "action_class": "MANUAL_CLEANUP_CANDIDATE",
+                    "stale_age_seconds": 0,
+                },
             ],
         )
         matrix = _build_reason_action_matrix(report)
@@ -253,6 +272,7 @@ class TestReasonActionMatrix:
 # AXIS 4: Top Priority Selection                                               #
 # =========================================================================== #
 
+
 class TestTopPrioritySelection:
     """MANUAL first, REVIEW second, max 5."""
 
@@ -261,7 +281,11 @@ class TestTopPrioritySelection:
             total_candidates=3,
             candidates=[
                 {"action_class": "WATCH", "stale_age_seconds": 999, "proposal_id": "P1"},
-                {"action_class": "MANUAL_CLEANUP_CANDIDATE", "stale_age_seconds": 100, "proposal_id": "P2"},
+                {
+                    "action_class": "MANUAL_CLEANUP_CANDIDATE",
+                    "stale_age_seconds": 100,
+                    "proposal_id": "P2",
+                },
                 {"action_class": "REVIEW", "stale_age_seconds": 500, "proposal_id": "P3"},
             ],
         )
@@ -294,6 +318,7 @@ class TestTopPrioritySelection:
 # AXIS 5: Safety Labels Guarantee                                              #
 # =========================================================================== #
 
+
 class TestSafetyLabels:
     """read_only, simulation_only, no_action_executed always True."""
 
@@ -304,9 +329,10 @@ class TestSafetyLabels:
         assert summary.no_action_executed is True
 
     def test_safety_labels_with_data(self):
-        action = _FakeLedger([
-            {"proposal_id": "AP-s", "status": "GUARDED", "created_at": _past_iso(9999)}
-        ], stale_count=1)
+        action = _FakeLedger(
+            [{"proposal_id": "AP-s", "status": "GUARDED", "created_at": _past_iso(9999)}],
+            stale_count=1,
+        )
         summary = build_observation_summary(action_ledger=action)
         assert summary.read_only is True
         assert summary.simulation_only is True
@@ -314,6 +340,7 @@ class TestSafetyLabels:
 
     def test_source_has_no_write_methods(self):
         import app.services.observation_summary_service as mod
+
         source = inspect.getsource(mod)
         assert ".propose_and_guard(" not in source
         assert ".record_receipt(" not in source
@@ -324,11 +351,13 @@ class TestSafetyLabels:
 # AXIS 6: Dashboard Integration                                                #
 # =========================================================================== #
 
+
 class TestDashboardIntegration:
     """observation_summary in 4-Tier Board."""
 
     def test_board_schema_has_observation_summary(self):
         from app.schemas.four_tier_board_schema import FourTierBoardResponse
+
         fields = FourTierBoardResponse.model_fields
         assert "observation_summary" in fields
 
@@ -337,9 +366,14 @@ class TestDashboardIntegration:
 
         al = MagicMock()
         al.get_board.return_value = {
-            "total": 1, "receipted_count": 0, "blocked_count": 0,
-            "failed_count": 0, "orphan_count": 0, "stale_count": 1,
-            "stale_threshold_seconds": 600.0, "guard_reason_top": [],
+            "total": 1,
+            "receipted_count": 0,
+            "blocked_count": 0,
+            "failed_count": 0,
+            "orphan_count": 0,
+            "stale_count": 1,
+            "stale_threshold_seconds": 600.0,
+            "guard_reason_top": [],
         }
         al.get_proposals.return_value = [
             {"proposal_id": "AP-s", "status": "GUARDED", "created_at": _past_iso(700)}
@@ -353,6 +387,7 @@ class TestDashboardIntegration:
 
     def test_board_observation_summary_has_safety_labels(self):
         from app.services.four_tier_board_service import build_four_tier_board
+
         board = build_four_tier_board()  # all None
         safety = board.observation_summary.safety
         assert safety.read_only is True
@@ -364,6 +399,7 @@ class TestDashboardIntegration:
 # AXIS 7: Edge Cases                                                           #
 # =========================================================================== #
 
+
 class TestEdgeCases:
     """Empty, all normal, single tier, large volume."""
 
@@ -374,27 +410,35 @@ class TestEdgeCases:
         assert summary.orphan_total == 0
 
     def test_all_fresh_valid_lineage(self):
-        action = _FakeLedger([
-            {"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}
-        ])
-        execution = _FakeLedger([
-            {"proposal_id": "EP-1", "agent_proposal_id": "AP-1",
-             "status": "EXEC_RECEIPTED", "created_at": _now_iso()}
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}]
+        )
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-1",
+                    "agent_proposal_id": "AP-1",
+                    "status": "EXEC_RECEIPTED",
+                    "created_at": _now_iso(),
+                }
+            ]
+        )
         summary = build_observation_summary(action, execution)
         assert summary.cleanup_pressure == PRESSURE_LOW
         assert summary.candidate_total == 0
 
     def test_single_tier_stale(self):
-        action = _FakeLedger([
-            {"proposal_id": "AP-s", "status": "GUARDED", "created_at": _past_iso(700)}
-        ], stale_count=1)
+        action = _FakeLedger(
+            [{"proposal_id": "AP-s", "status": "GUARDED", "created_at": _past_iso(700)}],
+            stale_count=1,
+        )
         summary = build_observation_summary(action_ledger=action)
         assert summary.stale_total >= 1
         assert summary.candidate_total >= 1
 
     def test_to_dict_serializable(self):
         import json
+
         summary = build_observation_summary()
         d = summary.to_dict()
         assert isinstance(d, dict)
@@ -402,12 +446,24 @@ class TestEdgeCases:
 
     def test_orphan_total_matches_cross_tier(self):
         """orphan_total matches detect_orphans total."""
-        action = _FakeLedger([{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}])
-        execution = _FakeLedger([
-            {"proposal_id": "EP-1", "agent_proposal_id": "AP-GONE",
-             "status": "EXEC_GUARDED", "created_at": _now_iso()},
-            {"proposal_id": "EP-2", "agent_proposal_id": "AP-ALSO-GONE",
-             "status": "EXEC_GUARDED", "created_at": _now_iso()},
-        ])
+        action = _FakeLedger(
+            [{"proposal_id": "AP-1", "status": "RECEIPTED", "created_at": _now_iso()}]
+        )
+        execution = _FakeLedger(
+            [
+                {
+                    "proposal_id": "EP-1",
+                    "agent_proposal_id": "AP-GONE",
+                    "status": "EXEC_GUARDED",
+                    "created_at": _now_iso(),
+                },
+                {
+                    "proposal_id": "EP-2",
+                    "agent_proposal_id": "AP-ALSO-GONE",
+                    "status": "EXEC_GUARDED",
+                    "created_at": _now_iso(),
+                },
+            ]
+        )
         summary = build_observation_summary(action, execution)
         assert summary.orphan_total == 2

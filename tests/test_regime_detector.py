@@ -4,10 +4,19 @@ import sys
 from unittest.mock import MagicMock
 
 _STUB_MODULES = [
-    "ccxt", "ccxt.async_support", "aiohttp",
-    "celery", "redis", "sqlalchemy", "sqlalchemy.ext", "sqlalchemy.ext.asyncio",
-    "sqlalchemy.orm", "sqlalchemy.pool", "sqlalchemy.engine",
-    "app.core.database", "app.core.config",
+    "ccxt",
+    "ccxt.async_support",
+    "aiohttp",
+    "celery",
+    "redis",
+    "sqlalchemy",
+    "sqlalchemy.ext",
+    "sqlalchemy.ext.asyncio",
+    "sqlalchemy.orm",
+    "sqlalchemy.pool",
+    "sqlalchemy.engine",
+    "app.core.database",
+    "app.core.config",
 ]
 for name in _STUB_MODULES:
     if name not in sys.modules:
@@ -114,8 +123,11 @@ class TestRegimeDetectorClustering:
         on_chain = OnChainData(btc_dominance=55.0, mempool_fee_fast=70)  # fee_norm=0.7
         microstructure = MarketMicrostructure(spread_pct=5.0)
         result = self.detector.detect(
-            price, indicators, sentiment,
-            on_chain=on_chain, microstructure=microstructure,
+            price,
+            indicators,
+            sentiment,
+            on_chain=on_chain,
+            microstructure=microstructure,
         )
         assert result.regime == "high_volatility"
 
@@ -124,8 +136,12 @@ class TestRegimeDetectorClustering:
         indicators = IndicatorSet()
         result = self.detector.detect(price, indicators)
         assert result.regime in [
-            "trending_up", "trending_down", "ranging",
-            "high_volatility", "crisis", "unknown",
+            "trending_up",
+            "trending_down",
+            "ranging",
+            "high_volatility",
+            "crisis",
+            "unknown",
         ]
         assert result.method == "cluster"
 
