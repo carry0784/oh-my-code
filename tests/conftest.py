@@ -62,6 +62,7 @@ def pytest_collection_modifyitems(items):
         if item.fspath.basename in _CR048_FORWARD_TEST_FILES:
             item.add_marker(_FORWARD_SKIP)
 
+
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
 engine = create_async_engine(TEST_DATABASE_URL, echo=False)
