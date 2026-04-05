@@ -214,9 +214,7 @@ async def _main() -> int:
         await session.commit()
 
         # Verify row exists via fresh query.
-        stmt = select(ShadowWriteReceipt).where(
-            ShadowWriteReceipt.receipt_id == receipt_id
-        )
+        stmt = select(ShadowWriteReceipt).where(ShadowWriteReceipt.receipt_id == receipt_id)
         result = await session.execute(stmt)
         row = result.scalar_one_or_none()
         if row is None:
@@ -261,9 +259,9 @@ async def _main() -> int:
     # guarantees these, but we verify post-hoc).
     assert row.dry_run is True, f"dry_run must be True, got {row.dry_run}"
     assert row.executed is False, f"executed must be False, got {row.executed}"
-    assert (
-        row.business_write_count == 0
-    ), f"business_write_count must be 0, got {row.business_write_count}"
+    assert row.business_write_count == 0, (
+        f"business_write_count must be 0, got {row.business_write_count}"
+    )
     assert total_rows == 1, f"expected exactly 1 row, got {total_rows}"
 
     print("[verify] dry_run=True, executed=False, business_write_count=0 -> OK")

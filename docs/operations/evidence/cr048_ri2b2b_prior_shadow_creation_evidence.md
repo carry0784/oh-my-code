@@ -102,8 +102,8 @@ All fixture values are synthetic. No production market data was fetched.
 | Field | Value |
 |---|---|
 | Path | `scripts/cr048_create_prior_shadow_receipt.py` |
-| sha256 | `512b6f445d0a18d6044f824ac1647071dee8d2edafb1601fe4c8a50631334702` |
-| Lines | 263 |
+| sha256 | `8a6c81131b8349e204ca1e1594de1b5cce573abd9b023b60c3a424e3e50e55b2` |
+| Lines | 275 |
 | Entry point | `asyncio.run(_main())` |
 | DB target (env-overridden before app import) | `sqlite+aiosqlite:///C:/Users/Admin/K-V3/data/cr048_prior_shadow.sqlite` |
 | Schema bootstrap | `Base.metadata.create_all` (same as `tests/conftest.py:82`) |
@@ -119,14 +119,14 @@ The script deletes any pre-existing DB file at startup to guarantee a clean slat
 **This is the value A should paste into `P4.shadow_receipt_id` of the activation GO receipt DRAFT at signature time.**
 
 ```
-receipt_id: prior_ac11443245ea4dacad3a0210b05137c3
+receipt_id: prior_68d980c176d24a0c9dc6ead35307bbad
 ```
 
 Full row (from the script's structured report):
 
 | Column | Value |
 |---|---|
-| `receipt_id` | `prior_ac11443245ea4dacad3a0210b05137c3` |
+| `receipt_id` | `prior_68d980c176d24a0c9dc6ead35307bbad` |
 | `dedupe_key` | `5d3990e8d87a91a1fdea05c5d069ca32a032ce834b575e9123f90f722033019a` |
 | `symbol` | `SOL/USDT` |
 | `target_table` | `symbols` |
@@ -142,7 +142,7 @@ Full row (from the script's structured report):
 | `dry_run` | `True` ✅ forced |
 | `executed` | `False` ✅ forced |
 | `business_write_count` | `0` ✅ forced |
-| `created_at` | `2026-04-05 08:14:21` (UTC) |
+| `created_at` | `2026-04-05 08:24:04` (UTC) |
 
 ---
 
@@ -157,12 +157,12 @@ Full row (from the script's structured report):
 [inputs] pipeline verdict: PipelineVerdict.QUALIFIED
 [inputs] input_fingerprint: 16134b1bd9548d89
 [inputs] comparison      : ComparisonVerdict.MATCH
-[call]   receipt_id      : prior_ac11443245ea4dacad3a0210b05137c3
+[call]   receipt_id      : prior_68d980c176d24a0c9dc6ead35307bbad
 
 ================================================================
 CR-048 RI-2B-2b PRIOR SHADOW RECEIPT — CREATION REPORT
 ================================================================
-receipt_id           : prior_ac11443245ea4dacad3a0210b05137c3
+receipt_id           : prior_68d980c176d24a0c9dc6ead35307bbad
 dedupe_key           : 5d3990e8d87a91a1fdea05c5d069ca32a032ce834b575e9123f90f722033019a
 symbol               : SOL/USDT
 target_table         : symbols
@@ -178,7 +178,7 @@ shadow_observation_id: None
 dry_run              : True
 executed             : False
 business_write_count : 0
-created_at           : 2026-04-05 08:14:21
+created_at           : 2026-04-05 08:24:04
 total row count      : 1
 ================================================================
 [verify] dry_run=True, executed=False, business_write_count=0 -> OK
@@ -202,7 +202,7 @@ shadow_write_receipt
 1
 
 --- single row (all forced-proof columns) ---
-('prior_ac11443245ea4dacad3a0210b05137c3',
+('prior_68d980c176d24a0c9dc6ead35307bbad',
  '5d3990e8d87a91a1fdea05c5d069ca32a032ce834b575e9123f90f722033019a',
  'SOL/USDT',
  'would_write',
@@ -299,7 +299,7 @@ Files **not** touched (verified via `git status` and `git diff --name-only`):
 | B3'' (first bounded CAS write) | still BLOCKED |
 | `data/cr048_prior_shadow.sqlite` | exists locally, gitignored, contains 1 row |
 | `shadow_write_receipt` row count in prod DB | **0 — not touched** (prod DB is Postgres; this session only wrote to a local SQLite file) |
-| Prior-shadow receipt_id available for A | `prior_ac11443245ea4dacad3a0210b05137c3` |
+| Prior-shadow receipt_id available for A | `prior_68d980c176d24a0c9dc6ead35307bbad` |
 | Next state | STANDBY — awaiting A's decision to hold a signature session or supply a different `shadow_receipt_id` |
 
 ---
@@ -361,7 +361,7 @@ CR-048 RI-2B-2b Prior Shadow Receipt Creation Evidence
 Session type       : one-off integration bring-up (sibling chain)
 Created            : 2026-04-05
 Script             : scripts/cr048_create_prior_shadow_receipt.py
-Script sha256      : 512b6f445d0a18d6044f824ac1647071dee8d2edafb1601fe4c8a50631334702
+Script sha256      : 8a6c81131b8349e204ca1e1594de1b5cce573abd9b023b60c3a424e3e50e55b2
 Calls to evaluate_shadow_write() : 1
 INSERTs            : 1
 UPDATEs            : 0
@@ -369,7 +369,7 @@ DELETEs            : 0
 Business-table writes : 0
 Track A chain head : d999aed (UNCHANGED)
 Activation DRAFT   : b645980 (UNCHANGED)
-receipt_id (deliverable) : prior_ac11443245ea4dacad3a0210b05137c3
+receipt_id (deliverable) : prior_68d980c176d24a0c9dc6ead35307bbad
 dedupe_key         : 5d3990e8d87a91a1fdea05c5d069ca32a032ce834b575e9123f90f722033019a
 dry_run / executed / business_write_count : True / False / 0  (FORCED)
 Next state         : STANDBY — receipt_id available for A's signature session
