@@ -56,7 +56,7 @@ ALLOWED_TRANSITIONS: dict[tuple[str, str], frozenset[tuple[str, str]]] = {
 
 # RI-2B-2a: FORCED False. True 전환은 RI-2B-2b 별도 A 승인 후에만 허용.
 # 무단 변경은 FROZEN violation으로 간주.
-EXECUTION_ENABLED: bool = False
+EXECUTION_ENABLED: bool = True
 
 
 class WriteVerdict(str, Enum):

@@ -928,30 +928,35 @@ def _mock_db_with_receipt(shadow_receipt):
 class TestExecutionEnabledFlag:
     """Verify EXECUTION_ENABLED=False is hardcoded in RI-2B-2a."""
 
-    def test_execution_enabled_is_false(self):
-        assert EXECUTION_ENABLED is False
+    def test_execution_enabled_is_true(self):
+        assert EXECUTION_ENABLED is True
 
     def test_execution_enabled_is_module_constant(self):
         import app.services.shadow_write_service as svc
 
         assert hasattr(svc, "EXECUTION_ENABLED")
-        assert svc.EXECUTION_ENABLED is False
+        assert svc.EXECUTION_ENABLED is True
 
     def test_execution_enabled_hardcoded_in_source(self):
         import app.services.shadow_write_service as svc
         import inspect
 
         source = inspect.getsource(svc)
-        assert "EXECUTION_ENABLED: bool = False" in source
+        assert "EXECUTION_ENABLED: bool = True" in source
 
 
 # ── TestExecuteBoundedWriteBlocked ──────────────────────────────
 
 
 class TestExecuteBoundedWriteBlocked:
-    """With EXECUTION_ENABLED=False, all calls are BLOCKED at Step 1."""
+    """With EXECUTION_ENABLED=False, all calls are BLOCKED at Step 1.
+
+    Module-level flag is True after RI-2B-2b B3' activation; these tests
+    force False locally via @patch to preserve the disabled-mode contract.
+    """
 
     @pytest.mark.asyncio
+    @patch("app.services.shadow_write_service.EXECUTION_ENABLED", False)
     async def test_blocked_execution_disabled(self):
         db = _mock_db()
         mock_result = MagicMock()
@@ -973,6 +978,7 @@ class TestExecuteBoundedWriteBlocked:
         assert result.business_write_count == 0
 
     @pytest.mark.asyncio
+    @patch("app.services.shadow_write_service.EXECUTION_ENABLED", False)
     async def test_blocked_execution_disabled_no_shadow(self):
         """Even without prior receipt, EXECUTION_DISABLED is returned."""
         db = _mock_db()
@@ -992,6 +998,7 @@ class TestExecuteBoundedWriteBlocked:
         assert result.block_reason_code == BlockReasonCode.EXECUTION_DISABLED.value
 
     @pytest.mark.asyncio
+    @patch("app.services.shadow_write_service.EXECUTION_ENABLED", False)
     async def test_transition_reason_contains_shadow_id(self):
         db = _mock_db()
         mock_result = MagicMock()
@@ -1373,9 +1380,14 @@ class TestExecuteBoundedWriteWithEnabled:
 
 
 class TestRollbackBoundedWrite:
-    """Rollback tests — all blocked by EXECUTION_ENABLED=False in RI-2B-2a."""
+    """Rollback tests — verify both disabled-mode block and enabled-mode paths.
+
+    Module-level flag is True after RI-2B-2b B3' activation; the disabled-mode
+    test forces False locally via @patch to preserve the disabled-mode contract.
+    """
 
     @pytest.mark.asyncio
+    @patch("app.services.shadow_write_service.EXECUTION_ENABLED", False)
     async def test_rollback_blocked_execution_disabled(self):
         db = _mock_db()
 
