@@ -64,15 +64,9 @@ def test_with_for_update_compiles_to_for_update_on_postgres() -> None:
     `text('SELECT ... FOR UPDATE')` path is the whole point of the
     dialect-aware switch.
     """
-    stmt = (
-        select(Symbol.qualification_status)
-        .where(Symbol.symbol == "SOL/USDT")
-        .with_for_update()
-    )
+    stmt = select(Symbol.qualification_status).where(Symbol.symbol == "SOL/USDT").with_for_update()
     compiled = str(stmt.compile(dialect=postgresql.dialect()))
-    assert "FOR UPDATE" in compiled, (
-        f"Postgres dialect must emit FOR UPDATE; got: {compiled}"
-    )
+    assert "FOR UPDATE" in compiled, f"Postgres dialect must emit FOR UPDATE; got: {compiled}"
 
 
 def test_with_for_update_drops_for_update_on_sqlite() -> None:
@@ -82,15 +76,9 @@ def test_with_for_update_drops_for_update_on_sqlite() -> None:
     documented to silently drop the hint. This is the exact property
     that unblocks Path L.
     """
-    stmt = (
-        select(Symbol.qualification_status)
-        .where(Symbol.symbol == "SOL/USDT")
-        .with_for_update()
-    )
+    stmt = select(Symbol.qualification_status).where(Symbol.symbol == "SOL/USDT").with_for_update()
     compiled = str(stmt.compile(dialect=sqlite.dialect()))
-    assert "FOR UPDATE" not in compiled, (
-        f"SQLite dialect must NOT emit FOR UPDATE; got: {compiled}"
-    )
+    assert "FOR UPDATE" not in compiled, f"SQLite dialect must NOT emit FOR UPDATE; got: {compiled}"
 
 
 # ── Real aiosqlite integration tests ────────────────────────────
@@ -144,9 +132,7 @@ async def test_step6_query_executes_on_aiosqlite_without_syntax_error(
         # Exact construct emitted by shadow_write_service.execute_bounded_write
         # Step 6 after the Option A2 remediation.
         stmt = (
-            select(Symbol.qualification_status)
-            .where(Symbol.symbol == "SOL/USDT")
-            .with_for_update()
+            select(Symbol.qualification_status).where(Symbol.symbol == "SOL/USDT").with_for_update()
         )
         result = await session.execute(stmt)
         fetched = result.fetchone()
@@ -176,9 +162,7 @@ async def test_step6_query_returns_none_for_missing_symbol(
         result = await session.execute(stmt)
         fetched = result.fetchone()
 
-    assert fetched is None, (
-        f"Missing symbol must yield None; got: {fetched!r}"
-    )
+    assert fetched is None, f"Missing symbol must yield None; got: {fetched!r}"
 
 
 @pytest.mark.asyncio
@@ -208,14 +192,10 @@ async def test_step6_query_reflects_updated_qualification_status(
         await session.commit()
 
         stmt = (
-            select(Symbol.qualification_status)
-            .where(Symbol.symbol == "BTC/USDT")
-            .with_for_update()
+            select(Symbol.qualification_status).where(Symbol.symbol == "BTC/USDT").with_for_update()
         )
         result = await session.execute(stmt)
         fetched = result.fetchone()
 
     assert fetched is not None
-    assert fetched[0] == "pass", (
-        f"Step 6 query must reflect latest DB value; got: {fetched[0]!r}"
-    )
+    assert fetched[0] == "pass", f"Step 6 query must reflect latest DB value; got: {fetched[0]!r}"
