@@ -6,6 +6,30 @@ import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
+# ---------------------------------------------------------------------------
+# CR-048 RI-2B-2c Option P — eager import of app.models.asset at plugin-load
+#
+# Several test files (e.g. tests/test_advanced_runner.py and ~60 peers)
+# perform a module-level stub:
+#
+#     sys.modules["app.core.database"].Base = _fake_base   # plain type()
+#
+# If app.models.asset is first-imported AFTER any such stub, its Symbol
+# class is declared against the plain-type FakeBase instead of
+# SQLAlchemy's DeclarativeBase, permanently losing __table__ and
+# metadata. Downstream ORM compile / create_all / execute all fail.
+#
+# conftest.py is loaded by pytest's plugin manager BEFORE any test-file
+# module body executes, so importing app.models.asset here guarantees
+# the real DeclarativeBase-backed Symbol is in sys.modules first. Later
+# sys.modules stubs only replace the app.core.database.Base reference —
+# Symbol.__bases__ already captures the real DeclarativeMeta.
+#
+# Governance: CR-048 RI-2B-2c Session 2 Amendment Sheet v2 (controlling
+# spec). See docs/operations/evidence/cr048_ri2b2c_session2_amendment_v2.md
+# ---------------------------------------------------------------------------
+import app.models.asset  # noqa: F401
+
 from app.main import app
 from app.core.database import Base, get_db
 
