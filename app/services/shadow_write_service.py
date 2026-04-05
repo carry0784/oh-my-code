@@ -19,6 +19,7 @@ from sqlalchemy import select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.asset import Symbol
 from app.models.shadow_write_receipt import ShadowWriteReceipt
 from app.services.pipeline_shadow_runner import ShadowRunResult
 from app.services.screening_qualification_pipeline import PipelineVerdict
@@ -565,8 +566,13 @@ async def execute_bounded_write(
             return row
 
         # Step 6: real-time DB check (TOCTOU defense)
-        db_stmt = text("SELECT qualification_status FROM symbols WHERE symbol = :symbol FOR UPDATE")
-        db_result = await db.execute(db_stmt, {"symbol": symbol})
+        # Dialect-aware row lock:
+        #   Postgres -> emits "SELECT ... FOR UPDATE" (row-level lock)
+        #   SQLite   -> emits plain "SELECT ..."     (no-op, single-writer)
+        db_stmt = (
+            select(Symbol.qualification_status).where(Symbol.symbol == symbol).with_for_update()
+        )
+        db_result = await db.execute(db_stmt)
         db_row = db_result.fetchone()
         current_db_value = db_row[0] if db_row else None
 
