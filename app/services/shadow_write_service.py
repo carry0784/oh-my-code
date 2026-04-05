@@ -72,6 +72,7 @@ class ExecutionVerdict(str, Enum):
     EXECUTED = "executed"
     EXECUTION_FAILED = "execution_failed"
     ROLLED_BACK = "rolled_back"
+    ROLLBACK_ORPHAN = "rollback_orphan"
     BLOCKED = "blocked"
 
 
@@ -90,6 +91,30 @@ class BlockReasonCode(str, Enum):
     CAS_MISMATCH = "CAS_MISMATCH"
 
 
+class RollbackFailedError(Exception):
+    """Raised when rollback_bounded_write encounters an unrecoverable error.
+
+    Callers MUST handle this to determine if manual intervention is needed.
+    Replaces the silent `return None` contract that masked business state
+    inconsistencies (CR-048 RI-2B-2d Finding #3).
+    """
+
+    def __init__(
+        self,
+        symbol: str,
+        execution_receipt_id: str,
+        phase: str,
+        cause: Exception,
+    ):
+        self.symbol = symbol
+        self.execution_receipt_id = execution_receipt_id
+        self.phase = phase  # "business_revert" or "receipt_insert" or "unknown"
+        self.cause = cause
+        super().__init__(
+            f"Rollback failed for {symbol} (exec={execution_receipt_id}) at phase={phase}: {cause}"
+        )
+
+
 # ── Dedupe Key ───────────────────────────────────────────────────
 
 
@@ -101,8 +126,14 @@ def compute_dedupe_key(
     intended_value: str,
     input_fingerprint: str,
     dry_run: bool = True,
+    verdict: str = "",
 ) -> str:
-    """Compute SHA-256 semantic dedupe key from 7 fixed inputs."""
+    """Compute SHA-256 semantic dedupe key from 8 fixed inputs.
+
+    The 8th input (verdict) distinguishes EXECUTED vs ROLLED_BACK receipts
+    that share identical (symbol, table, field, values, fingerprint, dry_run).
+    Default "" preserves backward compatibility for RI-2B-1 dry-run callers.
+    """
     raw = "|".join(
         [
             symbol,
@@ -112,6 +143,7 @@ def compute_dedupe_key(
             intended_value,
             input_fingerprint,
             str(dry_run).lower(),
+            verdict,
         ]
     )
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
@@ -343,6 +375,7 @@ def _make_execution_receipt(
         intended_value=shadow_receipt.intended_value,
         input_fingerprint=shadow_receipt.input_fingerprint,
         dry_run=dry_run,
+        verdict=verdict.value,
     )
     return ShadowWriteReceipt(
         receipt_id=receipt_id,
@@ -926,28 +959,69 @@ async def rollback_bounded_write(
                 original,
                 actual_value,
             )
-            return None
+            raise RollbackFailedError(
+                symbol=symbol,
+                execution_receipt_id=execution_receipt_id,
+                phase="business_revert",
+                cause=RuntimeError(
+                    f"post-rollback verify failed: expected={original}, actual={actual_value}"
+                ),
+            )
 
-        # Step 8: ROLLED_BACK receipt
-        row = _make_execution_receipt(
-            receipt_id=receipt_id,
-            symbol=symbol,
-            shadow_receipt=exec_receipt,
-            verdict=ExecutionVerdict.ROLLED_BACK,
-            block_reason=None,
-            summary=f"ROLLED_BACK: {exec_receipt.intended_value} → {original}",
-            transition_reason=f"rollback_of:{execution_receipt_id}",
-            dry_run=False,
-            executed=False,
-            business_write_count=-1,
-        )
-        db.add(row)
+        # Flush CAS UPDATE to lock in business state revert before receipt INSERT.
         await db.flush()
-        return row
 
-    except Exception:
+        # Step 8: ROLLED_BACK receipt — inside SAVEPOINT so that an INSERT
+        # failure cannot undo the business state revert from Step 6.
+        nested = await db.begin_nested()
+        try:
+            row = _make_execution_receipt(
+                receipt_id=receipt_id,
+                symbol=symbol,
+                shadow_receipt=exec_receipt,
+                verdict=ExecutionVerdict.ROLLED_BACK,
+                block_reason=None,
+                summary=f"ROLLED_BACK: {exec_receipt.intended_value} → {original}",
+                transition_reason=f"rollback_of:{execution_receipt_id}",
+                dry_run=False,
+                executed=False,
+                business_write_count=-1,
+            )
+            db.add(row)
+            await nested.commit()
+            return row
+        except IntegrityError:
+            await nested.rollback()
+            logger.error(
+                "rollback_bounded_write: receipt INSERT failed (IntegrityError) "
+                "for %s, but business state WAS successfully reverted.",
+                symbol,
+            )
+            # Return in-memory-only orphan receipt (not persisted)
+            orphan = _make_execution_receipt(
+                receipt_id=receipt_id,
+                symbol=symbol,
+                shadow_receipt=exec_receipt,
+                verdict=ExecutionVerdict.ROLLBACK_ORPHAN,
+                block_reason=None,
+                summary=f"ROLLBACK_ORPHAN: business reverted but receipt not persisted",
+                transition_reason=f"rollback_of:{execution_receipt_id}",
+                dry_run=False,
+                executed=False,
+                business_write_count=-1,
+            )
+            return orphan
+
+    except RollbackFailedError:
+        raise
+    except Exception as e:
         logger.exception(
             "rollback_bounded_write failed for %s",
             symbol,
         )
-        return None
+        raise RollbackFailedError(
+            symbol=symbol,
+            execution_receipt_id=execution_receipt_id,
+            phase="unknown",
+            cause=e,
+        )

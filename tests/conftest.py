@@ -50,7 +50,6 @@ _CR048_FORWARD_TEST_FILES = frozenset(
     {
         "test_universe_runner.py",
         "test_cr048_observatory.py",
-        "test_shadow_write_receipt.py",
         "test_ops_visibility.py",
         "test_injection_gateway_service.py",
         "test_cr048_model_skeletons.py",
