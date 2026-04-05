@@ -419,31 +419,31 @@ P4:
 
 ```
 P1:
-  verdict: ⬜   # GO / BLOCK / CONDITIONAL 중 1
+  verdict: GO   # GO / BLOCK / CONDITIONAL 중 1
 ```
 
 ### 14.3 P2 — 판정일 (BLANK)
 
 ```
 P2:
-  signature_date: ⬜   # YYYY-MM-DD
+  signature_date: 2026-04-05   # YYYY-MM-DD
 ```
 
 ### 14.4 P4 — 실행 대상 (BLANK)
 
 ```
 P4:
-  symbol: ⬜
-  intended_value: ⬜            # pass 또는 fail
-  shadow_receipt_id: ⬜
-  transition: ⬜                # unchecked → <intended_value> (자동 파생, 기입 시 명시)
+  symbol: SOL/USDT
+  intended_value: pass            # pass 또는 fail
+  shadow_receipt_id: prior_68d980c176d24a0c9dc6ead35307bbad
+  transition: unchecked → pass                # unchecked → <intended_value> (자동 파생, 기입 시 명시)
 ```
 
 ### 14.5 P5 — 롤백 권한 (BLANK)
 
 ```
 P5:
-  rollback_authority: ⬜   # YES 또는 NO
+  rollback_authority: YES   # YES 또는 NO
   rollback_trigger_set: §10.1–§10.10   # 기본 10개 트리거 고정
 ```
 
