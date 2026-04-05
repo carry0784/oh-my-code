@@ -48,6 +48,7 @@ from app.services.shadow_write_service import (
     FORBIDDEN_TARGETS,
     BlockReasonCode,
     ExecutionVerdict,
+    RollbackFailedError,
     WriteVerdict,
     compute_dedupe_key,
     evaluate_shadow_write,
@@ -382,6 +383,70 @@ class TestDedupeKey:
         )
         assert len(k) == 64
         assert all(c in "0123456789abcdef" for c in k)
+
+    def test_verdict_8th_param_default_empty(self):
+        """Default verdict="" preserves backward compat — no-arg calls are stable."""
+        k1 = compute_dedupe_key(
+            "SOL/USDT", "symbols", "qualification_status", "unchecked", "pass", "fp1"
+        )
+        k2 = compute_dedupe_key(
+            "SOL/USDT",
+            "symbols",
+            "qualification_status",
+            "unchecked",
+            "pass",
+            "fp1",
+            verdict="",
+        )
+        assert k1 == k2
+
+    def test_executed_vs_rolled_back_differ(self):
+        """CR-048 RI-2B-2d Finding #1 regression: EXECUTED ≠ ROLLED_BACK dedupe."""
+        k_exec = compute_dedupe_key(
+            "SOL/USDT",
+            "symbols",
+            "qualification_status",
+            "unchecked",
+            "pass",
+            "fp1",
+            dry_run=False,
+            verdict="executed",
+        )
+        k_rb = compute_dedupe_key(
+            "SOL/USDT",
+            "symbols",
+            "qualification_status",
+            "unchecked",
+            "pass",
+            "fp1",
+            dry_run=False,
+            verdict="rolled_back",
+        )
+        assert k_exec != k_rb
+
+    def test_same_verdict_same_key(self):
+        """Same verdict produces deterministic hash."""
+        k1 = compute_dedupe_key(
+            "SOL/USDT",
+            "symbols",
+            "qualification_status",
+            "unchecked",
+            "pass",
+            "fp1",
+            dry_run=False,
+            verdict="executed",
+        )
+        k2 = compute_dedupe_key(
+            "SOL/USDT",
+            "symbols",
+            "qualification_status",
+            "unchecked",
+            "pass",
+            "fp1",
+            dry_run=False,
+            verdict="executed",
+        )
+        assert k1 == k2
 
 
 # ── TestEvaluateShadowWrite ──────────────────────────────────────
@@ -1551,6 +1616,12 @@ class TestRollbackBoundedWrite:
 
         db.execute = AsyncMock(side_effect=mock_execute)
 
+        # Mock SAVEPOINT (begin_nested)
+        nested_mock = AsyncMock()
+        nested_mock.commit = AsyncMock()
+        nested_mock.rollback = AsyncMock()
+        db.begin_nested = AsyncMock(return_value=nested_mock)
+
         result = await rollback_bounded_write(
             db,
             _uid(),
@@ -1599,6 +1670,12 @@ class TestRollbackBoundedWrite:
 
         db.execute = AsyncMock(side_effect=mock_execute)
 
+        # Mock SAVEPOINT (begin_nested)
+        nested_mock = AsyncMock()
+        nested_mock.commit = AsyncMock()
+        nested_mock.rollback = AsyncMock()
+        db.begin_nested = AsyncMock(return_value=nested_mock)
+
         result = await rollback_bounded_write(
             db,
             _uid(),
@@ -1607,6 +1684,148 @@ class TestRollbackBoundedWrite:
         )
 
         assert result.transition_reason == "rollback_of:exec-001"
+
+
+# ── TestRI2B2dRollbackRemediation ──────────────────────────────
+
+
+class TestRI2B2dRollbackRemediation:
+    """CR-048 RI-2B-2d regression tests for the 3 drill findings."""
+
+    @pytest.mark.asyncio
+    @patch("app.services.shadow_write_service.EXECUTION_ENABLED", True)
+    async def test_savepoint_receipt_failure_returns_orphan(self):
+        """Finding #2 regression: receipt INSERT failure must NOT undo business revert.
+
+        When Step 8 INSERT fails inside SAVEPOINT, the CAS UPDATE from Step 6
+        must remain intact, and the function returns ROLLBACK_ORPHAN (not None).
+        """
+        exec_receipt = _make_shadow_receipt(
+            receipt_id="exec-001",
+            verdict="executed",
+            current_value="unchecked",
+            intended_value="pass",
+        )
+        db = _mock_db()
+        call_count = {"n": 0}
+
+        async def mock_execute(stmt, params=None):
+            call_count["n"] += 1
+            m = MagicMock()
+            if call_count["n"] == 1:
+                m.scalar_one_or_none.return_value = exec_receipt
+                return m
+            if call_count["n"] == 2:
+                scalars_mock = MagicMock()
+                scalars_mock.all.return_value = []
+                m.scalars.return_value = scalars_mock
+                return m
+            if call_count["n"] == 3:
+                m.fetchone.return_value = ("pass",)
+                return m
+            if call_count["n"] == 4:
+                m.rowcount = 1
+                return m
+            if call_count["n"] == 5:
+                m.fetchone.return_value = ("unchecked",)
+                return m
+            return m
+
+        db.execute = AsyncMock(side_effect=mock_execute)
+
+        # SAVEPOINT commit raises IntegrityError (simulating dedupe collision)
+        nested_mock = AsyncMock()
+        nested_mock.commit = AsyncMock(side_effect=IntegrityError("dedupe", {}, Exception()))
+        nested_mock.rollback = AsyncMock()
+        db.begin_nested = AsyncMock(return_value=nested_mock)
+
+        result = await rollback_bounded_write(
+            db,
+            _uid(),
+            "exec-001",
+            "SOL/USDT",
+        )
+
+        # Business revert happened (flush was called before SAVEPOINT)
+        assert db.flush.call_count >= 1
+        # Returns ROLLBACK_ORPHAN, not None
+        assert result is not None
+        assert result.verdict == ExecutionVerdict.ROLLBACK_ORPHAN.value
+        assert result.business_write_count == -1
+
+    @pytest.mark.asyncio
+    @patch("app.services.shadow_write_service.EXECUTION_ENABLED", True)
+    async def test_rollback_orphan_not_persisted(self):
+        """ROLLBACK_ORPHAN receipt must not be db.add()-ed."""
+        exec_receipt = _make_shadow_receipt(
+            receipt_id="exec-001",
+            verdict="executed",
+            current_value="unchecked",
+            intended_value="pass",
+        )
+        db = _mock_db()
+        call_count = {"n": 0}
+
+        async def mock_execute(stmt, params=None):
+            call_count["n"] += 1
+            m = MagicMock()
+            if call_count["n"] == 1:
+                m.scalar_one_or_none.return_value = exec_receipt
+                return m
+            if call_count["n"] == 2:
+                scalars_mock = MagicMock()
+                scalars_mock.all.return_value = []
+                m.scalars.return_value = scalars_mock
+                return m
+            if call_count["n"] == 3:
+                m.fetchone.return_value = ("pass",)
+                return m
+            if call_count["n"] == 4:
+                m.rowcount = 1
+                return m
+            if call_count["n"] == 5:
+                m.fetchone.return_value = ("unchecked",)
+                return m
+            return m
+
+        db.execute = AsyncMock(side_effect=mock_execute)
+
+        nested_mock = AsyncMock()
+        nested_mock.commit = AsyncMock(side_effect=IntegrityError("dedupe", {}, Exception()))
+        nested_mock.rollback = AsyncMock()
+        db.begin_nested = AsyncMock(return_value=nested_mock)
+
+        result = await rollback_bounded_write(
+            db,
+            _uid(),
+            "exec-001",
+            "SOL/USDT",
+        )
+
+        # The orphan receipt is built in-memory only — db.add is called once
+        # (for the Step 8 attempt inside SAVEPOINT) but SAVEPOINT was rolled back.
+        # The orphan returned is NOT added again.
+        assert result.verdict == ExecutionVerdict.ROLLBACK_ORPHAN.value
+        assert nested_mock.rollback.call_count == 1
+
+    def test_rollback_failed_error_attributes(self):
+        """RollbackFailedError carries diagnostic fields."""
+        err = RollbackFailedError(
+            symbol="SOL/USDT",
+            execution_receipt_id="exec-001",
+            phase="business_revert",
+            cause=RuntimeError("test"),
+        )
+        assert err.symbol == "SOL/USDT"
+        assert err.execution_receipt_id == "exec-001"
+        assert err.phase == "business_revert"
+        assert isinstance(err.cause, RuntimeError)
+        assert "SOL/USDT" in str(err)
+
+    def test_execution_verdict_has_rollback_orphan(self):
+        """ROLLBACK_ORPHAN is a valid ExecutionVerdict member."""
+        assert hasattr(ExecutionVerdict, "ROLLBACK_ORPHAN")
+        assert ExecutionVerdict.ROLLBACK_ORPHAN.value == "rollback_orphan"
 
 
 # ── TestRI2B2aSealedProtection ──────────────────────────────────
@@ -1657,7 +1876,11 @@ class TestRI2B2aSealedProtection:
 
 
 class TestExecutionFailureIsolation:
-    """Verify exceptions do not propagate from execute/rollback."""
+    """Verify exception behavior for execute/rollback.
+
+    execute_bounded_write: returns None on failure (unchanged).
+    rollback_bounded_write: raises RollbackFailedError on failure (RI-2B-2d).
+    """
 
     @pytest.mark.asyncio
     async def test_execute_exception_returns_none(self):
@@ -1674,19 +1897,21 @@ class TestExecutionFailureIsolation:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_rollback_exception_returns_none(self):
+    async def test_rollback_exception_raises_rollback_failed_error(self):
         db = _mock_db()
         db.execute = AsyncMock(side_effect=RuntimeError("DB exploded"))
         db.add = MagicMock(side_effect=RuntimeError("add exploded"))
 
-        result = await rollback_bounded_write(
-            db,
-            _uid(),
-            "exec-001",
-            "SOL/USDT",
-        )
+        with pytest.raises(RollbackFailedError) as exc_info:
+            await rollback_bounded_write(
+                db,
+                _uid(),
+                "exec-001",
+                "SOL/USDT",
+            )
 
-        assert result is None
+        assert exc_info.value.symbol == "SOL/USDT"
+        assert exc_info.value.phase == "unknown"
 
 
 # ── TestForbiddenTargetExecution ────────────────────────────────
