@@ -368,13 +368,28 @@ class TestPerSymbolIsolation:
     """Verify per-symbol failure does NOT block next symbol."""
 
     @pytest.mark.asyncio
-    async def test_batch_first_fails_second_succeeds(self):
+    @patch("app.services.shadow_pipeline_orchestrator.evaluate_shadow_write")
+    @patch("app.services.shadow_pipeline_orchestrator.record_shadow_observation")
+    @patch("app.services.shadow_pipeline_orchestrator.fetch_existing_for_comparison")
+    @patch("app.services.shadow_pipeline_orchestrator.compare_shadow_to_existing")
+    @patch("app.services.shadow_pipeline_orchestrator.run_shadow_pipeline")
+    async def test_batch_first_fails_second_succeeds(
+        self,
+        mock_run,
+        mock_compare,
+        mock_fetch_existing,
+        mock_record_obs,
+        mock_eval_write,
+    ):
         """First symbol errors, second symbol proceeds independently."""
-        call_count = 0
+        shadow = _make_shadow_result()
+        mock_run.return_value = shadow
+        mock_compare.return_value = shadow
+        mock_fetch_existing.return_value = (MagicMock(), MagicMock())
+        mock_record_obs.return_value = MagicMock(id=1)
+        mock_eval_write.return_value = _make_mock_receipt(verdict="would_write")
 
         async def _mock_get_market_data(_db: Any, symbol: str, _now: Any = None):
-            nonlocal call_count
-            call_count += 1
             if symbol == "FAIL/USDT":
                 raise RuntimeError("simulated failure")
             return _make_market(symbol=symbol)
@@ -426,8 +441,27 @@ class TestADXIndependence:
     """Verify orchestrator works when adx_14 persistence (PR #59) is NOT merged."""
 
     @pytest.mark.asyncio
-    async def test_adx_none_does_not_crash(self):
+    @patch("app.services.shadow_pipeline_orchestrator.evaluate_shadow_write")
+    @patch("app.services.shadow_pipeline_orchestrator.record_shadow_observation")
+    @patch("app.services.shadow_pipeline_orchestrator.fetch_existing_for_comparison")
+    @patch("app.services.shadow_pipeline_orchestrator.compare_shadow_to_existing")
+    @patch("app.services.shadow_pipeline_orchestrator.run_shadow_pipeline")
+    async def test_adx_none_does_not_crash(
+        self,
+        mock_run,
+        mock_compare,
+        mock_fetch_existing,
+        mock_record_obs,
+        mock_eval_write,
+    ):
         """adx=None in market data → quality gate proceeds, no crash."""
+        shadow = _make_shadow_result()
+        mock_run.return_value = shadow
+        mock_compare.return_value = shadow
+        mock_fetch_existing.return_value = (MagicMock(), MagicMock())
+        mock_record_obs.return_value = MagicMock(id=1)
+        mock_eval_write.return_value = _make_mock_receipt(verdict="would_write")
+
         adapter = AsyncMock()
         adapter.get_market_data = AsyncMock(return_value=_make_market(adx=None))
         stub = MagicMock()
@@ -436,13 +470,11 @@ class TestADXIndependence:
         orch = ShadowPipelineOrchestrator(market_adapter=adapter, backtest_stub=stub)
         result = await orch.run_single(AsyncMock(), "SOL/USDT")
 
-        # Should NOT be SKIP (quality is still HIGH)
-        # Might be ERROR_INTERNAL due to downstream pipeline handling adx=None
-        # but orchestrator itself must not crash
+        # adx=None passes quality gate (quality is still HIGH)
+        # Pipeline executes normally with mocked downstream
         assert result.outcome in (
             OrchestratorOutcome.WOULD_WRITE,
             OrchestratorOutcome.NOOP,
-            OrchestratorOutcome.ERROR_INTERNAL,
         )
 
     def test_market_snapshot_accepts_none_adx(self):
