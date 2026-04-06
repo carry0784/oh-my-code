@@ -18,6 +18,7 @@ class IndicatorSet(BaseModel):
     bb_middle: float | None = None
     bb_lower: float | None = None
     atr_14: float | None = None
+    adx_14: float | None = None
     obv: float | None = None
     sma_20: float | None = None
     sma_50: float | None = None

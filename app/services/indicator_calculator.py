@@ -46,6 +46,10 @@ class IndicatorCalculator:
         if len(closes) >= 15:
             result.atr_14 = self._atr(highs, lows, closes, 14)
 
+        # ADX(14)
+        if len(closes) >= 28:
+            result.adx_14 = self._adx(highs, lows, closes, 14)
+
         # OBV
         if len(closes) >= 2:
             result.obv = self._obv(closes, volumes)
@@ -139,6 +143,70 @@ class IndicatorCalculator:
         for i in range(period, len(tr)):
             atr = (atr * (period - 1) + float(tr[i])) / period
         return atr
+
+    @staticmethod
+    def _adx(highs: np.ndarray, lows: np.ndarray, closes: np.ndarray, period: int) -> float:
+        # True Range
+        tr = np.maximum(
+            highs[1:] - lows[1:],
+            np.maximum(
+                np.abs(highs[1:] - closes[:-1]),
+                np.abs(lows[1:] - closes[:-1]),
+            ),
+        )
+        # Directional Movement
+        up_move = highs[1:] - highs[:-1]
+        down_move = lows[:-1] - lows[1:]
+        plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0.0)
+        minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0.0)
+
+        # Wilder's smoothing: seed with simple mean of first `period` values
+        atr_s = float(np.sum(tr[:period]))
+        plus_dm_s = float(np.sum(plus_dm[:period]))
+        minus_dm_s = float(np.sum(minus_dm[:period]))
+
+        for i in range(period, len(tr)):
+            atr_s = atr_s - atr_s / period + float(tr[i])
+            plus_dm_s = plus_dm_s - plus_dm_s / period + float(plus_dm[i])
+            minus_dm_s = minus_dm_s - minus_dm_s / period + float(minus_dm[i])
+
+        if atr_s == 0:
+            return 0.0
+        plus_di = 100.0 * plus_dm_s / atr_s
+        minus_di = 100.0 * minus_dm_s / atr_s
+
+        # Build DX series for second Wilder smoothing pass
+        dx_values: list[float] = []
+        atr_s2 = float(np.sum(tr[:period]))
+        plus_dm_s2 = float(np.sum(plus_dm[:period]))
+        minus_dm_s2 = float(np.sum(minus_dm[:period]))
+
+        if atr_s2 > 0:
+            p_di = 100.0 * plus_dm_s2 / atr_s2
+            m_di = 100.0 * minus_dm_s2 / atr_s2
+            denom = p_di + m_di
+            dx_values.append(100.0 * abs(p_di - m_di) / denom if denom > 0 else 0.0)
+
+        for i in range(period, len(tr)):
+            atr_s2 = atr_s2 - atr_s2 / period + float(tr[i])
+            plus_dm_s2 = plus_dm_s2 - plus_dm_s2 / period + float(plus_dm[i])
+            minus_dm_s2 = minus_dm_s2 - minus_dm_s2 / period + float(minus_dm[i])
+            if atr_s2 > 0:
+                p_di = 100.0 * plus_dm_s2 / atr_s2
+                m_di = 100.0 * minus_dm_s2 / atr_s2
+                denom = p_di + m_di
+                dx_values.append(100.0 * abs(p_di - m_di) / denom if denom > 0 else 0.0)
+            else:
+                dx_values.append(0.0)
+
+        if len(dx_values) < period:
+            return 0.0
+
+        # Wilder's smoothing of DX → ADX
+        adx = float(np.mean(dx_values[:period]))
+        for i in range(period, len(dx_values)):
+            adx = (adx * (period - 1) + dx_values[i]) / period
+        return adx
 
     @staticmethod
     def _obv(closes: np.ndarray, volumes: np.ndarray) -> float:
