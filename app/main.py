@@ -99,6 +99,25 @@ async def lifespan(app: FastAPI):
             "Set GOVERNANCE_ENABLED=true or remove the override."
         )
 
+    # BL-OPS-RESTART01: exchange mode initialization (read from ops_state.json)
+    _ops_state = {}
+    _ops_state_path = Path(__file__).resolve().parent.parent / "ops_state.json"
+    try:
+        if _ops_state_path.exists():
+            import json
+
+            _ops_state = json.loads(_ops_state_path.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    _exchange_mode = _ops_state.get("baseline_values", {}).get("exchange_mode", "DATA_ONLY")
+    app.state.operational_mode = _ops_state.get("operational_mode", "UNKNOWN")
+    app.state.exchange_mode = _exchange_mode
+    logger.info(
+        "exchange_mode_initialized",
+        exchange_mode=_exchange_mode,
+        operational_mode=app.state.operational_mode,
+    )
+
     # Create governance gate singleton
     gate = _create_governance_gate()
     app.state.governance_gate = gate
@@ -134,6 +153,14 @@ async def lifespan(app: FastAPI):
     from app.core.notification_flow_log import FlowLog
 
     app.state.flow_log = FlowLog()
+
+    # BL-OPS-RESTART01: governance state loaded from ops_state.json
+    logger.info(
+        "governance_state_loaded",
+        operational_mode=app.state.operational_mode,
+        sealed_crs=len(_ops_state.get("sealed_crs", [])),
+        rules=len(_ops_state.get("rules", [])),
+    )
 
     if gate is not None:
         logger.info("governance_gate_initialized", governance_enabled=True)
@@ -414,10 +441,30 @@ async def degraded_status():
     else:
         overall_status = "healthy"
 
+    # BL-OPS-RESTART01: include operational_mode and exchange_mode
+    _op_mode = getattr(app.state, "operational_mode", None)
+    _ex_mode = getattr(app.state, "exchange_mode", None)
+    if _op_mode is None or _ex_mode is None:
+        # Fallback: read from ops_state.json (e.g. lifespan not yet executed)
+        import json as _json
+
+        _ops_path = Path(__file__).resolve().parent.parent / "ops_state.json"
+        try:
+            _ops = _json.loads(_ops_path.read_text(encoding="utf-8"))
+            if _op_mode is None:
+                _op_mode = _ops.get("operational_mode", "UNKNOWN")
+            if _ex_mode is None:
+                _ex_mode = _ops.get("baseline_values", {}).get("exchange_mode", "DATA_ONLY")
+        except Exception:
+            _op_mode = _op_mode or "UNKNOWN"
+            _ex_mode = _ex_mode or "DATA_ONLY"
+
     return JSONResponse(
         status_code=200,
         content={
             "overall_status": overall_status,
+            "operational_mode": _op_mode,
+            "exchange_mode": _ex_mode,
             "liveness": liveness,
             "readiness": readiness,
             "startup": startup,
