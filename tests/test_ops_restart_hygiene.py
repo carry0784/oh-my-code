@@ -31,10 +31,10 @@ class TestBeatScheduleContract:
         task_names = {v["task"] for v in celery_app.conf.beat_schedule.values()}
         assert "workers.tasks.market_tasks.sync_all_positions" not in task_names
 
-    def test_sol_paper_trading_not_in_schedule(self):
-        """sol_paper_trading must NOT be in active beat_schedule (CR-046 HOLD)."""
+    def test_sol_paper_trading_in_schedule(self):
+        """sol_paper_trading must be in active beat_schedule (post beat-registration GO)."""
         task_names = {v["task"] for v in celery_app.conf.beat_schedule.values()}
-        assert "workers.tasks.sol_paper_tasks.run_sol_paper_bar" not in task_names
+        assert "workers.tasks.sol_paper_tasks.run_sol_paper_bar" in task_names
 
     def test_active_schedule_has_expected_keys(self):
         """Active beat_schedule must contain core data collection tasks."""
@@ -45,6 +45,7 @@ class TestBeatScheduleContract:
             "collect-market-state-every-5m",
             "collect-sol-market-state-every-5m",
             "collect-sentiment-hourly",
+            "sol-paper-trading-hourly",
         }
         assert expected_active.issubset(keys), f"Missing keys: {expected_active - keys}"
 
@@ -86,9 +87,9 @@ class TestStartupFingerprint:
 
         schedule_count = len(celery_app.conf.beat_schedule)
 
-        assert active == 12
-        assert disabled == 3
-        assert schedule_count == 12  # matches active count
+        assert active == 13
+        assert disabled == 2
+        assert schedule_count == 13  # matches active count
 
 
 # ── Hourly check exchange_mode items ───────────────────────────────
@@ -117,14 +118,14 @@ class TestHourlyCheckExchangeMode:
         assert mode_item.grade.value == "OK"
 
     def test_hourly_check_disabled_tasks_observation(self):
-        """disabled_beat_tasks hourly check must observe 3."""
+        """disabled_beat_tasks hourly check must observe 2."""
         from app.core.constitution_check_runner import run_hourly_check
 
         result = run_hourly_check()
 
         item = next((i for i in result.items if i.name == "disabled_beat_tasks"), None)
         assert item is not None
-        assert item.observed == "3"
+        assert item.observed == "2"
         assert item.grade.value == "OK"
 
     def test_hourly_check_blocked_api_observation(self):

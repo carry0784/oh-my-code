@@ -187,7 +187,7 @@ class TestDrillOpsStateFile:
             data = json.load(f)
         bv = data["baseline_values"]
         assert bv["exchange_mode"] == "DATA_ONLY"
-        assert bv["disabled_beat_tasks"] == 3
+        assert bv["disabled_beat_tasks"] == 2
         assert bv["blocked_api_count"] == 5
 
     def test_drill_ops_state_rules(self):

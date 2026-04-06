@@ -215,7 +215,7 @@ async def test_governance_state_baseline_values(client):
 
     bv = data.get("baseline_values", {})
     assert bv.get("exchange_mode") == "DATA_ONLY"
-    assert bv.get("disabled_beat_tasks") == 3
+    assert bv.get("disabled_beat_tasks") == 2
     assert bv.get("blocked_api_count") == 5
 
 
@@ -290,7 +290,7 @@ async def test_baseline_check_expected_values(client):
     assert checks["operational_mode"]["expected"] in ("BASELINE_HOLD", "GUARDED_RELEASE")
     assert checks["exchange_mode"]["expected"] == "DATA_ONLY"
     assert checks["blocked_api_count"]["expected"] == 5
-    assert checks["disabled_beat_tasks"]["expected"] == 3
+    assert checks["disabled_beat_tasks"]["expected"] == 2
 
 
 # ── /api/v1/ops/change-gate (변경 재진입 Gate) ─────────────────────────

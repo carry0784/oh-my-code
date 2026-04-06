@@ -537,30 +537,52 @@ class TestAppendOnlyWriteProof:
 # ===========================================================================
 
 
-class TestBeatNotRegistered:
-    """Sol paper task must NOT be in beat schedule (5a-B scope = code only)."""
+class TestBeatRegistered:
+    """Sol paper task IS in beat schedule (post beat-registration GO)."""
 
-    def test_sol_paper_not_in_beat(self):
-        """sol_paper_tasks must NOT appear in active beat schedule."""
+    def test_sol_paper_in_beat(self):
+        """sol_paper_tasks must appear in active beat schedule."""
         from workers.celery_app import celery_app
 
         schedule = celery_app.conf.beat_schedule
         sol_entries = [k for k, v in schedule.items() if "sol_paper" in v.get("task", "")]
-        assert sol_entries == [], (
-            f"sol_paper_tasks found in beat schedule: {sol_entries}. "
-            "5a-B scope is implementation only, not activation."
-        )
+        assert len(sol_entries) == 1, f"Expected exactly 1 SOL paper beat entry, got {sol_entries}"
 
-    def test_sol_paper_not_in_include_list(self):
-        """sol_paper_tasks must NOT be in celery include list."""
+    def test_sol_paper_in_include_list(self):
+        """sol_paper_tasks must be in celery include list."""
         from workers.celery_app import celery_app
 
         include = celery_app.conf.include or []
         sol_includes = [e for e in include if "sol_paper" in e]
-        assert sol_includes == [], (
-            f"sol_paper_tasks in include list: {sol_includes}. "
-            "Beat registration is separate activation scope."
-        )
+        assert len(sol_includes) == 1, f"Expected SOL paper in include, got {sol_includes}"
+
+    def test_sol_paper_schedule_is_1h(self):
+        """SOL paper beat schedule must be 3600s (1H) to match strategy timeframe."""
+        from workers.celery_app import celery_app
+
+        schedule = celery_app.conf.beat_schedule
+        sol_entry = next((v for v in schedule.values() if "sol_paper" in v.get("task", "")), None)
+        assert sol_entry is not None
+        assert sol_entry["schedule"] == 3600.0
+
+    def test_sol_paper_kwargs_correct(self):
+        """SOL paper beat kwargs must specify SOL/USDT and binance."""
+        from workers.celery_app import celery_app
+
+        schedule = celery_app.conf.beat_schedule
+        sol_entry = next((v for v in schedule.values() if "sol_paper" in v.get("task", "")), None)
+        assert sol_entry is not None
+        kwargs = sol_entry.get("kwargs", {})
+        assert kwargs.get("symbol") == "SOL/USDT"
+        assert kwargs.get("exchange_name") == "binance"
+
+    def test_btc_paper_still_not_in_beat(self):
+        """BTC paper must remain unregistered (separate GO required)."""
+        from workers.celery_app import celery_app
+
+        schedule = celery_app.conf.beat_schedule
+        btc_entries = [k for k, v in schedule.items() if "btc_paper" in v.get("task", "")]
+        assert btc_entries == [], f"BTC paper found in beat: {btc_entries}"
 
 
 # ===========================================================================

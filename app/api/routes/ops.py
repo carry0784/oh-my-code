@@ -153,10 +153,10 @@ _BEAT_TASKS = [
     {
         "task": "workers.tasks.sol_paper_tasks.run_sol_paper_bar",
         "schedule_label": "sol-paper-trading-hourly",
-        "status": "DISABLED",
-        "reason_code": "CR046_STAGE_B_HOLD",
+        "status": "ACTIVE",
+        "reason_code": None,
         "cr_ref": "CR-046",
-        "requires_mode": "PAPER",
+        "requires_mode": "PAPER",  # dry_run=True hardcoded, observation only
     },
 ]
 
@@ -394,7 +394,7 @@ async def baseline_drift_check():
     )
 
     # ── Check 4: disabled_beat_tasks ──
-    expected_disabled = baseline.get("disabled_beat_tasks", 3)
+    expected_disabled = baseline.get("disabled_beat_tasks", 2)
     actual_disabled = sum(1 for t in _BEAT_TASKS if t["status"] == "DISABLED")
     match_disabled = actual_disabled == expected_disabled
     checks.append(
