@@ -9,3 +9,6 @@ router.include_router(signals.router, prefix="/signals", tags=["signals"])
 router.include_router(positions.router, prefix="/positions", tags=["positions"])
 router.include_router(agents.router, prefix="/agents", tags=["agents"])
 router.include_router(market_state.router, prefix="/market-state", tags=["market-state"])
+
+# ops router deferred: ops.py depends on ExchangeMode (not yet implemented)
+# Will be registered when CR-049 Phase 3 ExchangeMode enum is available

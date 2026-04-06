@@ -55,9 +55,7 @@ async def fresh_client():
         yield c
 
 
-@pytest.mark.skip(
-    reason="endpoint response schema not yet implemented — planned for restart-drill feature PR"
-)
+@pytest.mark.skip(reason="ops router blocked by ExchangeMode dependency (CR-049 Phase 3)")
 @pytest.mark.anyio
 async def test_drill_baseline_check_after_restart(fresh_client):
     """After restart, /baseline-check must return HOLD with 6/6 pass."""
@@ -71,9 +69,6 @@ async def test_drill_baseline_check_after_restart(fresh_client):
     assert data["summary"]["hard_drift_count"] == 0
 
 
-@pytest.mark.skip(
-    reason="endpoint response schema not yet implemented — planned for restart-drill feature PR"
-)
 @pytest.mark.anyio
 async def test_drill_status_operational_mode_after_restart(fresh_client):
     """After restart, /status must show current governed mode from ops_state.json."""
@@ -85,9 +80,7 @@ async def test_drill_status_operational_mode_after_restart(fresh_client):
     assert data["exchange_mode"] == "DATA_ONLY"
 
 
-@pytest.mark.skip(
-    reason="endpoint response schema not yet implemented — planned for restart-drill feature PR"
-)
+@pytest.mark.skip(reason="ops router blocked by ExchangeMode dependency (CR-049 Phase 3)")
 @pytest.mark.anyio
 async def test_drill_governance_state_after_restart(fresh_client):
     """After restart, /governance-state must load from ops_state.json."""
@@ -154,9 +147,6 @@ class TestDrillBeatScheduleRecovery:
 class TestDrillCeleryFingerprint:
     """Celery startup fingerprint가 operational_mode를 포함하는지 확인."""
 
-    @pytest.mark.skip(
-        reason="_startup_fingerprint not yet implemented — planned for restart-drill feature PR"
-    )
     def test_drill_fingerprint_has_operational_mode(self):
         import inspect
         from workers.celery_app import _startup_fingerprint
@@ -164,9 +154,6 @@ class TestDrillCeleryFingerprint:
         src = inspect.getsource(_startup_fingerprint)
         assert "operational_mode" in src
 
-    @pytest.mark.skip(
-        reason="_startup_fingerprint not yet implemented — planned for restart-drill feature PR"
-    )
     def test_drill_fingerprint_has_exchange_mode(self):
         import inspect
         from workers.celery_app import _startup_fingerprint
@@ -174,9 +161,6 @@ class TestDrillCeleryFingerprint:
         src = inspect.getsource(_startup_fingerprint)
         assert "exchange_mode" in src
 
-    @pytest.mark.skip(
-        reason="_on_beat_init not yet implemented — planned for restart-drill feature PR"
-    )
     def test_drill_beat_init_has_stale_guard(self):
         import inspect
         from workers.celery_app import _on_beat_init
@@ -234,9 +218,6 @@ class TestDrillOpsStateFile:
 class TestDrillStartupLogSequence:
     """FastAPI lifespan 이벤트 순서가 올바른지 확인."""
 
-    @pytest.mark.skip(
-        reason="lifespan events not yet implemented — planned for restart-drill feature PR"
-    )
     def test_drill_lifespan_event_order(self):
         """governance_state_loaded must come after exchange_mode_initialized."""
         import inspect
@@ -250,9 +231,6 @@ class TestDrillStartupLogSequence:
             "governance_state_loaded must come after exchange_mode_initialized"
         )
 
-    @pytest.mark.skip(
-        reason="lifespan events not yet implemented — planned for restart-drill feature PR"
-    )
     def test_drill_lifespan_has_all_required_events(self):
         """Lifespan must emit all required startup events."""
         import inspect

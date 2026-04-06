@@ -1,6 +1,12 @@
+import json
+import logging
+import os
+
 from celery import Celery
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 celery_app = Celery(
     "trading_workers",
@@ -92,3 +98,69 @@ celery_app.conf.beat_schedule = {
         "kwargs": {"symbol": "SOL/USDT", "exchange_name": "binance"},
     },
 }
+
+# ---------------------------------------------------------------------------
+# BL-OPS-RESTART01: Startup fingerprint & beat init guard
+# ---------------------------------------------------------------------------
+
+_OPS_STATE_PATH = os.path.join(os.path.dirname(__file__), "..", "ops_state.json")
+
+
+def _load_ops_state() -> dict:
+    """Load ops_state.json (read-only). Returns empty dict on failure."""
+    try:
+        with open(_OPS_STATE_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _startup_fingerprint(caller: str) -> None:
+    """
+    Log operational_mode, exchange_mode, and schedule counts at startup.
+    Called by worker/beat init and tests. Never raises.
+    """
+    try:
+        state = _load_ops_state()
+        operational_mode = state.get("operational_mode", "UNKNOWN")
+        exchange_mode = state.get("baseline_values", {}).get("exchange_mode", "UNKNOWN")
+        schedule = celery_app.conf.beat_schedule or {}
+        active_count = len(schedule)
+
+        logger.info(
+            "startup_fingerprint",
+            extra={
+                "caller": caller,
+                "operational_mode": operational_mode,
+                "exchange_mode": exchange_mode,
+                "active_schedule_count": active_count,
+            },
+        )
+    except Exception as exc:
+        logger.warning("startup_fingerprint_failed", extra={"error": str(exc)})
+
+
+def _on_beat_init(**kwargs) -> None:
+    """
+    Beat init guard: detect stale beat entries not defined in code.
+    Compares effective schedule keys against code-defined keys.
+    Never raises.
+    """
+    try:
+        effective_keys = set((celery_app.conf.beat_schedule or {}).keys())
+        # Code-defined keys are the ones in this module's beat_schedule dict
+        code_defined_keys = set(celery_app.conf.beat_schedule.keys())
+
+        stale = effective_keys - code_defined_keys
+        if stale:
+            logger.warning(
+                "stale_beat_entry_detected",
+                extra={"stale_keys": sorted(stale)},
+            )
+        else:
+            logger.info(
+                "beat_init_clean",
+                extra={"schedule_count": len(effective_keys)},
+            )
+    except Exception as exc:
+        logger.warning("beat_init_guard_failed", extra={"error": str(exc)})
