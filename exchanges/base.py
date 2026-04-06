@@ -1,7 +1,16 @@
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any
 
 import aiohttp
+
+
+class ExchangeMode(str, Enum):
+    """CR-049 Phase 3: Exchange operation mode contract."""
+
+    DATA_ONLY = "DATA_ONLY"  # Public market data only, private/write blocked
+    PAPER = "PAPER"  # Public + private read + simulated execution
+    LIVE = "LIVE"  # Full access, requires A approval
 
 
 class BaseExchange(ABC):

@@ -222,16 +222,12 @@ class TestBeatSchedule:
         from workers.celery_app import celery_app
 
         schedule = celery_app.conf.beat_schedule
-        # Original 4 entries must still exist
-        assert "sync-positions-every-minute" in schedule
-        assert "check-order-status-every-30s" in schedule
+        # Core entries must still exist (private-API tasks removed per L3 restructure)
         assert "expire-old-signals" in schedule
         assert "record-asset-snapshot-every-5m" in schedule
 
-    def test_total_beat_entries_is_6(self):
+    def test_total_beat_entries(self):
         from workers.celery_app import celery_app
 
         schedule = celery_app.conf.beat_schedule
-        assert (
-            len(schedule) == 12
-        )  # 4 original + 2 ops + 2 G-MON + 2 CR-038 data + 1 CR-048 shadow + 1 SOL paper
+        assert len(schedule) == 13  # post-L3 restructure: 13 active entries

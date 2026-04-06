@@ -79,6 +79,7 @@ class Settings(BaseSettings):
 
     # Trading
     default_exchange: str = "binance"
+    exchange_mode: str = "DATA_ONLY"  # CR-049: DATA_ONLY | PAPER | LIVE
     max_position_size_usd: float = 1000.0
     risk_limit_percent: float = 2.0
 

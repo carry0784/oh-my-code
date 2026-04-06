@@ -69,35 +69,20 @@ class TestActiveBeatCountDelta:
     """Verify beat count reflects all registered entries."""
 
     def test_total_beat_count(self):
-        """Active beat schedule must have exactly 12 entries (10 pre-P3-B + 1 shadow + 1 SOL paper)."""
+        """Active beat schedule must have exactly 13 entries after L3 restructure."""
         from workers.celery_app import celery_app
 
         schedule = celery_app.conf.beat_schedule or {}
-        assert len(schedule) == 12, (
-            f"Expected 12 beat entries (10 pre-P3-B + 1 shadow + 1 SOL paper), got {len(schedule)}"
+        assert len(schedule) == 13, (
+            f"Expected 13 beat entries after L3 restructure, got {len(schedule)}"
         )
 
-    def test_shadow_and_sol_paper_are_new_entries(self):
-        """shadow-observation-5m and sol-paper-trading-hourly are the post-P3-B additions."""
+    def test_shadow_observation_is_active(self):
+        """shadow-observation-5m must be present in beat_schedule after L3 restructure."""
         from workers.celery_app import celery_app
 
         schedule = celery_app.conf.beat_schedule or {}
-        pre_p3b_entries = {
-            "sync-positions-every-minute",
-            "check-order-status-every-30s",
-            "expire-old-signals",
-            "record-asset-snapshot-every-5m",
-            "ops-daily-check",
-            "ops-hourly-check",
-            "governance-monitor-daily",
-            "governance-monitor-weekly",
-            "collect-market-state-every-5m",
-            "collect-sentiment-hourly",
-        }
-        new_entries = set(schedule.keys()) - pre_p3b_entries
-        assert new_entries == {"shadow-observation-5m", "sol-paper-trading-hourly"}, (
-            f"Unexpected new entries: {new_entries}"
-        )
+        assert "shadow-observation-5m" in schedule
 
 
 # ── Include List Tests ─────────────────────────────────────────

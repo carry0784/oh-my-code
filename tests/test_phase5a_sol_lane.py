@@ -538,8 +538,11 @@ class TestAppendOnlyWriteProof:
 
 
 class TestBeatRegistered:
-    """Sol paper task IS in beat schedule (post beat-registration GO)."""
+    """Sol paper task beat status (Phase 5a CLOSED, removed from schedule)."""
 
+    @pytest.mark.skip(
+        reason="Phase 5a CLOSED — sol-paper-trading-hourly removed from beat_schedule"
+    )
     def test_sol_paper_in_beat(self):
         """sol_paper_tasks must appear in active beat schedule."""
         from workers.celery_app import celery_app
@@ -556,6 +559,9 @@ class TestBeatRegistered:
         sol_includes = [e for e in include if "sol_paper" in e]
         assert len(sol_includes) == 1, f"Expected SOL paper in include, got {sol_includes}"
 
+    @pytest.mark.skip(
+        reason="Phase 5a CLOSED — sol-paper-trading-hourly removed from beat_schedule"
+    )
     def test_sol_paper_schedule_is_1h(self):
         """SOL paper beat schedule must be 3600s (1H) to match strategy timeframe."""
         from workers.celery_app import celery_app
@@ -565,6 +571,9 @@ class TestBeatRegistered:
         assert sol_entry is not None
         assert sol_entry["schedule"] == 3600.0
 
+    @pytest.mark.skip(
+        reason="Phase 5a CLOSED — sol-paper-trading-hourly removed from beat_schedule"
+    )
     def test_sol_paper_kwargs_correct(self):
         """SOL paper beat kwargs must specify SOL/USDT and binance."""
         from workers.celery_app import celery_app
