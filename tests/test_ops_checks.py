@@ -232,4 +232,6 @@ class TestBeatSchedule:
         from workers.celery_app import celery_app
 
         schedule = celery_app.conf.beat_schedule
-        assert len(schedule) == 12  # 4 original + 2 ops + 2 G-MON + 2 CR-038 data + 1 CR-048 shadow + 1 SOL paper
+        assert (
+            len(schedule) == 12
+        )  # 4 original + 2 ops + 2 G-MON + 2 CR-038 data + 1 CR-048 shadow + 1 SOL paper
