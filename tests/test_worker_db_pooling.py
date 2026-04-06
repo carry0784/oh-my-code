@@ -107,6 +107,7 @@ class TestNoPerInvocationEngineLeak:
         # Module-level create_engine (in engine setup before first def) is OK
         # create_engine inside def blocks is NOT OK
         import re
+
         func_bodies = re.split(r"^(?:@.*\n)*def \w+", source, flags=re.MULTILINE)
         # First element is module-level code (allowed), rest are function bodies
         for func_body in func_bodies[1:]:
@@ -153,9 +154,7 @@ class TestBoundedEngineInSource:
     def test_source_has_pool_size_1(self, module_path):
         """Source must specify pool_size=1."""
         source = _read_source_from_file(module_path)
-        assert "pool_size=1" in source, (
-            f"{module_path} missing pool_size=1 in engine declaration"
-        )
+        assert "pool_size=1" in source, f"{module_path} missing pool_size=1 in engine declaration"
 
     @pytest.mark.parametrize("module_path", _TARGET_MODULES)
     def test_source_has_max_overflow_0(self, module_path):
@@ -278,16 +277,17 @@ class TestDeterministicClosePath:
             ("workers.tasks.order_tasks", ["submit_order", "check_pending_orders"]),
             ("workers.tasks.market_tasks", ["sync_all_positions"]),
             ("workers.tasks.snapshot_tasks", ["record_asset_snapshot"]),
-            ("workers.tasks.signal_tasks", ["validate_signal", "expire_signals", "process_signal_pipeline"]),
+            (
+                "workers.tasks.signal_tasks",
+                ["validate_signal", "expire_signals", "process_signal_pipeline"],
+            ),
         ],
     )
     def test_session_close_in_finally(self, module_path, func_names):
         """Each DB-using function must have session.close() in a finally block."""
         source = _read_source_from_file(module_path)
 
-        assert "finally:" in source, (
-            f"{module_path} missing finally block"
-        )
+        assert "finally:" in source, f"{module_path} missing finally block"
         assert "session.close()" in source or "sess.close()" in source, (
             f"{module_path} missing session.close() call"
         )
@@ -301,9 +301,7 @@ class TestDeterministicClosePath:
     def test_data_collection_sess_close_in_finally(self, module_path):
         """data_collection_tasks uses sess variable — verify sess.close()."""
         source = _read_source_from_file(module_path)
-        assert "sess.close()" in source, (
-            f"{module_path} missing sess.close() in finally block"
-        )
+        assert "sess.close()" in source, f"{module_path} missing sess.close() in finally block"
 
 
 # ── Section 6: SOL Paper Tasks Unaffected ─────────────────────────
@@ -340,7 +338,8 @@ class TestCrossModuleDependencyElimination:
         """No task module should import session/engine from another task module."""
         source = _read_source_from_file(module_path)
         # Must not import from workers.tasks.* for session purposes
-        assert "from workers.tasks.order_tasks import" not in source or \
-               "submit_order" in source, (  # submit_order import in signal_tasks is OK
+        assert (
+            "from workers.tasks.order_tasks import" not in source or "submit_order" in source
+        ), (  # submit_order import in signal_tasks is OK
             f"{module_path} imports session helper from another task module"
         )
