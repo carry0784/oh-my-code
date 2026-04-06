@@ -29,13 +29,16 @@ class Signal(Base):
     source: Mapped[str] = mapped_column(String(100))
     exchange: Mapped[str] = mapped_column(String(50))
     symbol: Mapped[str] = mapped_column(String(20))
-    signal_type: Mapped[SignalType] = mapped_column(SQLEnum(SignalType))
+    signal_type: Mapped[SignalType] = mapped_column(
+        SQLEnum(SignalType, values_callable=lambda e: [x.value for x in e])
+    )
     entry_price: Mapped[float | None] = mapped_column(Float, nullable=True)
     stop_loss: Mapped[float | None] = mapped_column(Float, nullable=True)
     take_profit: Mapped[float | None] = mapped_column(Float, nullable=True)
     confidence: Mapped[float] = mapped_column(Float, default=0.0)
     status: Mapped[SignalStatus] = mapped_column(
-        SQLEnum(SignalStatus), default=SignalStatus.PENDING
+        SQLEnum(SignalStatus, values_callable=lambda e: [x.value for x in e]),
+        default=SignalStatus.PENDING,
     )
     signal_metadata: Mapped[dict] = mapped_column(JSON, default=dict, name="metadata")
     agent_analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
