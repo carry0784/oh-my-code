@@ -3267,7 +3267,7 @@ async def _compute_trading_safety_panel(db: AsyncSession) -> TradingSafetyPanel:
     order_query_ok = True
     try:
         # BL-TZ01: Order.created_at is DateTime (naive, TIMESTAMP WITHOUT TIME ZONE).
-        recent_cutoff = datetime.utcnow() - timedelta(hours=24)
+        recent_cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=24)
         total_orders_result = await db.execute(
             select(func.count(Order.id)).where(Order.created_at >= recent_cutoff)
         )
