@@ -84,6 +84,7 @@ def collect_market_state(
                     bb_middle=snapshot.indicators.bb_middle,
                     bb_lower=snapshot.indicators.bb_lower,
                     atr_14=snapshot.indicators.atr_14,
+                    adx_14=snapshot.indicators.adx_14,
                     obv=snapshot.indicators.obv,
                     sma_20=snapshot.indicators.sma_20,
                     sma_50=snapshot.indicators.sma_50,

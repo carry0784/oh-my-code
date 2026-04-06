@@ -45,6 +45,7 @@ class MarketState(Base):
     bb_middle: Mapped[float | None] = mapped_column(Float, nullable=True)
     bb_lower: Mapped[float | None] = mapped_column(Float, nullable=True)
     atr_14: Mapped[float | None] = mapped_column(Float, nullable=True)
+    adx_14: Mapped[float | None] = mapped_column(Float, nullable=True)
     obv: Mapped[float | None] = mapped_column(Float, nullable=True)
     sma_20: Mapped[float | None] = mapped_column(Float, nullable=True)
     sma_50: Mapped[float | None] = mapped_column(Float, nullable=True)
