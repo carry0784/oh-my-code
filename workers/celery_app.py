@@ -22,6 +22,7 @@ celery_app = Celery(
         "workers.tasks.data_collection_tasks",  # CR-038: market data + sentiment
         "workers.tasks.shadow_observation_tasks",  # CR-048 2A P3-B: shadow observation (dry-run)
         "workers.tasks.sol_paper_tasks",  # CR-046 Phase 5a-B: SOL paper trading (dry_run=True)
+        "workers.tasks.cycle_runner_tasks",  # CR-048: strategy cycle runner (dry_run=True)
     ],
 )
 
@@ -40,14 +41,12 @@ celery_app.conf.update(
 )
 
 celery_app.conf.beat_schedule = {
-    "sync-positions-every-minute": {
-        "task": "workers.tasks.market_tasks.sync_all_positions",
-        "schedule": 60.0,
-    },
-    "check-order-status-every-30s": {
-        "task": "workers.tasks.order_tasks.check_pending_orders",
-        "schedule": 30.0,
-    },
+    # ── DISABLED (CR-049 BL-EXMODE01): private API tasks removed from schedule ──
+    # "sync-positions-every-minute" — REQUIRES_PRIVATE_API, re-enable at PAPER mode
+    # "check-order-status-every-30s" — REQUIRES_PRIVATE_API, re-enable at PAPER mode
+    # "sol-paper-trading-hourly" — Phase 5a CLOSED, re-enable at next phase
+    #
+    # ── Active schedule (13 entries) ──
     "expire-old-signals": {
         "task": "workers.tasks.signal_tasks.expire_signals",
         "schedule": 300.0,
@@ -80,6 +79,12 @@ celery_app.conf.beat_schedule = {
         "schedule": 300.0,  # 5min
         "kwargs": {"symbol": "BTC/USDT", "exchange_name": "binance"},
     },
+    # CR-046: SOL market state collection (mirrors BTC entry for SOL symbol)
+    "collect-sol-market-state-every-5m": {
+        "task": "workers.tasks.data_collection_tasks.collect_market_state",
+        "schedule": 300.0,  # 5min
+        "kwargs": {"symbol": "SOL/USDT", "exchange_name": "binance"},
+    },
     "collect-sentiment-hourly": {
         "task": "workers.tasks.data_collection_tasks.collect_sentiment_only",
         "schedule": 3600.0,  # 1h
@@ -90,12 +95,21 @@ celery_app.conf.beat_schedule = {
         "task": "workers.tasks.shadow_observation_tasks.run_shadow_observation",
         "schedule": 300.0,  # 5min — must remain 300s
     },
-    # CR-046 Phase 5a-B: SOL paper trading observation (dry_run=True hardcoded)
-    # Beat registered for receipt accumulation. BTC beat registration is separate.
-    "sol-paper-trading-hourly": {
-        "task": "workers.tasks.sol_paper_tasks.run_sol_paper_bar",
-        "schedule": 3600.0,  # 1H — matches strategy timeframe
-        "kwargs": {"symbol": "SOL/USDT", "exchange_name": "binance"},
+    # CR-048: Strategy cycle runners (dry_run=True, DATA_ONLY mode)
+    "strategy-cycle-crypto-5m": {
+        "task": "workers.tasks.cycle_runner_tasks.run_strategy_cycle",
+        "schedule": 300.0,  # 5min
+        "kwargs": {"universe": "crypto", "dry_run": True},
+    },
+    "strategy-cycle-kr-stock-5m": {
+        "task": "workers.tasks.cycle_runner_tasks.run_strategy_cycle",
+        "schedule": 300.0,  # 5min
+        "kwargs": {"universe": "kr_stock", "dry_run": True},
+    },
+    "strategy-cycle-us-stock-5m": {
+        "task": "workers.tasks.cycle_runner_tasks.run_strategy_cycle",
+        "schedule": 300.0,  # 5min
+        "kwargs": {"universe": "us_stock", "dry_run": True},
     },
 }
 

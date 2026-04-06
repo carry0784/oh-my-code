@@ -55,7 +55,6 @@ async def fresh_client():
         yield c
 
 
-@pytest.mark.skip(reason="ops router blocked by ExchangeMode dependency (CR-049 Phase 3)")
 @pytest.mark.anyio
 async def test_drill_baseline_check_after_restart(fresh_client):
     """After restart, /baseline-check must return HOLD with 6/6 pass."""
@@ -80,7 +79,6 @@ async def test_drill_status_operational_mode_after_restart(fresh_client):
     assert data["exchange_mode"] == "DATA_ONLY"
 
 
-@pytest.mark.skip(reason="ops router blocked by ExchangeMode dependency (CR-049 Phase 3)")
 @pytest.mark.anyio
 async def test_drill_governance_state_after_restart(fresh_client):
     """After restart, /governance-state must load from ops_state.json."""
@@ -100,9 +98,6 @@ async def test_drill_governance_state_after_restart(fresh_client):
 class TestDrillBeatScheduleRecovery:
     """Beat schedule 재로드 후 금지 task 미등록 확인."""
 
-    @pytest.mark.skip(
-        reason="beat schedule governance not yet implemented — planned for restart-drill feature PR"
-    )
     def test_drill_beat_schedule_reload_no_forbidden(self):
         """Re-import celery_app and verify no forbidden tasks."""
         from workers.celery_app import celery_app
@@ -120,14 +115,11 @@ class TestDrillBeatScheduleRecovery:
             )
 
     def test_drill_beat_active_count_stable(self):
-        """Active beat task count must be 12 after reload."""
+        """Active beat task count must be 13 after reload."""
         from workers.celery_app import celery_app
 
-        assert len(celery_app.conf.beat_schedule) == 12
+        assert len(celery_app.conf.beat_schedule) == 13
 
-    @pytest.mark.skip(
-        reason="strategy-cycle tasks not yet implemented — planned for restart-drill feature PR"
-    )
     def test_drill_beat_all_dry_run(self):
         """All strategy-cycle tasks must have dry_run=True after reload."""
         from workers.celery_app import celery_app
