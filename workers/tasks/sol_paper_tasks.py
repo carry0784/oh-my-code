@@ -136,15 +136,14 @@ async def _run_sol_paper_bar_async(
                 await _commit_all(db, store, receipt_store, session, receipt)
                 return _receipt_to_dict(receipt)
 
-            # 4. Fetch OHLCV data (per-run connect lifecycle — CR-048A)
+            # 4. Fetch OHLCV data (singleton exchange — no connect() needed)
             exchange = ExchangeFactory.create(exchange_name)
-            async with exchange.connect():
-                collector_module = __import__(
-                    "app.services.market_data_collector",
-                    fromlist=["MarketDataCollector"],
-                )
-                collector = collector_module.MarketDataCollector(exchange.client)
-                ohlcv_raw = await collector._fetch_ohlcv(symbol, "1h", 200)
+            collector_module = __import__(
+                "app.services.market_data_collector",
+                fromlist=["MarketDataCollector"],
+            )
+            collector = collector_module.MarketDataCollector(exchange.client)
+            ohlcv_raw = await collector._fetch_ohlcv(symbol, "1h", 200)
             if not ohlcv_raw:
                 receipt.action = BarAction.ERROR_FAIL_CLOSED
                 receipt.decision_source = "error"
