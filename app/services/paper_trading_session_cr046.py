@@ -56,6 +56,7 @@ class CR046PaperSession:
     is_halted: bool = False
     halt_reason: str | None = None
     open_position: dict | None = None
+    consecutive_high_latency: int = 0  # 5a-C: 3 consecutive > 10s → BTC lane pause
     last_daily_reset_utc: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     last_weekly_reset_utc: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     version: int = 1

@@ -392,12 +392,13 @@ class TestSolLaneLossLimitPause:
 class TestBtcLaneIsolation:
     """Prove BTC lane is completely untouched by 5a-B."""
 
-    def test_no_btc_paper_tasks_file(self):
-        """btc_paper_tasks.py must NOT exist."""
-        btc_path = os.path.join(PROJECT_ROOT, "workers", "tasks", "btc_paper_tasks.py")
-        assert not os.path.isfile(btc_path), (
-            "btc_paper_tasks.py exists -- BTC lane must not exist in 5a-B"
-        )
+    def test_sol_task_does_not_import_btc(self):
+        """sol_paper_tasks must not import btc_paper_tasks or btc_latency_guard."""
+        from workers.tasks import sol_paper_tasks
+
+        source = open(sol_paper_tasks.__file__, "r", encoding="utf-8").read()
+        assert "btc_paper_tasks" not in source
+        assert "btc_latency_guard" not in source
 
     def test_sol_task_no_btc_import(self):
         """sol_paper_tasks must not import any BTC module."""
