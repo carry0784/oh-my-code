@@ -355,20 +355,20 @@ class TestTaskResultSchema:
         assert result["dry_schedule"] is True
 
 
-# ── Beat Registration NOT Performed Test ─────────────────────────
+# ── Beat Registration Active Test (P3-B) ─────────────────────────
 
 
-class TestBeatNotRegistered:
-    """Verify beat schedule was NOT modified (P3-B scope)."""
+class TestBeatRegistered:
+    """Verify beat schedule was activated (P3-B)."""
 
-    def test_shadow_observation_not_in_beat(self):
-        """Shadow observation task is NOT in active beat schedule."""
+    def test_shadow_observation_in_beat(self):
+        """Shadow observation task IS in active beat schedule (P3-B activated)."""
         from workers.celery_app import celery_app
 
         beat = celery_app.conf.beat_schedule
         shadow_entries = [k for k, v in beat.items() if "shadow_observation" in v.get("task", "")]
-        assert shadow_entries == [], (
-            f"Shadow observation found in beat schedule (P3-B scope): {shadow_entries}"
+        assert shadow_entries == ["shadow-observation-5m"], (
+            f"Expected exactly one shadow observation beat entry, got: {shadow_entries}"
         )
 
 

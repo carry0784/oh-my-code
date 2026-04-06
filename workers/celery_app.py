@@ -14,6 +14,7 @@ celery_app = Celery(
         "workers.tasks.check_tasks",  # S-02: operational check tasks
         "workers.tasks.governance_monitor_tasks",  # G-MON: governance monitor
         "workers.tasks.data_collection_tasks",  # CR-038: market data + sentiment
+        "workers.tasks.shadow_observation_tasks",  # CR-048 2A P3-B: shadow observation (dry-run)
     ],
 )
 
@@ -75,5 +76,11 @@ celery_app.conf.beat_schedule = {
     "collect-sentiment-hourly": {
         "task": "workers.tasks.data_collection_tasks.collect_sentiment_only",
         "schedule": 3600.0,  # 1h
+    },
+    # CR-048 2A P3-B: shadow observation dry-run (DRY_SCHEDULE=True)
+    # Activated from dormant state. DRY_SCHEDULE=False requires P4 approval.
+    "shadow-observation-5m": {
+        "task": "workers.tasks.shadow_observation_tasks.run_shadow_observation",
+        "schedule": 300.0,  # 5min — must remain 300s
     },
 }
