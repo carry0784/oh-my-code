@@ -73,7 +73,11 @@ class MarketState(Base):
 
     # Regime
     regime: Mapped[MarketRegime] = mapped_column(
-        SQLEnum(MarketRegime), default=MarketRegime.UNKNOWN
+        SQLEnum(
+            MarketRegime,
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
+        default=MarketRegime.UNKNOWN,
     )
 
     # Raw data storage

@@ -12,7 +12,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = "025_btc_latency"
-down_revision = "024_add_adx_14"
+down_revision = "024_add_adx_14_to_market_states"
 branch_labels = None
 depends_on = None
 
