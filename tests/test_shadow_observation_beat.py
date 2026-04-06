@@ -317,17 +317,33 @@ class TestIsArchivedField:
 # ════════════════════════════════════════════════════════════════
 
 
-class TestBeatEntryCommented:
-    """shadow-observation-5m must NOT be in active beat_schedule."""
+class TestBeatEntryActive:
+    """shadow-observation-5m must be in active beat_schedule (P3-B activated)."""
 
-    def test_no_active_shadow_observation_beat(self):
+    def test_shadow_observation_beat_present(self):
+        """P3-B: beat entry is now active."""
         from workers.celery_app import celery_app
 
         schedule = celery_app.conf.beat_schedule or {}
-        assert "shadow-observation-5m" not in schedule, (
-            "shadow-observation-5m must remain COMMENTED. "
-            "Uncomment requires dry-schedule 24H verification + A approval."
+        assert "shadow-observation-5m" in schedule, (
+            "shadow-observation-5m must be present in beat_schedule (P3-B)."
         )
+
+    def test_beat_interval_is_300s(self):
+        """Beat interval must remain exactly 300 seconds."""
+        from workers.celery_app import celery_app
+
+        entry = celery_app.conf.beat_schedule["shadow-observation-5m"]
+        assert entry["schedule"] == 300.0, (
+            f"Beat interval must be 300s, got {entry['schedule']}"
+        )
+
+    def test_beat_task_name_matches(self):
+        """Beat entry task name must match the actual task."""
+        from workers.celery_app import celery_app
+
+        entry = celery_app.conf.beat_schedule["shadow-observation-5m"]
+        assert entry["task"] == "workers.tasks.shadow_observation_tasks.run_shadow_observation"
 
 
 # ════════════════════════════════════════════════════════════════
