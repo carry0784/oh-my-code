@@ -44,9 +44,7 @@ class TestBeatEntryPresent:
         from workers.celery_app import celery_app
 
         entry = celery_app.conf.beat_schedule["shadow-observation-5m"]
-        assert entry["schedule"] == 300.0, (
-            f"Beat interval must be 300.0s, got {entry['schedule']}"
-        )
+        assert entry["schedule"] == 300.0, f"Beat interval must be 300.0s, got {entry['schedule']}"
 
     def test_beat_task_name(self):
         """Beat task name must match the registered Celery task."""
@@ -97,9 +95,7 @@ class TestActiveBeatCountDelta:
             "collect-sentiment-hourly",
         }
         new_entries = set(schedule.keys()) - pre_p3b_entries
-        assert new_entries == {"shadow-observation-5m"}, (
-            f"Unexpected new entries: {new_entries}"
-        )
+        assert new_entries == {"shadow-observation-5m"}, f"Unexpected new entries: {new_entries}"
 
 
 # ── Include List Tests ─────────────────────────────────────────

@@ -334,9 +334,7 @@ class TestBeatEntryActive:
         from workers.celery_app import celery_app
 
         entry = celery_app.conf.beat_schedule["shadow-observation-5m"]
-        assert entry["schedule"] == 300.0, (
-            f"Beat interval must be 300s, got {entry['schedule']}"
-        )
+        assert entry["schedule"] == 300.0, f"Beat interval must be 300s, got {entry['schedule']}"
 
     def test_beat_task_name_matches(self):
         """Beat entry task name must match the actual task."""
