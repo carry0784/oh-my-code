@@ -1,18 +1,23 @@
-"""RI-2A-2b: Shadow Observation Beat Task — dry-schedule mode.
+"""RI-2A-2b + P3-A: Shadow Observation Beat Task — dry-schedule mode.
 
 DRY_SCHEDULE=True is HARDCODED. Actual pipeline execution requires
-DRY_SCHEDULE=False, which is a separate A approval (not this scope).
+DRY_SCHEDULE=False, which is a separate P4 approval (not this scope).
 
-Beat entry is COMMENTED in celery_app.py. Dispatch = 0 until uncommented.
+Beat entry is COMMENTED in celery_app.py. Dispatch = 0 until uncommented (P3-B).
+
+P3-A addition: When DRY_SCHEDULE=True, RUNNABLE symbols are now passed
+through ShadowPipelineOrchestrator.run_single() to produce dry-run
+observations and receipts. execute_bounded_write is NEVER called.
 
 Contract:
-  - DRY_SCHEDULE=True: log would_run/would_skip/reason_code only, pipeline call 0
-  - DRY_SCHEDULE=False: call run_shadow_pipeline + readthrough + observation INSERT
+  - DRY_SCHEDULE=True: orchestrator dry-run per RUNNABLE symbol
+  - DRY_SCHEDULE=False: BLOCKED (not implemented, requires P4 approval)
   - business table write: ZERO (regardless of DRY_SCHEDULE)
-  - execution path: ZERO
+  - execution path: ZERO (execute_bounded_write NOT imported)
+  - rollback path: ZERO (rollback_bounded_write NOT imported)
   - gate state change: ZERO
   - fail-closed: all exceptions → log + skip, write=0, state_change=0
-  - duplicate dispatch: Redis lock (TTL=300s) + expires=240s + max_retries=0
+  - duplicate dispatch: Redis lock (TTL=420s) + expires=240s + max_retries=0
 """
 
 from __future__ import annotations
@@ -42,8 +47,9 @@ AUDIT_VERDICTS: frozenset[str] = frozenset(
 )
 
 # ── Redis lock config ──
+# P3-A: TTL must exceed schedule interval (300s) to prevent overlap.
 _LOCK_KEY = "shadow_observation_running"
-_LOCK_TTL = 300  # seconds
+_LOCK_TTL = 420  # seconds (> 300s schedule interval)
 
 
 class SkipReasonCode(str, Enum):
@@ -145,6 +151,57 @@ def _evaluate_symbol_readiness(symbol_info: dict) -> str:
     return SkipReasonCode.RUNNABLE.value
 
 
+def _run_orchestrator_for_symbols(
+    runnable_symbols: list[str],
+    now_utc: datetime,
+) -> list:
+    """Run ShadowPipelineOrchestrator.run_single() per RUNNABLE symbol.
+
+    P3-A: task-level per-symbol loop (not run_batch).
+    Uses per-call async engine to avoid event loop binding issues.
+    Fail-closed: individual symbol errors are caught inside orchestrator.
+
+    Returns list of OrchestrationResult.
+    """
+    import asyncio
+
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+    from app.core.config import settings
+    from app.services.shadow_pipeline_orchestrator import ShadowPipelineOrchestrator
+
+    async def _run():
+        engine = create_async_engine(
+            settings.database_url,
+            pool_pre_ping=True,
+            pool_size=1,
+            max_overflow=0,
+        )
+        factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        orch = ShadowPipelineOrchestrator()
+        results = []
+        try:
+            async with factory() as session:
+                for symbol in runnable_symbols:
+                    result = await orch.run_single(session, symbol, now_utc)
+                    results.append(result)
+                    logger.info(
+                        "shadow_observation_orchestrator_result "
+                        "symbol=%s outcome=%s receipt_id=%s obs_id=%s",
+                        result.symbol,
+                        result.outcome.value,
+                        result.receipt_id,
+                        result.observation_id,
+                    )
+                # Commit observation/receipt INSERTs
+                await session.commit()
+        finally:
+            await engine.dispose()
+        return results
+
+    return asyncio.run(_run())
+
+
 def _run_dry_schedule(symbols: list[dict]) -> DryScheduleResult:
     """Execute dry-schedule: evaluate readiness, log would_run/would_skip."""
     result = DryScheduleResult(
@@ -194,6 +251,10 @@ def run_shadow_observation() -> dict:
         "symbols_skipped": 0,
         "observations_inserted": 0,
         "observations_failed": 0,
+        "receipts_created": 0,
+        "orchestrator_outcomes": {},
+        "lock_acquired": False,
+        "lock_ttl_sec": _LOCK_TTL,
         "duration_ms": 0,
         "consecutive_failures": 0,
         "dry_schedule": DRY_SCHEDULE,
@@ -223,35 +284,57 @@ def run_shadow_observation() -> dict:
                 _reset_consecutive_failures()
                 return task_result
 
-            # ── Step 3: DRY_SCHEDULE mode ──
-            if DRY_SCHEDULE:
-                dry_result = _run_dry_schedule(symbols)
+            # ── Step 3: DRY_SCHEDULE guard ──
+            # P3-A runtime guard: DRY_SCHEDULE must be True.
+            # False transition requires P4 approval.
+            assert DRY_SCHEDULE is True, (
+                "DRY_SCHEDULE=False requires P4 approval. "
+                "This task must not run with DRY_SCHEDULE=False."
+            )
 
-                task_result["status"] = "completed"
-                task_result["symbols_processed"] = dry_result.runnable_count
-                task_result["symbols_skipped"] = dry_result.skip_count
+            # ── Step 4: Dry-schedule evaluation ──
+            dry_result = _run_dry_schedule(symbols)
 
-                logger.info(
-                    "shadow_observation_dry_schedule_result "
-                    "would_run=%s would_skip=%s reason_codes=%s "
-                    "total=%d runnable=%d skip=%d",
-                    dry_result.would_run,
-                    dry_result.would_skip,
-                    dry_result.reason_codes,
-                    dry_result.total_symbols,
-                    dry_result.runnable_count,
-                    dry_result.skip_count,
-                )
+            task_result["symbols_skipped"] = dry_result.skip_count
 
-                _reset_consecutive_failures()
-                return task_result
+            logger.info(
+                "shadow_observation_dry_schedule_result "
+                "would_run=%s would_skip=%s reason_codes=%s "
+                "total=%d runnable=%d skip=%d",
+                dry_result.would_run,
+                dry_result.would_skip,
+                dry_result.reason_codes,
+                dry_result.total_symbols,
+                dry_result.runnable_count,
+                dry_result.skip_count,
+            )
 
-            # ── Step 4: Live execution (DRY_SCHEDULE=False) ──
-            # NOT IMPLEMENTED in RI-2A-2b scope.
-            # Requires: DRY_SCHEDULE=False (separate A approval)
-            # When implemented: call run_shadow_pipeline + readthrough + observation INSERT
-            task_result["status"] = "skipped"
-            task_result["skipped_reason"] = "LIVE_NOT_IMPLEMENTED"
+            # ── Step 5: P3-A orchestrator dry-run for RUNNABLE symbols ──
+            orchestrator_outcomes: dict[str, dict[str, str]] = {}
+            observations_inserted = 0
+            receipts_created = 0
+
+            if dry_result.would_run:
+                orch_results = _run_orchestrator_for_symbols(dry_result.would_run, now)
+                for orch_res in orch_results:
+                    orchestrator_outcomes[orch_res.symbol] = {
+                        "outcome": orch_res.outcome.value,
+                        "reason_code": dry_result.reason_codes.get(orch_res.symbol, ""),
+                    }
+                    if orch_res.observation_id is not None:
+                        observations_inserted += 1
+                    if orch_res.receipt_id is not None:
+                        receipts_created += 1
+
+            task_result["status"] = "completed"
+            task_result["symbols_processed"] = dry_result.runnable_count
+            task_result["observations_inserted"] = observations_inserted
+            task_result["receipts_created"] = receipts_created
+            task_result["orchestrator_outcomes"] = orchestrator_outcomes
+            task_result["lock_acquired"] = True
+            task_result["lock_ttl_sec"] = _LOCK_TTL
+
+            _reset_consecutive_failures()
             return task_result
 
         finally:
