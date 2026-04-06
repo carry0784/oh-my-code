@@ -8,7 +8,7 @@ import asyncio
 from datetime import datetime, timezone
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from workers.celery_app import celery_app
 from app.core.config import settings
@@ -22,14 +22,16 @@ from exchanges.factory import ExchangeFactory
 
 logger = get_logger(__name__)
 
-
-def _get_sync_session() -> Session:
-    engine = create_engine(settings.database_url_sync)
-    try:
-        return Session(engine)
-    except Exception:
-        engine.dispose()
-        raise
+# Module-level bounded engine: pool_size=1, max_overflow=0
+# Prevents per-invocation engine leak (CR-048 DB saturation fix)
+_sync_engine = create_engine(
+    settings.database_url_sync,
+    pool_pre_ping=True,
+    pool_size=1,
+    max_overflow=0,
+    pool_recycle=1800,
+)
+_SyncSessionFactory = sessionmaker(bind=_sync_engine)
 
 
 @celery_app.task(bind=True, max_retries=2, default_retry_delay=30)
@@ -65,51 +67,50 @@ def collect_market_state(
         snapshot = asyncio.run(_collect())
 
         # Persist to DB
-        _engine = create_engine(settings.database_url_sync)
+        sess = _SyncSessionFactory()
         try:
-            with Session(_engine) as sess:
-                state = MarketState(
-                    exchange=snapshot.exchange,
-                    symbol=snapshot.symbol,
-                    price=snapshot.price_data.price,
-                    bid=snapshot.microstructure.bid,
-                    ask=snapshot.microstructure.ask,
-                    spread_pct=snapshot.microstructure.spread_pct,
-                    volume_24h=snapshot.price_data.volume_24h,
-                    rsi_14=snapshot.indicators.rsi_14,
-                    macd_line=snapshot.indicators.macd_line,
-                    macd_signal=snapshot.indicators.macd_signal,
-                    macd_histogram=snapshot.indicators.macd_histogram,
-                    bb_upper=snapshot.indicators.bb_upper,
-                    bb_middle=snapshot.indicators.bb_middle,
-                    bb_lower=snapshot.indicators.bb_lower,
-                    atr_14=snapshot.indicators.atr_14,
-                    adx_14=snapshot.indicators.adx_14,
-                    obv=snapshot.indicators.obv,
-                    sma_20=snapshot.indicators.sma_20,
-                    sma_50=snapshot.indicators.sma_50,
-                    sma_200=snapshot.indicators.sma_200,
-                    ema_12=snapshot.indicators.ema_12,
-                    ema_26=snapshot.indicators.ema_26,
-                    fear_greed_index=snapshot.sentiment.fear_greed_index,
-                    fear_greed_label=snapshot.sentiment.fear_greed_label,
-                    hash_rate=snapshot.on_chain.hash_rate,
-                    difficulty=snapshot.on_chain.difficulty,
-                    tx_count_24h=snapshot.on_chain.tx_count_24h,
-                    mempool_size=snapshot.on_chain.mempool_size,
-                    mempool_fee_fast=snapshot.on_chain.mempool_fee_fast,
-                    mempool_fee_medium=snapshot.on_chain.mempool_fee_medium,
-                    btc_dominance=snapshot.on_chain.btc_dominance,
-                    total_market_cap_usd=snapshot.on_chain.total_market_cap_usd,
-                    funding_rate=snapshot.microstructure.funding_rate,
-                    open_interest=snapshot.microstructure.open_interest,
-                    regime=snapshot.regime,
-                    snapshot_at=snapshot.snapshot_at or datetime.now(timezone.utc),
-                )
-                sess.add(state)
-                sess.commit()
+            state = MarketState(
+                exchange=snapshot.exchange,
+                symbol=snapshot.symbol,
+                price=snapshot.price_data.price,
+                bid=snapshot.microstructure.bid,
+                ask=snapshot.microstructure.ask,
+                spread_pct=snapshot.microstructure.spread_pct,
+                volume_24h=snapshot.price_data.volume_24h,
+                rsi_14=snapshot.indicators.rsi_14,
+                macd_line=snapshot.indicators.macd_line,
+                macd_signal=snapshot.indicators.macd_signal,
+                macd_histogram=snapshot.indicators.macd_histogram,
+                bb_upper=snapshot.indicators.bb_upper,
+                bb_middle=snapshot.indicators.bb_middle,
+                bb_lower=snapshot.indicators.bb_lower,
+                atr_14=snapshot.indicators.atr_14,
+                adx_14=snapshot.indicators.adx_14,
+                obv=snapshot.indicators.obv,
+                sma_20=snapshot.indicators.sma_20,
+                sma_50=snapshot.indicators.sma_50,
+                sma_200=snapshot.indicators.sma_200,
+                ema_12=snapshot.indicators.ema_12,
+                ema_26=snapshot.indicators.ema_26,
+                fear_greed_index=snapshot.sentiment.fear_greed_index,
+                fear_greed_label=snapshot.sentiment.fear_greed_label,
+                hash_rate=snapshot.on_chain.hash_rate,
+                difficulty=snapshot.on_chain.difficulty,
+                tx_count_24h=snapshot.on_chain.tx_count_24h,
+                mempool_size=snapshot.on_chain.mempool_size,
+                mempool_fee_fast=snapshot.on_chain.mempool_fee_fast,
+                mempool_fee_medium=snapshot.on_chain.mempool_fee_medium,
+                btc_dominance=snapshot.on_chain.btc_dominance,
+                total_market_cap_usd=snapshot.on_chain.total_market_cap_usd,
+                funding_rate=snapshot.microstructure.funding_rate,
+                open_interest=snapshot.microstructure.open_interest,
+                regime=snapshot.regime,
+                snapshot_at=snapshot.snapshot_at or datetime.now(timezone.utc),
+            )
+            sess.add(state)
+            sess.commit()
         finally:
-            _engine.dispose()
+            sess.close()
 
         logger.info(
             "market_state_persisted",

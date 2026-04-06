@@ -1,19 +1,33 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
 from workers.celery_app import celery_app
-from workers.tasks.order_tasks import get_sync_session
+from app.core.config import settings
 from app.models.signal import Signal, SignalStatus
 from app.agents.signal_validator import SignalValidatorAgent
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+# Module-level bounded engine: pool_size=1, max_overflow=0
+# Prevents per-invocation engine leak (CR-048 DB saturation fix)
+_sync_engine = create_engine(
+    settings.database_url_sync,
+    pool_pre_ping=True,
+    pool_size=1,
+    max_overflow=0,
+    pool_recycle=1800,
+)
+_SyncSessionFactory = sessionmaker(bind=_sync_engine)
+
 
 @celery_app.task(bind=True, max_retries=2)
 def validate_signal(self, signal_id: str):
     """Validate signal using LLM agent."""
-    session = get_sync_session()
+    session = _SyncSessionFactory()
     try:
         signal = session.query(Signal).filter(Signal.id == signal_id).first()
         if not signal:
@@ -47,7 +61,7 @@ def validate_signal(self, signal_id: str):
 @celery_app.task
 def expire_signals():
     """Mark expired signals."""
-    session = get_sync_session()
+    session = _SyncSessionFactory()
     try:
         now = datetime.now(timezone.utc)
         expired = (
@@ -75,7 +89,7 @@ def process_signal_pipeline(signal_id: str):
     """Full signal processing pipeline: validate -> risk check -> execute."""
     from workers.tasks.order_tasks import submit_order
 
-    session = get_sync_session()
+    session = _SyncSessionFactory()
     try:
         signal = session.query(Signal).filter(Signal.id == signal_id).first()
         if not signal:

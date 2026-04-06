@@ -1,6 +1,6 @@
 import asyncio
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session, sessionmaker
 
 from workers.celery_app import celery_app
 from app.core.config import settings
@@ -11,19 +11,22 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
-
-def get_sync_session():
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-
-    sync_engine = create_engine(settings.database_url_sync)
-    return sessionmaker(bind=sync_engine)()
+# Module-level bounded engine: pool_size=1, max_overflow=0
+# Prevents per-invocation engine leak (CR-048 DB saturation fix)
+_sync_engine = create_engine(
+    settings.database_url_sync,
+    pool_pre_ping=True,
+    pool_size=1,
+    max_overflow=0,
+    pool_recycle=1800,
+)
+_SyncSessionFactory = sessionmaker(bind=_sync_engine)
 
 
 @celery_app.task(bind=True, max_retries=3)
 def submit_order(self, order_id: str):
     """Submit order to exchange."""
-    session = get_sync_session()
+    session = _SyncSessionFactory()
     try:
         order = session.query(Order).filter(Order.id == order_id).first()
         if not order:
@@ -59,7 +62,7 @@ def submit_order(self, order_id: str):
 @celery_app.task
 def check_pending_orders():
     """Check status of submitted orders."""
-    session = get_sync_session()
+    session = _SyncSessionFactory()
     try:
         orders = session.query(Order).filter(Order.status == OrderStatus.SUBMITTED).all()
 

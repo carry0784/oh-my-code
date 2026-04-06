@@ -1,18 +1,32 @@
 import asyncio
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
 from workers.celery_app import celery_app
-from workers.tasks.order_tasks import get_sync_session
+from app.core.config import settings
 from app.models.position import Position, PositionSide
 from exchanges.factory import ExchangeFactory
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+# Module-level bounded engine: pool_size=1, max_overflow=0
+# Prevents per-invocation engine leak (CR-048 DB saturation fix)
+_sync_engine = create_engine(
+    settings.database_url_sync,
+    pool_pre_ping=True,
+    pool_size=1,
+    max_overflow=0,
+    pool_recycle=1800,
+)
+_SyncSessionFactory = sessionmaker(bind=_sync_engine)
+
 
 @celery_app.task
 def sync_all_positions():
     """Sync positions from all exchanges."""
-    session = get_sync_session()
+    session = _SyncSessionFactory()
     try:
         for exchange_name in ["binance"]:
             try:
