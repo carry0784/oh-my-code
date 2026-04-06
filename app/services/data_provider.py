@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 
 
@@ -348,7 +348,11 @@ def check_stale(
         STALE_LIMITS.get(("ALL", data_type), _FALLBACK_STALE_LIMIT),
     )
 
-    age = now_utc - snapshot_timestamp
+    # Normalise timezone: treat naive timestamps as UTC
+    ts = snapshot_timestamp
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    age = now_utc - ts
     if age <= limit:
         return DataQualityDecision.OK
     return DataQualityDecision.STALE_REJECT
