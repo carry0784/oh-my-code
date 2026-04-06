@@ -39,6 +39,9 @@ class PaperTradingSessionModel(Base):
     is_halted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     halt_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     open_position: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    consecutive_high_latency: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
     last_daily_reset_utc: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     last_weekly_reset_utc: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
