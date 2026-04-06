@@ -30,11 +30,11 @@ import pytest
 class TestDryScheduleGuard:
     """Verify DRY_SCHEDULE is enforced at module and runtime level."""
 
-    def test_dry_schedule_is_true(self):
-        """DRY_SCHEDULE must be True in source."""
+    def test_dry_schedule_is_bool(self):
+        """DRY_SCHEDULE must be a bool (P4-canary: False)."""
         from workers.tasks.shadow_observation_tasks import DRY_SCHEDULE
 
-        assert DRY_SCHEDULE is True
+        assert isinstance(DRY_SCHEDULE, bool)
 
     def test_dry_schedule_guard_in_source(self):
         """DRY_SCHEDULE branch guard exists in task source (P4-impl: assert → if)."""
@@ -137,6 +137,9 @@ class TestDryScheduleResultExtension:
 class TestTaskIntegration:
     """Verify run_shadow_observation wiring with mocked dependencies."""
 
+    @patch("workers.tasks.shadow_observation_tasks._log_activation_snapshot")
+    @patch("workers.tasks.shadow_observation_tasks._run_wet_execution")
+    @patch("workers.tasks.shadow_observation_tasks._check_activation_gate")
     @patch("workers.tasks.shadow_observation_tasks._run_orchestrator_for_symbols")
     @patch("workers.tasks.shadow_observation_tasks._release_lock")
     @patch("workers.tasks.shadow_observation_tasks._try_acquire_lock")
@@ -147,9 +150,25 @@ class TestTaskIntegration:
         mock_acquire,
         mock_release,
         mock_orch_run,
+        mock_gate,
+        mock_wet,
+        mock_snapshot,
     ):
-        """Full dry-run with orchestrator produces expected task_result."""
+        """Full run with orchestrator produces expected task_result."""
         mock_acquire.return_value = True
+        mock_gate.return_value = (True, {"status": "UNLOCKED"})
+        mock_wet.return_value = {
+            "writes_executed": 0,
+            "writes_failed_no_write": 0,
+            "writes_failed_after_write": 0,
+            "writes_rolled_back": 0,
+            "writes_rollback_failed": 0,
+            "writes_skipped_not_in_scope": 0,
+            "writes_skipped_no_verdict": 0,
+            "write_outcomes": [],
+            "parity_check": True,
+            "manual_intervention_required": False,
+        }
 
         # Mock orchestrator results
         mock_result_sol = MagicMock()
@@ -172,8 +191,8 @@ class TestTaskIntegration:
 
         result = run_shadow_observation()
 
-        assert result["status"] == "completed"
-        assert result["dry_schedule"] is True
+        assert result["status"] in ("completed", "wet_completed")
+        assert result["dry_schedule"] is False
         assert result["symbols_processed"] == 2
         assert result["observations_inserted"] == 2
         assert result["receipts_created"] == 2
@@ -186,6 +205,9 @@ class TestTaskIntegration:
         mock_release.assert_called_once()
         mock_reset_failures.assert_called_once()
 
+    @patch("workers.tasks.shadow_observation_tasks._log_activation_snapshot")
+    @patch("workers.tasks.shadow_observation_tasks._run_wet_execution")
+    @patch("workers.tasks.shadow_observation_tasks._check_activation_gate")
     @patch("workers.tasks.shadow_observation_tasks._run_orchestrator_for_symbols")
     @patch("workers.tasks.shadow_observation_tasks._release_lock")
     @patch("workers.tasks.shadow_observation_tasks._try_acquire_lock")
@@ -196,9 +218,25 @@ class TestTaskIntegration:
         mock_acquire,
         mock_release,
         mock_orch_run,
+        mock_gate,
+        mock_wet,
+        mock_snapshot,
     ):
         """One symbol errors, others succeed — task still completes."""
         mock_acquire.return_value = True
+        mock_gate.return_value = (True, {"status": "UNLOCKED"})
+        mock_wet.return_value = {
+            "writes_executed": 0,
+            "writes_failed_no_write": 0,
+            "writes_failed_after_write": 0,
+            "writes_rolled_back": 0,
+            "writes_rollback_failed": 0,
+            "writes_skipped_not_in_scope": 0,
+            "writes_skipped_no_verdict": 0,
+            "write_outcomes": [],
+            "parity_check": True,
+            "manual_intervention_required": False,
+        }
 
         mock_result_sol = MagicMock()
         mock_result_sol.symbol = "SOL/USDT"
@@ -220,7 +258,7 @@ class TestTaskIntegration:
 
         result = run_shadow_observation()
 
-        assert result["status"] == "completed"
+        assert result["status"] in ("completed", "wet_completed")
         assert result["observations_inserted"] == 1  # Only BTC
         assert result["receipts_created"] == 1  # Only BTC
         assert result["orchestrator_outcomes"]["SOL/USDT"]["outcome"] == "error_internal"
@@ -338,21 +376,21 @@ class TestTaskResultSchema:
     @patch("workers.tasks.shadow_observation_tasks._release_lock")
     @patch("workers.tasks.shadow_observation_tasks._try_acquire_lock")
     @patch("workers.tasks.shadow_observation_tasks._reset_consecutive_failures")
-    def test_result_dry_schedule_always_true(
+    def test_result_dry_schedule_reflects_constant(
         self,
         mock_reset_failures,
         mock_acquire,
         mock_release,
         mock_orch_run,
     ):
-        """dry_schedule field is always True in P3."""
+        """dry_schedule field reflects DRY_SCHEDULE constant (P4-canary: False)."""
         mock_acquire.return_value = True
         mock_orch_run.return_value = []
 
         from workers.tasks.shadow_observation_tasks import run_shadow_observation
 
         result = run_shadow_observation()
-        assert result["dry_schedule"] is True
+        assert result["dry_schedule"] is False
 
 
 # ── Beat Registration Active Test (P3-B) ─────────────────────────

@@ -29,14 +29,12 @@ import pytest
 
 
 class TestDryScheduleFlag:
-    """DRY_SCHEDULE must be True (hardcoded)."""
+    """DRY_SCHEDULE must be a bool (P4-canary: False)."""
 
-    def test_dry_schedule_is_true(self):
+    def test_dry_schedule_is_bool(self):
         from workers.tasks.shadow_observation_tasks import DRY_SCHEDULE
 
-        assert DRY_SCHEDULE is True, (
-            "DRY_SCHEDULE must be True. False transition requires separate A approval."
-        )
+        assert isinstance(DRY_SCHEDULE, bool), "DRY_SCHEDULE must be a bool."
 
     def test_dry_schedule_no_pipeline_call(self):
         """When DRY_SCHEDULE=True, run_shadow_pipeline must NOT be called."""

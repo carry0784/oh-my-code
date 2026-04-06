@@ -28,13 +28,14 @@ import pytest
 # ── Test 1: DRY_SCHEDULE=True unchanged ───────────────────────
 
 
-class TestDryScheduleTrueUnchanged:
-    """When DRY_SCHEDULE=True, behavior is 100% identical to P3-A."""
+class TestDrySchedulePatchedTrue:
+    """When DRY_SCHEDULE is patched to True, dry path is taken."""
 
     @patch("workers.tasks.shadow_observation_tasks._release_lock")
     @patch("workers.tasks.shadow_observation_tasks._try_acquire_lock")
     @patch("workers.tasks.shadow_observation_tasks._reset_consecutive_failures")
     @patch("workers.tasks.shadow_observation_tasks._run_orchestrator_for_symbols")
+    @patch("workers.tasks.shadow_observation_tasks.DRY_SCHEDULE", True)
     def test_dry_path_no_execute_import(
         self,
         mock_orch,
@@ -46,10 +47,6 @@ class TestDryScheduleTrueUnchanged:
         mock_acquire.return_value = True
         mock_orch.return_value = []
 
-        from workers.tasks.shadow_observation_tasks import DRY_SCHEDULE
-
-        assert DRY_SCHEDULE is True
-
         with patch("workers.tasks.shadow_observation_tasks._run_wet_execution") as mock_wet:
             from workers.tasks.shadow_observation_tasks import run_shadow_observation
 
@@ -57,7 +54,6 @@ class TestDryScheduleTrueUnchanged:
 
             mock_wet.assert_not_called()
             assert result["status"] == "completed"
-            assert result["dry_schedule"] is True
             assert result["writes_executed"] == 0
 
 
@@ -71,7 +67,6 @@ class TestGateBlocked:
     @patch("workers.tasks.shadow_observation_tasks._try_acquire_lock")
     @patch("workers.tasks.shadow_observation_tasks._reset_consecutive_failures")
     @patch("workers.tasks.shadow_observation_tasks._run_orchestrator_for_symbols")
-    @patch("workers.tasks.shadow_observation_tasks.DRY_SCHEDULE", False)
     @patch(
         "workers.tasks.shadow_observation_tasks._check_activation_gate",
         return_value=(False, {"status": "LOCKED"}),
@@ -84,7 +79,7 @@ class TestGateBlocked:
         mock_acquire,
         mock_release,
     ):
-        """Gate LOCKED → status=gate_blocked, no writes."""
+        """Gate LOCKED → status=gate_blocked, no writes (DRY_SCHEDULE=False native)."""
         mock_acquire.return_value = True
         mock_orch.return_value = []
 
@@ -107,7 +102,6 @@ class TestGateUnlockedCallsExecute:
     @patch("workers.tasks.shadow_observation_tasks._try_acquire_lock")
     @patch("workers.tasks.shadow_observation_tasks._reset_consecutive_failures")
     @patch("workers.tasks.shadow_observation_tasks._run_orchestrator_for_symbols")
-    @patch("workers.tasks.shadow_observation_tasks.DRY_SCHEDULE", False)
     @patch("workers.tasks.shadow_observation_tasks._log_activation_snapshot")
     @patch(
         "workers.tasks.shadow_observation_tasks._check_activation_gate",
@@ -313,14 +307,19 @@ class TestWetRunResultShape:
     @patch("workers.tasks.shadow_observation_tasks._try_acquire_lock")
     @patch("workers.tasks.shadow_observation_tasks._reset_consecutive_failures")
     @patch("workers.tasks.shadow_observation_tasks._run_orchestrator_for_symbols")
-    def test_dry_result_has_wet_fields(
+    @patch(
+        "workers.tasks.shadow_observation_tasks._check_activation_gate",
+        return_value=(False, {"status": "LOCKED"}),
+    )
+    def test_result_has_wet_fields(
         self,
+        mock_gate,
         mock_orch,
         mock_reset,
         mock_acquire,
         mock_release,
     ):
-        """Even in dry mode, result dict must include P4-impl wet-run fields."""
+        """Result dict must include P4-impl wet-run fields regardless of path."""
         mock_acquire.return_value = True
         mock_orch.return_value = []
 
@@ -388,8 +387,9 @@ class TestWetRunResultShape:
 class TestActivationGateLogic:
     """Unit tests for _check_activation_gate decision logic."""
 
+    @patch("workers.tasks.shadow_observation_tasks._get_redis_writes_consumed", return_value=0)
     @patch("workers.tasks.shadow_observation_tasks._load_ops_state_for_gate")
-    def test_gate_unlocked_signed_with_budget(self, mock_load):
+    def test_gate_unlocked_signed_with_budget(self, mock_load, mock_redis_consumed):
         """All conditions met → gate allows."""
         mock_load.return_value = {
             "activation_gate": {
@@ -441,8 +441,9 @@ class TestActivationGateLogic:
         allowed, _ = _check_activation_gate()
         assert allowed is False
 
+    @patch("workers.tasks.shadow_observation_tasks._get_redis_writes_consumed")
     @patch("workers.tasks.shadow_observation_tasks._load_ops_state_for_gate")
-    def test_gate_budget_exhausted_rejects(self, mock_load):
+    def test_gate_budget_exhausted_rejects(self, mock_load, mock_redis_consumed):
         """writes_consumed >= write_budget → gate rejects."""
         mock_load.return_value = {
             "activation_gate": {
@@ -452,6 +453,7 @@ class TestActivationGateLogic:
                 "writes_consumed": 1,
             }
         }
+        mock_redis_consumed.return_value = 1
 
         from workers.tasks.shadow_observation_tasks import _check_activation_gate
 
