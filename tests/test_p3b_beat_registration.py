@@ -105,11 +105,11 @@ class TestIncludeList:
 class TestDryScheduleGate:
     """Verify beat entry is present but gated by DRY_SCHEDULE=True."""
 
-    def test_dry_schedule_remains_true(self):
-        """DRY_SCHEDULE must be True (P4 scope for False)."""
+    def test_dry_schedule_is_bool(self):
+        """DRY_SCHEDULE must be a bool (P4-canary: False)."""
         from workers.tasks.shadow_observation_tasks import DRY_SCHEDULE
 
-        assert DRY_SCHEDULE is True
+        assert isinstance(DRY_SCHEDULE, bool)
 
     def test_runtime_guard_in_task(self):
         """DRY_SCHEDULE branch guard must exist in task code (P4-impl: assert → if)."""
@@ -120,14 +120,15 @@ class TestDryScheduleGate:
         source = inspect.getsource(shadow_observation_tasks.run_shadow_observation)
         assert "if DRY_SCHEDULE:" in source
 
-    def test_entry_present_but_gated(self):
-        """Beat entry exists AND DRY_SCHEDULE is True — entry is present but gated."""
+    def test_entry_present_and_gate_exists(self):
+        """Beat entry exists AND activation gate is checked (P4-canary)."""
         from workers.celery_app import celery_app
-        from workers.tasks.shadow_observation_tasks import DRY_SCHEDULE
+        from workers.tasks.shadow_observation_tasks import _check_activation_gate
 
         schedule = celery_app.conf.beat_schedule or {}
         assert "shadow-observation-5m" in schedule, "Beat entry must be present"
-        assert DRY_SCHEDULE is True, "DRY_SCHEDULE must remain True (P4 gate)"
+        allowed, gate = _check_activation_gate()
+        assert isinstance(allowed, bool)
 
 
 # ── No Execute / No Rollback Tests ────────────────────────────
@@ -166,7 +167,7 @@ class TestDuplicateStartBehavior:
         result = run_shadow_observation()
 
         assert result["status"] == "skipped"
-        assert result["dry_schedule"] is True
+        assert result["dry_schedule"] is False
         assert result["lock_acquired"] is False
         assert result["skipped_reason"] == "ALREADY_RUNNING"
         assert result["symbols_processed"] == 0
@@ -196,7 +197,7 @@ class TestDuplicateStartBehavior:
         assert result == {
             **result,  # preserve any extra fields
             "status": "skipped",
-            "dry_schedule": True,
+            "dry_schedule": False,
             "lock_acquired": False,
             "skipped_reason": "ALREADY_RUNNING",
             "symbols_processed": 0,
@@ -214,6 +215,7 @@ class TestDryRunSampleResult:
     @patch("workers.tasks.shadow_observation_tasks._release_lock")
     @patch("workers.tasks.shadow_observation_tasks._try_acquire_lock")
     @patch("workers.tasks.shadow_observation_tasks._reset_consecutive_failures")
+    @patch("workers.tasks.shadow_observation_tasks.DRY_SCHEDULE", True)
     def test_successful_dry_run_result_shape(
         self,
         mock_reset_failures,
@@ -221,7 +223,7 @@ class TestDryRunSampleResult:
         mock_release,
         mock_orch_run,
     ):
-        """Successful dry-run produces complete result dict."""
+        """Successful dry-run produces complete result dict (DRY_SCHEDULE patched True)."""
         mock_acquire.return_value = True
 
         mock_result = MagicMock()

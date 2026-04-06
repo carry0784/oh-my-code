@@ -1,6 +1,6 @@
 """RI-2A-2b + P3-A + P4-impl: Shadow Observation Beat Task.
 
-DRY_SCHEDULE=True is HARDCODED. P4-canary GO required to flip to False.
+DRY_SCHEDULE=False (P4-canary). Actual execution gated by activation_gate.
 
 P4-impl addition: wet-run code path implemented but gated behind:
   Gate 0: DRY_SCHEDULE constant (True = dry, False = wet-capable)
@@ -38,8 +38,8 @@ from workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
-# ── RI-2A-2b: FORCED True. False 전환은 별도 A 승인 후에만 허용. ──
-DRY_SCHEDULE: bool = True
+# ── P4-canary: False 전환 완료. Gate 1+1.5+2가 실제 실행을 통제. ──
+DRY_SCHEDULE: bool = False
 
 # ── Retention Planner — definitions only. Purge NOT implemented. ──
 # Purge activation requires: simulate → A approve → activate (3 separate gates)
@@ -222,17 +222,45 @@ def _load_ops_state_for_gate() -> dict:
         return {}
 
 
+_WRITES_CONSUMED_KEY = "shadow_observation_writes_consumed"
+_WRITES_CONSUMED_TTL = 604800  # 7 days
+
+
+def _get_redis_writes_consumed() -> int:
+    """Read writes_consumed from Redis. Fail-closed: returns write_budget on error."""
+    try:
+        redis_client = celery_app.backend.client
+        val = redis_client.get(_WRITES_CONSUMED_KEY)
+        return int(val) if val is not None else 0
+    except Exception:
+        # Fail-closed: if Redis unavailable, treat as budget exhausted
+        return 999999
+
+
+def _increment_redis_writes_consumed() -> int:
+    """Atomically increment writes_consumed in Redis. Returns new count."""
+    try:
+        redis_client = celery_app.backend.client
+        count = redis_client.incr(_WRITES_CONSUMED_KEY)
+        redis_client.expire(_WRITES_CONSUMED_KEY, _WRITES_CONSUMED_TTL)
+        return int(count)
+    except Exception:
+        logger.exception("writes_consumed_increment_failed")
+        return -1
+
+
 def _check_activation_gate() -> tuple[bool, dict]:
     """Machine-readable activation gate check.
 
     Returns (allowed: bool, gate_config: dict).
-    Source of truth: ops_state.json ONLY.
+    Budget source: ops_state.json (write_budget).
+    Consumed source: Redis counter (fail-closed: blocks if Redis unavailable).
     Markdown receipts are evidence documents — never read at runtime.
 
     Gate passes when ALL conditions are met:
       - activation_gate.status == "UNLOCKED"
       - activation_gate.receipt_signed == True
-      - activation_gate.write_budget > activation_gate.writes_consumed
+      - write_budget > redis_writes_consumed
     """
     state = _load_ops_state_for_gate()
     gate = state.get("activation_gate", {})
@@ -241,7 +269,13 @@ def _check_activation_gate() -> tuple[bool, dict]:
         return False, gate
     if not gate.get("receipt_signed"):
         return False, gate
-    if gate.get("write_budget", 0) <= gate.get("writes_consumed", 0):
+
+    budget = gate.get("write_budget", 0)
+    consumed = _get_redis_writes_consumed()
+    # Inject consumed into gate_config for logging/audit
+    gate["_redis_writes_consumed"] = consumed
+
+    if budget <= consumed:
         return False, gate
 
     return True, gate
@@ -387,6 +421,7 @@ def _run_wet_execution(
                         ):
                             result["writes_executed"] += 1
                             writes_consumed_this_run += 1
+                            _increment_redis_writes_consumed()
                             result["write_outcomes"].append(
                                 {
                                     "symbol": orch_res.symbol,
