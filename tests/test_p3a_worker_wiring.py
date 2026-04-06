@@ -158,11 +158,16 @@ class TestTaskIntegration:
         mock_acquire.return_value = True
         mock_gate.return_value = (True, {"status": "UNLOCKED"})
         mock_wet.return_value = {
-            "writes_executed": 0, "writes_failed_no_write": 0,
-            "writes_failed_after_write": 0, "writes_rolled_back": 0,
-            "writes_rollback_failed": 0, "writes_skipped_not_in_scope": 0,
-            "writes_skipped_no_verdict": 0, "write_outcomes": [],
-            "parity_check": True, "manual_intervention_required": False,
+            "writes_executed": 0,
+            "writes_failed_no_write": 0,
+            "writes_failed_after_write": 0,
+            "writes_rolled_back": 0,
+            "writes_rollback_failed": 0,
+            "writes_skipped_not_in_scope": 0,
+            "writes_skipped_no_verdict": 0,
+            "write_outcomes": [],
+            "parity_check": True,
+            "manual_intervention_required": False,
         }
 
         # Mock orchestrator results
@@ -221,11 +226,16 @@ class TestTaskIntegration:
         mock_acquire.return_value = True
         mock_gate.return_value = (True, {"status": "UNLOCKED"})
         mock_wet.return_value = {
-            "writes_executed": 0, "writes_failed_no_write": 0,
-            "writes_failed_after_write": 0, "writes_rolled_back": 0,
-            "writes_rollback_failed": 0, "writes_skipped_not_in_scope": 0,
-            "writes_skipped_no_verdict": 0, "write_outcomes": [],
-            "parity_check": True, "manual_intervention_required": False,
+            "writes_executed": 0,
+            "writes_failed_no_write": 0,
+            "writes_failed_after_write": 0,
+            "writes_rolled_back": 0,
+            "writes_rollback_failed": 0,
+            "writes_skipped_not_in_scope": 0,
+            "writes_skipped_no_verdict": 0,
+            "write_outcomes": [],
+            "parity_check": True,
+            "manual_intervention_required": False,
         }
 
         mock_result_sol = MagicMock()
