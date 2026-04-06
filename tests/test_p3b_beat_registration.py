@@ -66,19 +66,19 @@ class TestBeatEntryPresent:
 
 
 class TestActiveBeatCountDelta:
-    """Verify beat count changed from 10 to 11."""
+    """Verify beat count reflects all registered entries."""
 
     def test_total_beat_count(self):
-        """Active beat schedule must have exactly 11 entries (was 10)."""
+        """Active beat schedule must have exactly 12 entries (10 pre-P3-B + 1 shadow + 1 SOL paper)."""
         from workers.celery_app import celery_app
 
         schedule = celery_app.conf.beat_schedule or {}
-        assert len(schedule) == 11, (
-            f"Expected 11 beat entries (10 pre-P3-B + 1 shadow), got {len(schedule)}"
+        assert len(schedule) == 12, (
+            f"Expected 12 beat entries (10 pre-P3-B + 1 shadow + 1 SOL paper), got {len(schedule)}"
         )
 
-    def test_shadow_is_the_only_new_entry(self):
-        """Only shadow-observation-5m was added (delta = +1)."""
+    def test_shadow_and_sol_paper_are_new_entries(self):
+        """shadow-observation-5m and sol-paper-trading-hourly are the post-P3-B additions."""
         from workers.celery_app import celery_app
 
         schedule = celery_app.conf.beat_schedule or {}
@@ -95,7 +95,9 @@ class TestActiveBeatCountDelta:
             "collect-sentiment-hourly",
         }
         new_entries = set(schedule.keys()) - pre_p3b_entries
-        assert new_entries == {"shadow-observation-5m"}, f"Unexpected new entries: {new_entries}"
+        assert new_entries == {"shadow-observation-5m", "sol-paper-trading-hourly"}, (
+            f"Unexpected new entries: {new_entries}"
+        )
 
 
 # ── Include List Tests ─────────────────────────────────────────
