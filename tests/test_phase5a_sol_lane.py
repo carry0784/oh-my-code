@@ -758,3 +758,44 @@ class TestExitPaths:
         result = mgr.compute_close(session, exit_price=156.0, exit_reason="take_profit")
         expected_pnl = (156.0 - 150.0) / 150.0  # 0.04
         assert abs(result["pnl_delta"] - expected_pnl) < 1e-10
+
+
+# ===========================================================================
+# 14. EXCHANGE LIFECYCLE REGRESSION (Post-Pilot Fix)
+# ===========================================================================
+
+
+class TestExchangeLifecycleRegression:
+    """Prove sol_paper_tasks uses correct exchange lifecycle (no connect())."""
+
+    def test_no_connect_call_in_source(self):
+        """Task source must NOT call exchange.connect() (method does not exist)."""
+        from workers.tasks import sol_paper_tasks
+
+        source = open(sol_paper_tasks.__file__, "r", encoding="utf-8").read()
+        assert "exchange.connect()" not in source, (
+            "exchange.connect() must not appear — ExchangeFactory.create() returns ready instance"
+        )
+
+    def test_no_async_with_connect_pattern(self):
+        """Task source must NOT use 'async with exchange.connect()' pattern."""
+        from workers.tasks import sol_paper_tasks
+
+        source = open(sol_paper_tasks.__file__, "r", encoding="utf-8").read()
+        assert "async with exchange" not in source, (
+            "Exchange singleton has no async context manager — use directly after create()"
+        )
+
+    def test_uses_exchange_factory_create(self):
+        """Task must use ExchangeFactory.create() for exchange initialization."""
+        from workers.tasks import sol_paper_tasks
+
+        source = open(sol_paper_tasks.__file__, "r", encoding="utf-8").read()
+        assert "ExchangeFactory.create(" in source
+
+    def test_exchange_client_accessed_directly(self):
+        """Task must access exchange.client directly (no connect() wrapper)."""
+        from workers.tasks import sol_paper_tasks
+
+        source = open(sol_paper_tasks.__file__, "r", encoding="utf-8").read()
+        assert "exchange.client" in source
