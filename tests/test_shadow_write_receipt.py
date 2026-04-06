@@ -991,7 +991,7 @@ def _mock_db_with_receipt(shadow_receipt):
 
 
 class TestExecutionEnabledFlag:
-    """Verify EXECUTION_ENABLED=False is hardcoded in RI-2B-2a."""
+    """Verify EXECUTION_ENABLED=True after RI-2B-2b B3' (409ed2d)."""
 
     def test_execution_enabled_is_true(self):
         assert EXECUTION_ENABLED is True

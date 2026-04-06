@@ -1,12 +1,14 @@
-"""RI-2B-1 + RI-2B-2a: Shadow Write Service.
+"""RI-2B-1 + RI-2B-2a + RI-2B-2b(B3'): Shadow Write Service.
 
 RI-2B-1 (SEALED): evaluate_shadow_write — dry-run receipt-only.
-RI-2B-2a: execute_bounded_write / rollback_bounded_write — code exists but
-           EXECUTION_ENABLED=False (hardcoded). Real execution requires RI-2B-2b A approval.
+RI-2B-2a (SEALED): execute_bounded_write / rollback_bounded_write — code + contract.
+RI-2B-2b B3' (SEALED, 409ed2d): EXECUTION_ENABLED flipped False→True.
+    Real execution gated by activation_go_receipt (manual, 1-shot, 1-symbol).
 
 INSERT failure does NOT propagate.
 
-business_impact = false (RI-2B-2a: EXECUTION_ENABLED=False).
+business_impact = bounded (RI-2B-2b B3': EXECUTION_ENABLED=True, actual writes
+gated by signed activation_go_receipt + manual trigger only).
 """
 
 from __future__ import annotations
@@ -55,8 +57,8 @@ ALLOWED_TRANSITIONS: dict[tuple[str, str], frozenset[tuple[str, str]]] = {
 }
 
 
-# RI-2B-2a: FORCED False. True 전환은 RI-2B-2b 별도 A 승인 후에만 허용.
-# 무단 변경은 FROZEN violation으로 간주.
+# RI-2B-2b B3' (409ed2d): True. RI-2B-2a 당시 False → B3' A 승인 후 True 전환 완료.
+# False 재전환은 별도 수속 필요 (activation_go_receipt §21 참조).
 EXECUTION_ENABLED: bool = True
 
 
