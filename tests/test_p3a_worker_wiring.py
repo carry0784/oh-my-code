@@ -36,14 +36,14 @@ class TestDryScheduleGuard:
 
         assert DRY_SCHEDULE is True
 
-    def test_dry_schedule_assert_in_source(self):
-        """Runtime assert exists in task source."""
+    def test_dry_schedule_guard_in_source(self):
+        """DRY_SCHEDULE branch guard exists in task source (P4-impl: assert → if)."""
         import inspect
 
         from workers.tasks import shadow_observation_tasks
 
         source = inspect.getsource(shadow_observation_tasks.run_shadow_observation)
-        assert "assert DRY_SCHEDULE is True" in source
+        assert "if DRY_SCHEDULE:" in source
 
 
 # ── Lock TTL Tests ───────────────────────────────────────────────

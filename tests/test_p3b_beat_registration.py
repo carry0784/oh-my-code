@@ -111,14 +111,14 @@ class TestDryScheduleGate:
 
         assert DRY_SCHEDULE is True
 
-    def test_runtime_assert_in_task(self):
-        """Runtime assert DRY_SCHEDULE is True must exist in task code."""
+    def test_runtime_guard_in_task(self):
+        """DRY_SCHEDULE branch guard must exist in task code (P4-impl: assert → if)."""
         import inspect
 
         from workers.tasks import shadow_observation_tasks
 
         source = inspect.getsource(shadow_observation_tasks.run_shadow_observation)
-        assert "assert DRY_SCHEDULE is True" in source
+        assert "if DRY_SCHEDULE:" in source
 
     def test_entry_present_but_gated(self):
         """Beat entry exists AND DRY_SCHEDULE is True — entry is present but gated."""
