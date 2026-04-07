@@ -847,3 +847,57 @@ class TestBtcComponentWiring:
         assert SLIPPAGE_FLOOR == 0.0005
         assert _synthetic_slippage(None) == SLIPPAGE_FLOOR
         assert _synthetic_slippage(0.002) == 0.001
+
+
+class TestBtcAsyncioLoopRegression:
+    """Verify asyncio.run() is used instead of get_event_loop().run_until_complete().
+
+    Root cause: In Celery solo-pool, the event loop returned by get_event_loop()
+    is closed after the first async task completes. Subsequent calls hit
+    'NoneType' object has no attribute 'send' (AttributeError, not RuntimeError).
+    Fix: always use asyncio.run() which creates a fresh loop per call.
+    Same class as TestAsyncioLoopRegression in test_phase5a_sol_lane.py.
+    """
+
+    def test_no_get_event_loop_in_btc_paper_tasks(self):
+        """btc_paper_tasks must NOT use asyncio.get_event_loop()."""
+        from workers.tasks import btc_paper_tasks
+
+        source = open(btc_paper_tasks.__file__, "r", encoding="utf-8").read()
+        assert "get_event_loop" not in source, (
+            "asyncio.get_event_loop() causes closed-loop reuse in solo-pool. "
+            "Use asyncio.run() instead."
+        )
+
+    def test_uses_asyncio_run(self):
+        """btc_paper_tasks must use asyncio.run() for async execution."""
+        from workers.tasks import btc_paper_tasks
+
+        source = open(btc_paper_tasks.__file__, "r", encoding="utf-8").read()
+        assert "asyncio.run(" in source
+
+    def test_consecutive_asyncio_run_no_closed_loop(self):
+        """asyncio.run() creates a fresh loop each call — no closed-loop error."""
+        import asyncio
+
+        async def dummy():
+            return 42
+
+        for i in range(3):
+            result = asyncio.run(dummy())
+            assert result == 42, f"Call {i + 1} failed: closed loop reuse"
+
+    def test_no_run_until_complete_in_btc_task_entry(self):
+        """No run_until_complete in btc_paper_tasks (AST check)."""
+        import ast as _ast
+
+        from workers.tasks import btc_paper_tasks
+
+        source = open(btc_paper_tasks.__file__, "r", encoding="utf-8").read()
+        tree = _ast.parse(source)
+        for node in _ast.walk(tree):
+            if isinstance(node, _ast.Attribute) and node.attr == "run_until_complete":
+                pytest.fail(
+                    "run_until_complete found in btc_paper_tasks — "
+                    "use asyncio.run() to avoid closed-loop reuse."
+                )
