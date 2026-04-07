@@ -84,6 +84,8 @@ jobs:
           app/services/walk_forward_validator.py
           app/services/strategy_registry.py
           app/services/trend_observation_service.py
+          app/services/watch_volume_service.py
+          app/services/symbol_screener.py
           --ignore-missing-imports
           --disallow-untyped-defs
           --disallow-incomplete-defs

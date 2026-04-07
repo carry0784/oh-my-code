@@ -144,7 +144,7 @@ def _build_density_signal(
         return WatchDensitySignal(description="No WATCH candidates.")
 
     # Find dominant tier
-    dominant_tier = max(tier_counts, key=tier_counts.get)
+    dominant_tier = max(tier_counts, key=lambda k: tier_counts[k])
     dominant_count = tier_counts[dominant_tier]
     dominant_ratio = dominant_count / watch_total if watch_total > 0 else 0.0
     is_concentrated = dominant_ratio > _CONCENTRATION_THRESHOLD
