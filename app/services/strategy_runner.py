@@ -79,7 +79,7 @@ class StrategyRunner:
 
     def run_evolution(
         self,
-        ohlcv: list[list],
+        ohlcv: list[list[float]],
         lookback: int = 50,
     ) -> RunnerResult:
         """

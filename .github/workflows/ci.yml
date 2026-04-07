@@ -69,7 +69,17 @@ jobs:
           restore-keys: ${{ runner.os }}-pip-typecheck-
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -r requirements.txt mypy
-      - run: mypy app/services/data_provider.py --ignore-missing-imports --disallow-untyped-defs --disallow-incomplete-defs --no-error-summary
+      - run: >-
+          mypy
+          app/services/data_provider.py
+          app/services/strategy_genome.py
+          app/services/system_health.py
+          app/services/strategy_runner.py
+          --ignore-missing-imports
+          --disallow-untyped-defs
+          --disallow-incomplete-defs
+          --follow-imports=skip
+          --no-error-summary
 
   build:
     name: build
