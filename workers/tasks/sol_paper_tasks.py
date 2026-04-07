@@ -82,6 +82,16 @@ def run_sol_paper_bar(
             error=str(e),
             receipt_id=receipt.receipt_id,
         )
+        # Best-effort persist of error receipt
+        try:
+            asyncio.run(_persist_error_receipt(receipt))
+        except Exception as persist_err:
+            logger.error(
+                "sol_paper_error_receipt_persist_failed",
+                original_error=str(e),
+                persist_error=str(persist_err),
+                receipt_id=receipt.receipt_id,
+            )
         return {"action": BarAction.ERROR_FAIL_CLOSED, "error": str(e)}
 
 
@@ -270,11 +280,29 @@ async def _run_sol_paper_bar_async(
 
         except Exception as e:
             await db.rollback()
+            # Populate receipt for error persistence
+            receipt.action = BarAction.ERROR_FAIL_CLOSED
+            receipt.decision_source = "error"
+            receipt.block_reason = str(e)
+            receipt.halt_state = True
             logger.error(
                 "sol_paper_error_fail_closed",
                 error=str(e),
                 receipt_id=receipt.receipt_id,
             )
+            # Persist error receipt in a new clean session
+            try:
+                async with async_session_factory() as err_db:
+                    err_receipt_store = ReceiptStore(err_db)
+                    await err_receipt_store.create(receipt)
+                    await err_db.commit()
+            except Exception as persist_err:
+                logger.error(
+                    "sol_paper_error_receipt_persist_failed",
+                    original_error=str(e),
+                    persist_error=str(persist_err),
+                    receipt_id=receipt.receipt_id,
+                )
             return {"action": BarAction.ERROR_FAIL_CLOSED, "error": str(e)}
 
 
@@ -293,3 +321,14 @@ def _receipt_to_dict(receipt: PaperTradingReceipt) -> dict:
     import dataclasses
 
     return dataclasses.asdict(receipt)
+
+
+async def _persist_error_receipt(receipt: PaperTradingReceipt) -> None:
+    """Best-effort persist of error receipt in an independent session."""
+    from app.core.database import async_session_factory
+    from app.services.session_store_cr046 import ReceiptStore
+
+    async with async_session_factory() as db:
+        receipt_store = ReceiptStore(db)
+        await receipt_store.create(receipt)
+        await db.commit()
