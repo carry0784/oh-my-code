@@ -808,3 +808,62 @@ class TestExchangeLifecycleRegression:
 
         source = open(sol_paper_tasks.__file__, "r", encoding="utf-8").read()
         assert "exchange.client" in source
+
+
+# ===========================================================================
+# 8. ASYNCIO LOOP REGRESSION (Worker hang prevention)
+# ===========================================================================
+
+
+class TestAsyncioLoopRegression:
+    """Verify asyncio.run() is used instead of get_event_loop().run_until_complete().
+
+    Root cause: In Celery solo-pool, get_event_loop() returns a closed loop
+    after the first async task completes. Subsequent calls fail with
+    "'NoneType' object has no attribute 'send'", causing ERROR_FAIL_CLOSED
+    and eventually worker hang (missed heartbeat).
+    """
+
+    def test_no_get_event_loop_in_sol_paper_tasks(self):
+        """sol_paper_tasks must NOT use asyncio.get_event_loop()."""
+        from workers.tasks import sol_paper_tasks
+
+        source = open(sol_paper_tasks.__file__, "r", encoding="utf-8").read()
+        assert "get_event_loop" not in source, (
+            "asyncio.get_event_loop() causes closed-loop reuse in solo-pool. "
+            "Use asyncio.run() instead."
+        )
+
+    def test_uses_asyncio_run(self):
+        """sol_paper_tasks must use asyncio.run() for async execution."""
+        from workers.tasks import sol_paper_tasks
+
+        source = open(sol_paper_tasks.__file__, "r", encoding="utf-8").read()
+        assert "asyncio.run(" in source
+
+    def test_consecutive_asyncio_run_no_closed_loop(self):
+        """asyncio.run() creates a fresh loop each call — no closed-loop error."""
+        import asyncio
+
+        async def dummy():
+            return 42
+
+        # Simulate consecutive Celery task invocations in same process
+        for i in range(3):
+            result = asyncio.run(dummy())
+            assert result == 42, f"Call {i + 1} failed: closed loop reuse"
+
+    def test_no_run_until_complete_in_task_entry(self):
+        """The task entry point run_sol_paper_bar must not use run_until_complete."""
+        import ast as _ast
+        from workers.tasks import sol_paper_tasks
+
+        source = open(sol_paper_tasks.__file__, "r", encoding="utf-8").read()
+        tree = _ast.parse(source)
+
+        for node in _ast.walk(tree):
+            if isinstance(node, _ast.Attribute) and node.attr == "run_until_complete":
+                pytest.fail(
+                    "run_until_complete found in sol_paper_tasks — "
+                    "must use asyncio.run() to avoid closed-loop hang"
+                )

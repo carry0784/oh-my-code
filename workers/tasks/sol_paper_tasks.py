@@ -62,12 +62,10 @@ def run_sol_paper_bar(
     )
 
     try:
-        result = asyncio.get_event_loop().run_until_complete(
-            _run_sol_paper_bar_async(symbol, exchange_name, receipt),
-        )
-        return result
-    except RuntimeError:
-        # No event loop running
+        # Always use asyncio.run() to guarantee a fresh event loop per task.
+        # Previous pattern reused a closed loop, causing 'NoneType' object
+        # has no attribute 'send' in solo-pool workers after the first
+        # async task completed.
         result = asyncio.run(
             _run_sol_paper_bar_async(symbol, exchange_name, receipt),
         )
