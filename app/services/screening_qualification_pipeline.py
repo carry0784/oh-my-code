@@ -33,7 +33,7 @@ from app.services.screening_transform import (
 
 # Decisions that allow pipeline to proceed past FC-1/FC-2.
 # Any DataQualityDecision NOT in either set is unknown → fail-fast.
-_PROCEED_DECISIONS: frozenset = frozenset(
+_PROCEED_DECISIONS: frozenset[DataQualityDecision] = frozenset(
     {
         DataQualityDecision.OK,
         DataQualityDecision.PARTIAL_USABLE,

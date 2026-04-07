@@ -14,6 +14,7 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from typing import Any
 
 from app.core.logging import get_logger
 from app.services.strategy_genome import StrategyGenome
@@ -117,7 +118,7 @@ class StrategyRegistry:
             logger.info("registry_entry_retired", genome_id=genome_id)
         return removed
 
-    def export(self) -> list[dict]:
+    def export(self) -> list[dict[str, Any]]:
         """Export registry as list of dicts."""
         return [
             {
@@ -136,7 +137,7 @@ class StrategyRegistry:
     def size(self) -> int:
         return len(self.entries)
 
-    def _param_similarity(self, params_a: dict, params_b: dict) -> float:
+    def _param_similarity(self, params_a: dict[str, Any], params_b: dict[str, Any]) -> float:
         """Calculate similarity between two parameter sets (0.0 to 1.0)."""
         all_keys = set(params_a.keys()) | set(params_b.keys())
         if not all_keys:

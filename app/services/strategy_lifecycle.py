@@ -63,7 +63,7 @@ class TransitionRequest:
 class StrategyLifecycleManager:
     """Manages strategy state transitions."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.records: dict[str, LifecycleRecord] = {}
 
     def register(self, genome_id: str) -> LifecycleRecord:

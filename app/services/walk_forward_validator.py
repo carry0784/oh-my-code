@@ -66,7 +66,7 @@ class WalkForwardValidator:
     def validate(
         self,
         strategy: BaseStrategy,
-        ohlcv: list[list],
+        ohlcv: list[list[float]],
         lookback: int = 50,
     ) -> WalkForwardResult:
         """

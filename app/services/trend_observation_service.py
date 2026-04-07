@@ -145,8 +145,8 @@ def build_trend_observation(
 
 def _build_comparison(
     metric_name: str,
-    current_snaps: list,
-    previous_snaps: list,
+    current_snaps: list[object],
+    previous_snaps: list[object],
     both_sufficient: bool,
     now: datetime,
 ) -> MetricComparison:
@@ -254,7 +254,7 @@ def _build_density_signal(
 # -- Helpers ----------------------------------------------------------------- #
 
 
-def _last_value(snapshots: list, metric_name: str) -> int:
+def _last_value(snapshots: list[object], metric_name: str) -> int:
     """Get the last (most recent) snapshot value for a metric."""
     if not snapshots:
         return 0
