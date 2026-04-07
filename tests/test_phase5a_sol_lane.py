@@ -851,7 +851,7 @@ class TestAsyncioLoopRegression:
         # Simulate consecutive Celery task invocations in same process
         for i in range(3):
             result = asyncio.run(dummy())
-            assert result == 42, f"Call {i+1} failed: closed loop reuse"
+            assert result == 42, f"Call {i + 1} failed: closed loop reuse"
 
     def test_no_run_until_complete_in_task_entry(self):
         """The task entry point run_sol_paper_bar must not use run_until_complete."""
