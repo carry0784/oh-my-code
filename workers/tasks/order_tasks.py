@@ -33,16 +33,20 @@ def submit_order(self, order_id: str):
             logger.error("Order not found", order_id=order_id)
             return {"success": False, "error": "Order not found"}
 
-        exchange = ExchangeFactory.create(order.exchange)
-
         async def _submit():
-            return await exchange.create_order(
-                symbol=order.symbol,
-                side=order.side.value,
-                order_type=order.order_type.value,
-                quantity=order.quantity,
-                price=order.price,
-            )
+            # Fresh instance per asyncio.run() — prevents stale
+            # aiohttp session from closed event loop.
+            exchange = ExchangeFactory.create_fresh(order.exchange)
+            try:
+                return await exchange.create_order(
+                    symbol=order.symbol,
+                    side=order.side.value,
+                    order_type=order.order_type.value,
+                    quantity=order.quantity,
+                    price=order.price,
+                )
+            finally:
+                await exchange.close()
 
         result = asyncio.run(_submit())
         order.exchange_order_id = result.get("id")
@@ -70,10 +74,14 @@ def check_pending_orders():
             if not order.exchange_order_id:
                 continue
 
-            exchange = ExchangeFactory.create(order.exchange)
-
             async def _fetch():
-                return await exchange.fetch_order(order.exchange_order_id, order.symbol)
+                # Fresh instance per asyncio.run() — prevents stale
+                # aiohttp session from closed event loop.
+                exchange = ExchangeFactory.create_fresh(order.exchange)
+                try:
+                    return await exchange.fetch_order(order.exchange_order_id, order.symbol)
+                finally:
+                    await exchange.close()
 
             try:
                 result = asyncio.run(_fetch())

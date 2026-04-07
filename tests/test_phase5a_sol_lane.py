@@ -795,12 +795,13 @@ class TestExchangeLifecycleRegression:
             "Exchange singleton has no async context manager — use directly after create()"
         )
 
-    def test_uses_exchange_factory_create(self):
-        """Task must use ExchangeFactory.create() for exchange initialization."""
+    def test_uses_exchange_factory_create_fresh(self):
+        """Task must use ExchangeFactory.create_fresh() (not singleton create())
+        to prevent stale aiohttp session from closed event loop in Celery."""
         from workers.tasks import sol_paper_tasks
 
         source = open(sol_paper_tasks.__file__, "r", encoding="utf-8").read()
-        assert "ExchangeFactory.create(" in source
+        assert "ExchangeFactory.create_fresh(" in source
 
     def test_exchange_client_accessed_directly(self):
         """Task must access exchange.client directly (no connect() wrapper)."""

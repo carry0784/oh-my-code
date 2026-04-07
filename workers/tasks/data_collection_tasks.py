@@ -44,25 +44,33 @@ def collect_market_state(
 ):
     """Collect full market state: price + indicators + sentiment → persist snapshot."""
     try:
-        exchange = ExchangeFactory.create(exchange_name)
 
         async def _collect():
-            collector = MarketDataCollector(exchange.client)
-            market_data = await collector.collect(
-                symbol=symbol,
-                ohlcv_timeframe=ohlcv_timeframe,
-                ohlcv_limit=ohlcv_limit,
-            )
+            # Create exchange INSIDE async context so the aiohttp session
+            # binds to the *current* event loop created by asyncio.run().
+            # Using the singleton here caused "Event loop is closed" on
+            # every invocation after the first asyncio.run() in the same
+            # Celery solo-pool worker process.
+            exchange = ExchangeFactory.create_fresh(exchange_name)
+            try:
+                collector = MarketDataCollector(exchange.client)
+                market_data = await collector.collect(
+                    symbol=symbol,
+                    ohlcv_timeframe=ohlcv_timeframe,
+                    ohlcv_limit=ohlcv_limit,
+                )
 
-            sentiment_collector = SentimentCollector()
-            sentiment = await sentiment_collector.collect()
+                sentiment_collector = SentimentCollector()
+                sentiment = await sentiment_collector.collect()
 
-            calculator = IndicatorCalculator()
-            indicators = calculator.calculate(market_data.ohlcv)
+                calculator = IndicatorCalculator()
+                indicators = calculator.calculate(market_data.ohlcv)
 
-            builder = MarketStateBuilder()
-            snapshot = builder.build(market_data, indicators, sentiment)
-            return snapshot
+                builder = MarketStateBuilder()
+                snapshot = builder.build(market_data, indicators, sentiment)
+                return snapshot
+            finally:
+                await exchange.close()
 
         snapshot = asyncio.run(_collect())
 

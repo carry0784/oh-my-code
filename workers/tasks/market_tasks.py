@@ -30,10 +30,15 @@ def sync_all_positions():
     try:
         for exchange_name in ["binance"]:
             try:
-                exchange = ExchangeFactory.create(exchange_name)
 
                 async def _fetch():
-                    return await exchange.fetch_positions()
+                    # Fresh instance per asyncio.run() — prevents stale
+                    # aiohttp session from closed event loop.
+                    exchange = ExchangeFactory.create_fresh(exchange_name)
+                    try:
+                        return await exchange.fetch_positions()
+                    finally:
+                        await exchange.close()
 
                 positions = asyncio.run(_fetch())
 
@@ -87,10 +92,15 @@ def sync_all_positions():
 def fetch_market_data(symbol: str, exchange: str = "binance", timeframe: str = "1h"):
     """Fetch OHLCV data for analysis."""
     try:
-        exch = ExchangeFactory.create(exchange)
 
         async def _fetch():
-            return await exch.fetch_ohlcv(symbol, timeframe, limit=100)
+            # Fresh instance per asyncio.run() — prevents stale
+            # aiohttp session from closed event loop.
+            exch = ExchangeFactory.create_fresh(exchange)
+            try:
+                return await exch.fetch_ohlcv(symbol, timeframe, limit=100)
+            finally:
+                await exch.close()
 
         ohlcv = asyncio.run(_fetch())
         logger.info("Market data fetched", symbol=symbol, exchange=exchange, bars=len(ohlcv))

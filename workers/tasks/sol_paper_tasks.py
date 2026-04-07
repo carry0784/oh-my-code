@@ -144,8 +144,9 @@ async def _run_sol_paper_bar_async(
                 await _commit_all(db, store, receipt_store, session, receipt)
                 return _receipt_to_dict(receipt)
 
-            # 4. Fetch OHLCV data (singleton exchange — no connect() needed)
-            exchange = ExchangeFactory.create(exchange_name)
+            # 4. Fetch OHLCV data — fresh instance per asyncio.run()
+            # to prevent stale aiohttp session from closed event loop.
+            exchange = ExchangeFactory.create_fresh(exchange_name)
             collector_module = __import__(
                 "app.services.market_data_collector",
                 fromlist=["MarketDataCollector"],
