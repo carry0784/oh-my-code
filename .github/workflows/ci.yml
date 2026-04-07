@@ -75,6 +75,15 @@ jobs:
           app/services/strategy_genome.py
           app/services/system_health.py
           app/services/strategy_runner.py
+          app/services/screening_transform.py
+          app/services/strategy_tournament.py
+          app/services/sector_rotator.py
+          app/services/sentiment_collector.py
+          app/services/screening_qualification_pipeline.py
+          app/services/strategy_lifecycle.py
+          app/services/walk_forward_validator.py
+          app/services/strategy_registry.py
+          app/services/trend_observation_service.py
           --ignore-missing-imports
           --disallow-untyped-defs
           --disallow-incomplete-defs
