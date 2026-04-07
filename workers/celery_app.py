@@ -104,17 +104,17 @@ celery_app.conf.beat_schedule = {
     "strategy-cycle-crypto-5m": {
         "task": "workers.tasks.cycle_runner_tasks.run_strategy_cycle",
         "schedule": 300.0,  # 5min
-        "kwargs": {"universe": "crypto", "dry_run": True},
+        "kwargs": {"market": "CRYPTO", "dry_run": True},
     },
     "strategy-cycle-kr-stock-5m": {
         "task": "workers.tasks.cycle_runner_tasks.run_strategy_cycle",
         "schedule": 300.0,  # 5min
-        "kwargs": {"universe": "kr_stock", "dry_run": True},
+        "kwargs": {"market": "KR_STOCK", "dry_run": True},
     },
     "strategy-cycle-us-stock-5m": {
         "task": "workers.tasks.cycle_runner_tasks.run_strategy_cycle",
         "schedule": 300.0,  # 5min
-        "kwargs": {"universe": "us_stock", "dry_run": True},
+        "kwargs": {"market": "US_STOCK", "dry_run": True},
     },
 }
 
