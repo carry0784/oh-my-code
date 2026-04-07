@@ -230,4 +230,4 @@ class TestBeatSchedule:
         from workers.celery_app import celery_app
 
         schedule = celery_app.conf.beat_schedule
-        assert len(schedule) == 13  # post-L3 restructure: 13 active entries
+        assert len(schedule) == 14  # 14 entries: 13 base + sol-paper-trading-hourly (Stage B)

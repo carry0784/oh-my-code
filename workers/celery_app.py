@@ -44,9 +44,14 @@ celery_app.conf.beat_schedule = {
     # ── DISABLED (CR-049 BL-EXMODE01): private API tasks removed from schedule ──
     # "sync-positions-every-minute" — REQUIRES_PRIVATE_API, re-enable at PAPER mode
     # "check-order-status-every-30s" — REQUIRES_PRIVATE_API, re-enable at PAPER mode
-    # "sol-paper-trading-hourly" — Phase 5a CLOSED, re-enable at next phase
     #
-    # ── Active schedule (13 entries) ──
+    # ── Active schedule (14 entries) ──
+    # CR-046 Stage B: SOL paper trading (dry_run=True, hourly, SOL only)
+    "sol-paper-trading-hourly": {
+        "task": "workers.tasks.sol_paper_tasks.run_sol_paper_bar",
+        "schedule": 3600.0,  # 1h
+        "kwargs": {"symbol": "SOL/USDT", "exchange_name": "binance"},
+    },
     "expire-old-signals": {
         "task": "workers.tasks.signal_tasks.expire_signals",
         "schedule": 300.0,
