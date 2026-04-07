@@ -146,7 +146,9 @@ async def _run_btc_paper_bar_async(
 
             # 4. Fetch OHLCV data with API latency measurement
             api_start = time.monotonic()
-            exchange = ExchangeFactory.create(exchange_name)
+            # Fresh instance per asyncio.run() — prevents stale
+            # aiohttp session from closed event loop.
+            exchange = ExchangeFactory.create_fresh(exchange_name)
             async with exchange.connect():
                 collector_module = __import__(
                     "app.services.market_data_collector",
