@@ -186,9 +186,7 @@ class TestFT2RollbackBoundedWrite:
     """FT-2: rollback_bounded_write integration test."""
 
     @pytest.mark.asyncio
-    async def test_rollback_after_successful_execution(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_rollback_after_successful_execution(self, db_session: AsyncSession) -> None:
         """Execute unchecked→pass, then rollback pass→unchecked."""
         # Setup: symbol + shadow receipt
         sym = _make_symbol(symbol="SOL/USDT", qualification_status="unchecked")
@@ -238,9 +236,7 @@ class TestFT3CASEdgeCases:
     """FT-3: CAS 0-row / stale precondition edge case tests."""
 
     @pytest.mark.asyncio
-    async def test_stale_precondition_already_pass(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_stale_precondition_already_pass(self, db_session: AsyncSession) -> None:
         """Symbol already 'pass' but receipt says current='unchecked' → BLOCKED."""
         sym = _make_symbol(symbol="ETH/USDT", qualification_status="pass")
         db_session.add(sym)
@@ -271,9 +267,7 @@ class TestFT3CASEdgeCases:
         assert await _read_qualification_status(db_session, "ETH/USDT") == "pass"
 
     @pytest.mark.asyncio
-    async def test_symbol_not_found_blocks(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_symbol_not_found_blocks(self, db_session: AsyncSession) -> None:
         """No symbol row in DB → BLOCKED (current_db_value is None)."""
         shadow_receipt = _make_shadow_receipt(
             receipt_id=_uid(),
@@ -296,9 +290,7 @@ class TestFT3CASEdgeCases:
         assert result.block_reason_code == BlockReasonCode.STALE_PRECONDITION.value
 
     @pytest.mark.asyncio
-    async def test_disallowed_transition_blocks(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_disallowed_transition_blocks(self, db_session: AsyncSession) -> None:
         """Transition unchecked→invalid should be BLOCKED (not in ALLOWED_TRANSITIONS)."""
         sym = _make_symbol(symbol="AVAX/USDT", qualification_status="unchecked")
         db_session.add(sym)
@@ -335,9 +327,7 @@ class TestFT4GuardBehavior:
     """FT-4: Receipt consumed / already-rolled-back / exception guards."""
 
     @pytest.mark.asyncio
-    async def test_receipt_already_consumed_blocks(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_receipt_already_consumed_blocks(self, db_session: AsyncSession) -> None:
         """Same shadow_receipt_id used twice → 2nd call BLOCKED."""
         sym = _make_symbol(symbol="DOT/USDT", qualification_status="unchecked")
         db_session.add(sym)
@@ -373,9 +363,7 @@ class TestFT4GuardBehavior:
         assert result2.block_reason_code == BlockReasonCode.RECEIPT_ALREADY_CONSUMED.value
 
     @pytest.mark.asyncio
-    async def test_double_rollback_blocks(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_double_rollback_blocks(self, db_session: AsyncSession) -> None:
         """Rollback same execution twice → 2nd call BLOCKED."""
         sym = _make_symbol(symbol="LINK/USDT", qualification_status="unchecked")
         db_session.add(sym)
@@ -423,9 +411,7 @@ class TestFT4GuardBehavior:
         assert rb2.block_reason_code == BlockReasonCode.RECEIPT_ALREADY_CONSUMED.value
 
     @pytest.mark.asyncio
-    async def test_no_prior_shadow_receipt_blocks(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_no_prior_shadow_receipt_blocks(self, db_session: AsyncSession) -> None:
         """execute_bounded_write with nonexistent shadow_receipt_id → BLOCKED."""
         sym = _make_symbol(symbol="ATOM/USDT", qualification_status="unchecked")
         db_session.add(sym)
@@ -443,9 +429,7 @@ class TestFT4GuardBehavior:
         assert result.block_reason_code == BlockReasonCode.NO_PRIOR_RECEIPT.value
 
     @pytest.mark.asyncio
-    async def test_rollback_nonexistent_execution_blocks(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_rollback_nonexistent_execution_blocks(self, db_session: AsyncSession) -> None:
         """rollback_bounded_write with nonexistent execution_receipt_id → BLOCKED."""
         result = await rollback_bounded_write(
             db=db_session,
@@ -460,9 +444,7 @@ class TestFT4GuardBehavior:
 
     @pytest.mark.asyncio
     @patch("app.services.shadow_write_service.EXECUTION_ENABLED", False)
-    async def test_execution_disabled_blocks(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_execution_disabled_blocks(self, db_session: AsyncSession) -> None:
         """EXECUTION_ENABLED=False → BLOCKED."""
         sym = _make_symbol(symbol="ADA/USDT", qualification_status="unchecked")
         db_session.add(sym)
@@ -490,9 +472,7 @@ class TestFT4GuardBehavior:
         assert await _read_qualification_status(db_session, "ADA/USDT") == "unchecked"
 
     @pytest.mark.asyncio
-    async def test_would_skip_receipt_blocks_execution(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_would_skip_receipt_blocks_execution(self, db_session: AsyncSession) -> None:
         """Shadow receipt with verdict=WOULD_SKIP → BLOCKED (not WOULD_WRITE)."""
         sym = _make_symbol(symbol="XRP/USDT", qualification_status="unchecked")
         db_session.add(sym)
@@ -530,9 +510,7 @@ class TestFT5BehavioralContracts:
     """
 
     @pytest.mark.asyncio
-    async def test_allowed_transitions_contract(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_allowed_transitions_contract(self, db_session: AsyncSession) -> None:
         """Only ALLOWED_TRANSITIONS keys succeed. Verify by behavior."""
         # Verify allowed: unchecked→pass
         sym = _make_symbol(symbol="SOL-CONTRACT/USDT", qualification_status="unchecked")
@@ -558,9 +536,7 @@ class TestFT5BehavioralContracts:
         assert result.verdict == ExecutionVerdict.EXECUTED.value
 
     @pytest.mark.asyncio
-    async def test_forbidden_transition_pass_to_unchecked(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_forbidden_transition_pass_to_unchecked(self, db_session: AsyncSession) -> None:
         """pass→unchecked is NOT in ALLOWED_TRANSITIONS → BLOCKED."""
         sym = _make_symbol(symbol="FORBIDDEN/USDT", qualification_status="pass")
         db_session.add(sym)
@@ -587,9 +563,7 @@ class TestFT5BehavioralContracts:
         assert result.verdict == ExecutionVerdict.BLOCKED.value
 
     @pytest.mark.asyncio
-    async def test_receipt_append_only_contract(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_receipt_append_only_contract(self, db_session: AsyncSession) -> None:
         """Every execute/rollback adds a receipt. Receipt count only grows."""
         sym = _make_symbol(symbol="APPEND/USDT", qualification_status="unchecked")
         db_session.add(sym)
@@ -630,9 +604,7 @@ class TestFT5BehavioralContracts:
         assert after_rb > after_exec  # another receipt added
 
     @pytest.mark.asyncio
-    async def test_execute_rollback_roundtrip_idempotent(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_execute_rollback_roundtrip_idempotent(self, db_session: AsyncSession) -> None:
         """Execute + rollback = original state."""
         sym = _make_symbol(symbol="ROUNDTRIP/USDT", qualification_status="unchecked")
         db_session.add(sym)
@@ -675,9 +647,7 @@ class TestFT5BehavioralContracts:
         assert final == original
 
     @pytest.mark.asyncio
-    async def test_one_to_one_binding_enforced(
-        self, db_session: AsyncSession
-    ) -> None:
+    async def test_one_to_one_binding_enforced(self, db_session: AsyncSession) -> None:
         """Each shadow receipt can only be executed exactly once (1:1 binding)."""
         sym = _make_symbol(symbol="BINDING/USDT", qualification_status="unchecked")
         db_session.add(sym)
@@ -720,7 +690,5 @@ class TestFT5BehavioralContracts:
 
 async def _receipt_count(db: AsyncSession, symbol: str) -> int:
     """Count receipts for a symbol."""
-    result = await db.execute(
-        select(ShadowWriteReceipt).where(ShadowWriteReceipt.symbol == symbol)
-    )
+    result = await db.execute(select(ShadowWriteReceipt).where(ShadowWriteReceipt.symbol == symbol))
     return len(list(result.scalars().all()))
