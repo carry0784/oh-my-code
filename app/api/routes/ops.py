@@ -415,7 +415,7 @@ async def baseline_drift_check():
     forbidden_keys = [
         "sync-positions-every-minute",
         "check-order-status-every-30s",
-        "sol-paper-trading-hourly",
+        # "sol-paper-trading-hourly" — activated in Stage B (CR-046)
     ]
     leaked = [k for k in forbidden_keys if k in schedule_keys]
     match_forbidden = len(leaked) == 0

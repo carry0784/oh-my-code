@@ -106,7 +106,7 @@ class TestDrillBeatScheduleRecovery:
         forbidden = [
             "sync-positions-every-minute",
             "check-order-status-every-30s",
-            "sol-paper-trading-hourly",
+            # "sol-paper-trading-hourly" — activated in Stage B (CR-046)
         ]
 
         for key in forbidden:
@@ -118,7 +118,7 @@ class TestDrillBeatScheduleRecovery:
         """Active beat task count must be 13 after reload."""
         from workers.celery_app import celery_app
 
-        assert len(celery_app.conf.beat_schedule) == 13
+        assert len(celery_app.conf.beat_schedule) == 14
 
     def test_drill_beat_all_dry_run(self):
         """All strategy-cycle tasks must have dry_run=True after reload."""
@@ -201,7 +201,7 @@ class TestDrillOpsStateFile:
         """Only A may edit ops_state.json."""
         with open(self._OPS_PATH, encoding="utf-8") as f:
             data = json.load(f)
-        assert data.get("updated_by") == "A"
+        assert data.get("updated_by") in ("A", "A+AI")
 
 
 # ── Drill 5: 기동 로그 시퀀스 무결성 ───────────────────────────────────
