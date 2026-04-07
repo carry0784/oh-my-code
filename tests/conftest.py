@@ -29,6 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 # spec). See docs/operations/evidence/cr048_ri2b2c_session2_amendment_v2.md
 # ---------------------------------------------------------------------------
 import app.models.asset  # noqa: F401
+import app.models.shadow_write_receipt  # noqa: F401  — same eager import pattern
 
 from app.main import app
 from app.core.database import Base, get_db
