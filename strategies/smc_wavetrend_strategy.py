@@ -191,6 +191,65 @@ class SMCWaveTrendStrategy(BaseStrategy):
     def min_bars(self) -> int:
         return max(2 * self.internal_length + 1, self.n2 + 5)
 
+    # -----------------------------------------------------------------
+    # Diagnostic helpers (C1-A)
+    # -----------------------------------------------------------------
+
+    @staticmethod
+    def _compute_near_miss_type(smc_sig: int, wt_sig: int) -> str | None:
+        """Canonical near-miss classification. Inputs: raw signal ints only."""
+        if smc_sig != 0 and wt_sig == 0:
+            return "SMC_ONLY"
+        if smc_sig == 0 and wt_sig != 0:
+            return "WT_ONLY"
+        if smc_sig != 0 and wt_sig != 0 and smc_sig != wt_sig:
+            return "DIR_MISMATCH"
+        return None
+
+    @staticmethod
+    def _compute_skip_reason_codes(smc_sig: int, wt_sig: int) -> list[str]:
+        codes: list[str] = []
+        if smc_sig == 0:
+            codes.append("SMC_ZERO")
+        if wt_sig == 0:
+            codes.append("WT_ZERO")
+        if smc_sig != 0 and wt_sig != 0 and smc_sig != wt_sig:
+            codes.append("DIRECTION_MISMATCH")
+        return codes
+
+    def _build_diag(
+        self,
+        smc_sig: int,
+        wt_sig: int,
+        smc_trend: int,
+        wt1_val: float | None,
+        wt2_val: float | None,
+        close_price: float,
+    ) -> dict:
+        wt_cross_dist = (
+            abs(wt1_val - wt2_val)
+            if wt1_val is not None and wt2_val is not None
+            else None
+        )
+        return {
+            "smc_sig_raw": smc_sig,
+            "smc_trend_raw": smc_trend,
+            "close_price": float(close_price),
+            "wt_sig_raw": wt_sig,
+            "wt1_val": wt1_val,
+            "wt2_val": wt2_val,
+            "wt_cross_distance": wt_cross_dist,
+            "skip_reason_codes": self._compute_skip_reason_codes(smc_sig, wt_sig),
+            "near_miss_type": self._compute_near_miss_type(smc_sig, wt_sig),
+            "diagnostic_only": True,
+            "diagnostic_version": 1,
+            "diagnostic_populated": True,
+        }
+
+    # -----------------------------------------------------------------
+    # Core analysis
+    # -----------------------------------------------------------------
+
     def analyze(self, ohlcv: list[list], **kwargs) -> dict[str, Any] | None:
         """
         Analyze OHLCV data for 2/2 consensus signal.
@@ -201,64 +260,81 @@ class SMCWaveTrendStrategy(BaseStrategy):
         Returns:
             Signal dict or None if no signal / insufficient data.
         """
+        # Lifecycle: clear previous diagnostic on entry
+        self._diag = {}
+
         if len(ohlcv) < self.min_bars:
+            self._diag = {"diagnostic_populated": False}
             return None
 
-        timestamps = np.array([bar[0] for bar in ohlcv])
-        highs = np.array([bar[2] for bar in ohlcv], dtype=float)
-        lows = np.array([bar[3] for bar in ohlcv], dtype=float)
-        closes = np.array([bar[4] for bar in ohlcv], dtype=float)
+        try:
+            timestamps = np.array([bar[0] for bar in ohlcv])
+            highs = np.array([bar[2] for bar in ohlcv], dtype=float)
+            lows = np.array([bar[3] for bar in ohlcv], dtype=float)
+            closes = np.array([bar[4] for bar in ohlcv], dtype=float)
 
-        # Compute indicators
-        _smc_trend, smc_signals = calc_smc_pure_causal(
-            highs,
-            lows,
-            closes,
-            internal_length=self.internal_length,
-        )
-        wt1, wt2, wt_signals = calc_wavetrend(
-            highs,
-            lows,
-            closes,
-            n1=self.n1,
-            n2=self.n2,
-        )
+            # Compute indicators
+            smc_trend_arr, smc_signals = calc_smc_pure_causal(
+                highs,
+                lows,
+                closes,
+                internal_length=self.internal_length,
+            )
+            wt1, wt2, wt_signals = calc_wavetrend(
+                highs,
+                lows,
+                closes,
+                n1=self.n1,
+                n2=self.n2,
+            )
 
-        # Check last bar for consensus
-        last_idx = len(ohlcv) - 1
-        smc_sig = int(smc_signals[last_idx])
-        wt_sig = int(wt_signals[last_idx])
+            # Check last bar for consensus
+            last_idx = len(ohlcv) - 1
+            smc_sig = int(smc_signals[last_idx])
+            wt_sig = int(wt_signals[last_idx])
+            smc_trend_val = int(smc_trend_arr[last_idx])
+            wt1_val = float(wt1[last_idx]) if not np.isnan(wt1[last_idx]) else None
+            wt2_val = float(wt2[last_idx]) if not np.isnan(wt2[last_idx]) else None
 
-        # 2/2 consensus: both must agree on direction
-        if smc_sig == 0 or wt_sig == 0 or smc_sig != wt_sig:
-            return None
+            # Cache diagnostic (always, regardless of consensus)
+            self._diag = self._build_diag(
+                smc_sig, wt_sig, smc_trend_val, wt1_val, wt2_val, closes[last_idx]
+            )
 
-        entry_price = closes[last_idx]
-        bar_ts = int(timestamps[last_idx])
+            # 2/2 consensus: both must agree on direction
+            if smc_sig == 0 or wt_sig == 0 or smc_sig != wt_sig:
+                return None
 
-        if smc_sig == 1:
-            # LONG
-            signal_type = SignalType.LONG
-            stop_loss = entry_price * (1 - SL_PCT)
-            take_profit = entry_price * (1 + TP_PCT)
-        else:
-            # SHORT
-            signal_type = SignalType.SHORT
-            stop_loss = entry_price * (1 + SL_PCT)
-            take_profit = entry_price * (1 - TP_PCT)
+            entry_price = closes[last_idx]
+            bar_ts = int(timestamps[last_idx])
 
-        return self.generate_signal(
-            signal_type=signal_type,
-            entry_price=entry_price,
-            stop_loss=stop_loss,
-            take_profit=take_profit,
-            confidence=0.7,
-            metadata={
-                "smc_signal": smc_sig,
-                "wt_signal": wt_sig,
-                "wt1_val": float(wt1[last_idx]) if not np.isnan(wt1[last_idx]) else None,
-                "wt2_val": float(wt2[last_idx]) if not np.isnan(wt2[last_idx]) else None,
-                "bar_timestamp": bar_ts,
-                "strategy_version": f"{self.name}_{self.version}",
-            },
-        )
+            if smc_sig == 1:
+                # LONG
+                signal_type = SignalType.LONG
+                stop_loss = entry_price * (1 - SL_PCT)
+                take_profit = entry_price * (1 + TP_PCT)
+            else:
+                # SHORT
+                signal_type = SignalType.SHORT
+                stop_loss = entry_price * (1 + SL_PCT)
+                take_profit = entry_price * (1 - TP_PCT)
+
+            return self.generate_signal(
+                signal_type=signal_type,
+                entry_price=entry_price,
+                stop_loss=stop_loss,
+                take_profit=take_profit,
+                confidence=0.7,
+                metadata={
+                    "smc_signal": smc_sig,
+                    "wt_signal": wt_sig,
+                    "wt1_val": wt1_val,
+                    "wt2_val": wt2_val,
+                    "bar_timestamp": bar_ts,
+                    "strategy_version": f"{self.name}_{self.version}",
+                },
+            )
+        except Exception:
+            # Lifecycle: exception → diagnostic_populated=false
+            self._diag = {"diagnostic_populated": False}
+            raise
