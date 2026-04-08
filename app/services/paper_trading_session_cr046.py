@@ -91,6 +91,8 @@ class PaperTradingReceipt:
     execution_latency_ms: float | None = None
     api_latency_ms: float | None = None
     spread_pct: float | None = None
+    # C1-A diagnostic fields (append-only, optional, default-safe)
+    diagnostic: dict | None = None
 
 
 @dataclass

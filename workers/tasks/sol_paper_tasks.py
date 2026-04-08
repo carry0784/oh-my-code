@@ -170,6 +170,13 @@ async def _run_sol_paper_bar_async(
             strategy = SMCWaveTrendStrategy(symbol=symbol, exchange=exchange_name)
             signal_result = strategy.analyze(ohlcv_list)
 
+            # 5a. Collect diagnostic snapshot (best-effort, never blocks receipt)
+            try:
+                diag = strategy.last_diagnostic()
+            except Exception:
+                diag = {"diagnostic_populated": False}
+            receipt.diagnostic = diag
+
             if signal_result is None:
                 receipt.action = BarAction.SKIP_SIGNAL_NONE
                 receipt.decision_source = "signal"
