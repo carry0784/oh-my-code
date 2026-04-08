@@ -227,9 +227,7 @@ class SMCWaveTrendStrategy(BaseStrategy):
         close_price: float,
     ) -> dict:
         wt_cross_dist = (
-            abs(wt1_val - wt2_val)
-            if wt1_val is not None and wt2_val is not None
-            else None
+            abs(wt1_val - wt2_val) if wt1_val is not None and wt2_val is not None else None
         )
         return {
             "smc_sig_raw": smc_sig,

@@ -22,6 +22,7 @@ from strategies.smc_wavetrend_strategy import SMCWaveTrendStrategy
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_flat_ohlcv(n: int = 100, base: float = 100.0) -> list[list]:
     """Generate flat OHLCV data (no trend change → SMC=0, WT=0)."""
     return [
@@ -35,14 +36,16 @@ def _make_trending_ohlcv(n: int = 100, start: float = 100.0) -> list[list]:
     bars = []
     for i in range(n):
         price = start + i * 0.5
-        bars.append([
-            1_700_000_000_000 + i * 3_600_000,
-            price,            # open
-            price + 1.0,      # high
-            price - 0.5,      # low
-            price + 0.3,      # close
-            1000.0,           # volume
-        ])
+        bars.append(
+            [
+                1_700_000_000_000 + i * 3_600_000,
+                price,  # open
+                price + 1.0,  # high
+                price - 0.5,  # low
+                price + 0.3,  # close
+                1000.0,  # volume
+            ]
+        )
     return bars
 
 
@@ -50,8 +53,8 @@ def _make_trending_ohlcv(n: int = 100, start: float = 100.0) -> list[list]:
 # 1. last_diagnostic() lifecycle
 # ---------------------------------------------------------------------------
 
-class TestLastDiagnosticLifecycle:
 
+class TestLastDiagnosticLifecycle:
     def test_empty_before_analyze(self):
         """Before analyze(), last_diagnostic() returns empty dict."""
         s = SMCWaveTrendStrategy(symbol="TEST/USDT")
@@ -118,8 +121,8 @@ class TestLastDiagnosticLifecycle:
 # 2. skip_reason_codes
 # ---------------------------------------------------------------------------
 
-class TestSkipReasonCodes:
 
+class TestSkipReasonCodes:
     def test_both_zero(self):
         """Flat data → both SMC and WT are 0 → [SMC_ZERO, WT_ZERO]."""
         s = SMCWaveTrendStrategy(symbol="TEST/USDT")
@@ -158,8 +161,8 @@ class TestSkipReasonCodes:
 # 3. near_miss_type canonical rule
 # ---------------------------------------------------------------------------
 
-class TestNearMissType:
 
+class TestNearMissType:
     def test_canonical_smc_only(self):
         assert SMCWaveTrendStrategy._compute_near_miss_type(1, 0) == "SMC_ONLY"
         assert SMCWaveTrendStrategy._compute_near_miss_type(-1, 0) == "SMC_ONLY"
@@ -188,11 +191,12 @@ class TestNearMissType:
 # 4. Receipt fallback
 # ---------------------------------------------------------------------------
 
-class TestReceiptFallback:
 
+class TestReceiptFallback:
     def test_diagnostic_field_is_optional(self):
         """PaperTradingReceipt.diagnostic defaults to None."""
         from app.services.paper_trading_session_cr046 import PaperTradingReceipt
+
         r = PaperTradingReceipt()
         assert r.diagnostic is None
 
@@ -227,8 +231,8 @@ class TestReceiptFallback:
 # 5. diagnostic_version / diagnostic_populated
 # ---------------------------------------------------------------------------
 
-class TestDiagnosticMeta:
 
+class TestDiagnosticMeta:
     def test_version_is_1(self):
         s = SMCWaveTrendStrategy(symbol="TEST/USDT")
         s.analyze(_make_flat_ohlcv(100))
@@ -254,8 +258,8 @@ class TestDiagnosticMeta:
 # 6. P1/P2 field presence
 # ---------------------------------------------------------------------------
 
-class TestFieldPresence:
 
+class TestFieldPresence:
     def test_p1_fields_present(self):
         """P1 fields: smc_sig_raw, smc_trend_raw, close_price."""
         s = SMCWaveTrendStrategy(symbol="TEST/USDT")
