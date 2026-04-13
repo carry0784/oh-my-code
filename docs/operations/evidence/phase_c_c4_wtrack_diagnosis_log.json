@@ -1,0 +1,205 @@
+{
+  "diagnosis_at": "2026-04-09T23:13:13.845507+00:00",
+  "phase": "C",
+  "step": "C-4",
+  "track": "W-track",
+  "wf_efficiency_threshold": 0.5,
+  "n_windows": 5,
+  "assets": {
+    "SOL/USDT:USDT": {
+      "symbol": "SOL/USDT:USDT",
+      "wf_efficiency": -1.4514621313633038,
+      "wf_consistency": 0.2,
+      "wf_is_overfit": false,
+      "wf_pass": false,
+      "has_cliff": true,
+      "cliff_magnitude": 0.438,
+      "cliff_cause": "scarcity_penalty",
+      "scarcity_correlated_windows": 4,
+      "total_oos_unprofitable": 4,
+      "scarcity_correlation_pct": 100.0,
+      "step_verdict": "INFORMATIVE_FAIL",
+      "windows": [
+        {
+          "window_index": 0,
+          "is_bars": 1344,
+          "oos_bars": 576,
+          "is_trades": 11,
+          "oos_trades": 4,
+          "is_return": -0.32179717705741495,
+          "oos_return": -0.06415850845427486,
+          "oos_profitable": false,
+          "trade_scarcity_flag": true
+        },
+        {
+          "window_index": 1,
+          "is_bars": 1344,
+          "oos_bars": 576,
+          "is_trades": 9,
+          "oos_trades": 6,
+          "is_return": 0.07673709712211349,
+          "oos_return": -0.15599646742581172,
+          "oos_profitable": false,
+          "trade_scarcity_flag": true
+        },
+        {
+          "window_index": 2,
+          "is_bars": 1344,
+          "oos_bars": 576,
+          "is_trades": 9,
+          "oos_trades": 6,
+          "is_return": 0.06558442259189179,
+          "oos_return": -0.15583883038771093,
+          "oos_profitable": false,
+          "trade_scarcity_flag": true
+        },
+        {
+          "window_index": 3,
+          "is_bars": 1344,
+          "oos_bars": 576,
+          "is_trades": 15,
+          "oos_trades": 5,
+          "is_return": -0.37585745154337924,
+          "oos_return": 0.00987300305865574,
+          "oos_profitable": true,
+          "trade_scarcity_flag": true
+        },
+        {
+          "window_index": 4,
+          "is_bars": 1344,
+          "oos_bars": 576,
+          "is_trades": 7,
+          "oos_trades": 6,
+          "is_return": 0.27822539144468467,
+          "oos_return": -0.03609055496659494,
+          "oos_profitable": false,
+          "trade_scarcity_flag": true
+        }
+      ],
+      "segment_fitness": {
+        "train": {
+          "bars": 5760,
+          "trades": 46,
+          "fitness": 0.438,
+          "min_trades_met": true
+        },
+        "forward_1": {
+          "bars": 1920,
+          "trades": 19,
+          "fitness": 0.3622,
+          "min_trades_met": true
+        },
+        "forward_2": {
+          "bars": 960,
+          "trades": 5,
+          "fitness": 0.0,
+          "min_trades_met": false
+        },
+        "holdout": {
+          "bars": 960,
+          "trades": 8,
+          "fitness": 0.0,
+          "min_trades_met": false
+        }
+      }
+    },
+    "BTC/USDT:USDT": {
+      "symbol": "BTC/USDT:USDT",
+      "wf_efficiency": -0.49386654670437846,
+      "wf_consistency": 0.2,
+      "wf_is_overfit": true,
+      "wf_pass": false,
+      "has_cliff": true,
+      "cliff_magnitude": 0.4618,
+      "cliff_cause": "scarcity_penalty",
+      "scarcity_correlated_windows": 4,
+      "total_oos_unprofitable": 4,
+      "scarcity_correlation_pct": 100.0,
+      "step_verdict": "INFORMATIVE_FAIL",
+      "windows": [
+        {
+          "window_index": 0,
+          "is_bars": 1344,
+          "oos_bars": 576,
+          "is_trades": 2,
+          "oos_trades": 2,
+          "is_return": 0.04820857200678801,
+          "oos_return": -0.09197888099795819,
+          "oos_profitable": false,
+          "trade_scarcity_flag": true
+        },
+        {
+          "window_index": 1,
+          "is_bars": 1344,
+          "oos_bars": 576,
+          "is_trades": 6,
+          "oos_trades": 2,
+          "is_return": -0.0012456597903474176,
+          "oos_return": 0.02792804560482182,
+          "oos_profitable": true,
+          "trade_scarcity_flag": true
+        },
+        {
+          "window_index": 2,
+          "is_bars": 1344,
+          "oos_bars": 576,
+          "is_trades": 7,
+          "oos_trades": 5,
+          "is_return": 0.03764586323322874,
+          "oos_return": -0.1099303328021415,
+          "oos_profitable": false,
+          "trade_scarcity_flag": true
+        },
+        {
+          "window_index": 3,
+          "is_bars": 1344,
+          "oos_bars": 576,
+          "is_trades": 10,
+          "oos_trades": 2,
+          "is_return": 0.14010420617853014,
+          "oos_return": -0.04457694722434098,
+          "oos_profitable": false,
+          "trade_scarcity_flag": true
+        },
+        {
+          "window_index": 4,
+          "is_bars": 1344,
+          "oos_bars": 576,
+          "is_trades": 12,
+          "oos_trades": 5,
+          "is_return": 0.37447668973107284,
+          "oos_return": -0.07736161839551642,
+          "oos_profitable": false,
+          "trade_scarcity_flag": true
+        }
+      ],
+      "segment_fitness": {
+        "train": {
+          "bars": 5760,
+          "trades": 24,
+          "fitness": 0.4618,
+          "min_trades_met": true
+        },
+        "forward_1": {
+          "bars": 1920,
+          "trades": 12,
+          "fitness": 0.8787,
+          "min_trades_met": true
+        },
+        "forward_2": {
+          "bars": 960,
+          "trades": 8,
+          "fitness": 0.0,
+          "min_trades_met": false
+        },
+        "holdout": {
+          "bars": 960,
+          "trades": 8,
+          "fitness": 0.0,
+          "min_trades_met": false
+        }
+      }
+    }
+  },
+  "overall_verdict": "INFORMATIVE_FAIL"
+}

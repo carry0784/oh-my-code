@@ -1,0 +1,287 @@
+{
+  "v1_at": "2026-04-10T00:35:13.445167+00:00",
+  "chain": "Phase C Post-Closure — SOL S-1",
+  "step": "V-1",
+  "candidate": "Candidate 1 (Consensus window expansion)",
+  "symbol": "SOL/USDT:USDT",
+  "total_bars": 9600,
+  "pre_analysis": {
+    "total_bars": 9600,
+    "smc_fired": 468,
+    "smc_rate_pct": 4.88,
+    "wt_fired": 1432,
+    "wt_rate_pct": 14.92,
+    "delay_incremental": {
+      "0": 90,
+      "1": 94,
+      "2": 72,
+      "3": 36
+    },
+    "delay_cumulative": {
+      "0": 90,
+      "1": 184,
+      "2": 256,
+      "3": 292
+    }
+  },
+  "configs": [
+    {
+      "consensus_window": 0,
+      "label": "baseline",
+      "total_trades": 81,
+      "fire_rate_pct": 0.8438,
+      "total_return": -0.7253,
+      "win_rate": 0.3086,
+      "max_drawdown": 1.0661,
+      "full_fitness": 0.3433,
+      "consensus_signals": 90,
+      "blocked_by_occupancy": 12,
+      "occupancy_block_rate": 13.33,
+      "fire_rate_uplift": 1.0,
+      "fitness_ratio": 1.0,
+      "trade_uplift": 1.0,
+      "newly_unblocked_trades": 0,
+      "reblocked_by_occupancy": 0,
+      "delay_ledger": {
+        "delay_0": 90,
+        "delay_1": 0,
+        "delay_2": 0,
+        "delay_3": 0,
+        "beyond_window": 0,
+        "total_consensus": 90
+      },
+      "segments": [
+        {
+          "segment": "train",
+          "bars": 5760,
+          "trades": 46,
+          "fitness": 0.438,
+          "min_trades_met": true,
+          "total_return": -0.5558,
+          "win_rate": 0.2826
+        },
+        {
+          "segment": "forward_1",
+          "bars": 1920,
+          "trades": 19,
+          "fitness": 0.3622,
+          "min_trades_met": true,
+          "total_return": -0.3936,
+          "win_rate": 0.2105
+        },
+        {
+          "segment": "forward_2",
+          "bars": 960,
+          "trades": 5,
+          "fitness": 0.0,
+          "min_trades_met": false,
+          "total_return": 0.13,
+          "win_rate": 0.6
+        },
+        {
+          "segment": "holdout",
+          "bars": 960,
+          "trades": 8,
+          "fitness": 0.0,
+          "min_trades_met": false,
+          "total_return": 0.1119,
+          "win_rate": 0.5
+        }
+      ]
+    },
+    {
+      "consensus_window": 1,
+      "label": "N=1",
+      "total_trades": 156,
+      "fire_rate_pct": 1.625,
+      "total_return": -1.6459,
+      "win_rate": 0.2949,
+      "max_drawdown": 2.0383,
+      "full_fitness": 0.328,
+      "consensus_signals": 274,
+      "blocked_by_occupancy": 132,
+      "occupancy_block_rate": 48.18,
+      "fire_rate_uplift": 1.93,
+      "fitness_ratio": 0.96,
+      "trade_uplift": 1.93,
+      "newly_unblocked_trades": 75,
+      "reblocked_by_occupancy": 120,
+      "delay_ledger": {
+        "delay_0": 180,
+        "delay_1": 94,
+        "delay_2": 0,
+        "delay_3": 0,
+        "beyond_window": 0,
+        "total_consensus": 274
+      },
+      "segments": [
+        {
+          "segment": "train",
+          "bars": 5760,
+          "trades": 89,
+          "fitness": 0.4487,
+          "min_trades_met": true,
+          "total_return": -0.734,
+          "win_rate": 0.3146
+        },
+        {
+          "segment": "forward_1",
+          "bars": 1920,
+          "trades": 32,
+          "fitness": 0.2775,
+          "min_trades_met": true,
+          "total_return": -0.9579,
+          "win_rate": 0.125
+        },
+        {
+          "segment": "forward_2",
+          "bars": 960,
+          "trades": 17,
+          "fitness": 0.3946,
+          "min_trades_met": true,
+          "total_return": -0.182,
+          "win_rate": 0.2941
+        },
+        {
+          "segment": "holdout",
+          "bars": 960,
+          "trades": 14,
+          "fitness": 0.8986,
+          "min_trades_met": true,
+          "total_return": 0.3162,
+          "win_rate": 0.5714
+        }
+      ]
+    },
+    {
+      "consensus_window": 2,
+      "label": "N=2",
+      "total_trades": 219,
+      "fire_rate_pct": 2.2812,
+      "total_return": -1.9009,
+      "win_rate": 0.3105,
+      "max_drawdown": 2.292,
+      "full_fitness": 0.3318,
+      "consensus_signals": 530,
+      "blocked_by_occupancy": 335,
+      "occupancy_block_rate": 63.21,
+      "fire_rate_uplift": 2.7,
+      "fitness_ratio": 0.97,
+      "trade_uplift": 2.7,
+      "newly_unblocked_trades": 138,
+      "reblocked_by_occupancy": 323,
+      "delay_ledger": {
+        "delay_0": 270,
+        "delay_1": 188,
+        "delay_2": 72,
+        "delay_3": 0,
+        "beyond_window": 0,
+        "total_consensus": 530
+      },
+      "segments": [
+        {
+          "segment": "train",
+          "bars": 5760,
+          "trades": 126,
+          "fitness": 0.4429,
+          "min_trades_met": true,
+          "total_return": -1.1135,
+          "win_rate": 0.3095
+        },
+        {
+          "segment": "forward_1",
+          "bars": 1920,
+          "trades": 43,
+          "fitness": 0.3062,
+          "min_trades_met": true,
+          "total_return": -0.8648,
+          "win_rate": 0.2093
+        },
+        {
+          "segment": "forward_2",
+          "bars": 960,
+          "trades": 27,
+          "fitness": 0.4454,
+          "min_trades_met": true,
+          "total_return": -0.282,
+          "win_rate": 0.2963
+        },
+        {
+          "segment": "holdout",
+          "bars": 960,
+          "trades": 18,
+          "fitness": 0.8984,
+          "min_trades_met": true,
+          "total_return": 0.3722,
+          "win_rate": 0.5556
+        }
+      ]
+    },
+    {
+      "consensus_window": 3,
+      "label": "N=3",
+      "total_trades": 252,
+      "fire_rate_pct": 2.625,
+      "total_return": -1.624,
+      "win_rate": 0.3294,
+      "max_drawdown": 2.0669,
+      "full_fitness": 0.4418,
+      "consensus_signals": 821,
+      "blocked_by_occupancy": 600,
+      "occupancy_block_rate": 73.08,
+      "fire_rate_uplift": 3.11,
+      "fitness_ratio": 1.29,
+      "trade_uplift": 3.11,
+      "newly_unblocked_trades": 171,
+      "reblocked_by_occupancy": 588,
+      "delay_ledger": {
+        "delay_0": 359,
+        "delay_1": 282,
+        "delay_2": 144,
+        "delay_3": 36,
+        "beyond_window": 0,
+        "total_consensus": 821
+      },
+      "segments": [
+        {
+          "segment": "train",
+          "bars": 5760,
+          "trades": 150,
+          "fitness": 0.4416,
+          "min_trades_met": true,
+          "total_return": -1.2557,
+          "win_rate": 0.3133
+        },
+        {
+          "segment": "forward_1",
+          "bars": 1920,
+          "trades": 49,
+          "fitness": 0.437,
+          "min_trades_met": true,
+          "total_return": -0.5434,
+          "win_rate": 0.2857
+        },
+        {
+          "segment": "forward_2",
+          "bars": 960,
+          "trades": 30,
+          "fitness": 0.4758,
+          "min_trades_met": true,
+          "total_return": -0.0604,
+          "win_rate": 0.3667
+        },
+        {
+          "segment": "holdout",
+          "bars": 960,
+          "trades": 19,
+          "fitness": 0.8937,
+          "min_trades_met": true,
+          "total_return": 0.326,
+          "win_rate": 0.5263
+        }
+      ]
+    }
+  ],
+  "verdict": "INFORMATIVE_FAIL",
+  "best_n": null
+}

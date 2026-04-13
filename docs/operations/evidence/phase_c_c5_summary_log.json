@@ -1,0 +1,132 @@
+{
+  "verdict_at": "2026-04-10T08:15:00Z",
+  "phase": "C",
+  "step": "C-5",
+  "purpose": "integrated_verdict",
+  "overall_phase_c": "diagnostic_success_remediation_pending",
+  "tracks": {
+    "S-track": {
+      "status": "unresolved_root_cause",
+      "propagated_failure": false,
+      "independent_problem": true,
+      "steps": ["C-1", "C-2"],
+      "key_findings": {
+        "fire_rate_pct": 4.0,
+        "occupancy_block_pct": 28.0,
+        "s3_btc_verdict": "conditional_keep",
+        "s3_sol_verdict": "reject",
+        "s1_sol_status": "priority_candidate"
+      }
+    },
+    "R-track": {
+      "status": "maintained_fail",
+      "propagated_failure": false,
+      "independent_problem": true,
+      "structurally_unresolvable": true,
+      "steps": ["C-3"],
+      "key_findings": {
+        "sol_rds": 0.2740,
+        "btc_rds": 0.0755,
+        "rds_threshold": 0.55,
+        "sol_dominant_regime": "ranging",
+        "sol_dominant_share": 0.845,
+        "btc_dominant_regime": "ranging",
+        "btc_dominant_share": 0.961,
+        "closure_scope": "current_environment_only",
+        "permanent_truth": false,
+        "reopen_trigger_required": true
+      }
+    },
+    "W-track": {
+      "status": "informative_fail",
+      "propagated_failure": true,
+      "propagation_source": "S-track",
+      "independent_problem": false,
+      "steps": ["C-4"],
+      "key_findings": {
+        "sol_wf_efficiency": -1.4515,
+        "btc_wf_efficiency": -0.4939,
+        "wf_threshold": 0.50,
+        "sol_cliff_cause": "scarcity_penalty",
+        "btc_cliff_cause": "scarcity_penalty",
+        "sol_scarcity_correlation_pct": 100.0,
+        "btc_scarcity_correlation_pct": 100.0,
+        "btc_fw1_fitness": 0.8787,
+        "generalization_ability_proven": true,
+        "resolution_dependency": "S-track"
+      }
+    }
+  },
+  "unresolved_bottlenecks": {
+    "independent": [
+      {
+        "id": 1,
+        "name": "SMC fire rate ~4%",
+        "affected_assets": ["SOL", "BTC"],
+        "resolvable": true,
+        "track": "S-track",
+        "next_candidate": "SOL S-1 root-cause follow-up"
+      },
+      {
+        "id": 2,
+        "name": "Position occupancy block ~28%",
+        "affected_assets": ["SOL", "BTC"],
+        "resolvable": true,
+        "track": "S-track",
+        "next_candidate": "separate analysis"
+      }
+    ],
+    "closed": [
+      {
+        "id": 3,
+        "name": "RDS < 0.55",
+        "closure_reason": "structurally_unresolvable",
+        "track": "R-track",
+        "verdict": "MAINTAINED_FAIL"
+      },
+      {
+        "id": 4,
+        "name": "WF efficiency < 0.5",
+        "closure_reason": "s_track_propagation",
+        "track": "W-track",
+        "verdict": "INFORMATIVE_FAIL"
+      }
+    ]
+  },
+  "next_chain": {
+    "name": "Phase C Post-Closure — SOL S-1 Root-Cause Chain",
+    "prerequisite": "C-5 completion + separate GO",
+    "status": "HOLD"
+  },
+  "review_candidates": [
+    {
+      "item": "min_trades threshold",
+      "current_value": 10,
+      "reason": "binary penalty cliff amplification",
+      "review_timing": "after S-track resolution"
+    },
+    {
+      "item": "RDS threshold",
+      "current_value": 0.55,
+      "reason": "structurally unachievable in current environment",
+      "review_timing": "separate GO required"
+    },
+    {
+      "item": "WF n_windows",
+      "current_value": 5,
+      "reason": "window subdivision deepens scarcity",
+      "review_timing": "after S-track resolution"
+    }
+  ],
+  "chain_evidence": {
+    "c1_receipt": "phase_c_c1_completion_receipt.md",
+    "c2_receipt": "phase_c_c2_completion_receipt.md",
+    "c2_log": "phase_c_c2_s3_experiment_log.json",
+    "c3_receipt": "phase_c_c3_completion_receipt.md",
+    "c3_log": "phase_c_c3_rtrack_diagnosis_log.json",
+    "c4_receipt": "phase_c_c4_completion_receipt.md",
+    "c4_log": "phase_c_c4_wtrack_diagnosis_log.json",
+    "c5_verdict": "phase_c_c5_integrated_verdict.md",
+    "c5_log": "phase_c_c5_summary_log.json"
+  }
+}

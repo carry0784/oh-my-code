@@ -61,6 +61,7 @@ ruff check --fix .
   - `tasks/` - Task definitions (order submission, signal validation, market sync)
 - `exchanges/` - CCXT exchange wrappers (Binance, UpBit, Bitget, KIS, Kiwoom)
 - `strategies/` - Trading strategy implementations
+  - `ppf/` - Pattern Projection Filter (supplementary gate, see PPF section below)
 - `tests/` - pytest test suite
 
 ### Key Patterns
@@ -91,6 +92,43 @@ ruff check --fix .
 - `RiskManagerAgent`: Position sizing, portfolio risk assessment
 - `AgentOrchestrator`: Chains agents for full execution pipeline
 - Default provider: Anthropic Claude (configurable via `provider` param)
+
+### PPF (Pattern Projection Filter)
+
+PPF is a supplementary gate filter, NOT an independent strategy.
+It sits above the execution engine as an external orchestration wrapper.
+
+**Core constraints (Constitution C1-C11):**
+- C1: PPF never generates orders (gate-only)
+- C7: Core safety modules unchanged; wrapper injection only; no direct mutation to execution safety modules
+- C9: PPF standalone trade prohibited
+- C10: No runtime parameter adaptation (frozen dataclass)
+- C11: Novelty brake (O9=True → PPF disabled)
+
+**Module structure** (`strategies/ppf/`, 17 tracked files):
+- `ppf_gate_handler.py` - Step 5.75 wrapper gate handler (orchestrator integration)
+- `constitution.py` - C1-C11 invariant checks
+- `gate.py` - PPF gate evaluation logic
+- `decision.py` - Decision framework
+- `parameters.py` - Frozen PPF parameters (C10)
+- `constants.py` - PPFState, RejectionCode enums
+- `observation.py`, `interpretation.py`, `logging_schema.py` - Data pipeline
+- `session_ledger.py` - LV-3 session lifecycle tracking
+- `execution_ledger.py` - LV-2 execution divergence tracking
+- `pattern_engine/matcher.py` - Historical pattern similarity search
+- `indicators/ssl_hybrid.py`, `indicators/volume_osc.py` - Technical indicators
+
+**Integration point** (`app/agents/orchestrator.py`):
+- Step 5.75: Between SubmitLedger receipt (Step 5.5) and OrderExecutor (Step 6)
+- Post-execution: LV-2/LV-3 recording path
+- Handler-absent safe: all PPF paths guarded by `if self.ppf_gate_handler is not None`
+
+**Current state** (2026-04-13):
+- Implementation: BASELINE_SEALED (commit 45041f7)
+- Source tracking: COMPLETE (17 files tracked)
+- Test tracking: COMPLETE (7 files tracked)
+- Shadow mode: Boot smoke PASS, shadow connect pending
+- Production: NOT authorized
 
 ## CR-046 Current State (2026-04-01)
 

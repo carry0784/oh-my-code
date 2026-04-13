@@ -1,0 +1,336 @@
+{
+  "diagnosis_at": "2026-04-09T22:50:32.107835+00:00",
+  "phase": "C",
+  "step": "C-3",
+  "track": "R-track",
+  "rds_threshold": 0.55,
+  "total_bars": 9600,
+  "assets": {
+    "SOL/USDT:USDT": {
+      "symbol": "SOL/USDT:USDT",
+      "total_bars": 9600,
+      "global_rds": 0.274,
+      "global_dominant_regime": "ranging",
+      "global_dominant_share": 0.8452,
+      "global_effective_regime_count": 3,
+      "regime_blank_zone_count": 2,
+      "regime_blank_zones": [
+        "trending_up",
+        "unknown"
+      ],
+      "rds_pass": false,
+      "step_verdict": "MAINTAINED_FAIL",
+      "global_regime_bars": {
+        "unknown": 26,
+        "ranging": 8114,
+        "trending_down": 754,
+        "trending_up": 706
+      },
+      "global_regime_shares": {
+        "unknown": 0.0027,
+        "ranging": 0.8452,
+        "trending_down": 0.0785,
+        "trending_up": 0.0735
+      },
+      "segments": {
+        "train": {
+          "total_bars": 5760,
+          "rds": 0.276,
+          "dominant_regime": "ranging",
+          "dominant_share": 0.8441,
+          "effective_regime_count": 3,
+          "regime_bars": {
+            "unknown": 26,
+            "ranging": 4862,
+            "trending_down": 450,
+            "trending_up": 422
+          },
+          "regime_shares": {
+            "unknown": 0.0045,
+            "ranging": 0.8441,
+            "trending_down": 0.0781,
+            "trending_up": 0.0733
+          }
+        },
+        "forward_1": {
+          "total_bars": 1920,
+          "rds": 0.2532,
+          "dominant_regime": "ranging",
+          "dominant_share": 0.8583,
+          "effective_regime_count": 3,
+          "regime_bars": {
+            "ranging": 1648,
+            "trending_down": 141,
+            "trending_up": 131
+          },
+          "regime_shares": {
+            "ranging": 0.8583,
+            "trending_down": 0.0734,
+            "trending_up": 0.0682
+          }
+        },
+        "forward_2": {
+          "total_bars": 960,
+          "rds": 0.3265,
+          "dominant_regime": "ranging",
+          "dominant_share": 0.8094,
+          "effective_regime_count": 3,
+          "regime_bars": {
+            "ranging": 777,
+            "trending_up": 82,
+            "trending_down": 101
+          },
+          "regime_shares": {
+            "ranging": 0.8094,
+            "trending_up": 0.0854,
+            "trending_down": 0.1052
+          }
+        },
+        "holdout": {
+          "total_bars": 960,
+          "rds": 0.2482,
+          "dominant_regime": "ranging",
+          "dominant_share": 0.8615,
+          "effective_regime_count": 3,
+          "regime_bars": {
+            "trending_up": 71,
+            "ranging": 827,
+            "trending_down": 62
+          },
+          "regime_shares": {
+            "trending_up": 0.074,
+            "ranging": 0.8615,
+            "trending_down": 0.0646
+          }
+        }
+      },
+      "regime_trade_stats": {
+        "trending_up": {
+          "trade_count": 0,
+          "trade_share": 0.0,
+          "win_count": 0,
+          "loss_count": 0,
+          "win_rate": 0.0,
+          "total_return_pct": 0.0
+        },
+        "trending_down": {
+          "trade_count": 1,
+          "trade_share": 0.0123,
+          "win_count": 0,
+          "loss_count": 1,
+          "win_rate": 0.0,
+          "total_return_pct": -2.3021
+        },
+        "ranging": {
+          "trade_count": 80,
+          "trade_share": 0.9877,
+          "win_count": 25,
+          "loss_count": 55,
+          "win_rate": 0.3125,
+          "total_return_pct": -34.03
+        },
+        "high_volatility": {
+          "trade_count": 0,
+          "trade_share": 0.0,
+          "win_count": 0,
+          "loss_count": 0,
+          "win_rate": 0.0,
+          "total_return_pct": 0.0
+        },
+        "crisis": {
+          "trade_count": 0,
+          "trade_share": 0.0,
+          "win_count": 0,
+          "loss_count": 0,
+          "win_rate": 0.0,
+          "total_return_pct": 0.0
+        },
+        "unknown": {
+          "trade_count": 0,
+          "trade_share": 0.0,
+          "win_count": 0,
+          "loss_count": 0,
+          "win_rate": 0.0,
+          "total_return_pct": 0.0
+        }
+      }
+    },
+    "BTC/USDT:USDT": {
+      "symbol": "BTC/USDT:USDT",
+      "total_bars": 9600,
+      "global_rds": 0.0755,
+      "global_dominant_regime": "ranging",
+      "global_dominant_share": 0.9611,
+      "global_effective_regime_count": 1,
+      "regime_blank_zone_count": 3,
+      "regime_blank_zones": [
+        "trending_up",
+        "trending_down",
+        "unknown"
+      ],
+      "rds_pass": false,
+      "step_verdict": "MAINTAINED_FAIL",
+      "global_regime_bars": {
+        "unknown": 26,
+        "ranging": 9227,
+        "trending_down": 172,
+        "trending_up": 175
+      },
+      "global_regime_shares": {
+        "unknown": 0.0027,
+        "ranging": 0.9611,
+        "trending_down": 0.0179,
+        "trending_up": 0.0182
+      },
+      "segments": {
+        "train": {
+          "total_bars": 5760,
+          "rds": 0.0548,
+          "dominant_regime": "ranging",
+          "dominant_share": 0.972,
+          "effective_regime_count": 1,
+          "regime_bars": {
+            "unknown": 26,
+            "ranging": 5599,
+            "trending_down": 73,
+            "trending_up": 62
+          },
+          "regime_shares": {
+            "unknown": 0.0045,
+            "ranging": 0.972,
+            "trending_down": 0.0127,
+            "trending_up": 0.0108
+          }
+        },
+        "forward_1": {
+          "total_bars": 1920,
+          "rds": 0.0719,
+          "dominant_regime": "ranging",
+          "dominant_share": 0.963,
+          "effective_regime_count": 1,
+          "regime_bars": {
+            "ranging": 1849,
+            "trending_up": 34,
+            "trending_down": 37
+          },
+          "regime_shares": {
+            "ranging": 0.963,
+            "trending_up": 0.0177,
+            "trending_down": 0.0193
+          }
+        },
+        "forward_2": {
+          "total_bars": 960,
+          "rds": 0.1562,
+          "dominant_regime": "ranging",
+          "dominant_share": 0.9167,
+          "effective_regime_count": 1,
+          "regime_bars": {
+            "ranging": 880,
+            "trending_down": 43,
+            "trending_up": 37
+          },
+          "regime_shares": {
+            "ranging": 0.9167,
+            "trending_down": 0.0448,
+            "trending_up": 0.0385
+          }
+        },
+        "holdout": {
+          "total_bars": 960,
+          "rds": 0.1207,
+          "dominant_regime": "ranging",
+          "dominant_share": 0.9365,
+          "effective_regime_count": 1,
+          "regime_bars": {
+            "ranging": 899,
+            "trending_up": 42,
+            "trending_down": 19
+          },
+          "regime_shares": {
+            "ranging": 0.9365,
+            "trending_up": 0.0437,
+            "trending_down": 0.0198
+          }
+        }
+      },
+      "regime_trade_stats": {
+        "trending_up": {
+          "trade_count": 0,
+          "trade_share": 0.0,
+          "win_count": 0,
+          "loss_count": 0,
+          "win_rate": 0.0,
+          "total_return_pct": 0.0
+        },
+        "trending_down": {
+          "trade_count": 0,
+          "trade_share": 0.0,
+          "win_count": 0,
+          "loss_count": 0,
+          "win_rate": 0.0,
+          "total_return_pct": 0.0
+        },
+        "ranging": {
+          "trade_count": 53,
+          "trade_share": 1.0,
+          "win_count": 22,
+          "loss_count": 31,
+          "win_rate": 0.4151,
+          "total_return_pct": 11.7388
+        },
+        "high_volatility": {
+          "trade_count": 0,
+          "trade_share": 0.0,
+          "win_count": 0,
+          "loss_count": 0,
+          "win_rate": 0.0,
+          "total_return_pct": 0.0
+        },
+        "crisis": {
+          "trade_count": 0,
+          "trade_share": 0.0,
+          "win_count": 0,
+          "loss_count": 0,
+          "win_rate": 0.0,
+          "total_return_pct": 0.0
+        },
+        "unknown": {
+          "trade_count": 0,
+          "trade_share": 0.0,
+          "win_count": 0,
+          "loss_count": 0,
+          "win_rate": 0.0,
+          "total_return_pct": 0.0
+        }
+      }
+    }
+  },
+  "asset_asymmetry": {
+    "ranging": {
+      "sol_share": 0.8452,
+      "btc_share": 0.9611,
+      "delta": 0.1159,
+      "asymmetric": true
+    },
+    "trending_down": {
+      "sol_share": 0.0785,
+      "btc_share": 0.0179,
+      "delta": 0.0606,
+      "asymmetric": false
+    },
+    "trending_up": {
+      "sol_share": 0.0735,
+      "btc_share": 0.0182,
+      "delta": 0.0553,
+      "asymmetric": false
+    },
+    "unknown": {
+      "sol_share": 0.0027,
+      "btc_share": 0.0027,
+      "delta": 0.0,
+      "asymmetric": false
+    }
+  },
+  "overall_verdict": "MAINTAINED_FAIL"
+}

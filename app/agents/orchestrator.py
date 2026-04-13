@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from app.services.execution_ledger import ExecutionLedger
     from app.services.submit_ledger import SubmitLedger
     from app.services.order_executor import OrderExecutor
+    from strategies.ppf.ppf_gate_handler import PPFGateHandler  # Step 5.75
 
 logger = get_logger(__name__)
 
@@ -33,6 +34,7 @@ class AgentOrchestrator:
         self.execution_ledger: Optional[ExecutionLedger] = None
         self.submit_ledger: Optional[SubmitLedger] = None
         self.order_executor: Optional[OrderExecutor] = None
+        self.ppf_gate_handler: Optional[PPFGateHandler] = None  # Step 5.75
         self.signal_validator = SignalValidatorAgent()
         self.risk_manager = RiskManagerAgent()
 
@@ -334,6 +336,32 @@ class AgentOrchestrator:
                     post_evidence_id=post_eid,
                 )
 
+            # Step 5.75: PPF Gate Handler (optional, wrapper injection)
+            # C7 lock: core safety modules unchanged / wrapper injection only
+            # Shadow mode: does not block Step 6 execution
+            _ppf_result = None
+            if self.ppf_gate_handler is not None and _submit_proposal is not None:
+                _ppf_result = self.ppf_gate_handler.check_gate(
+                    symbol=task.symbol,
+                    exchange=task.exchange,
+                    risk_filter_pass=risk_result.get("approved", False),
+                )
+                if not _ppf_result.allowed:
+                    return AgentResponse(
+                        success=False,
+                        task_type="execute",
+                        result={
+                            "stage": "ppf_gate",
+                            "ppf_result": _ppf_result.to_dict(),
+                        },
+                        reasoning=(
+                            f"PPF gate denied: "
+                            f"{_ppf_result.deny_reason_code.value if _ppf_result.deny_reason_code else 'unknown'}"
+                        ),
+                        confidence=0.0,
+                        governance_evidence_id=post_eid or self._pre_evidence_id,
+                    )
+
             # Step 6: Execute Order (optional, only if order_executor connected)
             _order_result = None
             if self.order_executor is not None and _submit_proposal is not None:
@@ -343,6 +371,20 @@ class AgentOrchestrator:
                     order_type=task.context.get("order_type", "market"),
                     price=task.context.get("price"),
                     dry_run=task.context.get("dry_run", True),  # default dry_run=True safety
+                )
+
+            # Step 6.25: Record PPF execution outcome (metadata pathway only)
+            # Does not mutate execution state. Records LV-2/LV-3 events.
+            _ppf_abort_reason = None
+            if self.ppf_gate_handler is not None and _order_result is not None:
+                _ppf_abort_reason = self.ppf_gate_handler.record_execution_outcome(
+                    order_status=_order_result.status,
+                    reject_code=(
+                        _order_result.error_detail
+                        if _order_result.status in ("REJECTED", "ERROR")
+                        else None
+                    ),
+                    timeout_flag=(_order_result.status == "TIMEOUT"),
                 )
 
             return AgentResponse(
@@ -359,6 +401,8 @@ class AgentOrchestrator:
                     "order_id": _order_result.order_id if _order_result else None,
                     "order_status": _order_result.status if _order_result else None,
                     "dry_run": _order_result.dry_run if _order_result else None,
+                    "ppf_gate_result": _ppf_result.to_dict() if _ppf_result else None,
+                    "ppf_session_abort": _ppf_abort_reason,
                 },
                 reasoning="Signal validated, risk approved, execution guard passed, submit guard passed",
                 confidence=risk_result.get("confidence", 0.8),
