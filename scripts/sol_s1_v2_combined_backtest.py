@@ -60,17 +60,18 @@ SEGMENT_RATIOS = {"train": 0.60, "forward_1": 0.20, "forward_2": 0.10, "holdout"
 
 # Config matrix: (label, consensus_window, max_positions, position_size_pct)
 CONFIGS = [
-    ("baseline",   0, 1, 2.0),
-    ("C1_N1",      1, 1, 2.0),
-    ("C1C2_N1",    1, 2, 1.0),
-    ("C1C2_N2",    2, 2, 1.0),
-    ("C1C2_N3",    3, 2, 1.0),
+    ("baseline", 0, 1, 2.0),
+    ("C1_N1", 1, 1, 2.0),
+    ("C1C2_N1", 1, 2, 1.0),
+    ("C1C2_N2", 2, 2, 1.0),
+    ("C1C2_N3", 3, 2, 1.0),
 ]
 
 
 # ---------------------------------------------------------------------------
 # Core simulation (custom, avoids BacktestingEngine position limit)
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class SimPosition:
@@ -156,8 +157,8 @@ def _has_consensus(
 ) -> int | None:
     """Check if consensus exists at bar within ±N window. Returns direction or None."""
     w_start = max(0, bar - consensus_window)
-    smc_w = smc_signals[w_start:bar + 1]
-    wt_w = wt_signals[w_start:bar + 1]
+    smc_w = smc_signals[w_start : bar + 1]
+    wt_w = wt_signals[w_start : bar + 1]
 
     for d in [1, -1]:
         if np.any(smc_w == d) and np.any(wt_w == d):
@@ -204,19 +205,31 @@ def simulate_config(
                 ret = (pos.entry_price - price) / pos.entry_price
 
             if ret <= -SL_PCT:
-                completed_trades.append(SimTrade(
-                    entry_bar=pos.entry_bar, exit_bar=bar,
-                    entry_price=pos.entry_price, exit_price=price,
-                    direction=pos.direction, size_pct=pos.size_pct,
-                    return_pct=round(ret * 100, 4), exit_reason="sl",
-                ))
+                completed_trades.append(
+                    SimTrade(
+                        entry_bar=pos.entry_bar,
+                        exit_bar=bar,
+                        entry_price=pos.entry_price,
+                        exit_price=price,
+                        direction=pos.direction,
+                        size_pct=pos.size_pct,
+                        return_pct=round(ret * 100, 4),
+                        exit_reason="sl",
+                    )
+                )
             elif ret >= TP_PCT:
-                completed_trades.append(SimTrade(
-                    entry_bar=pos.entry_bar, exit_bar=bar,
-                    entry_price=pos.entry_price, exit_price=price,
-                    direction=pos.direction, size_pct=pos.size_pct,
-                    return_pct=round(ret * 100, 4), exit_reason="tp",
-                ))
+                completed_trades.append(
+                    SimTrade(
+                        entry_bar=pos.entry_bar,
+                        exit_bar=bar,
+                        entry_price=pos.entry_price,
+                        exit_price=price,
+                        direction=pos.direction,
+                        size_pct=pos.size_pct,
+                        return_pct=round(ret * 100, 4),
+                        exit_reason="tp",
+                    )
+                )
             else:
                 remaining.append(pos)
         open_positions = remaining
@@ -248,22 +261,34 @@ def simulate_config(
             else:
                 code = "BLOCK_MAX_POSITIONS"
 
-            block_events.append(BlockEvent(
-                bar=bar, consensus_dir=consensus_dir,
-                open_positions=slots_used, block_code=code,
-                slots_used=slots_used, slots_available=0,
-            ))
+            block_events.append(
+                BlockEvent(
+                    bar=bar,
+                    consensus_dir=consensus_dir,
+                    open_positions=slots_used,
+                    block_code=code,
+                    slots_used=slots_used,
+                    slots_available=0,
+                )
+            )
         else:
             # Entry
             executable_count += 1
-            open_positions.append(SimPosition(
-                entry_bar=bar, entry_price=price,
-                direction=consensus_dir, size_pct=position_size_pct,
-            ))
+            open_positions.append(
+                SimPosition(
+                    entry_bar=bar,
+                    entry_price=price,
+                    direction=consensus_dir,
+                    size_pct=position_size_pct,
+                )
+            )
 
     return (
-        completed_trades, block_events,
-        consensus_count, executable_count, blocked_count,
+        completed_trades,
+        block_events,
+        consensus_count,
+        executable_count,
+        blocked_count,
     )
 
 
@@ -311,8 +336,12 @@ def run_config(
 ) -> ConfigResult:
     """Run full simulation for one config."""
     trades, blocks, cons_count, exec_count, block_count = simulate_config(
-        ohlcv, smc_signals, wt_signals,
-        consensus_window, max_positions, position_size_pct,
+        ohlcv,
+        smc_signals,
+        wt_signals,
+        consensus_window,
+        max_positions,
+        position_size_pct,
     )
 
     perf = compute_performance(trades)
@@ -325,6 +354,7 @@ def run_config(
     # Full fitness approximation
     if trade_count >= MIN_TRADES:
         from app.services.performance_metrics import PerformanceReport
+
         # Build approximate report
         report = PerformanceReport()
         report.total_trades = trade_count
@@ -340,7 +370,8 @@ def run_config(
         report.avg_loss = sum(avg_loss_returns) / len(avg_loss_returns) if avg_loss_returns else 0
         report.profit_factor = (
             abs(sum(avg_win_returns)) / abs(sum(avg_loss_returns))
-            if avg_loss_returns and sum(avg_loss_returns) != 0 else 0
+            if avg_loss_returns and sum(avg_loss_returns) != 0
+            else 0
         )
 
         fb = fitness_fn.evaluate(report)
@@ -391,6 +422,7 @@ def run_config(
         if seg_count >= MIN_TRADES:
             seg_perf = compute_performance(seg_trades)
             from app.services.performance_metrics import PerformanceReport
+
             seg_report = PerformanceReport()
             seg_report.total_trades = seg_count
             seg_report.winning_trades = sum(1 for t in seg_trades if t.return_pct > 0)
@@ -411,15 +443,17 @@ def run_config(
             seg_fitness = 0.0
 
         seg_perf_data = compute_performance(seg_trades)
-        result.segments.append(SegmentMetrics(
-            segment=seg_name,
-            bars=end - start,
-            trades=seg_count,
-            fitness=round(seg_fitness, 4),
-            min_trades_met=seg_count >= MIN_TRADES,
-            total_return=seg_perf_data["total_return_pct"],
-            win_rate=seg_perf_data["win_rate"],
-        ))
+        result.segments.append(
+            SegmentMetrics(
+                segment=seg_name,
+                bars=end - start,
+                trades=seg_count,
+                fitness=round(seg_fitness, 4),
+                min_trades_met=seg_count >= MIN_TRADES,
+                total_return=seg_perf_data["total_return_pct"],
+                win_rate=seg_perf_data["win_rate"],
+            )
+        )
 
     return result
 
@@ -427,6 +461,7 @@ def run_config(
 # ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------
+
 
 def generate_report(results: list[ConfigResult]) -> str:
     lines = []
@@ -466,9 +501,11 @@ def generate_report(results: list[ConfigResult]) -> str:
     lines.append("| Config | BLOCK_MAX_POS | BLOCK_SAME_DIR | BLOCK_OPP_DIR | Total Blocked |")
     lines.append("|--------|---------------|----------------|---------------|---------------|")
     for r in results:
-        lines.append(f"| {r.label} | {r.block_max_positions} | "
-                     f"{r.block_same_direction} | {r.block_opposite_direction} | "
-                     f"{r.consensus_blocked} |")
+        lines.append(
+            f"| {r.label} | {r.block_max_positions} | "
+            f"{r.block_same_direction} | {r.block_opposite_direction} | "
+            f"{r.consensus_blocked} |"
+        )
     lines.append("")
 
     # Per-segment
@@ -481,11 +518,38 @@ def generate_report(results: list[ConfigResult]) -> str:
         lines.append("|--------|" + "|".join(["-----"] * len(results)) + "|")
 
         for metric, fn in [
-            ("Trades", lambda r, s=seg_name: str(next(seg for seg in r.segments if seg.segment == s).trades)),
-            ("min_trades", lambda r, s=seg_name: "OK" if next(seg for seg in r.segments if seg.segment == s).min_trades_met else "**MISS**"),
-            ("Fitness", lambda r, s=seg_name: f"{next(seg for seg in r.segments if seg.segment == s).fitness:.4f}"),
-            ("Return", lambda r, s=seg_name: f"{next(seg for seg in r.segments if seg.segment == s).total_return:+.2f}%"),
-            ("Win rate", lambda r, s=seg_name: f"{next(seg for seg in r.segments if seg.segment == s).win_rate:.3f}"),
+            (
+                "Trades",
+                lambda r, s=seg_name: str(
+                    next(seg for seg in r.segments if seg.segment == s).trades
+                ),
+            ),
+            (
+                "min_trades",
+                lambda r, s=seg_name: (
+                    "OK"
+                    if next(seg for seg in r.segments if seg.segment == s).min_trades_met
+                    else "**MISS**"
+                ),
+            ),
+            (
+                "Fitness",
+                lambda r, s=seg_name: (
+                    f"{next(seg for seg in r.segments if seg.segment == s).fitness:.4f}"
+                ),
+            ),
+            (
+                "Return",
+                lambda r, s=seg_name: (
+                    f"{next(seg for seg in r.segments if seg.segment == s).total_return:+.2f}%"
+                ),
+            ),
+            (
+                "Win rate",
+                lambda r, s=seg_name: (
+                    f"{next(seg for seg in r.segments if seg.segment == s).win_rate:.3f}"
+                ),
+            ),
         ]:
             vals = [fn(r) for r in results]
             lines.append(f"| {metric} | " + " | ".join(vals) + " |")
@@ -558,6 +622,7 @@ def generate_report(results: list[ConfigResult]) -> str:
 # Main
 # ---------------------------------------------------------------------------
 
+
 async def run_v2():
     print("=" * 60, flush=True)
     print("SOL S-1 V-2 — Candidate 1+2 Combined Backtest", flush=True)
@@ -570,8 +635,11 @@ async def run_v2():
     async with async_session_factory() as session:
         hdm = HistoryDataManager()
         ohlcv = await hdm.get_replay_candles(
-            session=session, exchange="binance",
-            symbol=SYMBOL, timeframe=TIMEFRAME, limit=TOTAL_BARS,
+            session=session,
+            exchange="binance",
+            symbol=SYMBOL,
+            timeframe=TIMEFRAME,
+            limit=TOTAL_BARS,
         )
     print(f"Loaded {len(ohlcv)} bars", flush=True)
 
@@ -581,16 +649,21 @@ async def run_v2():
     closes = np.array([bar[4] for bar in ohlcv], dtype=float)
     _, smc_signals = calc_smc_pure_causal(highs, lows, closes, internal_length=5)
     _, _, wt_signals = calc_wavetrend(highs, lows, closes, n1=10, n2=21)
-    print(f"SMC nonzero: {np.count_nonzero(smc_signals)}, "
-          f"WT nonzero: {np.count_nonzero(wt_signals)}", flush=True)
+    print(
+        f"SMC nonzero: {np.count_nonzero(smc_signals)}, WT nonzero: {np.count_nonzero(wt_signals)}",
+        flush=True,
+    )
 
     results: list[ConfigResult] = []
 
     for label, cw, mp, psp in CONFIGS:
         print(f"\n[SIM] {label} (N={cw}, max_pos={mp}, size={psp}%)...", flush=True)
         r = run_config(ohlcv, smc_signals, wt_signals, label, cw, mp, psp)
-        print(f"  Trades: {r.total_trades} | ECR: {r.ecr}% | "
-              f"Fitness: {r.full_fitness} | Block: {r.consensus_blocked}", flush=True)
+        print(
+            f"  Trades: {r.total_trades} | ECR: {r.ecr}% | "
+            f"Fitness: {r.full_fitness} | Block: {r.consensus_blocked}",
+            flush=True,
+        )
         for seg in r.segments:
             mt = "OK" if seg.min_trades_met else "MISS"
             print(f"    {seg.segment}: {seg.trades}t fitness={seg.fitness} mt={mt}", flush=True)
@@ -599,15 +672,21 @@ async def run_v2():
     # Compute uplifts
     baseline = results[0]
     for r in results[1:]:
-        r.fire_rate_uplift = round(r.total_trades / baseline.total_trades, 2) if baseline.total_trades > 0 else 0
-        r.fitness_ratio = round(r.full_fitness / baseline.full_fitness, 2) if baseline.full_fitness > 0 else (1.0 if r.full_fitness == 0 else float("inf"))
+        r.fire_rate_uplift = (
+            round(r.total_trades / baseline.total_trades, 2) if baseline.total_trades > 0 else 0
+        )
+        r.fitness_ratio = (
+            round(r.full_fitness / baseline.full_fitness, 2)
+            if baseline.full_fitness > 0
+            else (1.0 if r.full_fitness == 0 else float("inf"))
+        )
         r.trade_uplift = r.fire_rate_uplift
         r.ecr_ratio = round(r.ecr / baseline.ecr, 2) if baseline.ecr > 0 else 0
 
     # Report
-    print(f"\n{'='*60}", flush=True)
+    print(f"\n{'=' * 60}", flush=True)
     print("DELIVERABLES", flush=True)
-    print(f"{'='*60}\n", flush=True)
+    print(f"{'=' * 60}\n", flush=True)
     report = generate_report(results)
     print(report, flush=True)
 
@@ -633,11 +712,14 @@ async def run_v2():
     }
 
     # Verdict
-    passing = [r for r in results[1:]
-               if r.fire_rate_uplift >= 1.5
-               and r.fitness_ratio >= 0.80
-               and r.ecr >= 60
-               and (100 - r.ecr) <= 40]
+    passing = [
+        r
+        for r in results[1:]
+        if r.fire_rate_uplift >= 1.5
+        and r.fitness_ratio >= 0.80
+        and r.ecr >= 60
+        and (100 - r.ecr) <= 40
+    ]
     if passing:
         best = max(passing, key=lambda r: r.fire_rate_uplift)
         log["verdict"] = "PASS"
@@ -649,7 +731,10 @@ async def run_v2():
 
     log_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "docs", "operations", "evidence", "sol_s1_v2_backtest_log.json",
+        "docs",
+        "operations",
+        "evidence",
+        "sol_s1_v2_backtest_log.json",
     )
     with open(log_path, "w", encoding="utf-8") as f:
         json.dump(log, f, indent=2, ensure_ascii=False, cls=_Enc)

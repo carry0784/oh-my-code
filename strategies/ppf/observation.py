@@ -113,14 +113,10 @@ def compute_observation(
     )
 
     # O6: SSL Hybrid trend strength
-    ssl_strength = get_ssl_trend_strength(
-        highs, lows, closes, ssl_period, ssl_atr_period
-    )
+    ssl_strength = get_ssl_trend_strength(highs, lows, closes, ssl_period, ssl_atr_period)
 
     # O7: Volume Oscillator force strength
-    vol_strength = get_volume_force_strength(
-        closes, volumes, vol_short_period, vol_long_period
-    )
+    vol_strength = get_volume_force_strength(closes, volumes, vol_short_period, vol_long_period)
 
     # O8: Recent swing distance
     swing_dist = _compute_swing_distance(highs, lows, closes)
@@ -132,9 +128,7 @@ def compute_observation(
         expected_adverse_excursion_before_target=(
             ensemble.expected_adverse_excursion_before_target
         ),
-        expected_favorable_excursion_to_target=(
-            ensemble.expected_favorable_excursion_to_target
-        ),
+        expected_favorable_excursion_to_target=(ensemble.expected_favorable_excursion_to_target),
         ssl_trend_strength=ssl_strength,
         volume_force_strength=vol_strength,
         recent_swing_distance_pct=swing_dist,

@@ -32,9 +32,7 @@ class PPFNoveltyEvent(Base):
     # -- Event identification --
     symbol: Mapped[str] = mapped_column(String(32), nullable=False)
     exchange: Mapped[str] = mapped_column(String(32), nullable=False)
-    event_ts: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
-    )
+    event_ts: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
 
     # -- Gate evaluation snapshot --
     deny_reason_code: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -43,32 +41,22 @@ class PPFNoveltyEvent(Base):
     manifest_name: Mapped[str] = mapped_column(String(32), nullable=False)
 
     # -- Observation window tracking --
-    observation_window_bars: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=20
-    )
-    observation_window_closed: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
+    observation_window_bars: Mapped[int] = mapped_column(Integer, nullable=False, default=20)
+    observation_window_closed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     bars_elapsed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     # -- Post-hoc judgment (filled after observation window) --
-    judgment: Mapped[str | None] = mapped_column(
-        String(16), nullable=True
-    )  # TP / FP / UNRESOLVED
+    judgment: Mapped[str | None] = mapped_column(String(16), nullable=True)  # TP / FP / UNRESOLVED
     judgment_ts: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     judgment_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # -- Market context at event time --
     close_price_at_event: Mapped[float | None] = mapped_column(Float, nullable=True)
-    close_price_at_window_end: Mapped[float | None] = mapped_column(
-        Float, nullable=True
-    )
+    close_price_at_window_end: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # -- Metadata --
     task_result_json: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
 
     __table_args__ = (
         Index("ix_ppf_novelty_symbol_ts", "symbol", "event_ts"),

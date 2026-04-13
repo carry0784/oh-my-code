@@ -90,6 +90,7 @@ from strategies.ppf.pattern_engine.matcher import (
 # Shared Fixtures
 # ===========================================================================
 
+
 def _params(**overrides) -> PPFParameters:
     defaults = dict(
         market_profile=MarketProfile.M1_CRYPTO_FUTURES,
@@ -151,6 +152,7 @@ def _synthetic_prices(n: int = 200, seed: int = 42) -> tuple[np.ndarray, ...]:
 # ===========================================================================
 # SECTION 1: Observation O1~O9 Shadow Outputs
 # ===========================================================================
+
 
 class TestObservationFields:
     """Verify O1~O9 field computation and fail-closed behavior."""
@@ -240,7 +242,11 @@ class TestObservationFields:
         highs, lows, closes, volumes = _synthetic_prices(200, seed=42)
         params = _params()
         obs = compute_observation(
-            highs=highs, lows=lows, closes=closes, volumes=volumes, params=params,
+            highs=highs,
+            lows=lows,
+            closes=closes,
+            volumes=volumes,
+            params=params,
         )
         assert isinstance(obs, ObservationFields)
         assert 0.0 <= obs.pattern_similarity_score <= 1.0
@@ -271,6 +277,7 @@ class TestObservationFields:
 # SECTION 2: Interpretation I1~I5 Formulas & Fail-Closed
 # ===========================================================================
 
+
 class TestInterpretationScores:
     """Verify I1~I5 formulas and fail-closed behavior."""
 
@@ -282,16 +289,18 @@ class TestInterpretationScores:
 
     def test_i1_formula_bullish(self) -> None:
         """I1 = O2 * O3 * O1 for bullish direction."""
-        obs = _obs(projection_direction=1, projection_consensus_ratio=0.8,
-                   pattern_similarity_score=0.9)
+        obs = _obs(
+            projection_direction=1, projection_consensus_ratio=0.8, pattern_similarity_score=0.9
+        )
         scores = compute_scores(obs)
         expected = 1 * 0.8 * 0.9
         assert abs(scores.projection_bias_score - expected) < 1e-9
 
     def test_i1_formula_bearish(self) -> None:
         """I1 = O2 * O3 * O1 for bearish direction — sign is negative."""
-        obs = _obs(projection_direction=-1, projection_consensus_ratio=0.8,
-                   pattern_similarity_score=0.9)
+        obs = _obs(
+            projection_direction=-1, projection_consensus_ratio=0.8, pattern_similarity_score=0.9
+        )
         scores = compute_scores(obs)
         expected = -1 * 0.8 * 0.9
         assert abs(scores.projection_bias_score - expected) < 1e-9
@@ -321,16 +330,16 @@ class TestInterpretationScores:
 
     def test_i2_i3_zero_when_o2_zero(self) -> None:
         """I2=0 and I3=0 when O2=0 (blocks D4 entry)."""
-        obs = _obs(projection_direction=0, ssl_trend_strength=0.9,
-                   volume_force_strength=0.8)
+        obs = _obs(projection_direction=0, ssl_trend_strength=0.9, volume_force_strength=0.8)
         scores = compute_scores(obs)
         assert scores.trend_alignment_score == 0.0
         assert scores.volume_confirmation_score == 0.0
 
     def test_i4_path_quality_formula(self) -> None:
         """I4 = (O5 - O4) / O5."""
-        obs = _obs(expected_adverse_excursion_before_target=0.5,
-                   expected_favorable_excursion_to_target=2.0)
+        obs = _obs(
+            expected_adverse_excursion_before_target=0.5, expected_favorable_excursion_to_target=2.0
+        )
         scores = compute_scores(obs)
         expected = (2.0 - 0.5) / 2.0  # = 0.75
         assert abs(scores.path_quality_score - expected) < 1e-9
@@ -349,16 +358,18 @@ class TestInterpretationScores:
 
     def test_i5_structure_rr_formula(self) -> None:
         """I5 = O5 / max(O4, EPSILON)."""
-        obs = _obs(expected_adverse_excursion_before_target=0.5,
-                   expected_favorable_excursion_to_target=2.0)
+        obs = _obs(
+            expected_adverse_excursion_before_target=0.5, expected_favorable_excursion_to_target=2.0
+        )
         scores = compute_scores(obs)
         expected = 2.0 / max(0.5, EPSILON_PCT)  # = 4.0
         assert abs(scores.structure_rr_score - expected) < 1e-9
 
     def test_i5_zero_adverse_uses_epsilon(self) -> None:
         """I5 denominator uses EPSILON when O4=0."""
-        obs = _obs(expected_adverse_excursion_before_target=0.0,
-                   expected_favorable_excursion_to_target=2.0)
+        obs = _obs(
+            expected_adverse_excursion_before_target=0.0, expected_favorable_excursion_to_target=2.0
+        )
         scores = compute_scores(obs)
         expected = 2.0 / EPSILON_PCT
         assert abs(scores.structure_rr_score - expected) < 1e-9
@@ -367,6 +378,7 @@ class TestInterpretationScores:
 # ===========================================================================
 # SECTION 3: Decision D1~D6 + R1 Transition Consistency
 # ===========================================================================
+
 
 class TestDecisionTransitions:
     """Verify complete D1~D6 + R1 state machine transitions."""
@@ -421,7 +433,7 @@ class TestDecisionTransitions:
         scores_fail = _scores(trend_alignment_score=-0.3)
         for i in range(4):
             r = sm.evaluate(obs=obs, scores=scores_fail)
-            assert r.state == PPFState.D3_CANDIDATE, f"Bar {i+1} should be D3"
+            assert r.state == PPFState.D3_CANDIDATE, f"Bar {i + 1} should be D3"
         # Bar 5: timeout -> D1
         r5 = sm.evaluate(obs=obs, scores=scores_fail)
         assert r5.state == PPFState.D1_IDLE
@@ -454,7 +466,9 @@ class TestDecisionTransitions:
         """D5: risk_filter=False -> R1 -> D1_IDLE (B2)."""
         sm = PPFStateMachine(_params())
         result = sm.evaluate(
-            obs=_obs(), scores=_scores(), risk_filter_pass=False,
+            obs=_obs(),
+            scores=_scores(),
+            risk_filter_pass=False,
         )
         assert result.state == PPFState.D1_IDLE
         assert result.reached_state == PPFState.D5_ARMED
@@ -465,7 +479,9 @@ class TestDecisionTransitions:
         """D6: all conditions pass + risk_filter=True -> D6_EXECUTE_READY."""
         sm = PPFStateMachine(_params())
         result = sm.evaluate(
-            obs=_obs(), scores=_scores(), risk_filter_pass=True,
+            obs=_obs(),
+            scores=_scores(),
+            risk_filter_pass=True,
         )
         assert result.state == PPFState.D6_EXECUTE_READY
         assert result.allow_entry is True
@@ -480,7 +496,8 @@ class TestDecisionTransitions:
         assert r1.state == PPFState.D6_EXECUTE_READY
         # Candle 2: low similarity -> back to D1 (D6 not retained)
         r2 = sm.evaluate(
-            obs=_obs(pattern_similarity_score=0.1), scores=_scores(),
+            obs=_obs(pattern_similarity_score=0.1),
+            scores=_scores(),
         )
         assert r2.state == PPFState.D1_IDLE
 
@@ -520,6 +537,7 @@ class TestDecisionTransitions:
 # SECTION 4: Novelty Brake
 # ===========================================================================
 
+
 class TestNoveltyBrake:
     """Verify C11 novelty brake disables PPF."""
 
@@ -539,7 +557,8 @@ class TestNoveltyBrake:
         """Novelty fires before reaching any state -> reached_state is None."""
         sm = PPFStateMachine(_params())
         result = sm.evaluate(
-            obs=_obs(regime_novelty_flag=True), scores=_scores(),
+            obs=_obs(regime_novelty_flag=True),
+            scores=_scores(),
         )
         assert result.reached_state is None
 
@@ -559,6 +578,7 @@ class TestNoveltyBrake:
 # ===========================================================================
 # SECTION 5: Bullish Worked Example
 # ===========================================================================
+
 
 class TestBullishWorkedExample:
     """Full bullish path: D1->D2->D3->D4->D5->D6."""
@@ -593,6 +613,7 @@ class TestBullishWorkedExample:
 # SECTION 6: Bearish Worked Example
 # ===========================================================================
 
+
 class TestBearishWorkedExample:
     """Full bearish path: D1->D6 with negative direction."""
 
@@ -605,8 +626,8 @@ class TestBearishWorkedExample:
             projection_consensus_ratio=0.9,
             expected_adverse_excursion_before_target=0.3,
             expected_favorable_excursion_to_target=2.5,
-            ssl_trend_strength=-0.6,   # bearish SSL
-            volume_force_strength=-0.4, # bearish volume
+            ssl_trend_strength=-0.6,  # bearish SSL
+            volume_force_strength=-0.4,  # bearish volume
             regime_novelty_flag=False,
         )
         scores = compute_scores(obs)
@@ -627,7 +648,7 @@ class TestBearishWorkedExample:
         sm = PPFStateMachine(params)
         obs = _obs(
             projection_direction=-1,
-            ssl_trend_strength=0.6,   # bullish SSL != bearish direction -> misalign
+            ssl_trend_strength=0.6,  # bullish SSL != bearish direction -> misalign
             volume_force_strength=-0.4,
         )
         scores = compute_scores(obs)
@@ -642,6 +663,7 @@ class TestBearishWorkedExample:
 # ===========================================================================
 # SECTION 7: PPFGate & Orchestration Wrapper
 # ===========================================================================
+
 
 class TestPPFGate:
     """Verify PPFGate entry point and wrapper behavior."""
@@ -668,7 +690,10 @@ class TestPPFGate:
         gate = PPFGate(params, "test:SOL/USDT:1h")
         # Pass invalid data to trigger exception
         result = gate.evaluate(
-            np.array([]), np.array([]), np.array([]), np.array([]),
+            np.array([]),
+            np.array([]),
+            np.array([]),
+            np.array([]),
             risk_filter_pass=True,
         )
         assert result is False
@@ -721,13 +746,15 @@ class TestPPFGate:
 # SECTION 8: Logging L1~L6 Completeness + O4_raw/O5_raw
 # ===========================================================================
 
+
 class TestLogging:
     """Verify L1~L6 logging fields and O4_raw/O5_raw."""
 
     def test_log_entry_has_l5_asset_tag(self) -> None:
         """L5: asset_timeframe_tag present."""
         entry = build_log_entry(
-            obs=_obs(), scores=_scores(),
+            obs=_obs(),
+            scores=_scores(),
             result=DecisionResult(state=PPFState.D6_EXECUTE_READY, allow_entry=True),
             asset_timeframe_tag="binance:SOL/USDT:1h",
         )
@@ -736,7 +763,8 @@ class TestLogging:
     def test_log_entry_has_l6_novelty_flag(self) -> None:
         """L6: regime_novelty_flag present."""
         entry = build_log_entry(
-            obs=_obs(regime_novelty_flag=True), scores=_scores(),
+            obs=_obs(regime_novelty_flag=True),
+            scores=_scores(),
             result=DecisionResult(state=PPFState.D1_IDLE),
             asset_timeframe_tag="test",
         )
@@ -745,7 +773,8 @@ class TestLogging:
     def test_log_entry_l1_initially_none(self) -> None:
         """L1: projection_actual_error is None at judgment time (post-hoc)."""
         entry = build_log_entry(
-            obs=_obs(), scores=_scores(),
+            obs=_obs(),
+            scores=_scores(),
             result=DecisionResult(state=PPFState.D6_EXECUTE_READY, allow_entry=True),
             asset_timeframe_tag="test",
         )
@@ -754,7 +783,8 @@ class TestLogging:
     def test_log_entry_l3_initially_none(self) -> None:
         """L3: false_positive_flag is None at judgment time (post-hoc)."""
         entry = build_log_entry(
-            obs=_obs(), scores=_scores(),
+            obs=_obs(),
+            scores=_scores(),
             result=DecisionResult(state=PPFState.D6_EXECUTE_READY, allow_entry=True),
             asset_timeframe_tag="test",
         )
@@ -767,7 +797,8 @@ class TestLogging:
             expected_favorable_excursion_to_target=3.0,
         )
         entry = build_log_entry(
-            obs=obs, scores=_scores(),
+            obs=obs,
+            scores=_scores(),
             result=DecisionResult(state=PPFState.D6_EXECUTE_READY, allow_entry=True),
             asset_timeframe_tag="test",
         )
@@ -787,7 +818,8 @@ class TestLogging:
             structure_rr_score=4.0,
         )
         entry = build_log_entry(
-            obs=_obs(), scores=scores,
+            obs=_obs(),
+            scores=scores,
             result=DecisionResult(state=PPFState.D6_EXECUTE_READY, allow_entry=True),
             asset_timeframe_tag="test",
         )
@@ -801,7 +833,8 @@ class TestLogging:
     def test_log_entry_l4_rejection_code(self) -> None:
         """L4: rejection_reason_code present on R1."""
         entry = build_log_entry(
-            obs=_obs(), scores=_scores(),
+            obs=_obs(),
+            scores=_scores(),
             result=DecisionResult(
                 state=PPFState.D1_IDLE,
                 reached_state=PPFState.D5_ARMED,
@@ -815,7 +848,8 @@ class TestLogging:
     def test_log_entry_reached_state_on_rejection(self) -> None:
         """reached_state is logged for R1 rejections."""
         entry = build_log_entry(
-            obs=_obs(), scores=_scores(),
+            obs=_obs(),
+            scores=_scores(),
             result=DecisionResult(
                 state=PPFState.D1_IDLE,
                 reached_state=PPFState.D5_ARMED,
@@ -829,7 +863,8 @@ class TestLogging:
     def test_log_entry_reached_state_none_on_success(self) -> None:
         """reached_state is None on D6 success."""
         entry = build_log_entry(
-            obs=_obs(), scores=_scores(),
+            obs=_obs(),
+            scores=_scores(),
             result=DecisionResult(state=PPFState.D6_EXECUTE_READY, allow_entry=True),
             asset_timeframe_tag="test",
         )
@@ -838,7 +873,8 @@ class TestLogging:
     def test_emit_log_json_valid(self) -> None:
         """emit_log produces valid JSON."""
         entry = build_log_entry(
-            obs=_obs(), scores=_scores(),
+            obs=_obs(),
+            scores=_scores(),
             result=DecisionResult(state=PPFState.D6_EXECUTE_READY, allow_entry=True),
             asset_timeframe_tag="test:SOL/USDT:1h",
         )
@@ -857,21 +893,22 @@ class TestLogging:
 # SECTION 9: EV1~EV10 Parameter Load & Frozen Behavior
 # ===========================================================================
 
+
 class TestParameters:
     """Verify EV1~EV10 parameters and C10 frozen behavior."""
 
     def test_default_values(self) -> None:
         """Default EV1~EV10 values match constants."""
         p = PPFParameters(market_profile=MarketProfile.M1_CRYPTO_FUTURES)
-        assert p.correlation_length == DEFAULT_CORRELATION_LENGTH   # EV1=50
-        assert p.projection_horizon == DEFAULT_PROJECTION_HORIZON   # EV2=10
-        assert p.k == DEFAULT_K                                     # EV3=10
-        assert p.path_quality_min == DEFAULT_PATH_QUALITY_MIN       # EV4=0.2
-        assert p.rr_min == DEFAULT_RR_MIN                           # EV5=2.0
-        assert p.similarity_min == DEFAULT_SIMILARITY_MIN           # EV6=0.6
-        assert p.novelty_threshold == DEFAULT_NOVELTY_THRESHOLD     # EV7=0.4
-        assert p.projection_bias_min == DEFAULT_PROJECTION_BIAS_MIN # EV8=0.2
-        assert p.watch_timeout_bars == DEFAULT_WATCH_TIMEOUT_BARS   # EV9=3
+        assert p.correlation_length == DEFAULT_CORRELATION_LENGTH  # EV1=50
+        assert p.projection_horizon == DEFAULT_PROJECTION_HORIZON  # EV2=10
+        assert p.k == DEFAULT_K  # EV3=10
+        assert p.path_quality_min == DEFAULT_PATH_QUALITY_MIN  # EV4=0.2
+        assert p.rr_min == DEFAULT_RR_MIN  # EV5=2.0
+        assert p.similarity_min == DEFAULT_SIMILARITY_MIN  # EV6=0.6
+        assert p.novelty_threshold == DEFAULT_NOVELTY_THRESHOLD  # EV7=0.4
+        assert p.projection_bias_min == DEFAULT_PROJECTION_BIAS_MIN  # EV8=0.2
+        assert p.watch_timeout_bars == DEFAULT_WATCH_TIMEOUT_BARS  # EV9=3
         assert p.candidate_timeout_bars == DEFAULT_CANDIDATE_TIMEOUT_BARS  # EV10=5
 
     def test_ev9_watch_timeout_default_3(self) -> None:
@@ -892,13 +929,15 @@ class TestParameters:
         """C6: K=1 raises ValueError at construction."""
         with pytest.raises(ValueError, match="C6"):
             PPFParameters(
-                market_profile=MarketProfile.M1_CRYPTO_FUTURES, k=1,
+                market_profile=MarketProfile.M1_CRYPTO_FUTURES,
+                k=1,
             )
 
     def test_c6_k2_passes(self) -> None:
         """C6: K=2 is minimum valid."""
         p = PPFParameters(
-            market_profile=MarketProfile.M1_CRYPTO_FUTURES, k=2,
+            market_profile=MarketProfile.M1_CRYPTO_FUTURES,
+            k=2,
         )
         assert p.k == 2
 
@@ -934,6 +973,7 @@ class TestParameters:
 # SECTION 10: C1~C11 Constitution Invariants
 # ===========================================================================
 
+
 class TestConstitution:
     """Verify C1~C11 invariant checks."""
 
@@ -953,7 +993,9 @@ class TestConstitution:
 
     def test_c7_no_checksums_passes(self) -> None:
         """C7: no checksums -> passes (warning mode)."""
-        import tempfile, os
+        import tempfile
+        import os
+
         with tempfile.TemporaryDirectory() as d:
             result = check_c7_engine_diff(d, None)
             assert result.passed is True
@@ -1013,25 +1055,31 @@ class TestConstitution:
 # SECTION 11: Engine diff=0 Verification
 # ===========================================================================
 
+
 class TestEngineDiffZero:
     """Verify execution engine files are not modified by PPF."""
 
     def test_c7_with_matching_checksums(self) -> None:
         """C7: matching checksums -> passes."""
-        import tempfile, os
+        import tempfile
+        import os
+
         with tempfile.TemporaryDirectory() as d:
             fpath = os.path.join(d, "engine.py")
             content = b"# engine code unchanged"
             with open(fpath, "wb") as f:
                 f.write(content)
             import hashlib
+
             expected = hashlib.sha256(content).hexdigest()
             result = check_c7_engine_diff(d, {"engine.py": expected})
             assert result.passed is True
 
     def test_c7_with_mismatched_checksums(self) -> None:
         """C7: mismatched checksum -> fails."""
-        import tempfile, os
+        import tempfile
+        import os
+
         with tempfile.TemporaryDirectory() as d:
             fpath = os.path.join(d, "engine.py")
             with open(fpath, "wb") as f:
@@ -1043,6 +1091,7 @@ class TestEngineDiffZero:
     def test_c7_missing_file(self) -> None:
         """C7: expected file missing -> fails."""
         import tempfile
+
         with tempfile.TemporaryDirectory() as d:
             result = check_c7_engine_diff(d, {"missing.py": "0" * 64})
             assert result.passed is False
@@ -1052,13 +1101,15 @@ class TestEngineDiffZero:
 # SECTION 12: Shadow Log Completeness
 # ===========================================================================
 
+
 class TestShadowLogCompleteness:
     """Verify that shadow mode captures all mandatory log fields."""
 
     def test_emit_log_includes_reached_state(self) -> None:
         """emit_log includes reached_state in JSON output."""
         entry = build_log_entry(
-            obs=_obs(), scores=_scores(),
+            obs=_obs(),
+            scores=_scores(),
             result=DecisionResult(
                 state=PPFState.D1_IDLE,
                 reached_state=PPFState.D4_QUALIFIED,
@@ -1078,7 +1129,8 @@ class TestShadowLogCompleteness:
         """Every RejectionCode value can be logged."""
         for code in RejectionCode:
             entry = build_log_entry(
-                obs=_obs(), scores=_scores(),
+                obs=_obs(),
+                scores=_scores(),
                 result=DecisionResult(
                     state=PPFState.D1_IDLE,
                     rejection=TransitionOutcome.R1_REJECT,
@@ -1092,7 +1144,8 @@ class TestShadowLogCompleteness:
         """Every PPFState value can appear in log entry."""
         for state in PPFState:
             entry = build_log_entry(
-                obs=_obs(), scores=_scores(),
+                obs=_obs(),
+                scores=_scores(),
                 result=DecisionResult(state=state),
                 asset_timeframe_tag="test",
             )

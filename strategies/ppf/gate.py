@@ -130,9 +130,7 @@ class PPFGate:
             return False
 
         try:
-            return self._evaluate_internal(
-                highs, lows, closes, volumes, risk_filter_pass
-            )
+            return self._evaluate_internal(highs, lows, closes, volumes, risk_filter_pass)
         except Exception as exc:
             # Fail-closed: any error -> deny entry
             logger.error(f"PPF evaluation error (fail-closed): {exc!r}")

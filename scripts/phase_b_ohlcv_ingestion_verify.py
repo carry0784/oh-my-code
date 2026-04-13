@@ -76,12 +76,15 @@ FC_NON_DETERM = "NON_DETERMINISTIC_RESULT"
 def create_exchange():
     """Create CCXT Binance Futures instance."""
     import ccxt
-    return ccxt.binance({
-        "apiKey": settings.binance_api_key or None,
-        "secret": settings.binance_api_secret or None,
-        "options": {"defaultType": "swap"},
-        "enableRateLimit": True,
-    })
+
+    return ccxt.binance(
+        {
+            "apiKey": settings.binance_api_key or None,
+            "secret": settings.binance_api_secret or None,
+            "options": {"defaultType": "swap"},
+            "enableRateLimit": True,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -117,7 +120,9 @@ async def step1_dryrun(exchange, symbols: list[str]) -> dict:
     try:
         old_candles = exchange.fetch_ohlcv(symbol, TIMEFRAME, since=start_ts, limit=10)
         if old_candles and len(old_candles) > 0:
-            age_days = (datetime.now(timezone.utc).timestamp() * 1000 - old_candles[0][0]) / 86_400_000
+            age_days = (
+                datetime.now(timezone.utc).timestamp() * 1000 - old_candles[0][0]
+            ) / 86_400_000
             result["details"]["earliest_available_days"] = round(age_days, 1)
             print(f"  [V-001] Earliest available: ~{age_days:.0f} days ago — OK")
         else:
@@ -160,7 +165,9 @@ async def step2_small_test(exchange, symbol: str) -> dict:
     async with async_session_factory() as session:
         ing1 = await mgr.ingest_candles(session, EXCHANGE_ID, symbol, TIMEFRAME, candles)
         await session.commit()
-        print(f"  1st ingest: fetched={ing1.candles_fetched}, inserted={ing1.candles_inserted}, skipped={ing1.candles_skipped}")
+        print(
+            f"  1st ingest: fetched={ing1.candles_fetched}, inserted={ing1.candles_inserted}, skipped={ing1.candles_skipped}"
+        )
         result["ingest_ok"] = ing1.candles_inserted > 0 or ing1.candles_skipped > 0
 
     # Dedup test — re-ingest same data
@@ -170,18 +177,24 @@ async def step2_small_test(exchange, symbol: str) -> dict:
         await session.commit()
         count_after = await mgr.get_candle_count(session, EXCHANGE_ID, symbol, TIMEFRAME)
         result["dedup_ok"] = (ing2.candles_skipped > 0) and (count_after == count_before)
-        print(f"  Dedup: skipped={ing2.candles_skipped}, count_before={count_before}, count_after={count_after} — {'PASS' if result['dedup_ok'] else 'FAIL'}")
+        print(
+            f"  Dedup: skipped={ing2.candles_skipped}, count_before={count_before}, count_after={count_after} — {'PASS' if result['dedup_ok'] else 'FAIL'}"
+        )
 
     # Monotonicity on small window
     async with async_session_factory() as session:
-        stored = await mgr.get_replay_candles(session, EXCHANGE_ID, symbol, TIMEFRAME, start_ts=start_ts)
+        stored = await mgr.get_replay_candles(
+            session, EXCHANGE_ID, symbol, TIMEFRAME, start_ts=start_ts
+        )
         if len(stored) >= 2:
             reversals = 0
             for i in range(1, len(stored)):
                 if stored[i][0] <= stored[i - 1][0]:
                     reversals += 1
             result["monotonic_ok"] = reversals == 0
-            print(f"  Monotonicity: {len(stored)} candles, reversals={reversals} — {'PASS' if result['monotonic_ok'] else 'FAIL'}")
+            print(
+                f"  Monotonicity: {len(stored)} candles, reversals={reversals} — {'PASS' if result['monotonic_ok'] else 'FAIL'}"
+            )
         else:
             result["monotonic_ok"] = True  # not enough data to fail
 
@@ -216,14 +229,18 @@ async def step3_full_ingestion(exchange, symbols: list[str]) -> dict:
             # Fetch with retry
             for retry_idx, delay in enumerate(RETRY_DELAYS + [None]):
                 try:
-                    candles = exchange.fetch_ohlcv(symbol, TIMEFRAME, since=since, limit=BATCH_LIMIT)
+                    candles = exchange.fetch_ohlcv(
+                        symbol, TIMEFRAME, since=since, limit=BATCH_LIMIT
+                    )
                     break
                 except Exception as e:
                     if delay is None:
                         print(f"  [ABORT] {symbol} batch {batch_num}: 3 retries exhausted — {e}")
                         abort = True
                         break
-                    print(f"  [RETRY {retry_idx + 1}] {symbol} batch {batch_num}: {e}, waiting {delay}s")
+                    print(
+                        f"  [RETRY {retry_idx + 1}] {symbol} batch {batch_num}: {e}, waiting {delay}s"
+                    )
                     time.sleep(delay)
 
             if abort or candles is None:
@@ -242,7 +259,9 @@ async def step3_full_ingestion(exchange, symbols: list[str]) -> dict:
             total_inserted += ing.candles_inserted
             total_skipped += ing.candles_skipped
 
-            print(f"  [STEP 3] {symbol} batch {batch_num}/{total_batches} ({total_fetched}/{EXPECTED_CANDLES} candles, +{ing.candles_inserted} new)")
+            print(
+                f"  [STEP 3] {symbol} batch {batch_num}/{total_batches} ({total_fetched}/{EXPECTED_CANDLES} candles, +{ing.candles_inserted} new)"
+            )
 
             # Advance pagination cursor
             since = candles[-1][0] + TF_MS
@@ -254,7 +273,9 @@ async def step3_full_ingestion(exchange, symbols: list[str]) -> dict:
             "batches": batch_num,
             "aborted": abort,
         }
-        print(f"  [STEP 3] {symbol} complete: fetched={total_fetched}, inserted={total_inserted}, skipped={total_skipped}")
+        print(
+            f"  [STEP 3] {symbol} complete: fetched={total_fetched}, inserted={total_inserted}, skipped={total_skipped}"
+        )
 
     return results
 
@@ -292,11 +313,15 @@ async def step4_verify(exchange, symbols: list[str], v001_result: dict) -> dict:
                 checks["V-002"] = "PASS"
             elif coverage.coverage_pct >= COVERAGE_MIN:
                 checks["V-002"] = "PASS"  # Above abort threshold
-                details["v002_note"] = f"Coverage {coverage.coverage_pct}% above abort threshold but below target {COVERAGE_TARGET}%"
+                details["v002_note"] = (
+                    f"Coverage {coverage.coverage_pct}% above abort threshold but below target {COVERAGE_TARGET}%"
+                )
             else:
                 checks["V-002"] = "FAIL"
                 failure_codes.append(FC_FAIL_CLOSED)
-            print(f"  [V-002] Coverage: {coverage.coverage_pct}% ({coverage.total_candles}/{coverage.expected_candles}) gaps={coverage.gap_count} — {checks['V-002']}")
+            print(
+                f"  [V-002] Coverage: {coverage.coverage_pct}% ({coverage.total_candles}/{coverage.expected_candles}) gaps={coverage.gap_count} — {checks['V-002']}"
+            )
 
         # V-003: Deduplication
         now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -305,7 +330,9 @@ async def step4_verify(exchange, symbols: list[str], v001_result: dict) -> dict:
             test_candles = exchange.fetch_ohlcv(symbol, TIMEFRAME, since=test_start, limit=168)
             async with async_session_factory() as session:
                 count_before = await mgr.get_candle_count(session, EXCHANGE_ID, symbol, TIMEFRAME)
-                ing = await mgr.ingest_candles(session, EXCHANGE_ID, symbol, TIMEFRAME, test_candles)
+                ing = await mgr.ingest_candles(
+                    session, EXCHANGE_ID, symbol, TIMEFRAME, test_candles
+                )
                 await session.commit()
                 count_after = await mgr.get_candle_count(session, EXCHANGE_ID, symbol, TIMEFRAME)
 
@@ -317,7 +344,9 @@ async def step4_verify(exchange, symbols: list[str], v001_result: dict) -> dict:
             else:
                 checks["V-003"] = "FAIL"
                 failure_codes.append(FC_DUPLICATE)
-            print(f"  [V-003] Dedup: attempted={ing.candles_fetched}, ignored={ing.candles_skipped}, count_unchanged={count_after == count_before} — {checks['V-003']}")
+            print(
+                f"  [V-003] Dedup: attempted={ing.candles_fetched}, ignored={ing.candles_skipped}, count_unchanged={count_after == count_before} — {checks['V-003']}"
+            )
         except Exception as e:
             checks["V-003"] = "FAIL"
             details["v003_error"] = str(e)
@@ -348,26 +377,34 @@ async def step4_verify(exchange, symbols: list[str], v001_result: dict) -> dict:
                 else:
                     checks["V-004"] = "FAIL"
                     failure_codes.append(FC_ORDERING)
-                print(f"  [V-004] Monotonicity: {len(all_candles)} candles, reversals={reversals}, interval_gaps={interval_violations} — {checks['V-004']}")
+                print(
+                    f"  [V-004] Monotonicity: {len(all_candles)} candles, reversals={reversals}, interval_gaps={interval_violations} — {checks['V-004']}"
+                )
 
         # V-005: Event metadata tagging (with rollback)
         try:
             async with async_session_factory() as session:
                 async with session.begin():
                     # Pick a test range: first 24 candles
-                    test_candles = await mgr.get_replay_candles(session, EXCHANGE_ID, symbol, TIMEFRAME, limit=24)
+                    test_candles = await mgr.get_replay_candles(
+                        session, EXCHANGE_ID, symbol, TIMEFRAME, limit=24
+                    )
                     if test_candles and len(test_candles) >= 2:
                         tag_start = test_candles[0][0]
                         tag_end = test_candles[-1][0]
 
                         tagged_ew = await mgr.tag_event_week(
-                            session, EXCHANGE_ID, symbol, TIMEFRAME,
-                            tag_start, tag_end, "TEST_EVENT"
+                            session,
+                            EXCHANGE_ID,
+                            symbol,
+                            TIMEFRAME,
+                            tag_start,
+                            tag_end,
+                            "TEST_EVENT",
                         )
                         hv_timestamps = [c[0] for c in test_candles]
                         tagged_hv = await mgr.tag_high_volatility(
-                            session, EXCHANGE_ID, symbol, TIMEFRAME,
-                            hv_timestamps
+                            session, EXCHANGE_ID, symbol, TIMEFRAME, hv_timestamps
                         )
 
                         details["event_week_tagged"] = tagged_ew > 0
@@ -378,7 +415,9 @@ async def step4_verify(exchange, symbols: list[str], v001_result: dict) -> dict:
                         else:
                             checks["V-005"] = "FAIL"
 
-                        print(f"  [V-005] Tagging: event_week={tagged_ew}, high_vol={tagged_hv} — {checks['V-005']}")
+                        print(
+                            f"  [V-005] Tagging: event_week={tagged_ew}, high_vol={tagged_hv} — {checks['V-005']}"
+                        )
                     else:
                         checks["V-005"] = "FAIL"
                         print(f"  [V-005] FAIL: insufficient candles for tagging test")
@@ -409,9 +448,7 @@ async def step4_verify(exchange, symbols: list[str], v001_result: dict) -> dict:
                 for gap_ts in cov.gap_timestamps[:50]:  # cap at 50
                     try:
                         fill_candles = exchange.fetch_ohlcv(
-                            symbol, TIMEFRAME,
-                            since=gap_ts - TF_MS,
-                            limit=3
+                            symbol, TIMEFRAME, since=gap_ts - TF_MS, limit=3
                         )
                         if fill_candles:
                             async with async_session_factory() as fill_session:
@@ -434,7 +471,9 @@ async def step4_verify(exchange, symbols: list[str], v001_result: dict) -> dict:
                     else:
                         checks["V-006"] = "FAIL"
                         failure_codes.append(FC_BACKFILL)
-                    print(f"  [V-006] Backfill: before={cov.gap_count}, after={cov2.gap_count}, filled={backfilled} — {checks['V-006']}")
+                    print(
+                        f"  [V-006] Backfill: before={cov.gap_count}, after={cov2.gap_count}, filled={backfilled} — {checks['V-006']}"
+                    )
 
                     # Update coverage details post-backfill
                     details["coverage_pct"] = cov2.coverage_pct
@@ -459,7 +498,9 @@ async def step4_verify(exchange, symbols: list[str], v001_result: dict) -> dict:
             checks["V-007"] = "FAIL"
             failure_codes.append(FC_FAIL_CLOSED)
         details["fail_closed_reasons"] = v007_abort_reasons
-        print(f"  [V-007] Fail-closed: {v007_abort_reasons if v007_abort_reasons else 'no triggers'} — {checks['V-007']}")
+        print(
+            f"  [V-007] Fail-closed: {v007_abort_reasons if v007_abort_reasons else 'no triggers'} — {checks['V-007']}"
+        )
 
         # Overall for this symbol
         overall = "PASS" if all(v == "PASS" for v in checks.values()) else "FAIL"
@@ -476,6 +517,7 @@ async def step4_verify(exchange, symbols: list[str], v001_result: dict) -> dict:
 
 class _RollbackSignal(Exception):
     """Signal to trigger rollback in V-005 tagging test."""
+
     pass
 
 
@@ -539,20 +581,22 @@ def step5_output(v001: dict, step3: dict, step4: dict, symbols: list[str]) -> di
     print(f"  Verification log saved: {LOG_PATH}")
 
     # Print summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  GATE 3 OVERALL VERDICT: {overall_verdict}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     for symbol in symbols:
         sl = symbol_logs[symbol]
         print(f"  {symbol}:")
-        print(f"    coverage: {sl['coverage_pct']}% ({sl['total_ingested_bars']}/{EXPECTED_CANDLES})")
+        print(
+            f"    coverage: {sl['coverage_pct']}% ({sl['total_ingested_bars']}/{EXPECTED_CANDLES})"
+        )
         print(f"    gaps: {sl['gap_count']}")
         print(f"    monotonic: {sl['monotonic_check']}")
         for k, v in sl["checks"].items():
             status_mark = "✓" if v == "PASS" else "✗"
             print(f"    {k}: {status_mark} {v}")
         print(f"    verdict: {sl['overall_verdict']}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     return log
 
@@ -565,7 +609,9 @@ async def main():
         description="Phase B Gate 3 — OHLCV 400D Ingestion Verification"
     )
     parser.add_argument("--dry-run", action="store_true", help="Step 1 only (API ping)")
-    parser.add_argument("--verify-only", action="store_true", help="Steps 4-5 only (skip ingestion)")
+    parser.add_argument(
+        "--verify-only", action="store_true", help="Steps 4-5 only (skip ingestion)"
+    )
     parser.add_argument("--symbol", type=str, default=None, help="Single symbol override")
     args = parser.parse_args()
 

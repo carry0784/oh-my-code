@@ -160,9 +160,7 @@ class HistoryDataManager:
 
         # PostgreSQL ON CONFLICT DO NOTHING for idempotent ingestion
         stmt = pg_insert(OhlcvHistory).values(rows)
-        stmt = stmt.on_conflict_do_nothing(
-            constraint="uq_ohlcv_canonical_slot"
-        )
+        stmt = stmt.on_conflict_do_nothing(constraint="uq_ohlcv_canonical_slot")
         db_result = await session.execute(stmt)
         await session.flush()
 
@@ -286,12 +284,8 @@ class HistoryDataManager:
         tf_ms = TIMEFRAME_MS.get(timeframe, 3_600_000)
         expected = ((timestamps[-1] - timestamps[0]) // tf_ms) + 1
         report.expected_candles = expected
-        report.coverage_pct = (
-            round(len(timestamps) / expected * 100, 2) if expected > 0 else 0.0
-        )
-        report.days_covered = round(
-            (timestamps[-1] - timestamps[0]) / 86_400_000, 1
-        )
+        report.coverage_pct = round(len(timestamps) / expected * 100, 2) if expected > 0 else 0.0
+        report.days_covered = round((timestamps[-1] - timestamps[0]) / 86_400_000, 1)
 
         # Detect gaps
         gaps = []
@@ -416,20 +410,17 @@ class HistoryDataManager:
         Returns:
             List of {"exchange", "symbol", "timeframe", "count", "first_ts", "last_ts"}.
         """
-        stmt = (
-            select(
-                OhlcvHistory.exchange,
-                OhlcvHistory.symbol,
-                OhlcvHistory.timeframe,
-                func.count().label("count"),
-                func.min(OhlcvHistory.open_time).label("first_ts"),
-                func.max(OhlcvHistory.open_time).label("last_ts"),
-            )
-            .group_by(
-                OhlcvHistory.exchange,
-                OhlcvHistory.symbol,
-                OhlcvHistory.timeframe,
-            )
+        stmt = select(
+            OhlcvHistory.exchange,
+            OhlcvHistory.symbol,
+            OhlcvHistory.timeframe,
+            func.count().label("count"),
+            func.min(OhlcvHistory.open_time).label("first_ts"),
+            func.max(OhlcvHistory.open_time).label("last_ts"),
+        ).group_by(
+            OhlcvHistory.exchange,
+            OhlcvHistory.symbol,
+            OhlcvHistory.timeframe,
         )
         if exchange is not None:
             stmt = stmt.where(OhlcvHistory.exchange == exchange)

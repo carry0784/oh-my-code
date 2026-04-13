@@ -123,8 +123,8 @@ class PPFBacktestComparator:
 
     DEFAULT_TOLERANCE_PCT: float = 5.0
     DEFAULT_JS_THRESHOLD: float = 0.1
-    MIN_LIVE_BARS: int = 336       # 14 days × 24h
-    MIN_NOVELTY_EVENTS: int = 10   # VAL-QTY-001 S2P-EI1
+    MIN_LIVE_BARS: int = 336  # 14 days × 24h
+    MIN_NOVELTY_EVENTS: int = 10  # VAL-QTY-001 S2P-EI1
 
     def __init__(
         self,
@@ -266,8 +266,7 @@ class PPFBacktestComparator:
         live_fpr: float = fp_count / resolved_count if resolved_count > 0 else 0.0
 
         logger.debug(
-            "compare: live_novelty_rate=%.6f live_fpr=%.6f "
-            "tp=%d fp=%d resolved=%d",
+            "compare: live_novelty_rate=%.6f live_fpr=%.6f tp=%d fp=%d resolved=%d",
             live_novelty_rate,
             live_fpr,
             tp_count,
@@ -313,16 +312,14 @@ class PPFBacktestComparator:
         # 5d. deny_reason_distribution JS divergence
         if baseline.deny_reason_distribution:
             try:
-                backtest_deny_dist: dict[str, float] = json.loads(
-                    baseline.deny_reason_distribution
-                )
+                backtest_deny_dist: dict[str, float] = json.loads(baseline.deny_reason_distribution)
                 live_deny_dist = self._build_deny_reason_dist(events)
                 js = self._js_divergence(backtest_deny_dist, live_deny_dist)
                 within_js = js <= self._js_threshold
                 metrics.append(
                     ComparisonMetric(
                         metric_name="deny_reason_distribution_js",
-                        backtest_value=0.0,          # reference = 0 divergence
+                        backtest_value=0.0,  # reference = 0 divergence
                         live_value=js,
                         delta_abs=js,
                         delta_pct=js * 100.0,
@@ -381,9 +378,7 @@ class PPFBacktestComparator:
         # Step 7 — Aggregate and return
         # ------------------------------------------------------------------
         report.metrics = metrics
-        report.all_within_tolerance = bool(metrics) and all(
-            m.within_tolerance for m in metrics
-        )
+        report.all_within_tolerance = bool(metrics) and all(m.within_tolerance for m in metrics)
 
         # val_pdc_002_eligible requires:
         #   - at least one metric computed
@@ -394,8 +389,7 @@ class PPFBacktestComparator:
         #   insufficiency_reasons, so val_pdc_002_eligible will be False until those
         #   tracking gaps are closed.  This is intentional — the gate must be strict.
         report.val_pdc_002_eligible = (
-            report.all_within_tolerance
-            and len(report.insufficiency_reasons) == 0
+            report.all_within_tolerance and len(report.insufficiency_reasons) == 0
         )
 
         logger.info(
@@ -415,9 +409,7 @@ class PPFBacktestComparator:
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _compare_metric(
-        self, name: str, backtest: float, live: float
-    ) -> ComparisonMetric:
+    def _compare_metric(self, name: str, backtest: float, live: float) -> ComparisonMetric:
         """Compare a single rate metric against the configured tolerance.
 
         Tolerance is applied as an absolute threshold on the rate scale [0, 1].
@@ -444,8 +436,7 @@ class PPFBacktestComparator:
         within = delta_abs <= (self._tolerance_pct / 100.0)
 
         logger.debug(
-            "_compare_metric: %s backtest=%.6f live=%.6f delta_abs=%.6f "
-            "delta_pct=%.2f%% within=%s",
+            "_compare_metric: %s backtest=%.6f live=%.6f delta_abs=%.6f delta_pct=%.2f%% within=%s",
             name,
             backtest,
             live,
@@ -487,9 +478,7 @@ class PPFBacktestComparator:
         return dist
 
     @staticmethod
-    def _js_divergence(
-        dist_a: dict[str, float], dist_b: dict[str, float]
-    ) -> float:
+    def _js_divergence(dist_a: dict[str, float], dist_b: dict[str, float]) -> float:
         """Jensen–Shannon divergence between two categorical distributions.
 
         JS divergence is symmetric, bounded [0, ln(2)] in nats (or [0, 1]

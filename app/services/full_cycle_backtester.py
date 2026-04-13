@@ -36,10 +36,10 @@ logger = get_logger(__name__)
 # ── Constants ────────────────────────────────────────────────────────
 
 # 400-day default segment ratios (design lock §3)
-DEFAULT_TRAIN_RATIO = 0.60       # 240 days = 5,760 bars @ 1h
-DEFAULT_FORWARD1_RATIO = 0.20    # 80 days  = 1,920 bars
-DEFAULT_FORWARD2_RATIO = 0.10    # 40 days  = 960 bars
-DEFAULT_HOLDOUT_RATIO = 0.10     # 40 days  = 960 bars
+DEFAULT_TRAIN_RATIO = 0.60  # 240 days = 5,760 bars @ 1h
+DEFAULT_FORWARD1_RATIO = 0.20  # 80 days  = 1,920 bars
+DEFAULT_FORWARD2_RATIO = 0.10  # 40 days  = 960 bars
+DEFAULT_HOLDOUT_RATIO = 0.10  # 40 days  = 960 bars
 
 # Fitness weights for overall_fitness (design review §6.4.1)
 # Holdout excluded from overall_fitness (blind test purpose)
@@ -84,15 +84,10 @@ class FullCycleConfig:
         errors: list[str] = []
 
         ratio_sum = (
-            self.train_ratio
-            + self.forward1_ratio
-            + self.forward2_ratio
-            + self.holdout_ratio
+            self.train_ratio + self.forward1_ratio + self.forward2_ratio + self.holdout_ratio
         )
         if abs(ratio_sum - 1.0) > 1e-9:
-            errors.append(
-                f"Segment ratios must sum to 1.0, got {ratio_sum:.6f}"
-            )
+            errors.append(f"Segment ratios must sum to 1.0, got {ratio_sum:.6f}")
 
         for name, ratio in [
             ("train_ratio", self.train_ratio),
@@ -118,11 +113,11 @@ class SegmentResult:
     sharing between them (DL-001).
     """
 
-    segment_name: str = ""            # "train", "forward_1", "forward_2", "holdout"
-    start_ts: int = 0                 # First candle open_time (ms)
-    end_ts: int = 0                   # Last candle open_time (ms)
-    bars: int = 0                     # Total candles in segment
-    effective_bars: int = 0           # Bars after lookback exclusion
+    segment_name: str = ""  # "train", "forward_1", "forward_2", "holdout"
+    start_ts: int = 0  # First candle open_time (ms)
+    end_ts: int = 0  # Last candle open_time (ms)
+    bars: int = 0  # Total candles in segment
+    effective_bars: int = 0  # Bars after lookback exclusion
 
     # Results (populated by B-2 orchestrator)
     backtest: BacktestResult = field(default_factory=BacktestResult)
@@ -229,9 +224,7 @@ class SegmentSplitter:
         # ── Validate config ──────────────────────────────────
         config_errors = config.validate()
         if config_errors:
-            raise ValueError(
-                f"Invalid FullCycleConfig: {'; '.join(config_errors)}"
-            )
+            raise ValueError(f"Invalid FullCycleConfig: {'; '.join(config_errors)}")
 
         # ── Validate input data ──────────────────────────────
         if not ohlcv:
@@ -289,8 +282,8 @@ class SegmentSplitter:
             next_seg = segments[next_name]
 
             if curr_seg and next_seg:
-                last_ts_curr = curr_seg[-1][0]   # timestamp of last candle
-                first_ts_next = next_seg[0][0]   # timestamp of first candle
+                last_ts_curr = curr_seg[-1][0]  # timestamp of last candle
+                first_ts_next = next_seg[0][0]  # timestamp of first candle
 
                 if last_ts_curr >= first_ts_next:
                     raise ValueError(
@@ -436,7 +429,7 @@ class SegmentSplitter:
                 if timestamps[j] <= timestamps[j - 1]:
                     violations.append(
                         f"DL-006: Non-monotonic timestamp in '{seg_name}' "
-                        f"at index {j}: {timestamps[j]} <= {timestamps[j-1]}"
+                        f"at index {j}: {timestamps[j]} <= {timestamps[j - 1]}"
                     )
                     break  # One violation per segment is enough
 
@@ -524,7 +517,10 @@ class FullCycleBacktester:
 
         # ── Step 1: Load replay candles ──────────────────────
         ohlcv = await self._data_mgr.get_replay_candles(
-            session, cfg.exchange, cfg.symbol, cfg.timeframe,
+            session,
+            cfg.exchange,
+            cfg.symbol,
+            cfg.timeframe,
         )
         total_bars = len(ohlcv)
 
@@ -542,7 +538,10 @@ class FullCycleBacktester:
 
         # ── Step 2: Validate coverage ────────────────────────
         coverage = await self._data_mgr.check_coverage(
-            session, cfg.exchange, cfg.symbol, cfg.timeframe,
+            session,
+            cfg.exchange,
+            cfg.symbol,
+            cfg.timeframe,
         )
         if coverage.coverage_pct < COVERAGE_THRESHOLD_PCT:
             result.verdict = "FAIL"
@@ -569,7 +568,8 @@ class FullCycleBacktester:
 
         # ── Step 5: Build segment result shells ──────────────
         result.segments = SegmentSplitter.build_segment_results(
-            segments, cfg.lookback,
+            segments,
+            cfg.lookback,
         )
 
         # ── Step 6: Run backtest + fitness per segment ───────
@@ -581,7 +581,9 @@ class FullCycleBacktester:
             seg_result = result.segments[seg_name]
 
             bt_result = self._engine.run(
-                strategy, seg_candles, cfg.lookback,
+                strategy,
+                seg_candles,
+                cfg.lookback,
             )
             seg_result.backtest = bt_result
 
@@ -604,17 +606,22 @@ class FullCycleBacktester:
         # ── Step 7: Regime diversity ─────────────────────────
         all_batch = self._regime.detect_batch(ohlcv)
         result.regime_diversity_score = self._compute_regime_diversity(
-            all_batch, segments,
+            all_batch,
+            segments,
         )
 
         # Write per-segment regime distribution to SegmentResult
         self._fill_segment_regime_distribution(
-            all_batch, segments, result.segments,
+            all_batch,
+            segments,
+            result.segments,
         )
 
         # ── Step 8: Walk-forward on train segment ────────────
         wf_result = self._wf.validate(
-            strategy, segments["train"], cfg.lookback,
+            strategy,
+            segments["train"],
+            cfg.lookback,
         )
         result.walk_forward = wf_result
 
@@ -684,9 +691,7 @@ class FullCycleBacktester:
                 )
 
         # Build per-segment regime counts for reporting
-        seg_regime_counts: dict[str, dict[str, int]] = {
-            name: {} for name in SEGMENT_NAMES
-        }
+        seg_regime_counts: dict[str, dict[str, int]] = {name: {} for name in SEGMENT_NAMES}
         for br in batch_results:
             for seg_name, (start, end) in seg_ts_ranges.items():
                 if start <= br.timestamp <= end:
@@ -720,9 +725,7 @@ class FullCycleBacktester:
         BR-001: Results are analysis/reporting only.
         """
         # Build timestamp → segment mapping
-        seg_regime_counts: dict[str, dict[str, int]] = {
-            name: {} for name in SEGMENT_NAMES
-        }
+        seg_regime_counts: dict[str, dict[str, int]] = {name: {} for name in SEGMENT_NAMES}
         seg_ts_ranges: dict[str, tuple[int, int]] = {}
         for seg_name in SEGMENT_NAMES:
             candles = segments.get(seg_name, [])
@@ -745,8 +748,7 @@ class FullCycleBacktester:
             seg_total = sum(counts.values())
             if seg_total > 0:
                 seg_results[seg_name].regime_distribution = {
-                    regime: round(count / seg_total, 4)
-                    for regime, count in sorted(counts.items())
+                    regime: round(count / seg_total, 4) for regime, count in sorted(counts.items())
                 }
 
     @staticmethod
@@ -765,11 +767,7 @@ class FullCycleBacktester:
         f_fw1 = verdict_inputs.get("forward_1", 0.0)
         f_fw2 = verdict_inputs.get("forward_2", 0.0)
 
-        numerator = (
-            W_TRAIN * f_train
-            + W_FORWARD1 * f_fw1
-            + W_FORWARD2 * f_fw2
-        )
+        numerator = W_TRAIN * f_train + W_FORWARD1 * f_fw1 + W_FORWARD2 * f_fw2
         denominator = W_TRAIN + W_FORWARD1 + W_FORWARD2
 
         if denominator == 0:
@@ -820,9 +818,7 @@ class FullCycleBacktester:
 
         # Condition 6: Regime Diversity Score >= 0.55
         if result.regime_diversity_score < RDS_THRESHOLD:
-            reasons.append(
-                f"RDS_LOW({result.regime_diversity_score:.4f}<{RDS_THRESHOLD})"
-            )
+            reasons.append(f"RDS_LOW({result.regime_diversity_score:.4f}<{RDS_THRESHOLD})")
 
         # Condition 7: Data leakage check == True
         if not result.data_leakage_check:

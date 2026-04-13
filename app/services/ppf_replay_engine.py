@@ -226,9 +226,7 @@ class PPFReplayEngine:
                 )
 
             state_key = bar_result.ppf_state
-            result.state_distribution[state_key] = (
-                result.state_distribution.get(state_key, 0) + 1
-            )
+            result.state_distribution[state_key] = result.state_distribution.get(state_key, 0) + 1
 
             if bar_result.regime_novelty_flag:
                 result.novelty_event_count += 1
@@ -291,11 +289,7 @@ class PPFReplayEngine:
         The 3-bar buffer provides headroom for indicator initialisation and
         swing-distance lookback without edge-case index errors.
         """
-        param_derived = (
-            self._params.correlation_length
-            + self._params.projection_horizon
-            + 3
-        )
+        param_derived = self._params.correlation_length + self._params.projection_horizon + 3
         return max(self.MIN_WARMUP_BARS, param_derived)
 
     def _evaluate_bar(
@@ -336,9 +330,7 @@ class PPFReplayEngine:
             if log_entry is not None:
                 ppf_state = log_entry.ppf_state
                 # deny_reason_code is only meaningful when entry is denied
-                deny_reason_code = (
-                    None if allow else log_entry.rejection_reason_code
-                )
+                deny_reason_code = None if allow else log_entry.rejection_reason_code
                 regime_novelty_flag = log_entry.regime_novelty_flag
                 observation_snapshot = _extract_observation_snapshot(log_entry)
                 interpretation_snapshot = _extract_interpretation_snapshot(log_entry)

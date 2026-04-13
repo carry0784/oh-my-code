@@ -57,12 +57,20 @@ from strategies.ppf.parameters import PPFParameters
 # Fixtures
 # ===========================================================================
 
+
 def _params(**kw) -> PPFParameters:
     defaults = dict(
         market_profile=MarketProfile.M1_CRYPTO_FUTURES,
-        similarity_min=0.5, projection_bias_min=0.1, path_quality_min=0.1,
-        rr_min=1.5, k=3, correlation_length=10, projection_horizon=5,
-        novelty_threshold=0.4, watch_timeout_bars=3, candidate_timeout_bars=5,
+        similarity_min=0.5,
+        projection_bias_min=0.1,
+        path_quality_min=0.1,
+        rr_min=1.5,
+        k=3,
+        correlation_length=10,
+        projection_horizon=5,
+        novelty_threshold=0.4,
+        watch_timeout_bars=3,
+        candidate_timeout_bars=5,
     )
     defaults.update(kw)
     return PPFParameters(**defaults)
@@ -80,6 +88,7 @@ def _synthetic(n=200, seed=42):
 # ===========================================================================
 # MANDATORY OUTPUT 1: Doctrine Check
 # ===========================================================================
+
 
 class TestDoctrineCheck:
     """Verify 4 doctrine compatibility points."""
@@ -105,17 +114,22 @@ class TestDoctrineCheck:
     def test_self_evolution_loop_compatible(self) -> None:
         """Post-hoc fields (L1, L3) enable learning loop."""
         from strategies.ppf.logging_schema import PPFLogEntry
+
         obs = ObservationFields(
-            pattern_similarity_score=0.8, projection_direction=1,
+            pattern_similarity_score=0.8,
+            projection_direction=1,
             projection_consensus_ratio=0.9,
             expected_adverse_excursion_before_target=0.5,
             expected_favorable_excursion_to_target=2.0,
-            ssl_trend_strength=0.5, volume_force_strength=0.5,
-            recent_swing_distance_pct=1.0, regime_novelty_flag=False,
+            ssl_trend_strength=0.5,
+            volume_force_strength=0.5,
+            recent_swing_distance_pct=1.0,
+            regime_novelty_flag=False,
         )
         scores = compute_scores(obs)
         entry = build_log_entry(
-            obs=obs, scores=scores,
+            obs=obs,
+            scores=scores,
             result=DecisionResult(state=PPFState.D6_EXECUTE_READY, allow_entry=True),
             asset_timeframe_tag="live:SOL/USDT:1h",
         )
@@ -129,7 +143,8 @@ class TestDoctrineCheck:
     def test_constitution_governance_non_conflict(self) -> None:
         """Constitution checks pass with valid live params."""
         result = run_all_checks(
-            params=_params(), regime_novelty_flag=False,
+            params=_params(),
+            regime_novelty_flag=False,
             current_state=PPFState.D6_EXECUTE_READY,
         )
         assert result.passed is True
@@ -138,6 +153,7 @@ class TestDoctrineCheck:
 # ===========================================================================
 # MANDATORY OUTPUT 2: Fixed Skeleton Mapping (verified via tests)
 # ===========================================================================
+
 
 class TestFixedSkeletonMapping:
     """Each skeleton layer has live-verifiable behavior."""
@@ -152,12 +168,15 @@ class TestFixedSkeletonMapping:
     def test_interpretation_layer(self) -> None:
         """Interpretation: compute_scores produces valid scores."""
         obs = ObservationFields(
-            pattern_similarity_score=0.8, projection_direction=1,
+            pattern_similarity_score=0.8,
+            projection_direction=1,
             projection_consensus_ratio=0.9,
             expected_adverse_excursion_before_target=0.5,
             expected_favorable_excursion_to_target=2.0,
-            ssl_trend_strength=0.5, volume_force_strength=0.5,
-            recent_swing_distance_pct=1.0, regime_novelty_flag=False,
+            ssl_trend_strength=0.5,
+            volume_force_strength=0.5,
+            recent_swing_distance_pct=1.0,
+            regime_novelty_flag=False,
         )
         scores = compute_scores(obs)
         assert isinstance(scores, InterpretationScores)
@@ -166,12 +185,15 @@ class TestFixedSkeletonMapping:
         """Decision: state machine evaluates correctly."""
         sm = PPFStateMachine(_params())
         obs = ObservationFields(
-            pattern_similarity_score=0.8, projection_direction=1,
+            pattern_similarity_score=0.8,
+            projection_direction=1,
             projection_consensus_ratio=0.9,
             expected_adverse_excursion_before_target=0.5,
             expected_favorable_excursion_to_target=2.0,
-            ssl_trend_strength=0.5, volume_force_strength=0.5,
-            recent_swing_distance_pct=1.0, regime_novelty_flag=False,
+            ssl_trend_strength=0.5,
+            volume_force_strength=0.5,
+            recent_swing_distance_pct=1.0,
+            regime_novelty_flag=False,
         )
         scores = compute_scores(obs)
         r = sm.evaluate(obs=obs, scores=scores, risk_filter_pass=True)
@@ -196,6 +218,7 @@ class TestFixedSkeletonMapping:
     def test_evolution_layer(self) -> None:
         """Evolution: parameters are frozen, baseline maintained."""
         from dataclasses import FrozenInstanceError
+
         p = _params()
         with pytest.raises(FrozenInstanceError):
             p.k = 99  # type: ignore[misc]
@@ -203,7 +226,8 @@ class TestFixedSkeletonMapping:
     def test_constitution_layer(self) -> None:
         """Constitution: all checks pass with valid config."""
         r = run_all_checks(
-            params=_params(), regime_novelty_flag=False,
+            params=_params(),
+            regime_novelty_flag=False,
             current_state=PPFState.D1_IDLE,
         )
         assert r.passed is True
@@ -212,6 +236,7 @@ class TestFixedSkeletonMapping:
 # ===========================================================================
 # LV-1 CORE: Live Market-Data Intake Path
 # ===========================================================================
+
 
 class TestLiveDataIntake:
     """Verify PPFGate handles live-like data streams correctly."""
@@ -224,7 +249,10 @@ class TestLiveDataIntake:
         results = []
         for i in range(200, 300):
             r = gate.evaluate(
-                h[:i+1], l[:i+1], c[:i+1], v[:i+1],
+                h[: i + 1],
+                l[: i + 1],
+                c[: i + 1],
+                v[: i + 1],
                 risk_filter_pass=True,
             )
             results.append(r)
@@ -234,7 +262,9 @@ class TestLiveDataIntake:
 
     def test_minimum_data_length(self) -> None:
         """Gate handles minimum viable data length."""
-        gate = PPFGate(_params(correlation_length=10, projection_horizon=5, k=3), "live:SOL/USDT:1h")
+        gate = PPFGate(
+            _params(correlation_length=10, projection_horizon=5, k=3), "live:SOL/USDT:1h"
+        )
         h, l, c, v = _synthetic(50)
         result = gate.evaluate(h, l, c, v)
         assert isinstance(result, bool)  # may be False (fail-closed), but no crash
@@ -243,8 +273,10 @@ class TestLiveDataIntake:
         """Single bar of data → fail-closed (False)."""
         gate = PPFGate(_params(), "live:SOL/USDT:1h")
         result = gate.evaluate(
-            np.array([100.0]), np.array([99.0]),
-            np.array([100.0]), np.array([500.0]),
+            np.array([100.0]),
+            np.array([99.0]),
+            np.array([100.0]),
+            np.array([500.0]),
         )
         assert result is False
 
@@ -261,15 +293,22 @@ class TestLiveDataIntake:
 # LV-1 CORE: Fail-Closed on Missing / Inconsistent Live Inputs
 # ===========================================================================
 
+
 class TestFailClosedLiveInputs:
     """Verify fail-closed behavior on degraded live data."""
 
     def test_empty_arrays_fail_closed(self) -> None:
         """Empty OHLCV arrays → False."""
         gate = PPFGate(_params(), "live:SOL/USDT:1h")
-        assert gate.evaluate(
-            np.array([]), np.array([]), np.array([]), np.array([]),
-        ) is False
+        assert (
+            gate.evaluate(
+                np.array([]),
+                np.array([]),
+                np.array([]),
+                np.array([]),
+            )
+            is False
+        )
 
     def test_nan_in_closes_fail_closed(self) -> None:
         """NaN in close prices → fail-closed."""
@@ -329,6 +368,7 @@ class TestFailClosedLiveInputs:
 # ===========================================================================
 # LV-1 CORE: Wrapper Parity Against Paper Assumptions
 # ===========================================================================
+
 
 class TestWrapperParity:
     """Verify wrapper behavior matches paper-verified assumptions."""
@@ -395,6 +435,7 @@ class TestWrapperParity:
 # LV-1 CORE: State / Log / Audit Continuity
 # ===========================================================================
 
+
 class TestStateContinuity:
     """Verify state machine and audit log continuity under live stream."""
 
@@ -402,24 +443,30 @@ class TestStateContinuity:
         """Each live candle is independent (D6 not retained)."""
         sm = PPFStateMachine(_params())
         obs_pass = ObservationFields(
-            pattern_similarity_score=0.8, projection_direction=1,
+            pattern_similarity_score=0.8,
+            projection_direction=1,
             projection_consensus_ratio=0.9,
             expected_adverse_excursion_before_target=0.5,
             expected_favorable_excursion_to_target=2.0,
-            ssl_trend_strength=0.5, volume_force_strength=0.5,
-            recent_swing_distance_pct=1.0, regime_novelty_flag=False,
+            ssl_trend_strength=0.5,
+            volume_force_strength=0.5,
+            recent_swing_distance_pct=1.0,
+            regime_novelty_flag=False,
         )
         scores = compute_scores(obs_pass)
         r1 = sm.evaluate(obs=obs_pass, scores=scores, risk_filter_pass=True)
         assert r1.state == PPFState.D6_EXECUTE_READY
         # Next candle: low similarity → D1 (D6 not retained)
         obs_low = ObservationFields(
-            pattern_similarity_score=0.1, projection_direction=0,
+            pattern_similarity_score=0.1,
+            projection_direction=0,
             projection_consensus_ratio=0.0,
             expected_adverse_excursion_before_target=0.0,
             expected_favorable_excursion_to_target=0.0,
-            ssl_trend_strength=0.0, volume_force_strength=0.0,
-            recent_swing_distance_pct=0.0, regime_novelty_flag=False,
+            ssl_trend_strength=0.0,
+            volume_force_strength=0.0,
+            recent_swing_distance_pct=0.0,
+            regime_novelty_flag=False,
         )
         scores_low = compute_scores(obs_low)
         r2 = sm.evaluate(obs=obs_low, scores=scores_low)
@@ -431,7 +478,7 @@ class TestStateContinuity:
         h, l, c, v = _synthetic(250)
         logs = []
         for i in range(200, 210):
-            gate.evaluate(h[:i+1], l[:i+1], c[:i+1], v[:i+1])
+            gate.evaluate(h[: i + 1], l[: i + 1], c[: i + 1], v[: i + 1])
             if gate.last_log_entry:
                 logs.append(gate.last_log_entry)
         assert len(logs) == 10
@@ -442,7 +489,7 @@ class TestStateContinuity:
         h, l, c, v = _synthetic(210)
         timestamps = []
         for i in range(200, 205):
-            gate.evaluate(h[:i+1], l[:i+1], c[:i+1], v[:i+1])
+            gate.evaluate(h[: i + 1], l[: i + 1], c[: i + 1], v[: i + 1])
             if gate.last_log_entry:
                 timestamps.append(gate.last_log_entry.timestamp)
         assert len(timestamps) == 5
@@ -453,12 +500,15 @@ class TestStateContinuity:
         """R1 rejections produce proper reached_state in live stream."""
         sm = PPFStateMachine(_params())
         obs = ObservationFields(
-            pattern_similarity_score=0.8, projection_direction=1,
+            pattern_similarity_score=0.8,
+            projection_direction=1,
             projection_consensus_ratio=0.9,
             expected_adverse_excursion_before_target=0.5,
             expected_favorable_excursion_to_target=2.0,
-            ssl_trend_strength=0.5, volume_force_strength=0.5,
-            recent_swing_distance_pct=1.0, regime_novelty_flag=False,
+            ssl_trend_strength=0.5,
+            volume_force_strength=0.5,
+            recent_swing_distance_pct=1.0,
+            regime_novelty_flag=False,
         )
         scores = compute_scores(obs)
         r = sm.evaluate(obs=obs, scores=scores, risk_filter_pass=False)
@@ -470,12 +520,15 @@ class TestStateContinuity:
         """Novelty brake fires in live stream."""
         sm = PPFStateMachine(_params())
         obs_novel = ObservationFields(
-            pattern_similarity_score=0.8, projection_direction=1,
+            pattern_similarity_score=0.8,
+            projection_direction=1,
             projection_consensus_ratio=0.9,
             expected_adverse_excursion_before_target=0.5,
             expected_favorable_excursion_to_target=2.0,
-            ssl_trend_strength=0.5, volume_force_strength=0.5,
-            recent_swing_distance_pct=1.0, regime_novelty_flag=True,
+            ssl_trend_strength=0.5,
+            volume_force_strength=0.5,
+            recent_swing_distance_pct=1.0,
+            regime_novelty_flag=True,
         )
         scores = compute_scores(obs_novel)
         r = sm.evaluate(obs=obs_novel, scores=scores, risk_filter_pass=True)
@@ -487,6 +540,7 @@ class TestStateContinuity:
 # ===========================================================================
 # LV-1 CORE: Forbidden Zone Separation
 # ===========================================================================
+
 
 class TestForbiddenZoneSeparation:
     """Verify forbidden zones are not breachable."""
@@ -529,6 +583,7 @@ class TestForbiddenZoneSeparation:
 # ===========================================================================
 # LV-1: Baseline Fingerprint Drift Detection
 # ===========================================================================
+
 
 class TestBaselineFingerprint:
     """Verify source files match pre-LV1 baseline."""

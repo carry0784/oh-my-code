@@ -163,8 +163,7 @@ class NoveltyJudgmentEngine:
         self._disruption_threshold_pct = disruption_threshold_pct
 
         logger.debug(
-            "NoveltyJudgmentEngine initialised: window_bars=%d, "
-            "disruption_threshold_pct=%.2f%%",
+            "NoveltyJudgmentEngine initialised: window_bars=%d, disruption_threshold_pct=%.2f%%",
             self._window_bars,
             self._disruption_threshold_pct,
         )
@@ -216,10 +215,7 @@ class NoveltyJudgmentEngine:
 
         if close_at_window_end is None:
             # UR-C1: window-end price data absent
-            reason = (
-                "UR-C1: close_at_window_end is None; "
-                "window-end price data not available"
-            )
+            reason = "UR-C1: close_at_window_end is None; window-end price data not available"
             logger.debug("UNRESOLVED — %s", reason)
             return "UNRESOLVED", reason
 
@@ -235,9 +231,7 @@ class NoveltyJudgmentEngine:
         # ----------------------------------------------------------------
         # Price change calculation
         # ----------------------------------------------------------------
-        price_change_pct = (
-            (close_at_window_end - close_at_event) / close_at_event * 100.0
-        )
+        price_change_pct = (close_at_window_end - close_at_event) / close_at_event * 100.0
         abs_change = abs(price_change_pct)
 
         # ----------------------------------------------------------------
@@ -308,16 +302,12 @@ class NoveltyJudgmentEngine:
         report = NoveltyJudgmentReport()
 
         if not novelty_events:
-            logger.debug(
-                "judge_from_replay: no novelty events supplied; "
-                "returning empty report"
-            )
+            logger.debug("judge_from_replay: no novelty events supplied; returning empty report")
             return report
 
         segment_len = len(ohlcv)
         logger.info(
-            "judge_from_replay: segment_len=%d, novelty_events=%d, "
-            "window_bars=%d",
+            "judge_from_replay: segment_len=%d, novelty_events=%d, window_bars=%d",
             segment_len,
             len(novelty_events),
             self._window_bars,
@@ -336,9 +326,7 @@ class NoveltyJudgmentEngine:
             else:
                 # Tail of segment — window cannot be completed
                 # close_at_event may still be valid for logging
-                close_at_event = (
-                    ohlcv[bar_index][4] if bar_index < segment_len else 0.0
-                )
+                close_at_event = ohlcv[bar_index][4] if bar_index < segment_len else 0.0
                 close_at_window_end = None
                 window_complete = False
 
@@ -348,9 +336,7 @@ class NoveltyJudgmentEngine:
                 window_complete=window_complete,
             )
 
-            price_change_pct = _safe_price_change_pct(
-                close_at_event, close_at_window_end
-            )
+            price_change_pct = _safe_price_change_pct(close_at_event, close_at_window_end)
 
             record = NoveltyJudgment(
                 event_bar_index=bar_index,
@@ -428,9 +414,7 @@ class NoveltyJudgmentEngine:
         report = NoveltyJudgmentReport()
 
         if not events:
-            logger.debug(
-                "judge_batch_from_db: empty events list; returning empty report"
-            )
+            logger.debug("judge_batch_from_db: empty events list; returning empty report")
             return report
 
         logger.info(
@@ -443,9 +427,7 @@ class NoveltyJudgmentEngine:
             window_closed: bool = bool(getattr(ev, "observation_window_closed", False))
             close_at_event: float | None = getattr(ev, "close_price_at_event", None)
             close_at_end: float | None = getattr(ev, "close_price_at_window_end", None)
-            record_window_bars: int = getattr(
-                ev, "observation_window_bars", self._window_bars
-            )
+            record_window_bars: int = getattr(ev, "observation_window_bars", self._window_bars)
 
             # Normalise close_at_event: treat None as 0.0 so judge_single
             # hits the UR-C1 path cleanly.
@@ -455,9 +437,7 @@ class NoveltyJudgmentEngine:
 
             judgment_str, reason = self.judge_single(
                 close_at_event=effective_close_event,
-                close_at_window_end=(
-                    float(close_at_end) if close_at_end is not None else None
-                ),
+                close_at_window_end=(float(close_at_end) if close_at_end is not None else None),
                 window_complete=window_closed,
             )
 
@@ -470,9 +450,7 @@ class NoveltyJudgmentEngine:
                 event_bar_index=event_id,
                 event_timestamp_ms=_event_ts_ms(ev),
                 close_at_event=effective_close_event,
-                close_at_window_end=(
-                    float(close_at_end) if close_at_end is not None else None
-                ),
+                close_at_window_end=(float(close_at_end) if close_at_end is not None else None),
                 window_bars=record_window_bars,
                 price_change_pct=price_change_pct,
                 judgment=judgment_str,
@@ -553,7 +531,5 @@ def _finalise_report(report: NoveltyJudgmentReport) -> None:
     report.fpr = report.fp_count / resolved if resolved > 0 else 0.0
 
     report.unresolved_rate = (
-        report.unresolved_count / report.total_events
-        if report.total_events > 0
-        else 0.0
+        report.unresolved_count / report.total_events if report.total_events > 0 else 0.0
     )

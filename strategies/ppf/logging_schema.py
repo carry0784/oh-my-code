@@ -91,12 +91,8 @@ def build_log_entry(
             "O4_raw": obs.expected_adverse_excursion_before_target,
             "O5_raw": obs.expected_favorable_excursion_to_target,
         },
-        rejection_reason_code=(
-            result.rejection_code.value if result.rejection_code else None
-        ),
-        reached_state=(
-            result.reached_state.value if result.reached_state else None
-        ),
+        rejection_reason_code=(result.rejection_code.value if result.rejection_code else None),
+        reached_state=(result.reached_state.value if result.reached_state else None),
         regime_novelty_flag=obs.regime_novelty_flag,
         projection_actual_error=None,  # L1: filled post-hoc
         false_positive_flag=None,  # L3: filled post-hoc

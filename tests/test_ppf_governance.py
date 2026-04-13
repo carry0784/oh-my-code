@@ -185,9 +185,7 @@ class TestOhlcvPreflightValidator:
     def test_compute_data_hash_matches_manual_sha256(self):
         """Hash must equal a manually computed SHA-256 of the canonical payload."""
         first_ts, last_ts, count = 1_600_000_000_000, 1_634_400_000_000, 9600
-        expected = hashlib.sha256(
-            f"{first_ts}:{last_ts}:{count}".encode("utf-8")
-        ).hexdigest()
+        expected = hashlib.sha256(f"{first_ts}:{last_ts}:{count}".encode("utf-8")).hexdigest()
         assert self.validator._compute_data_hash(first_ts, last_ts, count) == expected
 
     # --- run() with mocked DB session ---
@@ -653,8 +651,7 @@ class TestPPFGovernanceEngine:
     def test_get_status_summary_live_entry_block_always_hard_block(self):
         """live_entry_block in summary must always be HARD_BLOCK value."""
         assert (
-            self.engine.get_status_summary()["live_entry_block"]
-            == PPFBlockLevel.HARD_BLOCK.value
+            self.engine.get_status_summary()["live_entry_block"] == PPFBlockLevel.HARD_BLOCK.value
         )
 
     def test_get_status_summary_transition_count_increments(self):

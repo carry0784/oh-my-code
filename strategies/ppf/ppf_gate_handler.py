@@ -61,6 +61,7 @@ logger = logging.getLogger("ppf.gate_handler")
 # Deny Reason Code System (LOCKED -- 9 codes, v1)
 # ---------------------------------------------------------------------------
 
+
 class DenyReasonCode(str, enum.Enum):
     """Deny reason code set -- LOCKED at 9 codes, version v1.
 
@@ -88,6 +89,7 @@ DENY_REASON_CODE_VERSION = "v1"
 # ---------------------------------------------------------------------------
 # Mode Capability Manifest (LOCKED -- 6 booleans)
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class ModeCapabilityManifest:
@@ -172,6 +174,7 @@ LOG_PREFIX_CONSTITUTION_VIOLATION = "ppf_constitution_violation"
 # Gate Result
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class PPFGateResult:
     """Result of PPF gate evaluation at Step 5.75.
@@ -197,22 +200,16 @@ class PPFGateResult:
     # Shadow verification axes snapshot
     shadow_axes_snapshot: Optional[dict] = None
     # Gate evaluation timestamp
-    gate_eval_ts: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    gate_eval_ts: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def to_dict(self) -> dict:
         """Serialize to dict for logging and response embedding."""
         d = {
             "allowed": self.allowed,
             "raw_gate_decision": self.raw_gate_decision,
-            "deny_reason_code": (
-                self.deny_reason_code.value if self.deny_reason_code else None
-            ),
+            "deny_reason_code": (self.deny_reason_code.value if self.deny_reason_code else None),
             "deny_reason_code_version": self.deny_reason_code_version,
-            "mode_manifest": (
-                asdict(self.mode_manifest) if self.mode_manifest else None
-            ),
+            "mode_manifest": (asdict(self.mode_manifest) if self.mode_manifest else None),
             "session_summary": self.session_summary,
             "shadow_axes_snapshot": self.shadow_axes_snapshot,
             "gate_eval_ts": self.gate_eval_ts,
@@ -223,6 +220,7 @@ class PPFGateResult:
 # ---------------------------------------------------------------------------
 # PPF Gate Handler
 # ---------------------------------------------------------------------------
+
 
 class PPFGateHandler:
     """Wrapper-level PPF gate injection handler (Step 5.75).
@@ -361,8 +359,11 @@ class PPFGateHandler:
                 mode_manifest=self._manifest,
                 session_summary=self._session_ledger.summary(),
                 shadow_axes_snapshot=self._build_shadow_axes(
-                    symbol, exchange, "aborted",
-                    DenyReasonCode.SESSION_ABORTED, "high",
+                    symbol,
+                    exchange,
+                    "aborted",
+                    DenyReasonCode.SESSION_ABORTED,
+                    "high",
                 ),
             )
 
@@ -376,8 +377,11 @@ class PPFGateHandler:
                 mode_manifest=self._manifest,
                 session_summary=self._session_ledger.summary(),
                 shadow_axes_snapshot=self._build_shadow_axes(
-                    symbol, exchange, "cooldown",
-                    DenyReasonCode.COOLDOWN_ACTIVE, "high",
+                    symbol,
+                    exchange,
+                    "cooldown",
+                    DenyReasonCode.COOLDOWN_ACTIVE,
+                    "high",
                 ),
             )
 
@@ -394,8 +398,11 @@ class PPFGateHandler:
                 deny_reason_code=DenyReasonCode.CONSTITUTION_DEACTIVATED,
                 mode_manifest=self._manifest,
                 shadow_axes_snapshot=self._build_shadow_axes(
-                    symbol, exchange, "deactivated",
-                    DenyReasonCode.CONSTITUTION_DEACTIVATED, "blocker",
+                    symbol,
+                    exchange,
+                    "deactivated",
+                    DenyReasonCode.CONSTITUTION_DEACTIVATED,
+                    "blocker",
                 ),
             )
 
@@ -410,8 +417,11 @@ class PPFGateHandler:
                 deny_reason_code=DenyReasonCode.DATA_MISSING,
                 mode_manifest=self._manifest,
                 shadow_axes_snapshot=self._build_shadow_axes(
-                    symbol, exchange, "unknown",
-                    DenyReasonCode.DATA_MISSING, "medium",
+                    symbol,
+                    exchange,
+                    "unknown",
+                    DenyReasonCode.DATA_MISSING,
+                    "medium",
                 ),
             )
 
@@ -426,8 +436,11 @@ class PPFGateHandler:
                 deny_reason_code=DenyReasonCode.DATA_MISSING,
                 mode_manifest=self._manifest,
                 shadow_axes_snapshot=self._build_shadow_axes(
-                    symbol, exchange, "unknown",
-                    DenyReasonCode.DATA_MISSING, "medium",
+                    symbol,
+                    exchange,
+                    "unknown",
+                    DenyReasonCode.DATA_MISSING,
+                    "medium",
                 ),
             )
 
@@ -454,8 +467,11 @@ class PPFGateHandler:
                 deny_reason_code=DenyReasonCode.CONSTITUTION_DEACTIVATED,
                 mode_manifest=self._manifest,
                 shadow_axes_snapshot=self._build_shadow_axes(
-                    symbol, exchange, "deactivated",
-                    DenyReasonCode.CONSTITUTION_DEACTIVATED, "blocker",
+                    symbol,
+                    exchange,
+                    "deactivated",
+                    DenyReasonCode.CONSTITUTION_DEACTIVATED,
+                    "blocker",
                 ),
             )
 
@@ -494,7 +510,11 @@ class PPFGateHandler:
         regime_state = ppf_log.ppf_state if ppf_log else "unknown"
         severity = "none" if raw_gate_allows else "low"
         shadow_axes = self._build_shadow_axes(
-            symbol, exchange, regime_state, deny_code, severity,
+            symbol,
+            exchange,
+            regime_state,
+            deny_code,
+            severity,
         )
 
         return PPFGateResult(
@@ -542,8 +562,11 @@ class PPFGateHandler:
 
         # Map order status to actual execution path
         actual_path = self._map_status_to_path(
-            order_status, reject_code, timeout_flag,
-            partial_fill_qty, final_fill_qty,
+            order_status,
+            reject_code,
+            timeout_flag,
+            partial_fill_qty,
+            final_fill_qty,
         )
 
         # Build execution observation
@@ -639,6 +662,7 @@ class PPFGateHandler:
 # Scope Lock Hash
 # ---------------------------------------------------------------------------
 
+
 def compute_scope_lock_hash() -> str:
     """Compute scope_lock_hash from canonical manifest.
 
@@ -723,6 +747,9 @@ def compute_scope_lock_hash() -> str:
     }
 
     canonical = json.dumps(
-        manifest, sort_keys=True, ensure_ascii=True, separators=(",", ":"),
+        manifest,
+        sort_keys=True,
+        ensure_ascii=True,
+        separators=(",", ":"),
     )
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

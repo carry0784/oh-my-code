@@ -174,9 +174,7 @@ def run_all_checks(
 
     # C6: K minimum
     if not check_c6_k_minimum(params):
-        violations.append(
-            f"C6: k={params.k} < MIN_K={MIN_K}"
-        )
+        violations.append(f"C6: k={params.k} < MIN_K={MIN_K}")
 
     # C7: engine diff (if engine_dir provided)
     if engine_dir is not None:
@@ -190,18 +188,14 @@ def run_all_checks(
 
     # C11: novelty brake
     if not check_c11_novelty_brake(regime_novelty_flag, current_state):
-        violations.append(
-            f"C11: novelty=True but state={current_state.value} (must be IDLE)"
-        )
+        violations.append(f"C11: novelty=True but state={current_state.value} (must be IDLE)")
 
     if violations:
         detail_str = "; ".join(violations)
         logger.error(f"Constitution violation: {detail_str}")
         return ConstitutionCheckResult(
             passed=False,
-            violated_articles=tuple(
-                v.split(":")[0] for v in violations
-            ),
+            violated_articles=tuple(v.split(":")[0] for v in violations),
             details=detail_str,
         )
 

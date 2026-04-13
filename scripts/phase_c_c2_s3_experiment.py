@@ -75,9 +75,11 @@ MIN_TRADES = 10
 # Result structures
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class SegmentComparison:
     """Before/after comparison for one segment."""
+
     segment_name: str
     baseline_bars: int
     s3_bars: int
@@ -95,6 +97,7 @@ class SegmentComparison:
 @dataclass
 class AssetExperiment:
     """Full experiment result for one asset."""
+
     symbol: str
     baseline: FullCycleResult | None
     s3: FullCycleResult | None
@@ -107,6 +110,7 @@ class AssetExperiment:
 # ---------------------------------------------------------------------------
 # Run experiment
 # ---------------------------------------------------------------------------
+
 
 async def run_single(session, symbol: str, ratios: dict, label: str) -> FullCycleResult:
     """Run a full-cycle backtest with given ratios."""
@@ -132,8 +136,10 @@ async def run_single(session, symbol: str, ratios: dict, label: str) -> FullCycl
     # Diagnostic: verify segment bar counts match expected ratios
     for seg_name, seg in result.segments.items():
         trades_n = len(seg.backtest.trades) if seg.backtest and seg.backtest.trades else 0
-        print(f"    {seg_name}: bars={seg.bars} effective={seg.effective_bars} "
-              f"trades={trades_n} fitness={seg.fitness.total:.4f}")
+        print(
+            f"    {seg_name}: bars={seg.bars} effective={seg.effective_bars} "
+            f"trades={trades_n} fitness={seg.fitness.total:.4f}"
+        )
 
     return result
 
@@ -190,24 +196,26 @@ def compare_results(
         s_bars = extract_segment_bars(s3, seg_name)
 
         uplift = s_trades - b_trades
-        uplift_pct = (uplift / b_trades * 100) if b_trades > 0 else (
-            float("inf") if s_trades > 0 else 0.0
+        uplift_pct = (
+            (uplift / b_trades * 100) if b_trades > 0 else (float("inf") if s_trades > 0 else 0.0)
         )
 
-        comparisons.append(SegmentComparison(
-            segment_name=seg_name,
-            baseline_bars=b_bars,
-            s3_bars=s_bars,
-            baseline_trades=b_trades,
-            s3_trades=s_trades,
-            baseline_fitness=b_fitness,
-            s3_fitness=s_fitness,
-            baseline_min_trades_met=b_trades >= MIN_TRADES,
-            s3_min_trades_met=s_trades >= MIN_TRADES,
-            trade_uplift=uplift,
-            trade_uplift_pct=round(uplift_pct, 1),
-            fitness_delta=round(s_fitness - b_fitness, 4),
-        ))
+        comparisons.append(
+            SegmentComparison(
+                segment_name=seg_name,
+                baseline_bars=b_bars,
+                s3_bars=s_bars,
+                baseline_trades=b_trades,
+                s3_trades=s_trades,
+                baseline_fitness=b_fitness,
+                s3_fitness=s_fitness,
+                baseline_min_trades_met=b_trades >= MIN_TRADES,
+                s3_min_trades_met=s_trades >= MIN_TRADES,
+                trade_uplift=uplift,
+                trade_uplift_pct=round(uplift_pct, 1),
+                fitness_delta=round(s_fitness - b_fitness, 4),
+            )
+        )
 
     # FW2 specific check
     fw2_comp = next(c for c in comparisons if c.segment_name == "forward_2")
@@ -246,6 +254,7 @@ def compare_results(
 # Report generation
 # ---------------------------------------------------------------------------
 
+
 def generate_report(experiments: list[AssetExperiment]) -> str:
     """Generate C-2 deliverables as markdown."""
     lines = []
@@ -255,10 +264,18 @@ def generate_report(experiments: list[AssetExperiment]) -> str:
     lines.append("")
     lines.append("| 항목 | Baseline | S-3 | 변경 |")
     lines.append("|------|----------|-----|------|")
-    lines.append(f"| train_ratio | {BASELINE_RATIOS['train']:.2f} | {S3_RATIOS['train']:.2f} | 미변경 |")
-    lines.append(f"| forward1_ratio | {BASELINE_RATIOS['forward1']:.2f} | {S3_RATIOS['forward1']:.2f} | 미변경 |")
-    lines.append(f"| forward2_ratio | {BASELINE_RATIOS['forward2']:.2f} | {S3_RATIOS['forward2']:.2f} | **+0.05** |")
-    lines.append(f"| holdout_ratio | {BASELINE_RATIOS['holdout']:.2f} | {S3_RATIOS['holdout']:.2f} | **-0.05** |")
+    lines.append(
+        f"| train_ratio | {BASELINE_RATIOS['train']:.2f} | {S3_RATIOS['train']:.2f} | 미변경 |"
+    )
+    lines.append(
+        f"| forward1_ratio | {BASELINE_RATIOS['forward1']:.2f} | {S3_RATIOS['forward1']:.2f} | 미변경 |"
+    )
+    lines.append(
+        f"| forward2_ratio | {BASELINE_RATIOS['forward2']:.2f} | {S3_RATIOS['forward2']:.2f} | **+0.05** |"
+    )
+    lines.append(
+        f"| holdout_ratio | {BASELINE_RATIOS['holdout']:.2f} | {S3_RATIOS['holdout']:.2f} | **-0.05** |"
+    )
     lines.append("")
     lines.append("**B-1 core 수정:** 없음 (FullCycleConfig 인스턴스 값만 변경, dataclass 미수정)")
     lines.append("**Protected symbol 수정:** 없음")
@@ -272,8 +289,12 @@ def generate_report(experiments: list[AssetExperiment]) -> str:
     for exp in experiments:
         lines.append(f"### {exp.symbol}")
         lines.append("")
-        lines.append("| Segment | Bars (B/S3) | Trades (B/S3) | Fitness (B/S3) | Uplift | min_trades | Delta |")
-        lines.append("|---------|-------------|---------------|----------------|--------|------------|-------|")
+        lines.append(
+            "| Segment | Bars (B/S3) | Trades (B/S3) | Fitness (B/S3) | Uplift | min_trades | Delta |"
+        )
+        lines.append(
+            "|---------|-------------|---------------|----------------|--------|------------|-------|"
+        )
 
         for c in exp.comparisons:
             b_mt = "OK" if c.baseline_min_trades_met else "MISS"
@@ -345,6 +366,7 @@ def generate_report(experiments: list[AssetExperiment]) -> str:
 # Main
 # ---------------------------------------------------------------------------
 
+
 async def run_experiment():
     print("=" * 60)
     print("Phase C C-2 — S-3 Density Uplift Experiment")
@@ -403,7 +425,9 @@ async def run_experiment():
             "quality_hold": bool(exp.quality_hold),
             "baseline_verdict": exp.baseline.verdict if exp.baseline else None,
             "s3_verdict": exp.s3.verdict if exp.s3 else None,
-            "baseline_overall_fitness": float(exp.baseline.overall_fitness) if exp.baseline else None,
+            "baseline_overall_fitness": float(exp.baseline.overall_fitness)
+            if exp.baseline
+            else None,
             "s3_overall_fitness": float(exp.s3.overall_fitness) if exp.s3 else None,
             "segments": {},
         }
@@ -425,11 +449,15 @@ async def run_experiment():
 
     log_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "docs", "operations", "evidence",
+        "docs",
+        "operations",
+        "evidence",
         "phase_c_c2_s3_experiment_log.json",
     )
+
     class _NumpyEncoder(json.JSONEncoder):
         """Handle numpy types in JSON serialization."""
+
         def default(self, obj):
             if isinstance(obj, (np.bool_,)):
                 return bool(obj)

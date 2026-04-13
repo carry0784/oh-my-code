@@ -45,7 +45,7 @@ from app.core.config import settings  # noqa: E402
 SESSION_ID = "cr046_sol_paper_v1"
 
 # --- bar 기준 (논리 시각) ---
-CUTOFF_BAR_TS = 1775660400000          # 2026-04-08 15:00:00 UTC (old-code last bar)
+CUTOFF_BAR_TS = 1775660400000  # 2026-04-08 15:00:00 UTC (old-code last bar)
 FIRST_ELIGIBLE_BAR_TS = 1775664000000  # 2026-04-08 16:00:00 UTC (post-merge minimum)
 
 # --- 관측/도착 기준 ---
@@ -54,7 +54,7 @@ FIRST_EXPECTED_RECEIPT_NOTE = "2026-04-08 16:50 UTC ± jitter"
 
 BAR_INTERVAL_MS = 3_600_000  # 1H
 DISPATCH_DELAY_MS = 50 * 60 * 1000  # :50 dispatch
-JITTER_GRACE_MS = 10 * 60 * 1000    # ±10 min grace
+JITTER_GRACE_MS = 10 * 60 * 1000  # ±10 min grace
 
 # 24-bar thresholds (locked in design doc lines 321-328)
 THRESHOLD_POPULATED_RATE = 0.95
@@ -63,7 +63,9 @@ THRESHOLD_VERSION_RATE = 1.00
 
 EVIDENCE_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "docs", "operations", "evidence",
+    "docs",
+    "operations",
+    "evidence",
     "cr046_sol_c1a_diagnostic_field_design.md",
 )
 
@@ -89,6 +91,7 @@ def aggregate_verdict(verdicts: list[str]) -> str:
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DiagRecord:
@@ -121,6 +124,7 @@ class DiagRecord:
 # ---------------------------------------------------------------------------
 # Preflight sanity checks
 # ---------------------------------------------------------------------------
+
 
 def run_preflight(db_url: str, append_mode: bool) -> None:
     """Verify environment prerequisites before observation run.
@@ -194,6 +198,7 @@ def run_preflight(db_url: str, append_mode: bool) -> None:
 # ---------------------------------------------------------------------------
 # DB query
 # ---------------------------------------------------------------------------
+
 
 def fetch_observed_records(db_url: str) -> tuple[list[DiagRecord], int]:
     """Fetch post-cutoff receipts with duplicate canonical rule.
@@ -294,14 +299,13 @@ def fetch_observed_records(db_url: str) -> tuple[list[DiagRecord], int]:
 
 
 def _ts_to_utc(ts_ms: int) -> str:
-    return datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).strftime(
-        "%Y-%m-%d %H:%M UTC"
-    )
+    return datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
 
 # ---------------------------------------------------------------------------
 # Bottleneck classification (bar-level, design doc 1-H-1)
 # ---------------------------------------------------------------------------
+
 
 def _classify_bottleneck(skip_codes: list[str]) -> str:
     if not skip_codes:
@@ -322,6 +326,7 @@ def _classify_bottleneck(skip_codes: list[str]) -> str:
 # ---------------------------------------------------------------------------
 # Near-miss canonical rule (design doc Section B, lines 154-163)
 # ---------------------------------------------------------------------------
+
 
 def _compute_expected_near_miss(smc_sig: int, wt_sig: int) -> str | None:
     if smc_sig != 0 and wt_sig == 0:
@@ -347,6 +352,7 @@ def _verify_near_miss(smc, wt, actual_nm) -> str:
 # ---------------------------------------------------------------------------
 # Gap checks (3-tier: leading / internal / trailing overdue)
 # ---------------------------------------------------------------------------
+
 
 def check_leading_gap(observed: list[DiagRecord]) -> list[int]:
     if not observed:
@@ -381,9 +387,7 @@ def check_trailing_overdue(observed: list[DiagRecord], now_ms: int) -> list[int]
 
 
 def check_empty_bootstrap_overdue(now_ms: int) -> list[int]:
-    first_due = (
-        FIRST_ELIGIBLE_BAR_TS + BAR_INTERVAL_MS + DISPATCH_DELAY_MS + JITTER_GRACE_MS
-    )
+    first_due = FIRST_ELIGIBLE_BAR_TS + BAR_INTERVAL_MS + DISPATCH_DELAY_MS + JITTER_GRACE_MS
     if now_ms > first_due:
         return [FIRST_ELIGIBLE_BAR_TS]
     return []
@@ -392,6 +396,7 @@ def check_empty_bootstrap_overdue(now_ms: int) -> list[int]:
 # ---------------------------------------------------------------------------
 # Smoke window verification (design doc lines 330-336)
 # ---------------------------------------------------------------------------
+
 
 def verify_smoke(analysis: list[DiagRecord]) -> list[dict]:
     results = []
@@ -410,11 +415,13 @@ def verify_smoke(analysis: list[DiagRecord]) -> list[dict]:
             "version_1": r.version == 1,
         }
         ok = all(checks.values())
-        results.append({
-            "bar": 1,
-            "status": SMOKE_PASS if ok else SMOKE_FAIL,
-            "detail": checks,
-        })
+        results.append(
+            {
+                "bar": 1,
+                "status": SMOKE_PASS if ok else SMOKE_FAIL,
+                "detail": checks,
+            }
+        )
 
     # Bar 2
     if len(analysis) < 2:
@@ -427,11 +434,13 @@ def verify_smoke(analysis: list[DiagRecord]) -> list[dict]:
             "version_1": r.version == 1,
         }
         ok = all(checks.values())
-        results.append({
-            "bar": 2,
-            "status": SMOKE_PASS if ok else SMOKE_FAIL,
-            "detail": checks,
-        })
+        results.append(
+            {
+                "bar": 2,
+                "status": SMOKE_PASS if ok else SMOKE_FAIL,
+                "detail": checks,
+            }
+        )
 
     # Bar 3
     if len(analysis) < 3:
@@ -445,11 +454,13 @@ def verify_smoke(analysis: list[DiagRecord]) -> list[dict]:
             status = SMOKE_PASS
         else:
             status = SMOKE_FAIL
-        results.append({
-            "bar": 3,
-            "status": status,
-            "detail": {"near_miss_rule": rule},
-        })
+        results.append(
+            {
+                "bar": 3,
+                "status": status,
+                "detail": {"near_miss_rule": rule},
+            }
+        )
 
     return results
 
@@ -457,6 +468,7 @@ def verify_smoke(analysis: list[DiagRecord]) -> list[dict]:
 # ---------------------------------------------------------------------------
 # 24-bar criteria (design doc lines 321-328)
 # ---------------------------------------------------------------------------
+
 
 def evaluate_criteria(
     analysis: list[DiagRecord],
@@ -478,12 +490,14 @@ def evaluate_criteria(
     if n >= window and pop_rate < THRESHOLD_POPULATED_RATE:
         pop_verdict = "FAIL"
         reasons.append("POPULATED_RATE_BELOW_THRESHOLD")
-    criteria.append({
-        "name": "diagnostic_populated=True rate",
-        "threshold": f">= {THRESHOLD_POPULATED_RATE:.0%}",
-        "observed": f"{pop_rate:.1%} ({sum(1 for r in analysis if r.populated is True)}/{n})",
-        "verdict": pop_verdict,
-    })
+    criteria.append(
+        {
+            "name": "diagnostic_populated=True rate",
+            "threshold": f">= {THRESHOLD_POPULATED_RATE:.0%}",
+            "observed": f"{pop_rate:.1%} ({sum(1 for r in analysis if r.populated is True)}/{n})",
+            "verdict": pop_verdict,
+        }
+    )
 
     # 2. version=1 consistency
     if n == 0:
@@ -494,36 +508,42 @@ def evaluate_criteria(
     if n >= window and ver_rate < THRESHOLD_VERSION_RATE:
         ver_verdict = "FAIL"
         reasons.append("VERSION_INCONSISTENCY")
-    criteria.append({
-        "name": "diagnostic_version=1 consistency",
-        "threshold": "100%",
-        "observed": f"{ver_rate:.1%} ({sum(1 for r in analysis if r.version == THRESHOLD_VERSION)}/{n})",
-        "verdict": ver_verdict,
-    })
+    criteria.append(
+        {
+            "name": "diagnostic_version=1 consistency",
+            "threshold": "100%",
+            "observed": f"{ver_rate:.1%} ({sum(1 for r in analysis if r.version == THRESHOLD_VERSION)}/{n})",
+            "verdict": ver_verdict,
+        }
+    )
 
     # 3. receipt generation failure (internal gap) — analysis_records 기준
     internal_gaps = check_internal_gaps(analysis)
     gap_verdict = "PASS" if len(internal_gaps) == 0 else "FAIL"
     if gap_verdict == "FAIL":
         reasons.append("INTERNAL_GAP_DETECTED")
-    criteria.append({
-        "name": "receipt 생성 실패 (internal gap)",
-        "threshold": "0",
-        "observed": f"{len(internal_gaps)}건",
-        "verdict": gap_verdict,
-    })
+    criteria.append(
+        {
+            "name": "receipt 생성 실패 (internal gap)",
+            "threshold": "0",
+            "observed": f"{len(internal_gaps)}건",
+            "verdict": gap_verdict,
+        }
+    )
 
     # 4. ERROR count
     err_count = sum(1 for r in analysis if r.is_error)
     err_verdict = "PASS" if err_count == 0 else "FAIL"
     if err_verdict == "FAIL":
         reasons.append("ERROR_ACTION_DETECTED")
-    criteria.append({
-        "name": "ERROR count",
-        "threshold": "0",
-        "observed": f"{err_count}건",
-        "verdict": err_verdict,
-    })
+    criteria.append(
+        {
+            "name": "ERROR count",
+            "threshold": "0",
+            "observed": f"{err_count}건",
+            "verdict": err_verdict,
+        }
+    )
 
     # 5. bottleneck direction (SMC_ZERO >= WT_ZERO)
     smc_bars = sum(1 for r in analysis if "SMC_ZERO" in r.skip_reason_codes)
@@ -535,12 +555,14 @@ def evaluate_criteria(
     else:
         bn_verdict = "FAIL"
         reasons.append("BOTTLENECK_DIRECTION_UNEXPECTED")
-    criteria.append({
-        "name": "replay 대비 병목 방향",
-        "threshold": "SMC_ZERO 우세",
-        "observed": f"SMC:{smc_bars} WT:{wt_bars}",
-        "verdict": bn_verdict,
-    })
+    criteria.append(
+        {
+            "name": "replay 대비 병목 방향",
+            "threshold": "SMC_ZERO 우세",
+            "observed": f"SMC:{smc_bars} WT:{wt_bars}",
+            "verdict": bn_verdict,
+        }
+    )
 
     # liveness checks — observed_records 기준
     if len(observed) == 0:
@@ -567,9 +589,7 @@ def evaluate_criteria(
         reasons.append("DIAGNOSTIC_FIELD_UNVERIFIABLE")
 
     # near_miss rule violation
-    rule_fail_count = sum(
-        1 for r in analysis if r.rule_check.startswith("FAIL")
-    )
+    rule_fail_count = sum(1 for r in analysis if r.rule_check.startswith("FAIL"))
     if rule_fail_count > 0:
         reasons.append("NEAR_MISS_RULE_VIOLATION")
 
@@ -579,6 +599,7 @@ def evaluate_criteria(
 # ---------------------------------------------------------------------------
 # Report generation (Korean markdown)
 # ---------------------------------------------------------------------------
+
 
 def generate_report(
     observed: list[DiagRecord],
@@ -723,8 +744,12 @@ def generate_report(
     # E. Raw table
     lines.append("### 진단 필드 원시값")
     lines.append("")
-    lines.append("| bar# | bar_ts (UTC) | action | smc_sig | wt_sig | skip_codes | near_miss | bottleneck | rule_check |")
-    lines.append("|------|-------------|--------|---------|--------|------------|-----------|------------|------------|")
+    lines.append(
+        "| bar# | bar_ts (UTC) | action | smc_sig | wt_sig | skip_codes | near_miss | bottleneck | rule_check |"
+    )
+    lines.append(
+        "|------|-------------|--------|---------|--------|------------|-----------|------------|------------|"
+    )
     for r in analysis:
         codes_str = ",".join(r.skip_reason_codes) if r.skip_reason_codes else "—"
         nm_str = r.near_miss_type if r.near_miss_type is not None else "null"
@@ -762,6 +787,7 @@ def generate_report(
 # ---------------------------------------------------------------------------
 # Evidence append
 # ---------------------------------------------------------------------------
+
 
 def make_heading_anchor(window: int, status: str) -> str:
     if status == "progress":
@@ -816,7 +842,9 @@ def append_evidence(report: str, observed_count: int, window: int, reasons: list
         # Append conditions
         fatal_empty = observed_count == 0 and "NO_POST_ACTIVATION_RECEIPTS" in reasons
         if status == "progress" and observed_count < 3 and not fatal_empty:
-            print(f"[SKIP] progress append 조건 미충족: bars={observed_count} < 3, fatal_empty=False")
+            print(
+                f"[SKIP] progress append 조건 미충족: bars={observed_count} < 3, fatal_empty=False"
+            )
             return False
         if status == "final" and observed_count < window:
             print(f"[SKIP] final append 조건 미충족: bars={observed_count} < window={window}")
@@ -836,20 +864,25 @@ def append_evidence(report: str, observed_count: int, window: int, reasons: list
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="CR-046 C1-A Diagnostic Observation (read-only)"
-    )
+    parser = argparse.ArgumentParser(description="CR-046 C1-A Diagnostic Observation (read-only)")
     parser.add_argument(
-        "--window", type=int, default=3, choices=[3, 24, 168],
+        "--window",
+        type=int,
+        default=3,
+        choices=[3, 24, 168],
         help="Observation window (3=smoke, 24=24-bar, 168=7-day)",
     )
     parser.add_argument(
-        "--db-url", type=str, default=None,
+        "--db-url",
+        type=str,
+        default=None,
         help="Postgres connection string",
     )
     parser.add_argument(
-        "--append-to-evidence", action="store_true",
+        "--append-to-evidence",
+        action="store_true",
         help="Append report to sealed design document",
     )
     args = parser.parse_args()
@@ -881,13 +914,21 @@ def main():
 
     # Criteria
     criteria, reasons = evaluate_criteria(
-        analysis_records, args.window, observed_records, now_ms,
+        analysis_records,
+        args.window,
+        observed_records,
+        now_ms,
     )
 
     # Report
     report = generate_report(
-        observed_records, analysis_records, args.window,
-        smoke_results, criteria, reasons, now_utc,
+        observed_records,
+        analysis_records,
+        args.window,
+        smoke_results,
+        criteria,
+        reasons,
+        now_utc,
         dup_count=dup_count,
     )
 

@@ -92,9 +92,7 @@ class ValPDC002Report:
     criteria: list[ValPDC002Criterion] = field(default_factory=list)
     tier: str = "RED"  # GREEN / YELLOW / RED
     live_authorized: bool = False  # ALWAYS False — hard prohibition
-    live_block_reason: str = (
-        "LIVE_NOT_AUTHORIZED: PPF production deployment not approved"
-    )
+    live_block_reason: str = "LIVE_NOT_AUTHORIZED: PPF production deployment not approved"
     issued_at: str = ""
     baseline_id: str = ""
     bars_collected: int = 0
@@ -133,7 +131,7 @@ class ValPDC002Judge:
 
     MIN_BARS: int = 336
     MIN_NOVELTY_EVENTS: int = 10
-    DENY_RATE_TOLERANCE_PP: float = 5.0   # percentage points -> 0.05 on [0,1] scale
+    DENY_RATE_TOLERANCE_PP: float = 5.0  # percentage points -> 0.05 on [0,1] scale
     FPR_TOLERANCE_PP: float = 5.0
     JS_DIVERGENCE_THRESHOLD: float = 0.1
 
@@ -148,25 +146,17 @@ class ValPDC002Judge:
         if min_bars <= 0:
             raise ValueError(f"min_bars must be > 0, got {min_bars}")
         if min_novelty_events <= 0:
-            raise ValueError(
-                f"min_novelty_events must be > 0, got {min_novelty_events}"
-            )
+            raise ValueError(f"min_novelty_events must be > 0, got {min_novelty_events}")
         if deny_rate_tolerance_pp <= 0.0:
-            raise ValueError(
-                f"deny_rate_tolerance_pp must be > 0, got {deny_rate_tolerance_pp}"
-            )
+            raise ValueError(f"deny_rate_tolerance_pp must be > 0, got {deny_rate_tolerance_pp}")
         if fpr_tolerance_pp <= 0.0:
-            raise ValueError(
-                f"fpr_tolerance_pp must be > 0, got {fpr_tolerance_pp}"
-            )
+            raise ValueError(f"fpr_tolerance_pp must be > 0, got {fpr_tolerance_pp}")
         if js_divergence_threshold <= 0.0:
-            raise ValueError(
-                f"js_divergence_threshold must be > 0, got {js_divergence_threshold}"
-            )
+            raise ValueError(f"js_divergence_threshold must be > 0, got {js_divergence_threshold}")
 
         self._min_bars = min_bars
         self._min_novelty_events = min_novelty_events
-        self._deny_rate_tol = deny_rate_tolerance_pp / 100.0   # normalise to [0,1]
+        self._deny_rate_tol = deny_rate_tolerance_pp / 100.0  # normalise to [0,1]
         self._fpr_tol = fpr_tolerance_pp / 100.0
         self._js_threshold = js_divergence_threshold
 
@@ -288,9 +278,7 @@ class ValPDC002Judge:
                 )
             else:
                 c2_passed = True
-                actual_deny_str = (
-                    "metric not computed (no baseline deny_rate present, delta=0)"
-                )
+                actual_deny_str = "metric not computed (no baseline deny_rate present, delta=0)"
 
         criteria.append(
             ValPDC002Criterion(
@@ -323,9 +311,7 @@ class ValPDC002Judge:
             fpr_gap = any("fpr" in r.lower() for r in insuff)
             if fpr_gap:
                 c3_passed = False
-                actual_fpr_str = (
-                    "FPR not computable: no judged (TP/FP) novelty events available"
-                )
+                actual_fpr_str = "FPR not computable: no judged (TP/FP) novelty events available"
             else:
                 c3_passed = False
                 actual_fpr_str = "fpr metric absent from comparison report"
@@ -351,20 +337,16 @@ class ValPDC002Judge:
         # Uses "deny_reason_distribution_js" metric as proxy until a dedicated
         # state counter is available.  Fails conservatively when absent.
         # ------------------------------------------------------------------
-        js_metric = self._extract_metric(
-            comparison_report, "deny_reason_distribution_js"
-        )
+        js_metric = self._extract_metric(comparison_report, "deny_reason_distribution_js")
         if js_metric is not None:
             c4_passed = bool(js_metric.within_tolerance)
             actual_js_str = (
-                f"JS divergence={js_metric.live_value:.6f} "
-                f"(threshold={self._js_threshold:.2f})"
+                f"JS divergence={js_metric.live_value:.6f} (threshold={self._js_threshold:.2f})"
             )
         else:
             insuff = getattr(comparison_report, "insufficiency_reasons", [])
             js_deferred = any(
-                "state_distribution" in r.lower()
-                or "deny_reason_distribution" in r.lower()
+                "state_distribution" in r.lower() or "deny_reason_distribution" in r.lower()
                 for r in insuff
             )
             if js_deferred:
@@ -391,9 +373,7 @@ class ValPDC002Judge:
             )
         )
         if not c4_passed:
-            failure_reasons.append(
-                f"C4_STATE_JS_DIVERGENCE FAIL: {actual_js_str}"
-            )
+            failure_reasons.append(f"C4_STATE_JS_DIVERGENCE FAIL: {actual_js_str}")
 
         # ------------------------------------------------------------------
         # C5: Minimum novelty events
@@ -476,9 +456,7 @@ class ValPDC002Judge:
         #   6. C1-C5 + C7 met but C6 fails -> HOLD (seal needs reverification)
         #   7. Everything else             -> BLOCK
         # ------------------------------------------------------------------
-        core_hard_criteria_passed = (
-            c1_passed and c2_passed and c3_passed and c4_passed
-        )
+        core_hard_criteria_passed = c1_passed and c2_passed and c3_passed and c4_passed
 
         if governance_has_hard_block:
             verdict = ValPDC002Verdict.BLOCK
@@ -486,26 +464,15 @@ class ValPDC002Judge:
             verdict = ValPDC002Verdict.BLOCK
             if not any("tier is RED" in r for r in failure_reasons):
                 failure_reasons.append(
-                    f"Tier RED: novelty_events={novelty_events} < 5 "
-                    "or critical metric failure"
+                    f"Tier RED: novelty_events={novelty_events} < 5 or critical metric failure"
                 )
         elif not core_hard_criteria_passed:
             verdict = ValPDC002Verdict.BLOCK
         elif all_criteria_passed and tier == "GREEN":
             verdict = ValPDC002Verdict.GO
-        elif (
-            core_hard_criteria_passed
-            and c5_passed
-            and c7_passed
-            and tier == "YELLOW"
-        ):
+        elif core_hard_criteria_passed and c5_passed and c7_passed and tier == "YELLOW":
             verdict = ValPDC002Verdict.HOLD
-        elif (
-            core_hard_criteria_passed
-            and c5_passed
-            and c7_passed
-            and not seal_valid
-        ):
+        elif core_hard_criteria_passed and c5_passed and c7_passed and not seal_valid:
             # Seal re-verification needed but all other criteria met
             verdict = ValPDC002Verdict.HOLD
         else:
@@ -518,9 +485,7 @@ class ValPDC002Judge:
         report.criteria = criteria
         report.tier = tier
         report.live_authorized = False  # hard prohibition — never changes
-        report.live_block_reason = (
-            "LIVE_NOT_AUTHORIZED: PPF production deployment not approved"
-        )
+        report.live_block_reason = "LIVE_NOT_AUTHORIZED: PPF production deployment not approved"
         report.failure_reasons = failure_reasons
 
         logger.info(
@@ -597,9 +562,7 @@ class ValPDC002Judge:
             return "YELLOW"
         return "RED"
 
-    def _extract_metric(
-        self, comparison_report: Any, metric_name: str
-    ) -> Any | None:
+    def _extract_metric(self, comparison_report: Any, metric_name: str) -> Any | None:
         """Extract a named ComparisonMetric from a PPFComparisonReport.
 
         Parameters

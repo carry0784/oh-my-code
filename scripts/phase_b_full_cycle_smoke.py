@@ -69,6 +69,7 @@ MIN_TRADES = 10  # FitnessFunction default
 @dataclass
 class ScarcityDiagnosis:
     """B-3A: Trade Scarcity analysis per symbol."""
+
     symbol: str = ""
     segment_trades: dict[str, int] = field(default_factory=dict)
     segment_trade_density: dict[str, float] = field(default_factory=dict)  # trades per 100 bars
@@ -80,6 +81,7 @@ class ScarcityDiagnosis:
 @dataclass
 class RegimeDiagnosis:
     """B-3B: Regime Diversity analysis per symbol."""
+
     symbol: str = ""
     global_rds: float = 0.0
     global_regime_mix: dict[str, float] = field(default_factory=dict)
@@ -93,6 +95,7 @@ class RegimeDiagnosis:
 @dataclass
 class StabilityDiagnosis:
     """B-3C: Forward Stability analysis per symbol."""
+
     symbol: str = ""
     segment_fitness: dict[str, float] = field(default_factory=dict)
     fitness_degradation: dict[str, float] = field(default_factory=dict)  # vs train
@@ -106,6 +109,7 @@ class StabilityDiagnosis:
 @dataclass
 class AssetDiagnosis:
     """Complete diagnostic for one asset."""
+
     symbol: str = ""
     verdict: str = ""
     reason_codes: list[str] = field(default_factory=list)
@@ -119,6 +123,7 @@ class AssetDiagnosis:
 @dataclass
 class CrossAssetReport:
     """Cross-asset comparison report."""
+
     diagnosed_at: str = ""
     assets: dict[str, AssetDiagnosis] = field(default_factory=dict)
     common_failures: list[str] = field(default_factory=list)
@@ -180,9 +185,7 @@ def diagnose_regime(
         total += 1
 
     if total > 0:
-        diag.global_regime_mix = {
-            k: round(v / total, 4) for k, v in sorted(global_counts.items())
-        }
+        diag.global_regime_mix = {k: round(v / total, 4) for k, v in sorted(global_counts.items())}
         dominant = max(global_counts, key=global_counts.get)
         diag.dominant_regime = dominant
         diag.dominant_pct = round(global_counts[dominant] / total * 100, 1)
@@ -300,9 +303,9 @@ async def run_diagnosis(symbols: list[str]) -> CrossAssetReport:
     )
 
     for symbol in symbols:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"  DIAGNOSING: {symbol}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         cfg = FullCycleConfig(exchange="binance", symbol=symbol, timeframe="1h")
         backtester = FullCycleBacktester(cfg)
@@ -315,7 +318,10 @@ async def run_diagnosis(symbols: list[str]) -> CrossAssetReport:
             # Load raw candles for regime analysis
             mgr = HistoryDataManager()
             ohlcv = await mgr.get_replay_candles(
-                session, "binance", symbol, "1h",
+                session,
+                "binance",
+                symbol,
+                "1h",
             )
 
         # Split for regime per-segment analysis
@@ -346,7 +352,9 @@ async def run_diagnosis(symbols: list[str]) -> CrossAssetReport:
             if wf.efficiency_ratio >= WF_EFFICIENCY_THRESHOLD:
                 pass_count += 1
             else:
-                reason_codes.append(f"WF_EFFICIENCY_LOW({wf.efficiency_ratio:.4f}<{WF_EFFICIENCY_THRESHOLD})")
+                reason_codes.append(
+                    f"WF_EFFICIENCY_LOW({wf.efficiency_ratio:.4f}<{WF_EFFICIENCY_THRESHOLD})"
+                )
             if not wf.is_overfit:
                 pass_count += 1
             else:
@@ -401,18 +409,22 @@ async def run_diagnosis(symbols: list[str]) -> CrossAssetReport:
             deg = stability.fitness_degradation.get(name, "—")
             deg_str = f" (degradation: {deg}%)" if name != "train" else ""
             print(f"    {name}: fitness={fit:.4f}{deg_str}")
-        print(f"    WF: efficiency={stability.wf_efficiency:.4f}, consistency={stability.wf_consistency:.4f}, overfit={stability.wf_is_overfit}")
+        print(
+            f"    WF: efficiency={stability.wf_efficiency:.4f}, consistency={stability.wf_consistency:.4f}, overfit={stability.wf_is_overfit}"
+        )
 
         print(f"\n  Failure Signature: {asset_diag.failure_signature}")
 
     # ── Cross-asset comparison ───────────────────────────────
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  CROSS-ASSET COMPARISON")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     all_reason_sets = [set(a.reason_codes) for a in report.assets.values()]
     if all_reason_sets:
-        common = set.intersection(*all_reason_sets) if len(all_reason_sets) > 1 else all_reason_sets[0]
+        common = (
+            set.intersection(*all_reason_sets) if len(all_reason_sets) > 1 else all_reason_sets[0]
+        )
         report.common_failures = sorted(common)
 
         for symbol, diag in report.assets.items():
@@ -438,9 +450,9 @@ async def run_diagnosis(symbols: list[str]) -> CrossAssetReport:
     # ── B-3 exit status ──────────────────────────────────────
     report.b3_exit_status = determine_exit_status(report)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  B-3 EXIT STATUS: {report.b3_exit_status}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     return report
 
@@ -449,7 +461,7 @@ def save_diagnosis_log(report: CrossAssetReport) -> None:
     """Save diagnosis log to evidence directory."""
 
     def serialize(obj):
-        if hasattr(obj, '__dataclass_fields__'):
+        if hasattr(obj, "__dataclass_fields__"):
             return asdict(obj)
         return str(obj)
 
@@ -462,6 +474,7 @@ def save_diagnosis_log(report: CrossAssetReport) -> None:
 
 async def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="Phase B Full-Cycle Diagnostic")
     parser.add_argument("--symbol", type=str, help="Single symbol to diagnose")
     args = parser.parse_args()
@@ -479,11 +492,13 @@ async def main():
     save_diagnosis_log(report)
 
     # Final summary table
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  DIAGNOSTIC SUMMARY TABLE")
-    print(f"{'='*60}")
-    print(f"  {'Symbol':<20} {'Verdict':<8} {'PASS':<6} {'Scarcity':<10} {'Regime':<14} {'Stability':<10} {'Fitness':<8}")
-    print(f"  {'-'*20} {'-'*8} {'-'*6} {'-'*10} {'-'*14} {'-'*10} {'-'*8}")
+    print(f"{'=' * 60}")
+    print(
+        f"  {'Symbol':<20} {'Verdict':<8} {'PASS':<6} {'Scarcity':<10} {'Regime':<14} {'Stability':<10} {'Fitness':<8}"
+    )
+    print(f"  {'-' * 20} {'-' * 8} {'-' * 6} {'-' * 10} {'-' * 14} {'-' * 10} {'-' * 8}")
     for symbol, diag in report.assets.items():
         print(
             f"  {symbol:<20} {diag.verdict:<8} {diag.pass_count}/7"

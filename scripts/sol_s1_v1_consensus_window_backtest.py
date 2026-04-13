@@ -71,6 +71,7 @@ SEGMENT_RATIOS = {"train": 0.60, "forward_1": 0.20, "forward_2": 0.10, "holdout"
 # Windowed Consensus Strategy (subclass, NO B-1 modification)
 # ---------------------------------------------------------------------------
 
+
 class WindowedConsensusStrategy(SMCWaveTrendStrategy):
     """
     Extends SMCWaveTrendStrategy with configurable consensus window.
@@ -100,10 +101,17 @@ class WindowedConsensusStrategy(SMCWaveTrendStrategy):
             closes = np.array([bar[4] for bar in ohlcv], dtype=float)
 
             smc_trend_arr, smc_signals = calc_smc_pure_causal(
-                highs, lows, closes, internal_length=self.internal_length,
+                highs,
+                lows,
+                closes,
+                internal_length=self.internal_length,
             )
             wt1, wt2, wt_signals = calc_wavetrend(
-                highs, lows, closes, n1=self.n1, n2=self.n2,
+                highs,
+                lows,
+                closes,
+                n1=self.n1,
+                n2=self.n2,
             )
 
             last_idx = len(ohlcv) - 1
@@ -135,7 +143,12 @@ class WindowedConsensusStrategy(SMCWaveTrendStrategy):
             wt2_val = float(wt2[last_idx]) if not np.isnan(wt2[last_idx]) else None
 
             self._diag = self._build_diag(
-                smc_sig, wt_sig, smc_trend_val, wt1_val, wt2_val, closes[last_idx],
+                smc_sig,
+                wt_sig,
+                smc_trend_val,
+                wt1_val,
+                wt2_val,
+                closes[last_idx],
             )
             self._diag["consensus_window"] = N
             self._diag["consensus_delay"] = best_delay
@@ -182,9 +195,11 @@ class WindowedConsensusStrategy(SMCWaveTrendStrategy):
 # Data structures
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class DelayedConsensusLedger:
     """Tracks delay distribution of consensus signals."""
+
     delay_0: int = 0  # same-bar (baseline)
     delay_1: int = 0
     delay_2: int = 0
@@ -196,6 +211,7 @@ class DelayedConsensusLedger:
 @dataclass
 class SegmentResult:
     """Per-segment backtest result."""
+
     segment: str
     bars: int = 0
     trades: int = 0
@@ -208,6 +224,7 @@ class SegmentResult:
 @dataclass
 class ConfigResult:
     """Complete result for one consensus window configuration."""
+
     consensus_window: int
     label: str
 
@@ -242,6 +259,7 @@ class ConfigResult:
 # ---------------------------------------------------------------------------
 # Pre-analysis: compute consensus distribution on full data
 # ---------------------------------------------------------------------------
+
 
 def precompute_signal_analysis(ohlcv: list) -> dict:
     """Compute SMC/WT signals for all bars and analyze consensus distribution."""
@@ -305,6 +323,7 @@ def precompute_signal_analysis(ohlcv: list) -> dict:
 # Backtest runner
 # ---------------------------------------------------------------------------
 
+
 def run_backtest_config(
     ohlcv: list,
     consensus_window: int,
@@ -316,10 +335,12 @@ def run_backtest_config(
         consensus_window=consensus_window,
     )
 
-    engine = BacktestingEngine(config=BacktestConfig(
-        initial_capital=10000.0,
-        position_size_pct=2.0,
-    ))
+    engine = BacktestingEngine(
+        config=BacktestConfig(
+            initial_capital=10000.0,
+            position_size_pct=2.0,
+        )
+    )
 
     # Full-data backtest
     bt_result = engine.run(strategy, ohlcv, lookback=LOOKBACK)
@@ -383,15 +404,17 @@ def run_backtest_config(
         seg_ret = float(seg_perf.total_return_pct) if seg_perf else 0.0
         seg_wr = float(seg_perf.win_rate) if seg_perf else 0.0
 
-        result.segments.append(SegmentResult(
-            segment=seg_name,
-            bars=len(seg_data[seg_name]),
-            trades=seg_trade_count,
-            fitness=round(seg_fitness, 4),
-            min_trades_met=seg_trade_count >= MIN_TRADES,
-            total_return=round(seg_ret, 4),
-            win_rate=round(seg_wr, 4),
-        ))
+        result.segments.append(
+            SegmentResult(
+                segment=seg_name,
+                bars=len(seg_data[seg_name]),
+                trades=seg_trade_count,
+                fitness=round(seg_fitness, 4),
+                min_trades_met=seg_trade_count >= MIN_TRADES,
+                total_return=round(seg_ret, 4),
+                win_rate=round(seg_wr, 4),
+            )
+        )
 
     return result
 
@@ -418,8 +441,8 @@ def _has_consensus_at_bar(
     Uses vectorized sub-window lookup.
     """
     w_start = max(0, bar - consensus_window)
-    smc_window = smc_signals[w_start:bar + 1]
-    wt_window = wt_signals[w_start:bar + 1]
+    smc_window = smc_signals[w_start : bar + 1]
+    wt_window = wt_signals[w_start : bar + 1]
 
     best_dir = None
     best_delay = None
@@ -534,6 +557,7 @@ def compute_delay_ledger(
 # Report generation
 # ---------------------------------------------------------------------------
 
+
 def generate_report(
     pre_analysis: dict,
     results: list[ConfigResult],
@@ -554,9 +578,9 @@ def generate_report(
     lines.append("| Delay | New Consensus Bars | Cumulative | Cumulative Rate |")
     lines.append("|-------|-------------------|------------|-----------------|")
     for n in [0, 1, 2, 3]:
-        inc = pre_analysis['delay_incremental'][n]
-        cum = pre_analysis['delay_cumulative'][n]
-        rate = round(cum / pre_analysis['total_bars'] * 100, 2)
+        inc = pre_analysis["delay_incremental"][n]
+        cum = pre_analysis["delay_cumulative"][n]
+        rate = round(cum / pre_analysis["total_bars"] * 100, 2)
         lines.append(f"| delay_{n} | +{inc} | {cum} | {rate}% |")
     lines.append("")
 
@@ -589,18 +613,24 @@ def generate_report(
         lines.append(f"| {label} | {' | '.join(vals)} |")
 
     # Uplift row
-    lines.append(f"| **Fire rate uplift** | 1.00× | "
-                 f"{results[1].fire_rate_uplift:.2f}× | "
-                 f"{results[2].fire_rate_uplift:.2f}× | "
-                 f"{results[3].fire_rate_uplift:.2f}× |")
-    lines.append(f"| **Fitness ratio** | 1.00 | "
-                 f"{results[1].fitness_ratio:.2f} | "
-                 f"{results[2].fitness_ratio:.2f} | "
-                 f"{results[3].fitness_ratio:.2f} |")
-    lines.append(f"| **Trade uplift** | 1.00× | "
-                 f"{results[1].trade_uplift:.2f}× | "
-                 f"{results[2].trade_uplift:.2f}× | "
-                 f"{results[3].trade_uplift:.2f}× |")
+    lines.append(
+        f"| **Fire rate uplift** | 1.00× | "
+        f"{results[1].fire_rate_uplift:.2f}× | "
+        f"{results[2].fire_rate_uplift:.2f}× | "
+        f"{results[3].fire_rate_uplift:.2f}× |"
+    )
+    lines.append(
+        f"| **Fitness ratio** | 1.00 | "
+        f"{results[1].fitness_ratio:.2f} | "
+        f"{results[2].fitness_ratio:.2f} | "
+        f"{results[3].fitness_ratio:.2f} |"
+    )
+    lines.append(
+        f"| **Trade uplift** | 1.00× | "
+        f"{results[1].trade_uplift:.2f}× | "
+        f"{results[2].trade_uplift:.2f}× | "
+        f"{results[3].trade_uplift:.2f}× |"
+    )
     lines.append("")
 
     # Delay ledger
@@ -610,8 +640,10 @@ def generate_report(
     lines.append("|--------|---------|---------|---------|---------|-------|")
     for r in results:
         dl = r.delay_ledger
-        lines.append(f"| N={r.consensus_window} | {dl.delay_0} | {dl.delay_1} | "
-                     f"{dl.delay_2} | {dl.delay_3} | {dl.total_consensus} |")
+        lines.append(
+            f"| N={r.consensus_window} | {dl.delay_0} | {dl.delay_1} | "
+            f"{dl.delay_2} | {dl.delay_3} | {dl.total_consensus} |"
+        )
     lines.append("")
 
     # Per-segment comparison
@@ -664,9 +696,11 @@ def generate_report(
     best = None
     best_n = 0
     for r in results[1:]:  # skip baseline
-        if (r.fire_rate_uplift >= 1.5
-                and r.fitness_ratio >= 0.80
-                and r.occupancy_block_rate <= baseline.occupancy_block_rate * 1.5):
+        if (
+            r.fire_rate_uplift >= 1.5
+            and r.fitness_ratio >= 0.80
+            and r.occupancy_block_rate <= baseline.occupancy_block_rate * 1.5
+        ):
             if best is None or r.fire_rate_uplift > best.fire_rate_uplift:
                 best = r
                 best_n = r.consensus_window
@@ -675,13 +709,17 @@ def generate_report(
         lines.append(f"**PASS**: N={best_n} meets all criteria")
         lines.append(f"- Fire rate uplift: {best.fire_rate_uplift:.2f}× (≥ 1.5× required)")
         lines.append(f"- Fitness ratio: {best.fitness_ratio:.2f} (≥ 0.80 required)")
-        lines.append(f"- Occupancy block rate: {best.occupancy_block_rate:.1f}% "
-                     f"(≤ {baseline.occupancy_block_rate * 1.5:.1f}% limit)")
+        lines.append(
+            f"- Occupancy block rate: {best.occupancy_block_rate:.1f}% "
+            f"(≤ {baseline.occupancy_block_rate * 1.5:.1f}% limit)"
+        )
     else:
         # Check if any has uplift but fails quality
         any_uplift = any(r.fire_rate_uplift >= 1.5 for r in results[1:])
         if any_uplift:
-            lines.append("**INFORMATIVE_FAIL**: Fire rate uplift achieved but quality/stability guard failed")
+            lines.append(
+                "**INFORMATIVE_FAIL**: Fire rate uplift achieved but quality/stability guard failed"
+            )
         else:
             lines.append("**BLOCK**: No configuration achieved ≥ 1.5× fire rate uplift")
 
@@ -702,6 +740,7 @@ def generate_report(
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 async def run_v1():
     print("=" * 60)
@@ -730,15 +769,17 @@ async def run_v1():
     print(f"  SMC fired: {pre_analysis['smc_fired']} ({pre_analysis['smc_rate_pct']}%)")
     print(f"  WT fired: {pre_analysis['wt_fired']} ({pre_analysis['wt_rate_pct']}%)")
     for n in [0, 1, 2, 3]:
-        cum = pre_analysis['delay_cumulative'][n]
-        inc = pre_analysis['delay_incremental'][n]
+        cum = pre_analysis["delay_cumulative"][n]
+        inc = pre_analysis["delay_incremental"][n]
         print(f"  N={n}: cumulative={cum} (+{inc} new)")
 
     # Precompute signals once
     print("\n[PRECOMPUTE] Computing SMC/WT signals for occupancy/delay analysis...")
     smc_signals_arr, wt_signals_arr = _precompute_consensus_arrays(ohlcv)
-    print(f"  Done. SMC nonzero: {np.count_nonzero(smc_signals_arr)}, "
-          f"WT nonzero: {np.count_nonzero(wt_signals_arr)}")
+    print(
+        f"  Done. SMC nonzero: {np.count_nonzero(smc_signals_arr)}, "
+        f"WT nonzero: {np.count_nonzero(wt_signals_arr)}"
+    )
 
     # Run backtests
     results: list[ConfigResult] = []
@@ -752,20 +793,24 @@ async def run_v1():
         # Occupancy metrics
         print(f"  Computing occupancy metrics...")
         consensus_signals, blocked = compute_occupancy_metrics(
-            ohlcv, consensus_window=n,
-            smc_signals=smc_signals_arr, wt_signals=wt_signals_arr,
+            ohlcv,
+            consensus_window=n,
+            smc_signals=smc_signals_arr,
+            wt_signals=wt_signals_arr,
         )
         config_result.consensus_signals = consensus_signals
         config_result.blocked_by_occupancy = blocked
-        config_result.occupancy_block_rate = round(
-            blocked / consensus_signals * 100, 2
-        ) if consensus_signals > 0 else 0.0
+        config_result.occupancy_block_rate = (
+            round(blocked / consensus_signals * 100, 2) if consensus_signals > 0 else 0.0
+        )
 
         # Delay ledger
         print(f"  Computing delay ledger...")
         config_result.delay_ledger = compute_delay_ledger(
-            ohlcv, consensus_window=n,
-            smc_signals=smc_signals_arr, wt_signals=wt_signals_arr,
+            ohlcv,
+            consensus_window=n,
+            smc_signals=smc_signals_arr,
+            wt_signals=wt_signals_arr,
         )
 
         print(f"  Trades: {config_result.total_trades}")
@@ -773,10 +818,12 @@ async def run_v1():
         print(f"  Fitness: {config_result.full_fitness}")
         print(f"  Consensus signals: {consensus_signals} (blocked: {blocked})")
         print(f"  Occupancy block rate: {config_result.occupancy_block_rate}%")
-        print(f"  Delay ledger: d0={config_result.delay_ledger.delay_0} "
-              f"d1={config_result.delay_ledger.delay_1} "
-              f"d2={config_result.delay_ledger.delay_2} "
-              f"d3={config_result.delay_ledger.delay_3}")
+        print(
+            f"  Delay ledger: d0={config_result.delay_ledger.delay_0} "
+            f"d1={config_result.delay_ledger.delay_1} "
+            f"d2={config_result.delay_ledger.delay_2} "
+            f"d3={config_result.delay_ledger.delay_3}"
+        )
 
         for seg in config_result.segments:
             mt = "OK" if seg.min_trades_met else "MISS"
@@ -787,12 +834,14 @@ async def run_v1():
     # Compute uplifts vs baseline
     baseline = results[0]
     for r in results[1:]:
-        r.fire_rate_uplift = round(
-            r.total_trades / baseline.total_trades, 2
-        ) if baseline.total_trades > 0 else 0.0
-        r.fitness_ratio = round(
-            r.full_fitness / baseline.full_fitness, 2
-        ) if baseline.full_fitness > 0 else (1.0 if r.full_fitness == 0 else float("inf"))
+        r.fire_rate_uplift = (
+            round(r.total_trades / baseline.total_trades, 2) if baseline.total_trades > 0 else 0.0
+        )
+        r.fitness_ratio = (
+            round(r.full_fitness / baseline.full_fitness, 2)
+            if baseline.full_fitness > 0
+            else (1.0 if r.full_fitness == 0 else float("inf"))
+        )
         r.trade_uplift = r.fire_rate_uplift
         # Newly unblocked: consensus at N that weren't at N=0
         r.newly_unblocked_trades = max(0, r.total_trades - baseline.total_trades)
@@ -800,9 +849,9 @@ async def run_v1():
         r.reblocked_by_occupancy = max(0, r.blocked_by_occupancy - baseline.blocked_by_occupancy)
 
     # Generate report
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("DELIVERABLES")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     report = generate_report(pre_analysis, results)
     print(report)
@@ -855,9 +904,11 @@ async def run_v1():
     # Determine verdict
     best = None
     for r in results[1:]:
-        if (r.fire_rate_uplift >= 1.5
-                and r.fitness_ratio >= 0.80
-                and r.occupancy_block_rate <= baseline.occupancy_block_rate * 1.5):
+        if (
+            r.fire_rate_uplift >= 1.5
+            and r.fitness_ratio >= 0.80
+            and r.occupancy_block_rate <= baseline.occupancy_block_rate * 1.5
+        ):
             if best is None or r.fire_rate_uplift > best.fire_rate_uplift:
                 best = r
     if best:
@@ -870,7 +921,9 @@ async def run_v1():
 
     log_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "docs", "operations", "evidence",
+        "docs",
+        "operations",
+        "evidence",
         "sol_s1_v1_backtest_log.json",
     )
     with open(log_path, "w", encoding="utf-8") as f:

@@ -35,6 +35,7 @@ from strategies.ppf.parameters import PPFParameters
 # Fixtures: parameters and observation/scores that reach D4/D5/D6
 # ---------------------------------------------------------------------------
 
+
 def _default_params() -> PPFParameters:
     """Default params for testing. All thresholds at minimum to allow progression."""
     return PPFParameters(
@@ -86,6 +87,7 @@ def _scores_reaching_d4(*, path_quality: float = 0.5, rr: float = 3.0) -> Interp
 # ---------------------------------------------------------------------------
 # Test 1: D5 RISK_FILTER_FAIL -> R1 -> D1_IDLE (B2 core test)
 # ---------------------------------------------------------------------------
+
 
 class TestB2D5RiskFilterReject:
     """B2: D5 -> D6 failure must produce R1 -> D1_IDLE, not ARMED retention."""
@@ -144,6 +146,7 @@ class TestB2D5RiskFilterReject:
 # Test 2: D4 PATH_QUALITY_FAIL -> R1 -> D1_IDLE
 # ---------------------------------------------------------------------------
 
+
 class TestB2D4PathQualityReject:
     """B2: D4 -> D5 failure (path quality) must produce R1 -> D1_IDLE."""
 
@@ -186,6 +189,7 @@ class TestB2D4PathQualityReject:
 # Test 3: D4 RR_FAIL -> R1 -> D1_IDLE
 # ---------------------------------------------------------------------------
 
+
 class TestB2D4RRReject:
     """B2: D4 -> D5 failure (RR too low) must produce R1 -> D1_IDLE."""
 
@@ -227,6 +231,7 @@ class TestB2D4RRReject:
 # ---------------------------------------------------------------------------
 # Test 4: Next-candle D1 reset after R1
 # ---------------------------------------------------------------------------
+
 
 class TestB2NextCandleReset:
     """After R1 outcome on candle N, candle N+1 starts from D1."""
@@ -290,6 +295,7 @@ class TestB2NextCandleReset:
 # Test 5: D6 success path (positive control)
 # ---------------------------------------------------------------------------
 
+
 class TestB2D6SuccessPath:
     """Positive control: D6 success has allow_entry=True, no reached_state."""
 
@@ -311,6 +317,7 @@ class TestB2D6SuccessPath:
 # ---------------------------------------------------------------------------
 # Test 6: Logging includes reached_state for R1 rejections
 # ---------------------------------------------------------------------------
+
 
 class TestB2LoggingReachedState:
     """Log entry must include reached_state for audit trail."""
@@ -381,6 +388,7 @@ class TestB2LoggingReachedState:
 # ---------------------------------------------------------------------------
 # Test 7: Novelty brake (C11) - reached_state not applicable
 # ---------------------------------------------------------------------------
+
 
 class TestB2NoveltyBrake:
     """C11 novelty brake is a separate path, not B2 R1. No reached_state."""

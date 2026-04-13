@@ -38,9 +38,7 @@ class OhlcvHistory(Base):
 
     __tablename__ = "ohlcv_history"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
 
     # ── Identity ────────────────────────────────────────────────────
     exchange: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
@@ -60,9 +58,7 @@ class OhlcvHistory(Base):
     volume: Mapped[float] = mapped_column(Float, nullable=False)
 
     # ── Event Metadata (future event_week_resilience_score) ─────────
-    event_week_flag: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, server_default="false"
-    )
+    event_week_flag: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     macro_event_type: Mapped[str | None] = mapped_column(
         String(50), nullable=True
     )  # FOMC, CPI, NFP, HALVING, etc.
@@ -78,11 +74,17 @@ class OhlcvHistory(Base):
     # ── Constraints ─────────────────────────────────────────────────
     __table_args__ = (
         UniqueConstraint(
-            "exchange", "symbol", "timeframe", "open_time",
+            "exchange",
+            "symbol",
+            "timeframe",
+            "open_time",
             name="uq_ohlcv_canonical_slot",
         ),
         Index(
             "ix_ohlcv_lookup",
-            "exchange", "symbol", "timeframe", "open_time",
+            "exchange",
+            "symbol",
+            "timeframe",
+            "open_time",
         ),
     )

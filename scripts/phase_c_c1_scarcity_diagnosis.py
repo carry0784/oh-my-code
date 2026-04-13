@@ -49,9 +49,9 @@ TIMEFRAME = "1h"
 TOTAL_BARS = 9600
 
 # Segment ratios (from B-1 core, DO NOT MODIFY)
-TRAIN_RATIO = 0.60   # 5760 bars
-FW1_RATIO = 0.20     # 1920 bars
-FW2_RATIO = 0.10     # 960 bars
+TRAIN_RATIO = 0.60  # 5760 bars
+FW1_RATIO = 0.20  # 1920 bars
+FW2_RATIO = 0.10  # 960 bars
 HOLDOUT_RATIO = 0.10  # 960 bars
 
 SEGMENT_NAMES = ["train", "forward_1", "forward_2", "holdout"]
@@ -76,13 +76,15 @@ B3_BASELINE = {
 # Data structures
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class BarSignalAnalysis:
     """Per-bar signal state from strategy analysis."""
+
     bar_index: int
     timestamp: int
     smc_sig: int  # -1, 0, +1
-    wt_sig: int   # -1, 0, +1
+    wt_sig: int  # -1, 0, +1
     consensus: bool  # smc_sig != 0 and wt_sig != 0 and smc_sig == wt_sig
     near_miss_type: str | None  # SMC_ONLY, WT_ONLY, DIR_MISMATCH, None
     regime: str  # ranging, trending_up, trending_down, unknown
@@ -91,16 +93,17 @@ class BarSignalAnalysis:
 @dataclass
 class SegmentSignalProfile:
     """Signal statistics for one segment."""
+
     segment_name: str
     bars: int
     smc_nonzero: int  # bars where smc_sig != 0
-    wt_nonzero: int   # bars where wt_sig != 0
+    wt_nonzero: int  # bars where wt_sig != 0
     both_nonzero: int  # bars where both != 0
-    consensus: int     # bars where both != 0 and same direction
+    consensus: int  # bars where both != 0 and same direction
     dir_mismatch: int  # bars where both != 0 but different direction
-    smc_only: int      # smc != 0 and wt == 0
-    wt_only: int       # wt != 0 and smc == 0
-    both_zero: int     # both == 0
+    smc_only: int  # smc != 0 and wt == 0
+    wt_only: int  # wt != 0 and smc == 0
+    both_zero: int  # both == 0
 
     @property
     def smc_rate(self) -> float:
@@ -127,6 +130,7 @@ class SegmentSignalProfile:
 @dataclass
 class AssetDiagnosis:
     """Full scarcity diagnosis for one asset."""
+
     symbol: str
     total_bars: int
     segments: dict[str, SegmentSignalProfile] = field(default_factory=dict)
@@ -137,6 +141,7 @@ class AssetDiagnosis:
 # ---------------------------------------------------------------------------
 # Analysis functions
 # ---------------------------------------------------------------------------
+
 
 def analyze_bar_signals(
     strategy: SMCWaveTrendStrategy,
@@ -153,14 +158,14 @@ def analyze_bar_signals(
 
     for i in range(lookback, len(ohlcv_list)):
         # strategy.analyze() populates _diag regardless of consensus
-        window = ohlcv_list[max(0, i - lookback):i + 1]
+        window = ohlcv_list[max(0, i - lookback) : i + 1]
         signal = strategy.analyze(window)
 
         diag = getattr(strategy, "_diag", {})
         smc_sig = diag.get("smc_sig_raw", 0) or 0
         wt_sig = diag.get("wt_sig_raw", 0) or 0
 
-        consensus = (smc_sig != 0 and wt_sig != 0 and smc_sig == wt_sig)
+        consensus = smc_sig != 0 and wt_sig != 0 and smc_sig == wt_sig
 
         # Near-miss classification
         near_miss = None
@@ -173,15 +178,17 @@ def analyze_bar_signals(
 
         regime = regime_labels[i] if i < len(regime_labels) else "unknown"
 
-        results.append(BarSignalAnalysis(
-            bar_index=i,
-            timestamp=ohlcv_list[i].timestamp if hasattr(ohlcv_list[i], "timestamp") else 0,
-            smc_sig=smc_sig,
-            wt_sig=wt_sig,
-            consensus=consensus,
-            near_miss_type=near_miss,
-            regime=regime,
-        ))
+        results.append(
+            BarSignalAnalysis(
+                bar_index=i,
+                timestamp=ohlcv_list[i].timestamp if hasattr(ohlcv_list[i], "timestamp") else 0,
+                smc_sig=smc_sig,
+                wt_sig=wt_sig,
+                consensus=consensus,
+                near_miss_type=near_miss,
+                regime=regime,
+            )
+        )
 
     return results
 
@@ -238,6 +245,7 @@ def compute_regime_labels(regime_detector: RegimeDetector, ohlcv_list: list) -> 
 # Report generation
 # ---------------------------------------------------------------------------
 
+
 def generate_deliverable_1(diagnoses: list[AssetDiagnosis]) -> str:
     """Deliverable 1: Scarcity root cause decomposition table."""
     lines = ["## Deliverable 1: Scarcity 원인 분해표", ""]
@@ -245,8 +253,12 @@ def generate_deliverable_1(diagnoses: list[AssetDiagnosis]) -> str:
     for diag in diagnoses:
         lines.append(f"### {diag.symbol}")
         lines.append("")
-        lines.append("| Segment | Bars | SMC Fire Rate | WT Fire Rate | Both Fire | Consensus | Gap (near-miss) | Both Zero |")
-        lines.append("|---------|------|--------------|-------------|-----------|-----------|-----------------|-----------|")
+        lines.append(
+            "| Segment | Bars | SMC Fire Rate | WT Fire Rate | Both Fire | Consensus | Gap (near-miss) | Both Zero |"
+        )
+        lines.append(
+            "|---------|------|--------------|-------------|-----------|-----------|-----------------|-----------|"
+        )
 
         for seg_name in SEGMENT_NAMES:
             p = diag.segments[seg_name]
@@ -277,8 +289,12 @@ def generate_deliverable_1(diagnoses: list[AssetDiagnosis]) -> str:
     lines.append("|---|------|------|--------|")
     lines.append("| 1 | SMC 신호 희소성 | SMC fire rate가 전체 bars 대비 극히 낮음 | 1차 병목 |")
     lines.append("| 2 | WT 신호 희소성 | WT fire rate도 낮으나 SMC보다는 높음 | 2차 병목 |")
-    lines.append("| 3 | 2/2 consensus 필터 | 양쪽 모두 fire해도 방향 불일치로 탈락 가능 | 3차 필터 |")
-    lines.append("| 4 | 짧은 세그먼트 (FW2=960 bars) | 동일 밀도에서도 절대 거래 수가 부족 | 구조적 한계 |")
+    lines.append(
+        "| 3 | 2/2 consensus 필터 | 양쪽 모두 fire해도 방향 불일치로 탈락 가능 | 3차 필터 |"
+    )
+    lines.append(
+        "| 4 | 짧은 세그먼트 (FW2=960 bars) | 동일 밀도에서도 절대 거래 수가 부족 | 구조적 한계 |"
+    )
     lines.append("| 5 | ranging 편중 시장 | ranging에서 SMC swing 발생 빈도 감소 | 환경 요인 |")
     lines.append("")
 
@@ -291,8 +307,12 @@ def generate_deliverable_2(diagnoses: list[AssetDiagnosis]) -> str:
 
     lines.append("### Segment별 비교")
     lines.append("")
-    lines.append("| Segment | Bars | SOL Consensus | SOL Density/100 | BTC Consensus | BTC Density/100 | SOL Trades (B3) | BTC Trades (B3) | min_trades | Miss |")
-    lines.append("|---------|------|---------------|-----------------|---------------|-----------------|-----------------|-----------------|------------|------|")
+    lines.append(
+        "| Segment | Bars | SOL Consensus | SOL Density/100 | BTC Consensus | BTC Density/100 | SOL Trades (B3) | BTC Trades (B3) | min_trades | Miss |"
+    )
+    lines.append(
+        "|---------|------|---------------|-----------------|---------------|-----------------|-----------------|-----------------|------------|------|"
+    )
 
     sol = diagnoses[0]
     btc = diagnoses[1]
@@ -356,7 +376,9 @@ def generate_deliverable_3() -> str:
     lines.append("| **장점** | 기존 2/2 구조를 2-of-3로 확장 가능, 핵심 논리 유지 |")
     lines.append("| **단점** | 제3 지표의 품질 검증 필요, 복잡도 증가 |")
     lines.append("| **리스크** | 잡음 신호 증가로 fitness 하락 가능 |")
-    lines.append("| **예상 실패 방식** | 추가 지표가 ranging 시장에서도 동일하게 희소 → 개선 미미 |")
+    lines.append(
+        "| **예상 실패 방식** | 추가 지표가 ranging 시장에서도 동일하게 희소 → 개선 미미 |"
+    )
     lines.append("| **실패 감지** | FW2 trades 재측정, min_trades 미달 지속 여부 |")
     lines.append("| **rollback 필요** | 예 (신규 파일 삭제로 완전 rollback 가능) |")
     lines.append("| **금지영역 충돌** | 없음 (신규 파일, B-1 core 미접촉) |")
@@ -367,7 +389,9 @@ def generate_deliverable_3() -> str:
     lines.append("")
     lines.append("| 항목 | 내용 |")
     lines.append("|------|------|")
-    lines.append("| **접근** | 1H 외 4H 타임프레임에서 SMC/WT 추가 분석, 상위 TF 확인 신호로 사용 |")
+    lines.append(
+        "| **접근** | 1H 외 4H 타임프레임에서 SMC/WT 추가 분석, 상위 TF 확인 신호로 사용 |"
+    )
     lines.append("| **주입 계층** | 데이터 로딩 확장 + strategy 확장 |")
     lines.append("| **예상 효과** | 상위 TF에서 방향 확인 시 1H 단독 신호도 승인 가능 |")
     lines.append("| **장점** | 구조적으로 건전한 접근, 전문 트레이더 관행과 일치 |")
@@ -393,7 +417,9 @@ def generate_deliverable_3() -> str:
     lines.append("| **예상 실패 방식** | FW2 1440 bars에서도 trades < 10 → 밀도 문제 확인 |")
     lines.append("| **실패 감지** | FW2 trades 재측정 |")
     lines.append("| **rollback 필요** | 예 (config 값 복원으로 완전 rollback) |")
-    lines.append("| **금지영역 충돌** | FullCycleConfig 필드 추가 금지 → 별도 config wrapper 필요 |")
+    lines.append(
+        "| **금지영역 충돌** | FullCycleConfig 필드 추가 금지 → 별도 config wrapper 필요 |"
+    )
     lines.append("")
 
     # Priority recommendation
@@ -401,9 +427,13 @@ def generate_deliverable_3() -> str:
     lines.append("")
     lines.append("| 순위 | 후보 | 이유 |")
     lines.append("|------|------|------|")
-    lines.append("| 1 | **S-3 (세그먼트 비율 조정)** | 가장 단순, blast radius 최소, 밀도 vs 절대수 분리 검증 가능 |")
+    lines.append(
+        "| 1 | **S-3 (세그먼트 비율 조정)** | 가장 단순, blast radius 최소, 밀도 vs 절대수 분리 검증 가능 |"
+    )
     lines.append("| 2 | **S-1 (보조 신호원)** | 밀도 자체 개선, 그러나 설계/검증 비용 높음 |")
-    lines.append("| 3 | **S-2 (멀티 TF)** | 구조적으로 건전하나 Phase A 봉인 충돌 위험, 복잡도 최고 |")
+    lines.append(
+        "| 3 | **S-2 (멀티 TF)** | 구조적으로 건전하나 Phase A 봉인 충돌 위험, 복잡도 최고 |"
+    )
     lines.append("")
 
     return "\n".join(lines)
@@ -412,6 +442,7 @@ def generate_deliverable_3() -> str:
 # ---------------------------------------------------------------------------
 # Main orchestration
 # ---------------------------------------------------------------------------
+
 
 async def run_diagnosis():
     """Run full scarcity diagnosis for SOL and BTC."""
@@ -473,9 +504,9 @@ async def run_diagnosis():
                 for lbl in seg_labels:
                     seg_counts[lbl] = seg_counts.get(lbl, 0) + 1
                 total_seg = len(seg_labels)
-                regime_per_seg[seg_name] = {
-                    k: v / total_seg for k, v in seg_counts.items()
-                } if total_seg > 0 else {}
+                regime_per_seg[seg_name] = (
+                    {k: v / total_seg for k, v in seg_counts.items()} if total_seg > 0 else {}
+                )
 
             # Signal analysis
             strategy = SMCWaveTrendStrategy(symbol=symbol)
@@ -501,9 +532,7 @@ async def run_diagnosis():
                 )
 
             # Global profile
-            global_profile = build_segment_profile(
-                bar_analyses, "_global", lookback, n
-            )
+            global_profile = build_segment_profile(bar_analyses, "_global", lookback, n)
             diag.segments["_global"] = global_profile
 
             diagnoses.append(diag)
@@ -576,7 +605,9 @@ async def run_diagnosis():
 
     log_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "docs", "operations", "evidence",
+        "docs",
+        "operations",
+        "evidence",
         "phase_c_c1_scarcity_diagnosis_log.json",
     )
     with open(log_path, "w", encoding="utf-8") as f:

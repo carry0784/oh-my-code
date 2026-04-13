@@ -107,12 +107,20 @@ from strategies.ppf.session_ledger import (
 # Fixtures
 # ===========================================================================
 
+
 def _params(**kw) -> PPFParameters:
     defaults = dict(
         market_profile=MarketProfile.M1_CRYPTO_FUTURES,
-        similarity_min=0.5, projection_bias_min=0.1, path_quality_min=0.1,
-        rr_min=1.5, k=3, correlation_length=10, projection_horizon=5,
-        novelty_threshold=0.4, watch_timeout_bars=3, candidate_timeout_bars=5,
+        similarity_min=0.5,
+        projection_bias_min=0.1,
+        path_quality_min=0.1,
+        rr_min=1.5,
+        k=3,
+        correlation_length=10,
+        projection_horizon=5,
+        novelty_threshold=0.4,
+        watch_timeout_bars=3,
+        candidate_timeout_bars=5,
     )
     defaults.update(kw)
     return PPFParameters(**defaults)
@@ -177,6 +185,7 @@ def _timeout_exec_obs() -> ExecutionObservation:
 # MANDATORY OUTPUT 1: Doctrine Check
 # ===========================================================================
 
+
 class TestLV3DoctrineCheck:
     """LV-3 doctrine: automation / autonomous / self-evolution / constitution."""
 
@@ -184,7 +193,9 @@ class TestLV3DoctrineCheck:
         """Session ledger can be driven without human intervention."""
         ledger = SessionFailureBudgetLedger(_budget_config())
         result = ledger.record_execution_event(
-            _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+            _happy_exec_obs(),
+            DivergenceSeverity.NONE,
+            DivergenceType.NONE,
         )
         assert result is None  # no abort, automated
 
@@ -194,7 +205,9 @@ class TestLV3DoctrineCheck:
         ledger = SessionFailureBudgetLedger(config)
         # First reject
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         assert ledger.is_aborted  # autonomous abort
 
@@ -202,7 +215,9 @@ class TestLV3DoctrineCheck:
         """Session summary enables post-hoc learning."""
         ledger = SessionFailureBudgetLedger(_budget_config())
         ledger.record_execution_event(
-            _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+            _happy_exec_obs(),
+            DivergenceSeverity.NONE,
+            DivergenceType.NONE,
         )
         ledger.complete_session()
         summary = ledger.summary()
@@ -213,7 +228,8 @@ class TestLV3DoctrineCheck:
     def test_constitution_governance_non_conflict(self) -> None:
         """Constitution checks pass with valid LV-3 params."""
         result = run_all_checks(
-            params=_params(), regime_novelty_flag=False,
+            params=_params(),
+            regime_novelty_flag=False,
             current_state=PPFState.D6_EXECUTE_READY,
         )
         assert result.passed is True
@@ -223,6 +239,7 @@ class TestLV3DoctrineCheck:
 # MANDATORY OUTPUT 2: Fixed Skeleton Mapping
 # ===========================================================================
 
+
 class TestLV3FixedSkeletonMapping:
     """Each skeleton layer has LV-3-verifiable behavior."""
 
@@ -230,11 +247,19 @@ class TestLV3FixedSkeletonMapping:
         """Observation: SessionObservation captures all required fields."""
         obs = SessionObservation()
         required = [
-            "session_id", "session_start_ts", "session_end_ts",
-            "consecutive_divergence_count", "reject_count", "timeout_count",
-            "high_severity_divergence_count", "exposure_by_asset",
-            "abort_triggered", "abort_reason", "forced_cooldown_until",
-            "expected_session_path", "actual_session_path",
+            "session_id",
+            "session_start_ts",
+            "session_end_ts",
+            "consecutive_divergence_count",
+            "reject_count",
+            "timeout_count",
+            "high_severity_divergence_count",
+            "exposure_by_asset",
+            "abort_triggered",
+            "abort_reason",
+            "forced_cooldown_until",
+            "expected_session_path",
+            "actual_session_path",
         ]
         for f in required:
             assert hasattr(obs, f), f"Missing: {f}"
@@ -243,8 +268,10 @@ class TestLV3FixedSkeletonMapping:
         """Interpretation: SessionInterpretation has all required scores."""
         interp = SessionInterpretation()
         required = [
-            "session_execution_stability", "budget_pressure_state",
-            "divergence_accumulation_state", "bounded_exposure_integrity",
+            "session_execution_stability",
+            "budget_pressure_state",
+            "divergence_accumulation_state",
+            "bounded_exposure_integrity",
             "venue_session_reliability",
         ]
         for f in required:
@@ -272,6 +299,7 @@ class TestLV3FixedSkeletonMapping:
     def test_evolution_layer_session_governance(self) -> None:
         """Evolution: session budget config is frozen (C10)."""
         from dataclasses import FrozenInstanceError
+
         config = _budget_config()
         with pytest.raises(FrozenInstanceError):
             config.max_reject_per_session = 99  # type: ignore[misc]
@@ -279,7 +307,8 @@ class TestLV3FixedSkeletonMapping:
     def test_constitution_layer_unchanged(self) -> None:
         """Constitution: all checks pass, fail-closed default."""
         r = run_all_checks(
-            params=_params(), regime_novelty_flag=False,
+            params=_params(),
+            regime_novelty_flag=False,
             current_state=PPFState.D1_IDLE,
         )
         assert r.passed is True
@@ -288,6 +317,7 @@ class TestLV3FixedSkeletonMapping:
 # ===========================================================================
 # MANDATORY OUTPUT 3: Slot Decomposition
 # ===========================================================================
+
 
 class TestLV3SlotDecomposition:
     """Verify all 8 rule slots are addressable."""
@@ -367,6 +397,7 @@ class TestLV3SlotDecomposition:
 # MANDATORY OUTPUT 4: Forbidden Zone Separation
 # ===========================================================================
 
+
 class TestLV3ForbiddenZones:
     """Verify all 9 forbidden zones are not breachable."""
 
@@ -411,12 +442,16 @@ class TestLV3ForbiddenZones:
         config = _budget_config(max_reject_per_session=1)
         ledger = SessionFailureBudgetLedger(config)
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         assert ledger.is_aborted
         # Try to continue -> returns abort reason
         result = ledger.record_execution_event(
-            _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+            _happy_exec_obs(),
+            DivergenceSeverity.NONE,
+            DivergenceType.NONE,
         )
         assert result is not None  # abort reason returned, not silently continuing
 
@@ -429,6 +464,7 @@ class TestLV3ForbiddenZones:
 # Path 1: Stable Bounded Session Completion
 # ---------------------------------------------------------------------------
 
+
 class TestPathStableCompletion:
     """Verify stable bounded session completion."""
 
@@ -437,7 +473,9 @@ class TestPathStableCompletion:
         ledger = SessionFailureBudgetLedger(_budget_config())
         for _ in range(5):
             result = ledger.record_execution_event(
-                _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+                _happy_exec_obs(),
+                DivergenceSeverity.NONE,
+                DivergenceType.NONE,
             )
             assert result is None
         ledger.complete_session(degraded=False)
@@ -448,7 +486,9 @@ class TestPathStableCompletion:
         ledger = SessionFailureBudgetLedger(_budget_config())
         for _ in range(3):
             ledger.record_execution_event(
-                _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+                _happy_exec_obs(),
+                DivergenceSeverity.NONE,
+                DivergenceType.NONE,
             )
         ledger.complete_session()
         interp = ledger.compute_interpretation()
@@ -460,7 +500,9 @@ class TestPathStableCompletion:
         """Stable session has complete summary."""
         ledger = SessionFailureBudgetLedger(_budget_config())
         ledger.record_execution_event(
-            _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+            _happy_exec_obs(),
+            DivergenceSeverity.NONE,
+            DivergenceType.NONE,
         )
         ledger.complete_session()
         s = ledger.summary()
@@ -473,6 +515,7 @@ class TestPathStableCompletion:
 # Path 2: Degraded Session Completion
 # ---------------------------------------------------------------------------
 
+
 class TestPathDegradedCompletion:
     """Verify degraded session completion."""
 
@@ -483,12 +526,16 @@ class TestPathDegradedCompletion:
         # 2 rejects (under budget of 3)
         for _ in range(2):
             ledger.record_execution_event(
-                _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+                _reject_exec_obs(),
+                DivergenceSeverity.MEDIUM,
+                DivergenceType.UNEXPECTED_REJECT,
             )
         # 3 happy
         for _ in range(3):
             ledger.record_execution_event(
-                _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+                _happy_exec_obs(),
+                DivergenceSeverity.NONE,
+                DivergenceType.NONE,
             )
         ledger.complete_session(degraded=True)
         assert ledger.observation.actual_session_path == SessionPath.DEGRADED_COMPLETION
@@ -501,7 +548,9 @@ class TestPathDegradedCompletion:
         # 2/3 reject budget used -> elevated
         for _ in range(2):
             ledger.record_execution_event(
-                _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+                _reject_exec_obs(),
+                DivergenceSeverity.MEDIUM,
+                DivergenceType.UNEXPECTED_REJECT,
             )
         interp = ledger.compute_interpretation()
         assert interp.session_execution_stability == SessionStability.DEGRADED
@@ -512,12 +561,16 @@ class TestPathDegradedCompletion:
         ledger = SessionFailureBudgetLedger(_budget_config())
         # Reject -> consecutive=1
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         assert ledger.observation.consecutive_divergence_count == 1
         # Happy -> consecutive=0
         ledger.record_execution_event(
-            _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+            _happy_exec_obs(),
+            DivergenceSeverity.NONE,
+            DivergenceType.NONE,
         )
         assert ledger.observation.consecutive_divergence_count == 0
 
@@ -525,6 +578,7 @@ class TestPathDegradedCompletion:
 # ---------------------------------------------------------------------------
 # Path 3: Abort on Reject Budget Overrun
 # ---------------------------------------------------------------------------
+
 
 class TestPathAbortRejectOverrun:
     """Verify abort on reject budget overrun."""
@@ -535,7 +589,9 @@ class TestPathAbortRejectOverrun:
         ledger = SessionFailureBudgetLedger(config)
         for i in range(3):
             result = ledger.record_execution_event(
-                _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+                _reject_exec_obs(),
+                DivergenceSeverity.MEDIUM,
+                DivergenceType.UNEXPECTED_REJECT,
             )
         assert ledger.is_aborted
         assert "REJECT_BUDGET_OVERRUN" in ledger.abort_reason
@@ -546,7 +602,9 @@ class TestPathAbortRejectOverrun:
         ledger = SessionFailureBudgetLedger(config)
         for _ in range(2):
             ledger.record_execution_event(
-                _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+                _reject_exec_obs(),
+                DivergenceSeverity.MEDIUM,
+                DivergenceType.UNEXPECTED_REJECT,
             )
         assert ledger.observation.actual_session_path == SessionPath.ABORT_REJECT_OVERRUN
 
@@ -555,7 +613,9 @@ class TestPathAbortRejectOverrun:
         config = _budget_config(max_reject_per_session=1, forced_cooldown_seconds=600)
         ledger = SessionFailureBudgetLedger(config)
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         assert ledger.is_aborted
         assert ledger.is_cooldown_active
@@ -566,7 +626,9 @@ class TestPathAbortRejectOverrun:
         config = _budget_config(max_reject_per_session=1)
         ledger = SessionFailureBudgetLedger(config)
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         interp = ledger.compute_interpretation()
         assert interp.session_execution_stability == SessionStability.ABORTED
@@ -576,6 +638,7 @@ class TestPathAbortRejectOverrun:
 # ---------------------------------------------------------------------------
 # Path 4: Abort on Timeout Budget Overrun
 # ---------------------------------------------------------------------------
+
 
 class TestPathAbortTimeoutOverrun:
     """Verify abort on timeout budget overrun."""
@@ -589,7 +652,9 @@ class TestPathAbortTimeoutOverrun:
         ledger = SessionFailureBudgetLedger(config)
         for _ in range(2):
             ledger.record_execution_event(
-                _timeout_exec_obs(), DivergenceSeverity.HIGH, DivergenceType.UNEXPECTED_TIMEOUT,
+                _timeout_exec_obs(),
+                DivergenceSeverity.HIGH,
+                DivergenceType.UNEXPECTED_TIMEOUT,
             )
         assert ledger.is_aborted
         assert "TIMEOUT_BUDGET_OVERRUN" in ledger.abort_reason
@@ -601,7 +666,9 @@ class TestPathAbortTimeoutOverrun:
         )
         ledger = SessionFailureBudgetLedger(config)
         ledger.record_execution_event(
-            _timeout_exec_obs(), DivergenceSeverity.HIGH, DivergenceType.UNEXPECTED_TIMEOUT,
+            _timeout_exec_obs(),
+            DivergenceSeverity.HIGH,
+            DivergenceType.UNEXPECTED_TIMEOUT,
         )
         assert ledger.observation.actual_session_path == SessionPath.ABORT_TIMEOUT_OVERRUN
 
@@ -612,7 +679,9 @@ class TestPathAbortTimeoutOverrun:
         )
         ledger = SessionFailureBudgetLedger(config)
         ledger.record_execution_event(
-            _timeout_exec_obs(), DivergenceSeverity.HIGH, DivergenceType.UNEXPECTED_TIMEOUT,
+            _timeout_exec_obs(),
+            DivergenceSeverity.HIGH,
+            DivergenceType.UNEXPECTED_TIMEOUT,
         )
         assert ledger.is_cooldown_active
 
@@ -620,6 +689,7 @@ class TestPathAbortTimeoutOverrun:
 # ---------------------------------------------------------------------------
 # Path 5: Abort on High-Divergence Budget Overrun
 # ---------------------------------------------------------------------------
+
 
 class TestPathAbortDivergenceOverrun:
     """Verify abort on high-severity divergence budget overrun."""
@@ -635,7 +705,9 @@ class TestPathAbortDivergenceOverrun:
             timeout_flag=True,
         )
         ledger.record_execution_event(
-            obs, DivergenceSeverity.HIGH, DivergenceType.UNEXPECTED_TIMEOUT,
+            obs,
+            DivergenceSeverity.HIGH,
+            DivergenceType.UNEXPECTED_TIMEOUT,
         )
         assert ledger.is_aborted
         assert "HIGH_DIVERGENCE_OVERRUN" in ledger.abort_reason
@@ -649,7 +721,9 @@ class TestPathAbortDivergenceOverrun:
             actual_path=ExecutionPath.SUBMIT_ACK_CANCEL,
         )
         ledger.record_execution_event(
-            obs, DivergenceSeverity.HIGH, DivergenceType.UNEXPECTED_CANCEL,
+            obs,
+            DivergenceSeverity.HIGH,
+            DivergenceType.UNEXPECTED_CANCEL,
         )
         assert ledger.observation.actual_session_path == SessionPath.ABORT_DIVERGENCE_OVERRUN
 
@@ -657,6 +731,7 @@ class TestPathAbortDivergenceOverrun:
 # ---------------------------------------------------------------------------
 # Path 6: Cooldown Enforcement After Abort
 # ---------------------------------------------------------------------------
+
 
 class TestPathCooldownEnforcement:
     """Verify cooldown enforcement after abort."""
@@ -666,7 +741,9 @@ class TestPathCooldownEnforcement:
         config = _budget_config(max_reject_per_session=1, forced_cooldown_seconds=300)
         ledger = SessionFailureBudgetLedger(config)
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         assert ledger.is_aborted
         assert ledger.is_cooldown_active
@@ -677,7 +754,9 @@ class TestPathCooldownEnforcement:
         config = _budget_config(max_reject_per_session=1, forced_cooldown_seconds=600)
         ledger = SessionFailureBudgetLedger(config)
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         # Cooldown timestamp should be parseable
         cooldown_ts = ledger.cooldown_until
@@ -690,7 +769,9 @@ class TestPathCooldownEnforcement:
         config = _budget_config(max_reject_per_session=1)
         ledger = SessionFailureBudgetLedger(config)
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         assert ledger.observation.forced_cooldown_until is not None
 
@@ -699,7 +780,9 @@ class TestPathCooldownEnforcement:
         config = _budget_config(max_reject_per_session=1)
         ledger = SessionFailureBudgetLedger(config)
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         s = ledger.summary()
         assert s["cooldown_active"] is True
@@ -709,6 +792,7 @@ class TestPathCooldownEnforcement:
 # ---------------------------------------------------------------------------
 # Path 7: Cooldown Re-entry Denial
 # ---------------------------------------------------------------------------
+
 
 class TestPathCooldownReentryDenial:
     """Verify cooldown re-entry is denied."""
@@ -724,13 +808,17 @@ class TestPathCooldownReentryDenial:
         config = _budget_config(max_reject_per_session=1)
         ledger = SessionFailureBudgetLedger(config)
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         assert ledger.is_aborted
         assert ledger.is_cooldown_active
         # Try re-entry -> returns abort reason (not None = denied)
         result = ledger.record_execution_event(
-            _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+            _happy_exec_obs(),
+            DivergenceSeverity.NONE,
+            DivergenceType.NONE,
         )
         assert result is not None  # re-entry denied, not silently accepted
 
@@ -742,11 +830,15 @@ class TestPathCooldownReentryDenial:
         )
         ledger = SessionFailureBudgetLedger(config)
         ledger.record_execution_event(
-            _timeout_exec_obs(), DivergenceSeverity.HIGH, DivergenceType.UNEXPECTED_TIMEOUT,
+            _timeout_exec_obs(),
+            DivergenceSeverity.HIGH,
+            DivergenceType.UNEXPECTED_TIMEOUT,
         )
         assert ledger.is_aborted
         result = ledger.record_execution_event(
-            _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+            _happy_exec_obs(),
+            DivergenceSeverity.NONE,
+            DivergenceType.NONE,
         )
         assert isinstance(result, str)
         assert len(result) > 0
@@ -756,11 +848,15 @@ class TestPathCooldownReentryDenial:
         config = _budget_config(max_reject_per_session=1)
         ledger = SessionFailureBudgetLedger(config)
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         for _ in range(5):
             result = ledger.record_execution_event(
-                _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+                _happy_exec_obs(),
+                DivergenceSeverity.NONE,
+                DivergenceType.NONE,
             )
             assert result is not None
 
@@ -769,6 +865,7 @@ class TestPathCooldownReentryDenial:
 # Path 8: Blocker-Triggered Immediate Stop
 # ---------------------------------------------------------------------------
 
+
 class TestPathBlockerImmediateStop:
     """Verify blocker divergence triggers immediate session stop."""
 
@@ -776,7 +873,9 @@ class TestPathBlockerImmediateStop:
         """BLOCKER severity -> immediate abort regardless of budget."""
         ledger = SessionFailureBudgetLedger(_budget_config())
         result = ledger.record_execution_event(
-            _timeout_exec_obs(), DivergenceSeverity.BLOCKER, DivergenceType.UNEXPECTED_TIMEOUT,
+            _timeout_exec_obs(),
+            DivergenceSeverity.BLOCKER,
+            DivergenceType.UNEXPECTED_TIMEOUT,
         )
         assert ledger.is_aborted
         assert "BLOCKER_DIVERGENCE" in ledger.abort_reason
@@ -785,7 +884,9 @@ class TestPathBlockerImmediateStop:
         """Blocker sets session path to ABORT_BLOCKER."""
         ledger = SessionFailureBudgetLedger(_budget_config())
         ledger.record_execution_event(
-            _timeout_exec_obs(), DivergenceSeverity.BLOCKER, DivergenceType.UNEXPECTED_TIMEOUT,
+            _timeout_exec_obs(),
+            DivergenceSeverity.BLOCKER,
+            DivergenceType.UNEXPECTED_TIMEOUT,
         )
         assert ledger.observation.actual_session_path == SessionPath.ABORT_BLOCKER
 
@@ -802,7 +903,9 @@ class TestPathBlockerImmediateStop:
         assert not ledger.is_timeout_budget_exceeded()
         # BLOCKER still aborts
         ledger.record_execution_event(
-            _timeout_exec_obs(), DivergenceSeverity.BLOCKER, DivergenceType.UNEXPECTED_TIMEOUT,
+            _timeout_exec_obs(),
+            DivergenceSeverity.BLOCKER,
+            DivergenceType.UNEXPECTED_TIMEOUT,
         )
         assert ledger.is_aborted
 
@@ -810,7 +913,9 @@ class TestPathBlockerImmediateStop:
         """Blocker abort also activates cooldown."""
         ledger = SessionFailureBudgetLedger(_budget_config())
         ledger.record_execution_event(
-            _timeout_exec_obs(), DivergenceSeverity.BLOCKER, DivergenceType.UNEXPECTED_TIMEOUT,
+            _timeout_exec_obs(),
+            DivergenceSeverity.BLOCKER,
+            DivergenceType.UNEXPECTED_TIMEOUT,
         )
         assert ledger.is_cooldown_active
 
@@ -818,6 +923,7 @@ class TestPathBlockerImmediateStop:
 # ===========================================================================
 # MANDATORY OUTPUT 6: Per-Session Pass/Fail Criteria
 # ===========================================================================
+
 
 class TestPerSessionPassFailCriteria:
     """Verify per-session pass/fail criteria."""
@@ -827,7 +933,9 @@ class TestPerSessionPassFailCriteria:
         ledger = SessionFailureBudgetLedger(_budget_config())
         for _ in range(3):
             ledger.record_execution_event(
-                _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+                _happy_exec_obs(),
+                DivergenceSeverity.NONE,
+                DivergenceType.NONE,
             )
         ledger.complete_session()
         assert ledger.observation.actual_session_path == SessionPath.STABLE_COMPLETION
@@ -844,7 +952,9 @@ class TestPerSessionPassFailCriteria:
         config = _budget_config(max_reject_per_session=1)
         ledger = SessionFailureBudgetLedger(config)
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         assert ledger.abort_reason is not None
         assert len(ledger.abort_reason) > 0
@@ -858,7 +968,8 @@ class TestPerSessionPassFailCriteria:
     def test_pass_constitution_intact(self) -> None:
         """PASS: constitution remains intact."""
         r = run_all_checks(
-            params=_params(), regime_novelty_flag=False,
+            params=_params(),
+            regime_novelty_flag=False,
             current_state=PPFState.D6_EXECUTE_READY,
         )
         assert r.passed
@@ -869,7 +980,9 @@ class TestPerSessionPassFailCriteria:
         ledger = SessionFailureBudgetLedger(config)
         for _ in range(2):
             ledger.record_execution_event(
-                _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+                _reject_exec_obs(),
+                DivergenceSeverity.MEDIUM,
+                DivergenceType.UNEXPECTED_REJECT,
             )
         # Budget overrun -> abort was triggered (not missing)
         assert ledger.is_aborted
@@ -879,11 +992,15 @@ class TestPerSessionPassFailCriteria:
         config = _budget_config(max_reject_per_session=1)
         ledger = SessionFailureBudgetLedger(config)
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         # Re-entry blocked
         result = ledger.record_execution_event(
-            _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+            _happy_exec_obs(),
+            DivergenceSeverity.NONE,
+            DivergenceType.NONE,
         )
         assert result is not None  # denied, not silently accepted
 
@@ -891,6 +1008,7 @@ class TestPerSessionPassFailCriteria:
 # ===========================================================================
 # MANDATORY OUTPUT 7: Required Data/State/Event/Score/Log/Validation Path
 # ===========================================================================
+
 
 class TestRequiredDataPaths:
     """Verify all required data flows are connected."""
@@ -904,13 +1022,17 @@ class TestRequiredDataPaths:
         ledger = SessionFailureBudgetLedger(_budget_config())
         if gate_allows:
             exec_obs = ExecutionObservation(
-                order_submit_ts=_now_ts(), venue_ack_ts=_now_ts(),
+                order_submit_ts=_now_ts(),
+                venue_ack_ts=_now_ts(),
                 expected_path=ExecutionPath.SUBMIT_ACK_FILL,
                 actual_path=ExecutionPath.SUBMIT_ACK_FILL,
-                final_fill_qty=0.001, venue_latency_ms=50.0,
+                final_fill_qty=0.001,
+                venue_latency_ms=50.0,
             )
             result = ledger.record_execution_event(
-                exec_obs, DivergenceSeverity.NONE, DivergenceType.NONE,
+                exec_obs,
+                DivergenceSeverity.NONE,
+                DivergenceType.NONE,
             )
             assert result is None
 
@@ -918,7 +1040,9 @@ class TestRequiredDataPaths:
         """Execution events increment session counters."""
         ledger = SessionFailureBudgetLedger(_budget_config())
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         assert ledger.reject_count == 1
         assert ledger.total_failure_count == 1
@@ -927,7 +1051,9 @@ class TestRequiredDataPaths:
         """Session counters produce valid interpretation."""
         ledger = SessionFailureBudgetLedger(_budget_config())
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         interp = ledger.compute_interpretation()
         assert interp.session_execution_stability == SessionStability.DEGRADED
@@ -941,13 +1067,16 @@ class TestRequiredDataPaths:
 
         ledger = SessionFailureBudgetLedger(_budget_config())
         ledger.record_execution_event(
-            _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+            _happy_exec_obs(),
+            DivergenceSeverity.NONE,
+            DivergenceType.NONE,
         )
         assert ledger.session_id is not None
 
     def test_constitution_check_runs_in_lv3(self) -> None:
         result = run_all_checks(
-            params=_params(), regime_novelty_flag=False,
+            params=_params(),
+            regime_novelty_flag=False,
             current_state=PPFState.D1_IDLE,
         )
         assert result.passed
@@ -956,6 +1085,7 @@ class TestRequiredDataPaths:
 # ===========================================================================
 # MANDATORY OUTPUT 8: Execution Divergence Continuity Check
 # ===========================================================================
+
 
 class TestExecutionDivergenceContinuity:
     """Verify LV-2 execution divergence ledger continuity in LV-3."""
@@ -970,7 +1100,9 @@ class TestExecutionDivergenceContinuity:
         """Divergence events from session flow into divergence ledger."""
         ledger = SessionFailureBudgetLedger(_budget_config())
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         assert ledger.divergence_ledger.entry_count == 1
 
@@ -978,7 +1110,9 @@ class TestExecutionDivergenceContinuity:
         """Happy events (NONE type) don't add divergence entries."""
         ledger = SessionFailureBudgetLedger(_budget_config())
         ledger.record_execution_event(
-            _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+            _happy_exec_obs(),
+            DivergenceSeverity.NONE,
+            DivergenceType.NONE,
         )
         assert ledger.divergence_ledger.entry_count == 0
 
@@ -986,7 +1120,9 @@ class TestExecutionDivergenceContinuity:
         """Blocker in session also stops the underlying divergence ledger."""
         ledger = SessionFailureBudgetLedger(_budget_config())
         ledger.record_execution_event(
-            _timeout_exec_obs(), DivergenceSeverity.BLOCKER, DivergenceType.UNEXPECTED_TIMEOUT,
+            _timeout_exec_obs(),
+            DivergenceSeverity.BLOCKER,
+            DivergenceType.UNEXPECTED_TIMEOUT,
         )
         assert ledger.divergence_ledger.is_stopped
 
@@ -994,7 +1130,9 @@ class TestExecutionDivergenceContinuity:
         """Session summary includes divergence ledger statistics."""
         ledger = SessionFailureBudgetLedger(_budget_config())
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         summary = ledger.summary()
         assert "divergence_ledger_entries" in summary
@@ -1006,12 +1144,14 @@ class TestExecutionDivergenceContinuity:
 # MANDATORY OUTPUT 9: Session Failure Budget Ledger (comprehensive tests)
 # ===========================================================================
 
+
 class TestSessionFailureBudgetLedger:
     """Comprehensive tests for Session Failure Budget Ledger."""
 
     def test_config_is_frozen(self) -> None:
         """Budget config is frozen (C10 compliant)."""
         from dataclasses import FrozenInstanceError
+
         config = _budget_config()
         with pytest.raises(FrozenInstanceError):
             config.max_reject_per_session = 99  # type: ignore[misc]
@@ -1072,7 +1212,9 @@ class TestSessionFailureBudgetLedger:
         config = _budget_config(max_reject_per_session=1)
         ledger = SessionFailureBudgetLedger(config)
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         assert ledger.is_aborted
         # Try to complete -> ignored
@@ -1086,7 +1228,9 @@ class TestSessionFailureBudgetLedger:
         # 4/5 = 80% -> CRITICAL
         for _ in range(4):
             ledger.record_execution_event(
-                _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+                _reject_exec_obs(),
+                DivergenceSeverity.MEDIUM,
+                DivergenceType.UNEXPECTED_REJECT,
             )
         interp = ledger.compute_interpretation()
         assert interp.budget_pressure_state == BudgetPressureState.CRITICAL
@@ -1101,9 +1245,7 @@ class TestSessionFailureBudgetLedger:
 
     def test_venue_unreliable_on_high_divergence(self) -> None:
         """HIGH+ divergences -> UNRELIABLE venue."""
-        ledger = SessionFailureBudgetLedger(
-            _budget_config(max_high_divergence_per_session=10)
-        )
+        ledger = SessionFailureBudgetLedger(_budget_config(max_high_divergence_per_session=10))
         obs = ExecutionObservation(
             order_submit_ts=_now_ts(),
             expected_path=ExecutionPath.SUBMIT_ACK_FILL,
@@ -1111,7 +1253,9 @@ class TestSessionFailureBudgetLedger:
             timeout_flag=True,
         )
         ledger.record_execution_event(
-            obs, DivergenceSeverity.HIGH, DivergenceType.UNEXPECTED_TIMEOUT,
+            obs,
+            DivergenceSeverity.HIGH,
+            DivergenceType.UNEXPECTED_TIMEOUT,
         )
         interp = ledger.compute_interpretation()
         assert interp.venue_session_reliability == VenueSessionReliability.UNRELIABLE
@@ -1120,6 +1264,7 @@ class TestSessionFailureBudgetLedger:
 # ===========================================================================
 # Multi-Session Simulation
 # ===========================================================================
+
 
 class TestMultiSessionSimulation:
     """Simulate bounded LV-3 sessions."""
@@ -1130,7 +1275,9 @@ class TestMultiSessionSimulation:
         # 5 happy orders
         for _ in range(5):
             ledger.record_execution_event(
-                _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+                _happy_exec_obs(),
+                DivergenceSeverity.NONE,
+                DivergenceType.NONE,
             )
         ledger.update_exposure("SOL/USDT", 0.005)
         ledger.complete_session(degraded=False)
@@ -1148,15 +1295,21 @@ class TestMultiSessionSimulation:
         # 3 happy, 2 rejects, 2 happy
         for _ in range(3):
             ledger.record_execution_event(
-                _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+                _happy_exec_obs(),
+                DivergenceSeverity.NONE,
+                DivergenceType.NONE,
             )
         for _ in range(2):
             ledger.record_execution_event(
-                _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+                _reject_exec_obs(),
+                DivergenceSeverity.MEDIUM,
+                DivergenceType.UNEXPECTED_REJECT,
             )
         for _ in range(2):
             ledger.record_execution_event(
-                _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+                _happy_exec_obs(),
+                DivergenceSeverity.NONE,
+                DivergenceType.NONE,
             )
         ledger.complete_session(degraded=True)
 
@@ -1172,13 +1325,19 @@ class TestMultiSessionSimulation:
         ledger = SessionFailureBudgetLedger(config)
         # 1 happy, then 2 rejects -> abort
         ledger.record_execution_event(
-            _happy_exec_obs(), DivergenceSeverity.NONE, DivergenceType.NONE,
+            _happy_exec_obs(),
+            DivergenceSeverity.NONE,
+            DivergenceType.NONE,
         )
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
         ledger.record_execution_event(
-            _reject_exec_obs(), DivergenceSeverity.MEDIUM, DivergenceType.UNEXPECTED_REJECT,
+            _reject_exec_obs(),
+            DivergenceSeverity.MEDIUM,
+            DivergenceType.UNEXPECTED_REJECT,
         )
 
         s = ledger.summary()
@@ -1191,6 +1350,7 @@ class TestMultiSessionSimulation:
 # ===========================================================================
 # LV-3: Baseline Fingerprint Drift Detection
 # ===========================================================================
+
 
 class TestLV3BaselineFingerprint:
     """Verify source files match sealed baseline."""
@@ -1219,9 +1379,7 @@ class TestLV3BaselineFingerprint:
     def test_lv2_execution_ledger_unchanged(self) -> None:
         """LV-2 execution_ledger.py unchanged from LV-2 sealed baseline."""
         expected_prefix = "065247b809b6bdda"
-        actual = hashlib.sha256(
-            open("strategies/ppf/execution_ledger.py", "rb").read()
-        ).hexdigest()
+        actual = hashlib.sha256(open("strategies/ppf/execution_ledger.py", "rb").read()).hexdigest()
         assert actual.startswith(expected_prefix), (
             f"DRIFT: execution_ledger.py expected {expected_prefix}..., got {actual[:16]}..."
         )
@@ -1229,5 +1387,6 @@ class TestLV3BaselineFingerprint:
     def test_session_ledger_is_new_file(self) -> None:
         """session_ledger.py is a NEW file (LV-3 mandatory output)."""
         import os
+
         path = "strategies/ppf/session_ledger.py"
         assert os.path.exists(path), "session_ledger.py must exist"

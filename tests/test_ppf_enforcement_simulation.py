@@ -45,6 +45,7 @@ from strategies.ppf.session_ledger import SessionBudgetConfig, SessionFailureBud
 # Shared helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_params() -> PPFParameters:
     """Minimal valid PPFParameters for testing."""
     return PPFParameters(
@@ -69,8 +70,8 @@ def _make_session_ledger() -> SessionFailureBudgetLedger:
 
 def _make_ohlcv_provider() -> object:
     """Callable that returns minimal valid OHLCV arrays."""
-    highs  = np.linspace(101, 110, 50)
-    lows   = np.linspace(99,  108, 50)
+    highs = np.linspace(101, 110, 50)
+    lows = np.linspace(99, 108, 50)
     closes = np.linspace(100, 109, 50)
     volumes = np.ones(50) * 500.0
 
@@ -88,9 +89,13 @@ def _make_novelty_log_entry() -> PPFLogEntry:
         ppf_state=PPFState.D1_IDLE.value,
         allow_entry=False,
         filter_contribution_map={
-            "I1": -0.5, "I2": 0.1, "I3": 0.1,
-            "I4": 0.0,  "I5": 0.0,
-            "O4_raw": 0.05, "O5_raw": 0.04,
+            "I1": -0.5,
+            "I2": 0.1,
+            "I3": 0.1,
+            "I4": 0.0,
+            "I5": 0.0,
+            "O4_raw": 0.05,
+            "O5_raw": 0.04,
         },
         rejection_reason_code=RejectionCode.NOVELTY_BRAKE.value,
         reached_state=PPFState.D1_IDLE.value,
@@ -106,9 +111,13 @@ def _make_pass_log_entry() -> PPFLogEntry:
         ppf_state=PPFState.D6_EXECUTE_READY.value,
         allow_entry=True,
         filter_contribution_map={
-            "I1": 0.8, "I2": 0.7, "I3": 0.6,
-            "I4": 0.5, "I5": 0.4,
-            "O4_raw": 0.02, "O5_raw": 0.06,
+            "I1": 0.8,
+            "I2": 0.7,
+            "I3": 0.6,
+            "I4": 0.5,
+            "I5": 0.4,
+            "O4_raw": 0.02,
+            "O5_raw": 0.06,
         },
         rejection_reason_code=None,
         reached_state=PPFState.D6_EXECUTE_READY.value,
@@ -156,6 +165,7 @@ def _build_handler(
 # Test 1: shadow manifest allows even when novelty brake fires
 # ---------------------------------------------------------------------------
 
+
 class TestShadowManifestAllowsOnNoveltyBrake:
     """SHADOW_MANIFEST: enforce_deny=False means deny is overridden to allow."""
 
@@ -164,7 +174,7 @@ class TestShadowManifestAllowsOnNoveltyBrake:
         log_entry = _make_novelty_log_entry()
         handler = _build_handler(
             manifest=SHADOW_MANIFEST,
-            evaluate_return=False,   # gate denies
+            evaluate_return=False,  # gate denies
             log_entry=log_entry,
         )
 
@@ -175,9 +185,7 @@ class TestShadowManifestAllowsOnNoveltyBrake:
         )
 
         # Shadow must override: allowed=True regardless of raw deny
-        assert result.allowed is True, (
-            "SHADOW_MANIFEST must override gate deny to allowed=True"
-        )
+        assert result.allowed is True, "SHADOW_MANIFEST must override gate deny to allowed=True"
 
         # Raw gate decision must reflect the actual gate deny
         assert result.raw_gate_decision is False, (
@@ -207,6 +215,7 @@ class TestShadowManifestAllowsOnNoveltyBrake:
 # Test 2: paper manifest denies on novelty brake
 # ---------------------------------------------------------------------------
 
+
 class TestPaperManifestDeniesOnNoveltyBrake:
     """PAPER_MANIFEST: enforce_deny=True means raw gate deny is effective deny."""
 
@@ -215,7 +224,7 @@ class TestPaperManifestDeniesOnNoveltyBrake:
         log_entry = _make_novelty_log_entry()
         handler = _build_handler(
             manifest=PAPER_MANIFEST,
-            evaluate_return=False,   # gate denies
+            evaluate_return=False,  # gate denies
             log_entry=log_entry,
         )
 
@@ -256,6 +265,7 @@ class TestPaperManifestDeniesOnNoveltyBrake:
 # ---------------------------------------------------------------------------
 # Test 3: shadow-to-paper transition changes behavior
 # ---------------------------------------------------------------------------
+
 
 class TestShadowToPaperTransitionChangesBehavior:
     """Simulates the promotion transition: same gate state, different manifest."""
@@ -323,6 +333,7 @@ class TestShadowToPaperTransitionChangesBehavior:
 # Test 4: paper manifest allows when gate passes
 # ---------------------------------------------------------------------------
 
+
 class TestPaperManifestAllowsWhenGatePasses:
     """PAPER_MANIFEST: when gate passes (D6_EXECUTE_READY), result is allowed=True."""
 
@@ -331,7 +342,7 @@ class TestPaperManifestAllowsWhenGatePasses:
         log_entry = _make_pass_log_entry()
         handler = _build_handler(
             manifest=PAPER_MANIFEST,
-            evaluate_return=True,   # gate allows
+            evaluate_return=True,  # gate allows
             log_entry=log_entry,
         )
 
@@ -342,9 +353,7 @@ class TestPaperManifestAllowsWhenGatePasses:
         )
 
         # Gate passes; paper enforcement must preserve allow
-        assert result.allowed is True, (
-            "PAPER_MANIFEST must allow execution when gate passes"
-        )
+        assert result.allowed is True, "PAPER_MANIFEST must allow execution when gate passes"
 
         # Raw gate decision must also be True
         assert result.raw_gate_decision is True, (
@@ -352,9 +361,7 @@ class TestPaperManifestAllowsWhenGatePasses:
         )
 
         # No deny reason code when gate passes
-        assert result.deny_reason_code is None, (
-            "deny_reason_code must be None when gate passes"
-        )
+        assert result.deny_reason_code is None, "deny_reason_code must be None when gate passes"
 
         # Mode manifest must be PAPER
         assert result.mode_manifest == PAPER_MANIFEST
@@ -374,7 +381,7 @@ class TestPaperManifestAllowsWhenGatePasses:
         log_entry = _make_pass_log_entry()
 
         shadow_result = _build_handler(SHADOW_MANIFEST, True, log_entry).check_gate()
-        paper_result  = _build_handler(PAPER_MANIFEST,  True, log_entry).check_gate()
+        paper_result = _build_handler(PAPER_MANIFEST, True, log_entry).check_gate()
 
         assert shadow_result.allowed is True
         assert paper_result.allowed is True
@@ -385,6 +392,7 @@ class TestPaperManifestAllowsWhenGatePasses:
 # ---------------------------------------------------------------------------
 # Test 5: all manifests enforce_deny flag assertions
 # ---------------------------------------------------------------------------
+
 
 class TestAllManifestsEnforceDenyFlag:
     """Static assertions on the 4 predefined ModeCapabilityManifest instances."""
@@ -434,21 +442,18 @@ class TestAllManifestsEnforceDenyFlag:
     def test_all_manifests_record_lv2_true(self) -> None:
         """All manifests must record LV-2 (execution divergence logging)."""
         for manifest in (SHADOW_MANIFEST, PAPER_MANIFEST, GUARDED_MANIFEST, LIVE_MANIFEST):
-            assert manifest.record_lv2 is True, (
-                f"{manifest} must have record_lv2=True"
-            )
+            assert manifest.record_lv2 is True, f"{manifest} must have record_lv2=True"
 
     def test_all_manifests_record_lv3_true(self) -> None:
         """All manifests must record LV-3 (session ledger logging)."""
         for manifest in (SHADOW_MANIFEST, PAPER_MANIFEST, GUARDED_MANIFEST, LIVE_MANIFEST):
-            assert manifest.record_lv3 is True, (
-                f"{manifest} must have record_lv3=True"
-            )
+            assert manifest.record_lv3 is True, f"{manifest} must have record_lv3=True"
 
 
 # ---------------------------------------------------------------------------
 # Test 6: enforcement logic formula verification
 # ---------------------------------------------------------------------------
+
 
 class TestEnforcementLogicFormula:
     """Direct verification of the enforce_deny formula from the source.
@@ -457,12 +462,15 @@ class TestEnforcementLogicFormula:
     the formula: effective = raw OR NOT enforce_deny.
     """
 
-    @pytest.mark.parametrize("raw,enforce_deny,expected_effective", [
-        (False, False, True),   # SHADOW + deny -> allow (shadow override)
-        (False, True,  False),  # PAPER  + deny -> deny  (enforcement)
-        (True,  False, True),   # SHADOW + allow -> allow
-        (True,  True,  True),   # PAPER  + allow -> allow
-    ])
+    @pytest.mark.parametrize(
+        "raw,enforce_deny,expected_effective",
+        [
+            (False, False, True),  # SHADOW + deny -> allow (shadow override)
+            (False, True, False),  # PAPER  + deny -> deny  (enforcement)
+            (True, False, True),  # SHADOW + allow -> allow
+            (True, True, True),  # PAPER  + allow -> allow
+        ],
+    )
     def test_formula(
         self,
         raw: bool,
@@ -476,12 +484,15 @@ class TestEnforcementLogicFormula:
             f"-> effective={effective}, expected={expected_effective}"
         )
 
-    @pytest.mark.parametrize("raw,manifest,expected_allowed", [
-        (False, SHADOW_MANIFEST, True),
-        (False, PAPER_MANIFEST,  False),
-        (True,  SHADOW_MANIFEST, True),
-        (True,  PAPER_MANIFEST,  True),
-    ])
+    @pytest.mark.parametrize(
+        "raw,manifest,expected_allowed",
+        [
+            (False, SHADOW_MANIFEST, True),
+            (False, PAPER_MANIFEST, False),
+            (True, SHADOW_MANIFEST, True),
+            (True, PAPER_MANIFEST, True),
+        ],
+    )
     def test_handler_respects_formula(
         self,
         raw: bool,
@@ -509,6 +520,7 @@ class TestEnforcementLogicFormula:
 # Test 7: score threshold deny (non-novelty deny path)
 # ---------------------------------------------------------------------------
 
+
 class TestScoreThresholdDenyCode:
     """Verify SCORE_THRESHOLD_DENY is used when gate denies without novelty flag."""
 
@@ -520,15 +532,19 @@ class TestScoreThresholdDenyCode:
             ppf_state=PPFState.D1_IDLE.value,
             allow_entry=False,
             filter_contribution_map={
-                "I1": 0.1, "I2": 0.1, "I3": 0.1,
-                "I4": 0.0,  "I5": 0.0,
-                "O4_raw": 0.05, "O5_raw": 0.04,
+                "I1": 0.1,
+                "I2": 0.1,
+                "I3": 0.1,
+                "I4": 0.0,
+                "I5": 0.0,
+                "O4_raw": 0.05,
+                "O5_raw": 0.04,
             },
             rejection_reason_code=RejectionCode.SCORE_THRESHOLD_DENY.value
             if hasattr(RejectionCode, "SCORE_THRESHOLD_DENY")
             else RejectionCode.PATH_QUALITY_FAIL.value,
             reached_state=PPFState.D2_WATCH.value,
-            regime_novelty_flag=False,   # novelty flag NOT set
+            regime_novelty_flag=False,  # novelty flag NOT set
         )
 
     def test_shadow_score_threshold_deny_uses_correct_code(self) -> None:
@@ -538,7 +554,7 @@ class TestScoreThresholdDenyCode:
 
         result = handler.check_gate()
 
-        assert result.allowed is True   # shadow override
+        assert result.allowed is True  # shadow override
         assert result.raw_gate_decision is False
         assert result.deny_reason_code == DenyReasonCode.SCORE_THRESHOLD_DENY
 
@@ -549,6 +565,6 @@ class TestScoreThresholdDenyCode:
 
         result = handler.check_gate()
 
-        assert result.allowed is False   # paper enforcement
+        assert result.allowed is False  # paper enforcement
         assert result.raw_gate_decision is False
         assert result.deny_reason_code == DenyReasonCode.SCORE_THRESHOLD_DENY

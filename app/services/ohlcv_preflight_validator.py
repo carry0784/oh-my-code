@@ -47,7 +47,7 @@ class PreflightResult:
     last_ts: int = 0
     days_covered: float = 0.0
     data_hash: str = ""
-    checks: dict[str, bool] = field(default_factory=dict)   # per-check pass/fail
+    checks: dict[str, bool] = field(default_factory=dict)  # per-check pass/fail
     failure_reasons: list[str] = field(default_factory=list)
 
 
@@ -70,9 +70,9 @@ class OhlcvPreflightValidator:
     ALLOWED_SYMBOL = "SOL/USDT"
     ALLOWED_TIMEFRAME = "1h"
     MIN_COVERAGE_PCT = 95.0
-    MIN_CANDLES = 9600        # 400 days × 24 hours
-    MAX_GAP_COUNT = 48        # 2 days' worth of 1h gaps max
-    HOURLY_MS = 3_600_000     # milliseconds per hour — alignment divisor
+    MIN_CANDLES = 9600  # 400 days × 24 hours
+    MAX_GAP_COUNT = 48  # 2 days' worth of 1h gaps max
+    HOURLY_MS = 3_600_000  # milliseconds per hour — alignment divisor
 
     # ── Public Entry Point ────────────────────────────────────────────
 
@@ -197,9 +197,7 @@ class OhlcvPreflightValidator:
         reasons: list[str] = []
 
         if symbol != self.ALLOWED_SYMBOL:
-            reasons.append(
-                f"symbol_lock: got '{symbol}', only '{self.ALLOWED_SYMBOL}' allowed"
-            )
+            reasons.append(f"symbol_lock: got '{symbol}', only '{self.ALLOWED_SYMBOL}' allowed")
         if timeframe != self.ALLOWED_TIMEFRAME:
             reasons.append(
                 f"timeframe_lock: got '{timeframe}', only '{self.ALLOWED_TIMEFRAME}' allowed"
@@ -232,9 +230,7 @@ class OhlcvPreflightValidator:
         reasons: list[str] = []
 
         if report.total_candles < self.MIN_CANDLES:
-            reasons.append(
-                f"candle_count {report.total_candles} < MIN_CANDLES {self.MIN_CANDLES}"
-            )
+            reasons.append(f"candle_count {report.total_candles} < MIN_CANDLES {self.MIN_CANDLES}")
 
         if report.coverage_pct < self.MIN_COVERAGE_PCT:
             reasons.append(
@@ -262,17 +258,14 @@ class OhlcvPreflightValidator:
         Returns:
             (passed, duplicate_row_count, failure_reason_or_None)
         """
-        stmt = (
-            select(func.count())
-            .select_from(
-                select(OhlcvHistory.open_time)
-                .where(OhlcvHistory.exchange == exchange)
-                .where(OhlcvHistory.symbol == symbol)
-                .where(OhlcvHistory.timeframe == timeframe)
-                .group_by(OhlcvHistory.open_time)
-                .having(func.count() > 1)
-                .subquery()
-            )
+        stmt = select(func.count()).select_from(
+            select(OhlcvHistory.open_time)
+            .where(OhlcvHistory.exchange == exchange)
+            .where(OhlcvHistory.symbol == symbol)
+            .where(OhlcvHistory.timeframe == timeframe)
+            .group_by(OhlcvHistory.open_time)
+            .having(func.count() > 1)
+            .subquery()
         )
         duplicate_group_count: int = (await session.execute(stmt)).scalar_one() or 0
 

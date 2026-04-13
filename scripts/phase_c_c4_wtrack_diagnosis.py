@@ -76,9 +76,11 @@ SEGMENT_RATIOS_S3 = {"train": 0.60, "forward1": 0.20, "forward2": 0.15, "holdout
 # Data structures
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class WindowAnalysis:
     """Detailed analysis of a single WF window."""
+
     window_index: int
     is_bars: int = 0
     oos_bars: int = 0
@@ -97,6 +99,7 @@ class WindowAnalysis:
 @dataclass
 class StabilityProfile:
     """Full stability profile for one configuration."""
+
     label: str  # "baseline" or "s3"
     wf_result: WalkForwardResult | None = None
     efficiency_ratio: float = 0.0
@@ -111,6 +114,7 @@ class StabilityProfile:
 @dataclass
 class SegmentFitnessProfile:
     """Per-segment fitness for cliff analysis."""
+
     segment: str
     bars: int = 0
     trades: int = 0
@@ -121,6 +125,7 @@ class SegmentFitnessProfile:
 @dataclass
 class AssetWTrackDiagnosis:
     """Complete W-track diagnosis for one asset."""
+
     symbol: str
 
     # Baseline WF analysis
@@ -142,6 +147,7 @@ class AssetWTrackDiagnosis:
 # ---------------------------------------------------------------------------
 # Analysis functions
 # ---------------------------------------------------------------------------
+
 
 def run_wf_analysis(
     strategy: SMCWaveTrendStrategy,
@@ -193,8 +199,7 @@ def run_wf_analysis(
     profile.total_oos_unprofitable = unprofitable_count
     profile.scarcity_correlated_windows = scarcity_correlated
     profile.scarcity_correlation_pct = (
-        scarcity_correlated / unprofitable_count * 100
-        if unprofitable_count > 0 else 0.0
+        scarcity_correlated / unprofitable_count * 100 if unprofitable_count > 0 else 0.0
     )
 
     return profile
@@ -218,10 +223,12 @@ def compute_segment_fitness(
         "holdout": ohlcv[fw2_end:total],
     }
 
-    engine = BacktestingEngine(config=BacktestConfig(
-        initial_capital=10000.0,
-        position_size_pct=2.0,
-    ))
+    engine = BacktestingEngine(
+        config=BacktestConfig(
+            initial_capital=10000.0,
+            position_size_pct=2.0,
+        )
+    )
     fitness_fn = FitnessFunction(min_trades=MIN_TRADES)
     results = []
 
@@ -236,13 +243,15 @@ def compute_segment_fitness(
         else:
             fitness = 0.0  # penalty
 
-        results.append(SegmentFitnessProfile(
-            segment=seg_name,
-            bars=len(seg_data),
-            trades=trades_count,
-            fitness=round(float(fitness), 4),
-            min_trades_met=trades_count >= MIN_TRADES,
-        ))
+        results.append(
+            SegmentFitnessProfile(
+                segment=seg_name,
+                bars=len(seg_data),
+                trades=trades_count,
+                fitness=round(float(fitness), 4),
+                min_trades_met=trades_count >= MIN_TRADES,
+            )
+        )
 
     return results
 
@@ -274,11 +283,12 @@ def diagnose_cliff(
 # Main diagnosis
 # ---------------------------------------------------------------------------
 
+
 async def diagnose_asset(session, symbol: str) -> AssetWTrackDiagnosis:
     """Run full W-track diagnosis for one asset."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  {symbol} — W-track Forward Stability Diagnosis")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Step 1: Load OHLCV data
     hdm = HistoryDataManager()
@@ -296,18 +306,24 @@ async def diagnose_asset(session, symbol: str) -> AssetWTrackDiagnosis:
     # Step 2: Baseline WF analysis
     print(f"\n  [BASELINE] Running WalkForward (n_windows={N_WINDOWS})...")
     baseline = run_wf_analysis(strategy, ohlcv, "baseline")
-    print(f"    efficiency_ratio: {baseline.efficiency_ratio:.4f} (threshold: {WF_EFFICIENCY_THRESHOLD})")
+    print(
+        f"    efficiency_ratio: {baseline.efficiency_ratio:.4f} (threshold: {WF_EFFICIENCY_THRESHOLD})"
+    )
     print(f"    consistency: {baseline.consistency:.2f}")
     print(f"    is_overfit: {baseline.is_overfit}")
-    print(f"    scarcity-correlated OOS failures: "
-          f"{baseline.scarcity_correlated_windows}/{baseline.total_oos_unprofitable} "
-          f"({baseline.scarcity_correlation_pct:.0f}%)")
+    print(
+        f"    scarcity-correlated OOS failures: "
+        f"{baseline.scarcity_correlated_windows}/{baseline.total_oos_unprofitable} "
+        f"({baseline.scarcity_correlation_pct:.0f}%)"
+    )
 
     for wa in baseline.window_analyses:
         status = "OK" if wa.oos_profitable else "FAIL"
         scarcity = " [SCARCE]" if wa.trade_scarcity_flag else ""
-        print(f"    Window {wa.window_index}: IS={wa.is_trades}t/{wa.is_return:+.2f}% "
-              f"-> OOS={wa.oos_trades}t/{wa.oos_return:+.2f}% {status}{scarcity}")
+        print(
+            f"    Window {wa.window_index}: IS={wa.is_trades}t/{wa.is_return:+.2f}% "
+            f"-> OOS={wa.oos_trades}t/{wa.oos_return:+.2f}% {status}{scarcity}"
+        )
 
     # Step 3: Per-segment fitness (cliff analysis)
     print(f"\n  [CLIFF] Per-segment fitness (baseline ratios)...")
@@ -350,6 +366,7 @@ async def diagnose_asset(session, symbol: str) -> AssetWTrackDiagnosis:
 # Report generation
 # ---------------------------------------------------------------------------
 
+
 def generate_report(diagnoses: list[AssetWTrackDiagnosis]) -> str:
     """Generate C-4 deliverables as markdown."""
     lines = []
@@ -362,23 +379,35 @@ def generate_report(diagnoses: list[AssetWTrackDiagnosis]) -> str:
         bp = diag.baseline_profile
         lines.append(f"### {diag.symbol}")
         lines.append("")
-        lines.append(f"**WF efficiency:** {bp.efficiency_ratio:.4f} (threshold: {WF_EFFICIENCY_THRESHOLD})")
-        lines.append(f"**Consistency:** {bp.consistency:.2f} ({int(bp.consistency * N_WINDOWS)}/{N_WINDOWS} profitable)")
+        lines.append(
+            f"**WF efficiency:** {bp.efficiency_ratio:.4f} (threshold: {WF_EFFICIENCY_THRESHOLD})"
+        )
+        lines.append(
+            f"**Consistency:** {bp.consistency:.2f} ({int(bp.consistency * N_WINDOWS)}/{N_WINDOWS} profitable)"
+        )
         lines.append(f"**Is overfit:** {bp.is_overfit}")
         lines.append("")
-        lines.append("| Window | IS Trades | IS Return | OOS Trades | OOS Return | OOS Status | Scarcity? |")
-        lines.append("|--------|-----------|-----------|------------|------------|------------|-----------|")
+        lines.append(
+            "| Window | IS Trades | IS Return | OOS Trades | OOS Return | OOS Status | Scarcity? |"
+        )
+        lines.append(
+            "|--------|-----------|-----------|------------|------------|------------|-----------|"
+        )
 
         for wa in bp.window_analyses:
             status = "OK" if wa.oos_profitable else "**FAIL**"
             scarce = "**YES**" if wa.trade_scarcity_flag else "no"
-            lines.append(f"| {wa.window_index} | {wa.is_trades} | {wa.is_return:+.2f}% | "
-                         f"{wa.oos_trades} | {wa.oos_return:+.2f}% | {status} | {scarce} |")
+            lines.append(
+                f"| {wa.window_index} | {wa.is_trades} | {wa.is_return:+.2f}% | "
+                f"{wa.oos_trades} | {wa.oos_return:+.2f}% | {status} | {scarce} |"
+            )
 
         lines.append("")
-        lines.append(f"**Scarcity-correlated failures:** "
-                     f"{bp.scarcity_correlated_windows}/{bp.total_oos_unprofitable} "
-                     f"({bp.scarcity_correlation_pct:.0f}%)")
+        lines.append(
+            f"**Scarcity-correlated failures:** "
+            f"{bp.scarcity_correlated_windows}/{bp.total_oos_unprofitable} "
+            f"({bp.scarcity_correlation_pct:.0f}%)"
+        )
         lines.append("")
 
     # Deliverable 2: Cliff Analysis
@@ -409,9 +438,11 @@ def generate_report(diagnoses: list[AssetWTrackDiagnosis]) -> str:
 
     for diag in diagnoses:
         bp = diag.baseline_profile
-        lines.append(f"| {diag.symbol} | {bp.efficiency_ratio:.4f} | "
-                     f"{'Yes' if diag.has_cliff else 'No'} | {diag.cliff_cause} | "
-                     f"{bp.scarcity_correlation_pct:.0f}% | **{diag.step_verdict}** |")
+        lines.append(
+            f"| {diag.symbol} | {bp.efficiency_ratio:.4f} | "
+            f"{'Yes' if diag.has_cliff else 'No'} | {diag.cliff_cause} | "
+            f"{bp.scarcity_correlation_pct:.0f}% | **{diag.step_verdict}** |"
+        )
 
     lines.append("")
 
@@ -439,6 +470,7 @@ def generate_report(diagnoses: list[AssetWTrackDiagnosis]) -> str:
 # Main
 # ---------------------------------------------------------------------------
 
+
 async def run_diagnosis():
     print("=" * 60)
     print("Phase C C-4 — W-track Forward Stability Diagnosis")
@@ -455,9 +487,9 @@ async def run_diagnosis():
             diagnoses.append(diag)
 
     # Generate report
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("DELIVERABLES")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     report = generate_report(diagnoses)
     print(report)
@@ -503,17 +535,19 @@ async def run_diagnosis():
         }
 
         for wa in bp.window_analyses:
-            asset_data["windows"].append({
-                "window_index": wa.window_index,
-                "is_bars": wa.is_bars,
-                "oos_bars": wa.oos_bars,
-                "is_trades": wa.is_trades,
-                "oos_trades": wa.oos_trades,
-                "is_return": float(wa.is_return),
-                "oos_return": float(wa.oos_return),
-                "oos_profitable": bool(wa.oos_profitable),
-                "trade_scarcity_flag": bool(wa.trade_scarcity_flag),
-            })
+            asset_data["windows"].append(
+                {
+                    "window_index": wa.window_index,
+                    "is_bars": wa.is_bars,
+                    "oos_bars": wa.oos_bars,
+                    "is_trades": wa.is_trades,
+                    "oos_trades": wa.oos_trades,
+                    "is_return": float(wa.is_return),
+                    "oos_return": float(wa.oos_return),
+                    "oos_profitable": bool(wa.oos_profitable),
+                    "trade_scarcity_flag": bool(wa.trade_scarcity_flag),
+                }
+            )
 
         for sf in diag.segment_fitness:
             asset_data["segment_fitness"][sf.segment] = {
@@ -538,7 +572,9 @@ async def run_diagnosis():
 
     log_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "docs", "operations", "evidence",
+        "docs",
+        "operations",
+        "evidence",
         "phase_c_c4_wtrack_diagnosis_log.json",
     )
     with open(log_path, "w", encoding="utf-8") as f:

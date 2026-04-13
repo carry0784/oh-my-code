@@ -166,7 +166,8 @@ async def _run_ppf_shadow_eval_async(
     closes = np.array([bar[4] for bar in raw_bars], dtype=np.float64)
     volumes = np.array([bar[5] for bar in raw_bars], dtype=np.float64)
 
-    ohlcv_closure = lambda: (highs, lows, closes, volumes)
+    def ohlcv_closure():  # type: ignore[no-untyped-def]
+        return (highs, lows, closes, volumes)
 
     # Step 2c: Build PPFGateHandler (SHADOW_MANIFEST)
     params = PPFParameters(market_profile=MarketProfile.M1_CRYPTO_FUTURES)
@@ -238,8 +239,7 @@ async def _run_ppf_shadow_eval_async(
     task_result["status"] = "completed"
 
     logger.info(
-        "ppf_shadow_eval_completed symbol=%s allowed=%s raw=%s "
-        "deny_code=%s novelty=%s bars=%d",
+        "ppf_shadow_eval_completed symbol=%s allowed=%s raw=%s deny_code=%s novelty=%s bars=%d",
         symbol,
         gate_result.allowed,
         gate_result.raw_gate_decision,
@@ -326,7 +326,7 @@ async def _advance_observation_windows(
             # Find open observation windows for this symbol
             stmt = select(PPFNoveltyEvent).where(
                 PPFNoveltyEvent.symbol == symbol,
-                PPFNoveltyEvent.observation_window_closed == False,
+                PPFNoveltyEvent.observation_window_closed.is_(False),
             )
             rows = (await session.execute(stmt)).scalars().all()
 
@@ -340,6 +340,7 @@ async def _advance_observation_windows(
                     # Auto-judge using shared NoveltyJudgmentEngine
                     try:
                         from app.services.ppf_novelty_judgment import NoveltyJudgmentEngine
+
                         judge = NoveltyJudgmentEngine()
                         judgment, reason = judge.judge_single(
                             close_at_event=event.close_price_at_event,

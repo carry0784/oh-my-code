@@ -7,4 +7,13 @@ from app.models.ohlcv_history import OhlcvHistory
 from app.models.ppf_novelty_event import PPFNoveltyEvent
 from app.models.ppf_backtest_baseline import PPFBacktestBaseline
 
-__all__ = ["Order", "Signal", "Position", "Trade", "AssetSnapshot", "OhlcvHistory", "PPFNoveltyEvent", "PPFBacktestBaseline"]
+__all__ = [
+    "Order",
+    "Signal",
+    "Position",
+    "Trade",
+    "AssetSnapshot",
+    "OhlcvHistory",
+    "PPFNoveltyEvent",
+    "PPFBacktestBaseline",
+]

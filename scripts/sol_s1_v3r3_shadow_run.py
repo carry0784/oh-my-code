@@ -119,9 +119,7 @@ AUTHORITY_SOURCE_EXECUTION_MODE_PROTOCOL: Final[str] = (
 AUTHORITY_SOURCE_V3R2_RUN_GO_RECEIPT: Final[str] = (
     "docs/operations/evidence/sol_s1_v3r2_run_go_receipt.md"
 )
-AUTHORITY_SOURCE_C6_IMPL: Final[str] = (
-    "IMPL-C6-BOUNDED-SCOPE-001"
-)
+AUTHORITY_SOURCE_C6_IMPL: Final[str] = "IMPL-C6-BOUNDED-SCOPE-001"
 
 # ---------------------------------------------------------------------------
 # Triple-Lock Constants (inherited from V-3R2, RULE-EXEC-3)
@@ -147,8 +145,8 @@ COOLDOWN_BARS_DEFAULT: Final[int] = 4
 
 # C5: Minimum Denominator Grace — CONDITIONAL, dormant-by-default
 GRACE_MIN_GEN_ENV_KEY: Final[str] = "SOL_S1_V3_GRACE_MIN_GEN"
-GRACE_MIN_GEN_DEFAULT: Final[int] = 1   # dormant: K=1 means no grace
-GRACE_MIN_GEN_ACTIVE: Final[int] = 5    # active profile target
+GRACE_MIN_GEN_DEFAULT: Final[int] = 1  # dormant: K=1 means no grace
+GRACE_MIN_GEN_ACTIVE: Final[int] = 5  # active profile target
 
 # ---------------------------------------------------------------------------
 # V-3R3 Fork Constants
@@ -477,9 +475,7 @@ def simulate_shadow_bar_c6(
 
     if consensus_dir != 0:
         metrics.consensus_generated += 1
-        block_code = classify_block(
-            consensus_dir, open_positions, CONFIG_MAX_POSITIONS
-        )
+        block_code = classify_block(consensus_dir, open_positions, CONFIG_MAX_POSITIONS)
         if block_code is None:
             # Open new shadow position (UNCHANGED logic)
             sl = (
@@ -576,9 +572,7 @@ def classify_drift_state_c6(
         return (
             DriftState.RED,
             StopReason.INVALID_RUN,
-            truncate_detail(
-                f"invalid_bars={metrics.invalid_bars} >= 1 threshold"
-            ),
+            truncate_detail(f"invalid_bars={metrics.invalid_bars} >= 1 threshold"),
         )
 
     have_consensus = metrics.consensus_generated > 0
@@ -615,9 +609,7 @@ def classify_drift_state_c6(
         return (
             DriftState.RED,
             StopReason.RED_BLOCK_RATE,
-            truncate_detail(
-                f"block_rate={block_rate:.2f}% > {RED_BLOCK_THRESHOLD:.1f}% threshold"
-            ),
+            truncate_detail(f"block_rate={block_rate:.2f}% > {RED_BLOCK_THRESHOLD:.1f}% threshold"),
         )
 
     # SD ratio RED (UNCHANGED)
@@ -657,9 +649,7 @@ def classify_drift_state_c6(
     return (
         DriftState.GREEN,
         None,
-        truncate_detail(
-            f"ecr={ecr:.2f}% block={block_rate:.2f}% sd_delta=+{sd_delta:.2f}pp"
-        ),
+        truncate_detail(f"ecr={ecr:.2f}% block={block_rate:.2f}% sd_delta=+{sd_delta:.2f}pp"),
     )
 
 
@@ -735,9 +725,7 @@ def run_shadow_simulation_c6(
             )
         except Exception as exc:  # noqa: BLE001
             metrics.invalid_bars += 1
-            stop_detail = frozen.truncate_detail(
-                f"invalid bar {bar_index}: {type(exc).__name__}"
-            )
+            stop_detail = frozen.truncate_detail(f"invalid bar {bar_index}: {type(exc).__name__}")
 
         rolling_ecr.append(metrics.ecr)
         rolling_block.append(metrics.block_rate)
@@ -792,9 +780,7 @@ def run_shadow_simulation_c6(
 
     if bar_index >= bars_budget and final_state == frozen.DriftState.GREEN:
         stop_reason = frozen.StopReason.PASS_GREEN
-        stop_detail = frozen.truncate_detail(
-            f"completed {bar_index} bars in GREEN"
-        )
+        stop_detail = frozen.truncate_detail(f"completed {bar_index} bars in GREEN")
 
     evidence = frozen.EvidenceLog(
         run_id=run_id,
@@ -815,13 +801,11 @@ def run_shadow_simulation_c6(
         stop_reason_detail=stop_detail,
         started_at=started_at,
         ended_at=ended_at,
-        rolling_ecr_12=[round(x, 4) for x in rolling_ecr[-frozen.ROLLING_WINDOW:]],
-        rolling_block_rate_12=[round(x, 4) for x in rolling_block[-frozen.ROLLING_WINDOW:]],
-        rolling_sd_ratio_12=[round(x, 4) for x in rolling_sd[-frozen.ROLLING_WINDOW:]],
+        rolling_ecr_12=[round(x, 4) for x in rolling_ecr[-frozen.ROLLING_WINDOW :]],
+        rolling_block_rate_12=[round(x, 4) for x in rolling_block[-frozen.ROLLING_WINDOW :]],
+        rolling_sd_ratio_12=[round(x, 4) for x in rolling_sd[-frozen.ROLLING_WINDOW :]],
     )
-    evidence.receipt_completeness_pct = round(
-        frozen.compute_receipt_completeness(evidence), 2
-    )
+    evidence.receipt_completeness_pct = round(frozen.compute_receipt_completeness(evidence), 2)
     return evidence, c6_evidence
 
 
@@ -841,7 +825,9 @@ def run_frozen_counterfactual(
     This calls frozen.run_shadow_simulation directly — no C1/C5 gates.
     """
     return frozen.run_shadow_simulation(
-        ohlcv, run_id=f"{run_id}_frozen_cf", started_at=started_at,
+        ohlcv,
+        run_id=f"{run_id}_frozen_cf",
+        started_at=started_at,
     )
 
 
@@ -861,7 +847,9 @@ def build_comparator(
     comp = CounterfactualComparator(
         # frozen
         frozen_consensus_generated=int(
-            (frozen_evidence.ecr / 100.0) * 1 if frozen_evidence.ecr == 100.0 and frozen_evidence.bars_observed > 0 else 0
+            (frozen_evidence.ecr / 100.0) * 1
+            if frozen_evidence.ecr == 100.0 and frozen_evidence.bars_observed > 0
+            else 0
         ),
         frozen_ecr=frozen_evidence.ecr,
         frozen_final_state=frozen_evidence.final_state,
@@ -1035,22 +1023,24 @@ def write_v3r3_receipt(
     ]
     for k, v in c5_promotion.items():
         lines.append(f"- {k}: {v}")
-    lines.extend([
-        "",
-        "## Fork Accumulation Suppression",
-        "",
-        "V-3R4 creation prohibited until:",
-        "1. V-3R3 comparator evidence secured",
-        "2. C5 promotion condition evaluated",
-        "3. Consolidation necessity demonstrated",
-        "",
-        "## Binding",
-        "",
-        "STATE = STANDBY",
-        "RUN_AUTHORIZATION = NOT GRANTED",
-        "auto_advance = forbidden",
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Fork Accumulation Suppression",
+            "",
+            "V-3R4 creation prohibited until:",
+            "1. V-3R3 comparator evidence secured",
+            "2. C5 promotion condition evaluated",
+            "3. Consolidation necessity demonstrated",
+            "",
+            "## Binding",
+            "",
+            "STATE = STANDBY",
+            "RUN_AUTHORIZATION = NOT GRANTED",
+            "auto_advance = forbidden",
+            "",
+        ]
+    )
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
@@ -1105,9 +1095,7 @@ async def main_async_c6() -> int:
         return EXIT_FROZEN_IMPORT_FAILED
 
     # --- Load C6 parameters ---
-    cooldown_bars, grace_min_gen, activation_receipt = load_c6_parameters(
-        os.environ
-    )
+    cooldown_bars, grace_min_gen, activation_receipt = load_c6_parameters(os.environ)
 
     # --- Generate run ID and load data ---
     run_id = frozen.generate_run_id().replace("v3_shadow_", "v3r3_shadow_")
@@ -1116,9 +1104,7 @@ async def main_async_c6() -> int:
 
     print(f"[V-3R3] C6 shadow run - run_id={run_id}", flush=True)
 
-    ohlcv = await frozen.load_shadow_bars(
-        limit=frozen.MIN_BARS + frozen.YELLOW_EXTENSION_BARS
-    )
+    ohlcv = await frozen.load_shadow_bars(limit=frozen.MIN_BARS + frozen.YELLOW_EXTENSION_BARS)
     print(f"[V-3R3] loaded {len(ohlcv)} bars", flush=True)
 
     # --- Run 1: C6 simulation (primary, with active C1 and profile-C5) ---
@@ -1146,7 +1132,10 @@ async def main_async_c6() -> int:
 
     # --- Run 2: Frozen counterfactual (same data, no C1/C5) ---
     frozen_cf = run_frozen_counterfactual(
-        ohlcv, run_id=run_id, started_at=started_at, frozen=frozen,
+        ohlcv,
+        run_id=run_id,
+        started_at=started_at,
+        frozen=frozen,
     )
     print(
         f"[V-3R3][FROZEN-CF] final_state={frozen_cf.final_state} "
@@ -1253,9 +1242,7 @@ async def main_async_c6() -> int:
         run_started_monotonic=run_started_monotonic,
         run_completed_monotonic=run_completed_monotonic,
     )
-    frozen.write_completion_receipt_v3r1(
-        receipt_v3r1, frozen.COMPLETION_RECEIPT_V3R1_PATH
-    )
+    frozen.write_completion_receipt_v3r1(receipt_v3r1, frozen.COMPLETION_RECEIPT_V3R1_PATH)
 
     print(f"[V-3R3] evidence written to {V3R3_SHADOW_LOG_PATH}", flush=True)
     print(f"[V-3R3] receipt written to {V3R3_RECEIPT_PATH}", flush=True)

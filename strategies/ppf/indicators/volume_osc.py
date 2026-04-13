@@ -91,9 +91,7 @@ def get_volume_force_strength(
         Float in [-1.0, +1.0]. Returns 0.0 if insufficient data (fail-closed:
         0.0 means I3 = 0 which blocks D4 entry).
     """
-    strengths = compute_volume_oscillator(
-        closes, volumes, short_period, long_period
-    )
+    strengths = compute_volume_oscillator(closes, volumes, short_period, long_period)
     if len(strengths) == 0 or np.isnan(strengths[-1]):
         return 0.0  # fail-closed: neutral = blocks QUALIFIED entry
     return float(strengths[-1])

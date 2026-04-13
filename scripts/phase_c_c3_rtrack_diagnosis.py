@@ -74,9 +74,11 @@ ALL_REGIMES = ["trending_up", "trending_down", "ranging", "high_volatility", "cr
 # Data structures
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class RegimeBarStats:
     """Per-regime bar-level statistics."""
+
     regime: str
     bar_count: int = 0
     bar_share: float = 0.0  # fraction of total bars
@@ -85,6 +87,7 @@ class RegimeBarStats:
 @dataclass
 class RegimeTradeStats:
     """Per-regime trade-level statistics."""
+
     regime: str
     trade_count: int = 0
     trade_share: float = 0.0  # fraction of total trades
@@ -97,6 +100,7 @@ class RegimeTradeStats:
 @dataclass
 class RegimeFitnessStats:
     """Per-regime fitness approximation."""
+
     regime: str
     trade_count: int = 0
     win_rate: float = 0.0
@@ -107,6 +111,7 @@ class RegimeFitnessStats:
 @dataclass
 class SegmentRegimeProfile:
     """Regime distribution within a single segment."""
+
     segment_name: str
     total_bars: int = 0
     regime_bars: dict[str, int] = field(default_factory=dict)
@@ -120,6 +125,7 @@ class SegmentRegimeProfile:
 @dataclass
 class AssetRegimeDiagnosis:
     """Complete regime diagnosis for one asset."""
+
     symbol: str
 
     # Global regime distribution
@@ -149,6 +155,7 @@ class AssetRegimeDiagnosis:
 @dataclass
 class CrossAssetComparison:
     """Cross-asset regime asymmetry."""
+
     regime: str
     sol_share: float = 0.0
     btc_share: float = 0.0
@@ -159,6 +166,7 @@ class CrossAssetComparison:
 # ---------------------------------------------------------------------------
 # Computation functions
 # ---------------------------------------------------------------------------
+
 
 def compute_regime_labels(detector: RegimeDetector, ohlcv: list) -> list[str]:
     """Get per-bar regime labels."""
@@ -186,7 +194,7 @@ def compute_regime_distribution(labels: list[str]) -> tuple[dict[str, int], dict
 
 def compute_rds(shares: dict[str, float]) -> float:
     """Regime Diversity Score = 1 - HHI (Herfindahl-Hirschman Index)."""
-    hhi = sum(s ** 2 for s in shares.values())
+    hhi = sum(s**2 for s in shares.values())
     return 1.0 - hhi
 
 
@@ -284,15 +292,17 @@ def classify_trades_by_regime(
         losses = count - wins
         total_ret = sum(t.return_pct for t in r_trades)
 
-        stats_list.append(RegimeTradeStats(
-            regime=regime,
-            trade_count=count,
-            trade_share=round(count / total_trades, 4) if total_trades > 0 else 0.0,
-            win_count=wins,
-            loss_count=losses,
-            win_rate=round(wins / count, 4) if count > 0 else 0.0,
-            total_return_pct=round(total_ret, 4),
-        ))
+        stats_list.append(
+            RegimeTradeStats(
+                regime=regime,
+                trade_count=count,
+                trade_share=round(count / total_trades, 4) if total_trades > 0 else 0.0,
+                win_count=wins,
+                loss_count=losses,
+                win_rate=round(wins / count, 4) if count > 0 else 0.0,
+                total_return_pct=round(total_ret, 4),
+            )
+        )
 
     return stats_list
 
@@ -301,11 +311,12 @@ def classify_trades_by_regime(
 # Main diagnosis
 # ---------------------------------------------------------------------------
 
+
 async def diagnose_asset(session, symbol: str) -> AssetRegimeDiagnosis:
     """Run full regime diagnosis for one asset."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  {symbol} — R-track Regime Diagnosis")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Step 1: Load OHLCV data
     hdm = HistoryDataManager()
@@ -342,17 +353,21 @@ async def diagnose_asset(session, symbol: str) -> AssetRegimeDiagnosis:
         start, end = boundaries[seg_name]
         profile = build_segment_regime_profile(seg_name, labels, start, end)
         seg_profiles.append(profile)
-        print(f"\n  [{seg_name}] bars={profile.total_bars} RDS={profile.rds:.4f} "
-              f"dominant={profile.dominant_regime}({profile.dominant_share:.1%}) "
-              f"effective_regimes={profile.effective_regime_count}")
+        print(
+            f"\n  [{seg_name}] bars={profile.total_bars} RDS={profile.rds:.4f} "
+            f"dominant={profile.dominant_regime}({profile.dominant_share:.1%}) "
+            f"effective_regimes={profile.effective_regime_count}"
+        )
 
     # Step 5: Run backtest to get trades for regime-trade cross-reference
     print(f"\n  Running backtest for trade-regime mapping...")
     strategy = SMCWaveTrendStrategy(symbol=symbol)
-    bt_engine = BacktestingEngine(config=BacktestConfig(
-        initial_capital=10000.0,
-        position_size_pct=2.0,
-    ))
+    bt_engine = BacktestingEngine(
+        config=BacktestConfig(
+            initial_capital=10000.0,
+            position_size_pct=2.0,
+        )
+    )
     bt_result = bt_engine.run(strategy, ohlcv)
     all_trades = bt_result.trades if bt_result.trades else []
     print(f"  Total trades: {len(all_trades)}")
@@ -364,10 +379,12 @@ async def diagnose_asset(session, symbol: str) -> AssetRegimeDiagnosis:
     print(f"\n  Regime-Trade Distribution:")
     for rts in regime_trade_stats:
         if rts.trade_count > 0:
-            print(f"    {rts.regime}: {rts.trade_count} trades "
-                  f"({rts.trade_share:.1%}), "
-                  f"win_rate={rts.win_rate:.1%}, "
-                  f"return={rts.total_return_pct:+.2f}%")
+            print(
+                f"    {rts.regime}: {rts.trade_count} trades "
+                f"({rts.trade_share:.1%}), "
+                f"win_rate={rts.win_rate:.1%}, "
+                f"return={rts.total_return_pct:+.2f}%"
+            )
 
     # Step 7: Identify blank zones (regimes present in data but 0 trades)
     blank_zones = []
@@ -422,13 +439,15 @@ def compute_asset_asymmetry(
         sol_share = sol.global_regime_shares.get(regime, 0.0)
         btc_share = btc.global_regime_shares.get(regime, 0.0)
         delta = abs(sol_share - btc_share)
-        comparisons.append(CrossAssetComparison(
-            regime=regime,
-            sol_share=round(sol_share, 4),
-            btc_share=round(btc_share, 4),
-            delta=round(delta, 4),
-            asymmetric=delta > 0.10,
-        ))
+        comparisons.append(
+            CrossAssetComparison(
+                regime=regime,
+                sol_share=round(sol_share, 4),
+                btc_share=round(btc_share, 4),
+                delta=round(delta, 4),
+                asymmetric=delta > 0.10,
+            )
+        )
 
     return comparisons
 
@@ -436,6 +455,7 @@ def compute_asset_asymmetry(
 # ---------------------------------------------------------------------------
 # Report generation
 # ---------------------------------------------------------------------------
+
 
 def generate_report(
     diagnoses: list[AssetRegimeDiagnosis],
@@ -466,14 +486,19 @@ def generate_report(
                     trade_share = rts.trade_share
                     break
             if bars > 0 or trade_count > 0:
-                lines.append(f"| {regime} | {bars} | {share:.1%} | "
-                             f"{trade_count} | {trade_share:.1%} |")
+                lines.append(
+                    f"| {regime} | {bars} | {share:.1%} | {trade_count} | {trade_share:.1%} |"
+                )
 
         lines.append("")
         lines.append(f"**RDS:** {diag.global_rds:.4f} (threshold: {RDS_THRESHOLD})")
-        lines.append(f"**Dominant regime:** {diag.global_dominant_regime} ({diag.global_dominant_share:.1%})")
+        lines.append(
+            f"**Dominant regime:** {diag.global_dominant_regime} ({diag.global_dominant_share:.1%})"
+        )
         lines.append(f"**Effective regime count:** {diag.global_effective_regime_count}")
-        lines.append(f"**Blank zones:** {diag.regime_blank_zones if diag.regime_blank_zones else 'none'}")
+        lines.append(
+            f"**Blank zones:** {diag.regime_blank_zones if diag.regime_blank_zones else 'none'}"
+        )
         lines.append(f"**RDS PASS:** {diag.rds_pass}")
         lines.append(f"**Step verdict:** **{diag.step_verdict}**")
         lines.append("")
@@ -489,9 +514,11 @@ def generate_report(
         lines.append("|---------|------|----------|-----------|-------------|-----|")
 
         for sp in diag.segment_profiles:
-            lines.append(f"| {sp.segment_name} | {sp.total_bars} | "
-                         f"{sp.dominant_regime} | {sp.dominant_share:.1%} | "
-                         f"{sp.effective_regime_count} | {sp.rds:.4f} |")
+            lines.append(
+                f"| {sp.segment_name} | {sp.total_bars} | "
+                f"{sp.dominant_regime} | {sp.dominant_share:.1%} | "
+                f"{sp.effective_regime_count} | {sp.rds:.4f} |"
+            )
 
         lines.append("")
 
@@ -507,17 +534,21 @@ def generate_report(
 
         for rts in diag.regime_trade_stats:
             if rts.trade_count > 0 or diag.global_regime_bars.get(rts.regime, 0) > 0:
-                lines.append(f"| {rts.regime} | {rts.trade_count} | "
-                             f"{rts.trade_share:.1%} | {rts.win_rate:.1%} | "
-                             f"{rts.total_return_pct:+.2f}% |")
+                lines.append(
+                    f"| {rts.regime} | {rts.trade_count} | "
+                    f"{rts.trade_share:.1%} | {rts.win_rate:.1%} | "
+                    f"{rts.total_return_pct:+.2f}% |"
+                )
 
         lines.append("")
         # Trade concentration
         total_trades = sum(rts.trade_count for rts in diag.regime_trade_stats)
         dom_trade_regime = max(diag.regime_trade_stats, key=lambda x: x.trade_count)
         if total_trades > 0:
-            lines.append(f"**Trade concentration:** {dom_trade_regime.trade_count}/{total_trades} "
-                         f"({dom_trade_regime.trade_share:.1%}) in {dom_trade_regime.regime}")
+            lines.append(
+                f"**Trade concentration:** {dom_trade_regime.trade_count}/{total_trades} "
+                f"({dom_trade_regime.trade_share:.1%}) in {dom_trade_regime.regime}"
+            )
         lines.append("")
 
     # Deliverable 4: Asset Regime Asymmetry
@@ -528,8 +559,10 @@ def generate_report(
 
     for cmp in asymmetry:
         asym_mark = "**YES**" if cmp.asymmetric else "no"
-        lines.append(f"| {cmp.regime} | {cmp.sol_share:.1%} | "
-                     f"{cmp.btc_share:.1%} | {cmp.delta:.1%} | {asym_mark} |")
+        lines.append(
+            f"| {cmp.regime} | {cmp.sol_share:.1%} | "
+            f"{cmp.btc_share:.1%} | {cmp.delta:.1%} | {asym_mark} |"
+        )
 
     lines.append("")
 
@@ -567,6 +600,7 @@ def generate_report(
 # Main
 # ---------------------------------------------------------------------------
 
+
 async def run_diagnosis():
     print("=" * 60)
     print("Phase C C-3 — R-track Regime Diversity Diagnosis")
@@ -584,19 +618,21 @@ async def run_diagnosis():
     # Cross-asset asymmetry
     asymmetry = compute_asset_asymmetry(diagnoses[0], diagnoses[1])
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("ASSET REGIME ASYMMETRY")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     for cmp in asymmetry:
         if cmp.delta > 0.01:
             mark = " ** ASYMMETRIC" if cmp.asymmetric else ""
-            print(f"  {cmp.regime}: SOL={cmp.sol_share:.1%} BTC={cmp.btc_share:.1%} "
-                  f"delta={cmp.delta:.1%}{mark}")
+            print(
+                f"  {cmp.regime}: SOL={cmp.sol_share:.1%} BTC={cmp.btc_share:.1%} "
+                f"delta={cmp.delta:.1%}{mark}"
+            )
 
     # Generate report
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("DELIVERABLES")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     report = generate_report(diagnoses, asymmetry)
     print(report)
@@ -686,7 +722,9 @@ async def run_diagnosis():
 
     log_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "docs", "operations", "evidence",
+        "docs",
+        "operations",
+        "evidence",
         "phase_c_c3_rtrack_diagnosis_log.json",
     )
     with open(log_path, "w", encoding="utf-8") as f:

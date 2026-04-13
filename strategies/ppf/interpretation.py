@@ -66,11 +66,7 @@ def compute_scores(obs: ObservationFields) -> InterpretationScores:
         I5 = O5 / max(O4, eps)
     """
     # I1: projection_bias_score = direction * consensus * similarity
-    i1 = (
-        obs.projection_direction
-        * obs.projection_consensus_ratio
-        * obs.pattern_similarity_score
-    )
+    i1 = obs.projection_direction * obs.projection_consensus_ratio * obs.pattern_similarity_score
 
     # I2: trend_alignment_score = sign(projection_direction) * ssl_strength
     # When O2=0, sign=0, so I2=0 (blocks D4 entry - correct fail-closed)

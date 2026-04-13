@@ -174,9 +174,7 @@ DESIGN_REF_V3R1: str = "docs/operations/evidence/sol_s1_v3r1_design.md"
 IMPL_COMPLETION_RECEIPT_V3R1_REF: str = (
     "docs/operations/evidence/sol_s1_v3r1_impl_completion_receipt.md"
 )
-SCOPE_LOCK_CONTRACT_REF: str = (
-    "sol_s1_v3r1_scope_lock_go.md#forbidden_count_contract"
-)
+SCOPE_LOCK_CONTRACT_REF: str = "sol_s1_v3r1_scope_lock_go.md#forbidden_count_contract"
 
 # V-3R1 corrective-only declaration (fixed text, paste-ready from explicit GO §8)
 CORRECTIVE_SCOPE_DECLARATION_V3R1: str = (
@@ -185,9 +183,7 @@ CORRECTIVE_SCOPE_DECLARATION_V3R1: str = (
 )
 
 # V-3R1 completion receipt path (separate artifact; V-3 receipt path untouched)
-COMPLETION_RECEIPT_V3R1_PATH: Path = (
-    EVIDENCE_DIR / "sol_s1_v3r1_run_completion_receipt.md"
-)
+COMPLETION_RECEIPT_V3R1_PATH: Path = EVIDENCE_DIR / "sol_s1_v3r1_run_completion_receipt.md"
 
 # Execution mode enum values (V-3R1 explicit GO §execution_mode 판정 규칙 잠금)
 # Speed-only judgment is forbidden; declared value is primary.
@@ -289,11 +285,7 @@ class ShadowMetrics:
 
     @property
     def total_blocks(self) -> int:
-        return (
-            self.block_max_positions
-            + self.block_same_direction
-            + self.block_opposite_direction
-        )
+        return self.block_max_positions + self.block_same_direction + self.block_opposite_direction
 
     @property
     def ecr(self) -> float:
@@ -624,9 +616,7 @@ def classify_drift_state(
         return (
             DriftState.RED,
             StopReason.INVALID_RUN,
-            truncate_detail(
-                f"invalid_bars={metrics.invalid_bars} >= 1 threshold"
-            ),
+            truncate_detail(f"invalid_bars={metrics.invalid_bars} >= 1 threshold"),
         )
 
     # Only evaluate ECR/block if we have at least one consensus signal
@@ -641,17 +631,13 @@ def classify_drift_state(
         return (
             DriftState.RED,
             StopReason.RED_ECR,
-            truncate_detail(
-                f"ecr={ecr:.2f}% < {RED_ECR_THRESHOLD:.1f}% threshold"
-            ),
+            truncate_detail(f"ecr={ecr:.2f}% < {RED_ECR_THRESHOLD:.1f}% threshold"),
         )
     if block_rate > RED_BLOCK_THRESHOLD:
         return (
             DriftState.RED,
             StopReason.RED_BLOCK_RATE,
-            truncate_detail(
-                f"block_rate={block_rate:.2f}% > {RED_BLOCK_THRESHOLD:.1f}% threshold"
-            ),
+            truncate_detail(f"block_rate={block_rate:.2f}% > {RED_BLOCK_THRESHOLD:.1f}% threshold"),
         )
     if sd_delta > RED_SD_DELTA_THRESHOLD:
         return (
@@ -689,9 +675,7 @@ def classify_drift_state(
     return (
         DriftState.GREEN,
         None,
-        truncate_detail(
-            f"ecr={ecr:.2f}% block={block_rate:.2f}% sd_delta=+{sd_delta:.2f}pp"
-        ),
+        truncate_detail(f"ecr={ecr:.2f}% block={block_rate:.2f}% sd_delta=+{sd_delta:.2f}pp"),
     )
 
 
@@ -800,10 +784,7 @@ def classify_run_result_class(
     It encodes only the coarse terminal classification required by the
     V-3R1 Shadow Results Summary block.
     """
-    if (
-        final_state == DriftState.GREEN
-        and stop_reason == StopReason.PASS_GREEN
-    ):
+    if final_state == DriftState.GREEN and stop_reason == StopReason.PASS_GREEN:
         # Corrective-only PASS — NOT a V-3 shadow verification PASS.
         return "CORRECTIVE_PASS_GREEN"
     if final_state == DriftState.YELLOW:
@@ -830,9 +811,7 @@ def build_completion_receipt_v3r1(
     finished EvidenceLog and wraps it in the V-3R1 25-field structure.
     """
     # Runtime duration from monotonic clock (immune to wall-clock jumps).
-    run_duration_ms = int(
-        max(0.0, (run_completed_monotonic - run_started_monotonic) * 1000.0)
-    )
+    run_duration_ms = int(max(0.0, (run_completed_monotonic - run_started_monotonic) * 1000.0))
     if run_duration_ms > 0 and evidence.bars_observed > 0:
         bars_per_second = evidence.bars_observed / (run_duration_ms / 1000.0)
     else:
@@ -947,9 +926,7 @@ def simulate_shadow_bar(
 
     if consensus_dir != 0:
         metrics.consensus_generated += 1
-        block_code = classify_block(
-            consensus_dir, open_positions, CONFIG_MAX_POSITIONS
-        )
+        block_code = classify_block(consensus_dir, open_positions, CONFIG_MAX_POSITIONS)
         if block_code is None:
             # Open new shadow position
             sl = (
@@ -1047,17 +1024,13 @@ def run_shadow_simulation(
             )
         except Exception as exc:  # noqa: BLE001
             metrics.invalid_bars += 1
-            stop_detail = truncate_detail(
-                f"invalid bar {bar_index}: {type(exc).__name__}"
-            )
+            stop_detail = truncate_detail(f"invalid bar {bar_index}: {type(exc).__name__}")
 
         rolling_ecr.append(metrics.ecr)
         rolling_block.append(metrics.block_rate)
         rolling_sd.append(metrics.same_direction_ratio)
 
-        state, stop_reason_candidate, detail = classify_drift_state(
-            metrics, rolling_ecr
-        )
+        state, stop_reason_candidate, detail = classify_drift_state(metrics, rolling_ecr)
         final_state = state
 
         if state == DriftState.RED:
@@ -1077,9 +1050,7 @@ def run_shadow_simulation(
                 # Extension used; once we exceed base budget remain in Yellow
                 if bar_index + 1 >= bars_budget:
                     stop_reason = StopReason.YELLOW_EXTENSION_EXHAUSTED
-                    stop_detail = truncate_detail(
-                        f"yellow persisted after extension: {detail}"
-                    )
+                    stop_detail = truncate_detail(f"yellow persisted after extension: {detail}")
                     bar_index += 1
                     break
 
@@ -1090,9 +1061,7 @@ def run_shadow_simulation(
     # Final classification if not stopped early
     if bar_index >= bars_budget and final_state == DriftState.GREEN:
         stop_reason = StopReason.PASS_GREEN
-        stop_detail = truncate_detail(
-            f"completed {bar_index} bars in GREEN"
-        )
+        stop_detail = truncate_detail(f"completed {bar_index} bars in GREEN")
 
     evidence = EvidenceLog(
         run_id=run_id,
@@ -1117,9 +1086,7 @@ def run_shadow_simulation(
         rolling_block_rate_12=[round(x, 4) for x in rolling_block[-ROLLING_WINDOW:]],
         rolling_sd_ratio_12=[round(x, 4) for x in rolling_sd[-ROLLING_WINDOW:]],
     )
-    evidence.receipt_completeness_pct = round(
-        compute_receipt_completeness(evidence), 2
-    )
+    evidence.receipt_completeness_pct = round(compute_receipt_completeness(evidence), 2)
     return evidence
 
 
@@ -1180,9 +1147,7 @@ def write_completion_receipt(evidence: EvidenceLog, path: Path) -> None:
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def write_completion_receipt_v3r1(
-    receipt: CompletionReceipt, path: Path
-) -> None:
+def write_completion_receipt_v3r1(receipt: CompletionReceipt, path: Path) -> None:
     """Write the V-3R1 corrective completion receipt markdown file.
 
     This is a NEW artifact separate from `write_completion_receipt` above;
@@ -1224,10 +1189,7 @@ def write_completion_receipt_v3r1(
         "",
         f"- baseline_mutation: {str(receipt.baseline_mutation).lower()}",
         f"- fallback_executed: {str(receipt.fallback_executed).lower()}",
-        (
-            f"- code_mutation_during_run: "
-            f"{str(receipt.code_mutation_during_run).lower()}"
-        ),
+        (f"- code_mutation_during_run: {str(receipt.code_mutation_during_run).lower()}"),
         f"- scope_lock_respected: {str(receipt.scope_lock_respected).lower()}",
         "",
         "## Meta-layer Core (5)",
@@ -1398,10 +1360,7 @@ def validate_thresholds() -> ValidationResult:
     return ValidationResult(
         name="state_thresholds",
         passed=ok,
-        detail=(
-            f"green: ecr>=60, block<=40, sd<=+10; "
-            f"yellow: ecr>=55, block<=45, sd<=+15"
-        ),
+        detail=(f"green: ecr>=60, block<=40, sd<=+10; yellow: ecr>=55, block<=45, sd<=+15"),
     )
 
 
@@ -1491,10 +1450,7 @@ def validate_execution_mode_logic_v3r1() -> ValidationResult:
         run_duration_ms=1000,
         bars_per_second=100.0,
     )
-    case1_ok = (
-        m1 == EXECUTION_MODE_HISTORICAL_REPLAY
-        and c1 == MODE_CONSISTENCY_CONSISTENT
-    )
+    case1_ok = m1 == EXECUTION_MODE_HISTORICAL_REPLAY and c1 == MODE_CONSISTENCY_CONSISTENT
 
     # Case 2: declared realtime_shadow with slow speed → consistent
     m2, _, c2 = determine_execution_mode(
@@ -1503,10 +1459,7 @@ def validate_execution_mode_logic_v3r1() -> ValidationResult:
         run_duration_ms=3_600_000,
         bars_per_second=0.0003,
     )
-    case2_ok = (
-        m2 == EXECUTION_MODE_REALTIME_SHADOW
-        and c2 == MODE_CONSISTENCY_CONSISTENT
-    )
+    case2_ok = m2 == EXECUTION_MODE_REALTIME_SHADOW and c2 == MODE_CONSISTENCY_CONSISTENT
 
     # Case 3: missing declared value → ambiguous (NOT inferred from high speed)
     m3, s3, c3 = determine_execution_mode(
@@ -1529,10 +1482,7 @@ def validate_execution_mode_logic_v3r1() -> ValidationResult:
         run_duration_ms=86_400_000,
         bars_per_second=0.001,
     )
-    case4_ok = (
-        m4 == EXECUTION_MODE_HISTORICAL_REPLAY
-        and c4 == MODE_CONSISTENCY_WARNING
-    )
+    case4_ok = m4 == EXECUTION_MODE_HISTORICAL_REPLAY and c4 == MODE_CONSISTENCY_WARNING
 
     ok = all([case1_ok, case2_ok, case3_ok, case4_ok])
     return ValidationResult(
@@ -1583,10 +1533,7 @@ def validate_completion_receipt_instantiable_v3r1() -> ValidationResult:
         return ValidationResult(
             name="v3r1_completion_receipt_instantiable",
             passed=ok and total_fields == expected_total,
-            detail=(
-                f"missing={missing} total_fields={total_fields} "
-                f"expected={expected_total}"
-            ),
+            detail=(f"missing={missing} total_fields={total_fields} expected={expected_total}"),
         )
     except Exception as exc:  # noqa: BLE001
         return ValidationResult(
@@ -1603,12 +1550,8 @@ def validate_v3r1_reference_constants() -> ValidationResult:
         and "sol_s1_v3r1_impl_start_go.md" in IMPL_START_GO_V3R1_REF
         and "sol_s1_v3r1_scope_lock_go.md" in SCOPE_LOCK_GO_V3R1_REF
         and "sol_s1_v3r1_go_receipt.md" in ANCHOR_GO_V3R1_REF
-        and (
-            "sol_s1_v3r1_impl_completion_receipt.md"
-            in IMPL_COMPLETION_RECEIPT_V3R1_REF
-        )
-        and SCOPE_LOCK_CONTRACT_REF
-        == "sol_s1_v3r1_scope_lock_go.md#forbidden_count_contract"
+        and ("sol_s1_v3r1_impl_completion_receipt.md" in IMPL_COMPLETION_RECEIPT_V3R1_REF)
+        and SCOPE_LOCK_CONTRACT_REF == "sol_s1_v3r1_scope_lock_go.md#forbidden_count_contract"
         and "corrective" in CORRECTIVE_SCOPE_DECLARATION_V3R1
         and "V-4 unlock" in CORRECTIVE_SCOPE_DECLARATION_V3R1
     )
@@ -1807,8 +1750,7 @@ if __name__ == "__main__":
         status = "OK" if r.passed else "FAIL"
         print(f"  [{status}] {r.name}: {r.detail}", flush=True)
     print(
-        f"[V-3] validation summary: "
-        f"{sum(1 for r in results if r.passed)}/{len(results)} passed",
+        f"[V-3] validation summary: {sum(1 for r in results if r.passed)}/{len(results)} passed",
         flush=True,
     )
     sys.exit(0 if all_passed else 1)

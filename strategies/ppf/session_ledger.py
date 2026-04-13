@@ -71,6 +71,7 @@ from strategies.ppf.execution_ledger import (
 # Session-Level Enums
 # ---------------------------------------------------------------------------
 
+
 class SessionPath(str, enum.Enum):
     """Canonical session-level outcome paths."""
 
@@ -95,18 +96,18 @@ class SessionStability(str, enum.Enum):
 class BudgetPressureState(str, enum.Enum):
     """Budget pressure classification."""
 
-    NORMAL = "normal"        # 0-49% of any budget consumed
-    ELEVATED = "elevated"    # 50-79% of any budget consumed
-    CRITICAL = "critical"    # 80-99% of any budget consumed
-    OVERRUN = "overrun"      # 100%+ of any budget consumed
+    NORMAL = "normal"  # 0-49% of any budget consumed
+    ELEVATED = "elevated"  # 50-79% of any budget consumed
+    CRITICAL = "critical"  # 80-99% of any budget consumed
+    OVERRUN = "overrun"  # 100%+ of any budget consumed
 
 
 class DivergenceAccumulationState(str, enum.Enum):
     """Divergence accumulation classification."""
 
-    CLEAN = "clean"               # no divergences
+    CLEAN = "clean"  # no divergences
     ACCUMULATING = "accumulating"  # divergences present, within budget
-    SATURATED = "saturated"        # at or near budget limit
+    SATURATED = "saturated"  # at or near budget limit
 
 
 class ExposureIntegrity(str, enum.Enum):
@@ -129,14 +130,13 @@ class VenueSessionReliability(str, enum.Enum):
 # Session Observation
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class SessionObservation:
     """LV-3 observation fields for a single bounded live session."""
 
     session_id: str = field(default_factory=lambda: f"S-{uuid.uuid4().hex[:12]}")
-    session_start_ts: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    session_start_ts: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     session_end_ts: Optional[str] = None
     consecutive_divergence_count: int = 0
     reject_count: int = 0
@@ -154,24 +154,22 @@ class SessionObservation:
 # Session Interpretation
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class SessionInterpretation:
     """LV-3 interpretation scores for a bounded live session."""
 
     session_execution_stability: SessionStability = SessionStability.STABLE
     budget_pressure_state: BudgetPressureState = BudgetPressureState.NORMAL
-    divergence_accumulation_state: DivergenceAccumulationState = (
-        DivergenceAccumulationState.CLEAN
-    )
+    divergence_accumulation_state: DivergenceAccumulationState = DivergenceAccumulationState.CLEAN
     bounded_exposure_integrity: ExposureIntegrity = ExposureIntegrity.WITHIN_BOUNDS
-    venue_session_reliability: VenueSessionReliability = (
-        VenueSessionReliability.RELIABLE
-    )
+    venue_session_reliability: VenueSessionReliability = VenueSessionReliability.RELIABLE
 
 
 # ---------------------------------------------------------------------------
 # Session Failure Budget Configuration
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class SessionBudgetConfig:
@@ -183,7 +181,7 @@ class SessionBudgetConfig:
     max_reject_per_session: int = 3
     max_timeout_per_session: int = 2
     max_high_divergence_per_session: int = 1
-    session_abort_threshold: int = 5    # total failures across all types
+    session_abort_threshold: int = 5  # total failures across all types
     forced_cooldown_seconds: int = 300  # 5 minutes after abort
     max_exposure_per_asset: float = 0.01  # micro-size bounded
 
@@ -191,6 +189,7 @@ class SessionBudgetConfig:
 # ---------------------------------------------------------------------------
 # Session Failure Budget Ledger
 # ---------------------------------------------------------------------------
+
 
 class SessionFailureBudgetLedger:
     """Tracks session-level failure budgets and enforces abort/cooldown.
@@ -386,9 +385,9 @@ class SessionFailureBudgetLedger:
 
         # Activate forced cooldown
         from datetime import timedelta
-        cooldown_end = (
-            datetime.now(timezone.utc)
-            + timedelta(seconds=self._config.forced_cooldown_seconds)
+
+        cooldown_end = datetime.now(timezone.utc) + timedelta(
+            seconds=self._config.forced_cooldown_seconds
         )
         self._cooldown_active = True
         self._cooldown_until = cooldown_end.isoformat()
@@ -418,8 +417,7 @@ class SessionFailureBudgetLedger:
 
         if exposure > self._config.max_exposure_per_asset:
             return self._abort(
-                f"EXPOSURE_EXCEEDED ({asset}: {exposure}"
-                f" > {self._config.max_exposure_per_asset})",
+                f"EXPOSURE_EXCEEDED ({asset}: {exposure} > {self._config.max_exposure_per_asset})",
                 SessionPath.ABORT_DIVERGENCE_OVERRUN,
             )
         return None
@@ -451,8 +449,10 @@ class SessionFailureBudgetLedger:
         if self._config.max_high_divergence_per_session > 0:
             max_ratio = max(
                 max_ratio,
-                (self._observation.high_severity_divergence_count
-                 / self._config.max_high_divergence_per_session),
+                (
+                    self._observation.high_severity_divergence_count
+                    / self._config.max_high_divergence_per_session
+                ),
             )
 
         if max_ratio >= 1.0:

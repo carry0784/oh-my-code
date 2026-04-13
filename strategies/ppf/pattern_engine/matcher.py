@@ -169,9 +169,7 @@ def find_similar_patterns(
     search_end = n - correlation_length - _MIN_GAP_BARS
     candidates: list[tuple[float, int]] = []  # (similarity, end_index)
 
-    for end_idx in range(
-        correlation_length, min(search_end, n - projection_horizon)
-    ):
+    for end_idx in range(correlation_length, min(search_end, n - projection_horizon)):
         start_idx = end_idx - correlation_length
         hist_window = _normalize_window(closes[start_idx:end_idx])
 
@@ -203,16 +201,12 @@ def find_similar_patterns(
         # Determine direction from what happened after the pattern
         future_end = min(end_idx + projection_horizon, n)
         if future_end > end_idx and closes[end_idx] != 0:
-            total_return = (
-                (closes[future_end - 1] - closes[end_idx]) / closes[end_idx]
-            )
+            total_return = (closes[future_end - 1] - closes[end_idx]) / closes[end_idx]
             direction = 1 if total_return > 0 else (-1 if total_return < 0 else 0)
         else:
             direction = 0
 
-        adverse, favorable = _compute_excursions(
-            closes, end_idx, projection_horizon, direction
-        )
+        adverse, favorable = _compute_excursions(closes, end_idx, projection_horizon, direction)
 
         matches.append(
             PatternMatch(
@@ -253,9 +247,7 @@ def find_similar_patterns(
             consensus_ratio = 0.5
 
     # O4/O5: median excursions (only from matches with majority direction)
-    aligned_matches = [
-        m for m in matches if m.projected_direction == majority_direction
-    ]
+    aligned_matches = [m for m in matches if m.projected_direction == majority_direction]
     if aligned_matches and majority_direction != 0:
         adverse_values = [m.adverse_excursion_pct for m in aligned_matches]
         favorable_values = [m.favorable_excursion_pct for m in aligned_matches]

@@ -46,9 +46,9 @@ class PPFGovernanceState(str, Enum):
     """PPF validation pipeline states."""
 
     NOT_INITIALIZED = "NOT_INITIALIZED"
-    DATA_READY = "DATA_READY"              # OHLCV preflight passed
-    PHASE_A_RUNNING = "PHASE_A_RUNNING"    # Backtest in progress
-    BASELINE_FROZEN = "BASELINE_FROZEN"    # Baseline sealed
+    DATA_READY = "DATA_READY"  # OHLCV preflight passed
+    PHASE_A_RUNNING = "PHASE_A_RUNNING"  # Backtest in progress
+    BASELINE_FROZEN = "BASELINE_FROZEN"  # Baseline sealed
     PHASE_B_COLLECTING = "PHASE_B_COLLECTING"  # Live shadow accumulation
     VALIDATION_READY = "VALIDATION_READY"  # Minimum events + bars met
     VAL_PDC_002_ISSUED = "VAL_PDC_002_ISSUED"  # Comparator report issued
@@ -57,18 +57,18 @@ class PPFGovernanceState(str, Enum):
 class PPFGovernanceTier(str, Enum):
     """Promotion tier (traffic light)."""
 
-    RED = "RED"        # <5 events or critical failure
+    RED = "RED"  # <5 events or critical failure
     YELLOW = "YELLOW"  # 5-9 events, partial evidence
-    GREEN = "GREEN"    # ≥10 events, all checks passed
+    GREEN = "GREEN"  # ≥10 events, all checks passed
 
 
 class PPFBlockLevel(str, Enum):
     """Block severity."""
 
-    HARD_BLOCK = "HARD_BLOCK"                    # Cannot proceed under any circumstance
-    SOFT_BLOCK = "SOFT_BLOCK"                    # Needs manual override
+    HARD_BLOCK = "HARD_BLOCK"  # Cannot proceed under any circumstance
+    SOFT_BLOCK = "SOFT_BLOCK"  # Needs manual override
     EVIDENCE_INSUFFICIENT = "EVIDENCE_INSUFFICIENT"  # Needs more data
-    CLEAR = "CLEAR"                              # No block
+    CLEAR = "CLEAR"  # No block
 
 
 # ---------------------------------------------------------------------------
@@ -85,7 +85,7 @@ ALLOWED_TRANSITIONS: dict[PPFGovernanceState, list[PPFGovernanceState]] = {
     ],
     PPFGovernanceState.PHASE_A_RUNNING: [
         PPFGovernanceState.BASELINE_FROZEN,
-        PPFGovernanceState.DATA_READY,   # reset on failure
+        PPFGovernanceState.DATA_READY,  # reset on failure
     ],
     PPFGovernanceState.BASELINE_FROZEN: [
         PPFGovernanceState.PHASE_B_COLLECTING,
@@ -101,15 +101,15 @@ ALLOWED_TRANSITIONS: dict[PPFGovernanceState, list[PPFGovernanceState]] = {
 }
 
 # Minimum data thresholds (VAL-QTY-001)
-MIN_BARS_FOR_VALIDATION: int = 336   # 14 days × 24 hourly bars
-MIN_NOVELTY_EVENTS: int = 10         # VAL-QTY-001 S2P-EI1
+MIN_BARS_FOR_VALIDATION: int = 336  # 14 days × 24 hourly bars
+MIN_NOVELTY_EVENTS: int = 10  # VAL-QTY-001 S2P-EI1
 
 # Tier event thresholds
 TIER_GREEN_MIN_EVENTS: int = 10
 TIER_YELLOW_MIN_EVENTS: int = 5
 
 # Unresolved rate ceiling before baseline freeze is blocked (FC-02)
-MAX_UNRESOLVED_RATE_FOR_FREEZE: float = 0.05   # 5 %
+MAX_UNRESOLVED_RATE_FOR_FREEZE: float = 0.05  # 5 %
 
 
 # ---------------------------------------------------------------------------
@@ -153,9 +153,7 @@ class PPFGovernanceEngine:
     # Transition management
     # ------------------------------------------------------------------
 
-    def can_transition(
-        self, target: PPFGovernanceState
-    ) -> tuple[bool, str | None]:
+    def can_transition(self, target: PPFGovernanceState) -> tuple[bool, str | None]:
         """Check if a transition from current state to *target* is allowed.
 
         Returns
@@ -183,9 +181,7 @@ class PPFGovernanceEngine:
 
         return (True, None)
 
-    def transition(
-        self, target: PPFGovernanceState, reason: str = ""
-    ) -> bool:
+    def transition(self, target: PPFGovernanceState, reason: str = "") -> bool:
         """Execute a state transition.
 
         Validates the transition against the allowed transition table, logs
@@ -217,9 +213,7 @@ class PPFGovernanceEngine:
                 to_state=target.value,
                 block_reason=block_reason,
             )
-            raise ValueError(
-                f"PPFGovernanceEngine: transition blocked — {block_reason}"
-            )
+            raise ValueError(f"PPFGovernanceEngine: transition blocked — {block_reason}")
 
         from_state = self._state
         self._state = target
@@ -244,9 +238,7 @@ class PPFGovernanceEngine:
     # FC-0x check methods
     # ------------------------------------------------------------------
 
-    def check_phase_a_ready(
-        self, preflight_passed: bool
-    ) -> tuple[PPFBlockLevel, str]:
+    def check_phase_a_ready(self, preflight_passed: bool) -> tuple[PPFBlockLevel, str]:
         """FC-01: Check if Phase A backtest can start.
 
         Condition: OHLCV preflight must have passed.
@@ -273,9 +265,7 @@ class PPFGovernanceEngine:
         msg = "FC-01_CLEAR: OHLCV preflight passed — Phase A may start."
         return (PPFBlockLevel.CLEAR, msg)
 
-    def check_baseline_freeze_ready(
-        self, unresolved_rate: float
-    ) -> tuple[PPFBlockLevel, str]:
+    def check_baseline_freeze_ready(self, unresolved_rate: float) -> tuple[PPFBlockLevel, str]:
         """FC-02: Check if baseline can be frozen.
 
         Condition: unresolved novelty event rate must be <= 5%.
@@ -307,9 +297,7 @@ class PPFGovernanceEngine:
                 f"{MAX_UNRESOLVED_RATE_FOR_FREEZE:.4f} (5%). Resolve outstanding "
                 "novelty events before freezing."
             )
-            logger.warning(
-                "ppf_governance_fc02_block", unresolved_rate=unresolved_rate
-            )
+            logger.warning("ppf_governance_fc02_block", unresolved_rate=unresolved_rate)
             return (PPFBlockLevel.SOFT_BLOCK, msg)
 
         msg = (
@@ -318,9 +306,7 @@ class PPFGovernanceEngine:
         )
         return (PPFBlockLevel.CLEAR, msg)
 
-    def check_phase_b_ready(
-        self, baseline_frozen: bool
-    ) -> tuple[PPFBlockLevel, str]:
+    def check_phase_b_ready(self, baseline_frozen: bool) -> tuple[PPFBlockLevel, str]:
         """FC-03: Check if Phase B live shadow accumulation can start.
 
         Condition: a frozen baseline must exist. This is also enforced
@@ -360,9 +346,7 @@ class PPFGovernanceEngine:
                 f"{self._state.value}, which precedes BASELINE_FROZEN. "
                 "State machine ordering violated."
             )
-            logger.warning(
-                "ppf_governance_fc03_state_order_block", state=self._state.value
-            )
+            logger.warning("ppf_governance_fc03_state_order_block", state=self._state.value)
             return (PPFBlockLevel.SOFT_BLOCK, msg)
 
         msg = "FC-03_CLEAR: frozen baseline confirmed — Phase B may start."
@@ -442,9 +426,7 @@ class PPFGovernanceEngine:
         )
         return (PPFBlockLevel.CLEAR, msg)
 
-    def check_val_pdc_002_ready(
-        self, all_metrics_in_tolerance: bool
-    ) -> tuple[PPFBlockLevel, str]:
+    def check_val_pdc_002_ready(self, all_metrics_in_tolerance: bool) -> tuple[PPFBlockLevel, str]:
         """FC-06: Check if VAL-PDC-002 report can be issued.
 
         Condition: all comparison metrics from PPFBacktestComparator must
@@ -481,9 +463,7 @@ class PPFGovernanceEngine:
                 f"{self._state.value}, which has not reached VALIDATION_READY. "
                 "Minimum data requirements (FC-04, FC-05) must be satisfied first."
             )
-            logger.warning(
-                "ppf_governance_fc06_state_block", state=self._state.value
-            )
+            logger.warning("ppf_governance_fc06_state_block", state=self._state.value)
             return (PPFBlockLevel.SOFT_BLOCK, msg)
 
         msg = (
@@ -509,9 +489,7 @@ class PPFGovernanceEngine:
             "LIVE_ENTRY_PROHIBITED: PPF live mode not authorized",
         )
 
-    def check_paper_entry(
-        self, tier: PPFGovernanceTier
-    ) -> tuple[PPFBlockLevel, str]:
+    def check_paper_entry(self, tier: PPFGovernanceTier) -> tuple[PPFBlockLevel, str]:
         """FC-08: Paper mode entry check.
 
         Both conditions must hold simultaneously:
@@ -549,9 +527,7 @@ class PPFGovernanceEngine:
                 f"(need VAL_PDC_002_ISSUED). VAL-PDC-002 report must be issued "
                 "before paper trading is authorized."
             )
-            logger.warning(
-                "ppf_governance_fc08_block_state", state=self._state.value
-            )
+            logger.warning("ppf_governance_fc08_block_state", state=self._state.value)
             return (PPFBlockLevel.HARD_BLOCK, msg)
 
         if not tier_ok:
@@ -560,15 +536,10 @@ class PPFGovernanceEngine:
                 "(need GREEN). Minimum 10 novelty events with all checks passed "
                 "is required for paper authorization."
             )
-            logger.warning(
-                "ppf_governance_fc08_block_tier", tier=tier.value
-            )
+            logger.warning("ppf_governance_fc08_block_tier", tier=tier.value)
             return (PPFBlockLevel.HARD_BLOCK, msg)
 
-        msg = (
-            f"FC-08_CLEAR: paper entry authorized — state={self._state.value}, "
-            f"tier={tier.value}."
-        )
+        msg = f"FC-08_CLEAR: paper entry authorized — state={self._state.value}, tier={tier.value}."
         logger.info("ppf_governance_fc08_clear", tier=tier.value)
         return (PPFBlockLevel.CLEAR, msg)
 
@@ -576,9 +547,7 @@ class PPFGovernanceEngine:
     # Tier computation
     # ------------------------------------------------------------------
 
-    def compute_tier(
-        self, novelty_events: int, all_checks_passed: bool
-    ) -> PPFGovernanceTier:
+    def compute_tier(self, novelty_events: int, all_checks_passed: bool) -> PPFGovernanceTier:
         """Compute promotion tier based on evidence volume and check outcomes.
 
         Traffic-light logic:
@@ -648,9 +617,7 @@ class PPFGovernanceEngine:
           live_entry_block — always HARD_BLOCK (FC-07)
           paper_entry_note — note about paper entry requirements
         """
-        allowed_next = [
-            s.value for s in ALLOWED_TRANSITIONS.get(self._state, [])
-        ]
+        allowed_next = [s.value for s in ALLOWED_TRANSITIONS.get(self._state, [])]
         is_terminal = self._state == PPFGovernanceState.VAL_PDC_002_ISSUED
 
         # FC-07 is always active

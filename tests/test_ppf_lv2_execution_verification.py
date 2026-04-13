@@ -91,12 +91,20 @@ from strategies.ppf.parameters import PPFParameters
 # Fixtures
 # ===========================================================================
 
+
 def _params(**kw) -> PPFParameters:
     defaults = dict(
         market_profile=MarketProfile.M1_CRYPTO_FUTURES,
-        similarity_min=0.5, projection_bias_min=0.1, path_quality_min=0.1,
-        rr_min=1.5, k=3, correlation_length=10, projection_horizon=5,
-        novelty_threshold=0.4, watch_timeout_bars=3, candidate_timeout_bars=5,
+        similarity_min=0.5,
+        projection_bias_min=0.1,
+        path_quality_min=0.1,
+        rr_min=1.5,
+        k=3,
+        correlation_length=10,
+        projection_horizon=5,
+        novelty_threshold=0.4,
+        watch_timeout_bars=3,
+        candidate_timeout_bars=5,
     )
     defaults.update(kw)
     return PPFParameters(**defaults)
@@ -118,6 +126,7 @@ def _now_ts() -> str:
 # ===========================================================================
 # MANDATORY OUTPUT 1: Doctrine Check
 # ===========================================================================
+
 
 class TestLV2DoctrineCheck:
     """LV-2 doctrine: automation / autonomous / self-evolution / constitution."""
@@ -164,7 +173,8 @@ class TestLV2DoctrineCheck:
     def test_constitution_governance_non_conflict(self) -> None:
         """Constitution checks pass with valid LV-2 params."""
         result = run_all_checks(
-            params=_params(), regime_novelty_flag=False,
+            params=_params(),
+            regime_novelty_flag=False,
             current_state=PPFState.D6_EXECUTE_READY,
         )
         assert result.passed is True
@@ -173,6 +183,7 @@ class TestLV2DoctrineCheck:
 # ===========================================================================
 # MANDATORY OUTPUT 2: Fixed Skeleton Mapping
 # ===========================================================================
+
 
 class TestLV2FixedSkeletonMapping:
     """Each skeleton layer has LV-2-verifiable behavior."""
@@ -213,12 +224,15 @@ class TestLV2FixedSkeletonMapping:
         """Decision: PPF gate decides before execution path begins."""
         sm = PPFStateMachine(_params())
         obs = ObservationFields(
-            pattern_similarity_score=0.8, projection_direction=1,
+            pattern_similarity_score=0.8,
+            projection_direction=1,
             projection_consensus_ratio=0.9,
             expected_adverse_excursion_before_target=0.5,
             expected_favorable_excursion_to_target=2.0,
-            ssl_trend_strength=0.5, volume_force_strength=0.5,
-            recent_swing_distance_pct=1.0, regime_novelty_flag=False,
+            ssl_trend_strength=0.5,
+            volume_force_strength=0.5,
+            recent_swing_distance_pct=1.0,
+            regime_novelty_flag=False,
         )
         scores = compute_scores(obs)
         r = sm.evaluate(obs=obs, scores=scores, risk_filter_pass=True)
@@ -243,13 +257,13 @@ class TestLV2FixedSkeletonMapping:
     def test_learning_layer_failure_taxonomy(self) -> None:
         """Learning: divergence types map to failure taxonomy."""
         taxonomy = [
-            DivergenceType.MISSING_ACK,       # no_ack
-            DivergenceType.LATENCY_EXCEEDED,   # late_ack
+            DivergenceType.MISSING_ACK,  # no_ack
+            DivergenceType.LATENCY_EXCEEDED,  # late_ack
             DivergenceType.UNEXPECTED_REJECT,  # reject
             DivergenceType.UNEXPECTED_CANCEL,  # cancel_after_delay
-            DivergenceType.UNEXPECTED_PARTIAL, # partial_fill_stall
-            DivergenceType.UNEXPECTED_TIMEOUT, # timeout
-            DivergenceType.PATH_MISMATCH,      # unexpected_divergence
+            DivergenceType.UNEXPECTED_PARTIAL,  # partial_fill_stall
+            DivergenceType.UNEXPECTED_TIMEOUT,  # timeout
+            DivergenceType.PATH_MISMATCH,  # unexpected_divergence
         ]
         assert len(taxonomy) == 7  # 7 failure types as specified
 
@@ -283,6 +297,7 @@ class TestLV2FixedSkeletonMapping:
 # MANDATORY OUTPUT 3: Slot Decomposition (verified via test structure)
 # ===========================================================================
 
+
 class TestLV2SlotDecomposition:
     """Verify all 8 rule slots are addressable."""
 
@@ -290,9 +305,16 @@ class TestLV2SlotDecomposition:
         """Slot 1: observation rules — 10 fields defined."""
         obs = ExecutionObservation()
         required_fields = [
-            "order_submit_ts", "venue_ack_ts", "reject_code", "cancel_reason",
-            "partial_fill_qty", "final_fill_qty", "timeout_flag",
-            "venue_latency_ms", "expected_path", "actual_path",
+            "order_submit_ts",
+            "venue_ack_ts",
+            "reject_code",
+            "cancel_reason",
+            "partial_fill_qty",
+            "final_fill_qty",
+            "timeout_flag",
+            "venue_latency_ms",
+            "expected_path",
+            "actual_path",
         ]
         for f in required_fields:
             assert hasattr(obs, f), f"Missing field: {f}"
@@ -301,8 +323,10 @@ class TestLV2SlotDecomposition:
         """Slot 2: interpretation rules — 4 scores defined."""
         interp = ExecutionInterpretation()
         required = [
-            "execution_quality_score", "order_path_consistency",
-            "venue_reliability_state", "divergence_severity",
+            "execution_quality_score",
+            "order_path_consistency",
+            "venue_reliability_state",
+            "divergence_severity",
         ]
         for f in required:
             assert hasattr(interp, f), f"Missing field: {f}"
@@ -313,12 +337,15 @@ class TestLV2SlotDecomposition:
         # Decision layer still uses D1-D6 FSM unchanged
         sm = PPFStateMachine(_params())
         obs = ObservationFields(
-            pattern_similarity_score=0.1, projection_direction=0,
+            pattern_similarity_score=0.1,
+            projection_direction=0,
             projection_consensus_ratio=0.0,
             expected_adverse_excursion_before_target=0.0,
             expected_favorable_excursion_to_target=0.0,
-            ssl_trend_strength=0.0, volume_force_strength=0.0,
-            recent_swing_distance_pct=0.0, regime_novelty_flag=False,
+            ssl_trend_strength=0.0,
+            volume_force_strength=0.0,
+            recent_swing_distance_pct=0.0,
+            regime_novelty_flag=False,
         )
         scores = compute_scores(obs)
         r = sm.evaluate(obs=obs, scores=scores)
@@ -377,6 +404,7 @@ class TestLV2SlotDecomposition:
 # ===========================================================================
 # MANDATORY OUTPUT 4: Forbidden Zone Separation
 # ===========================================================================
+
 
 class TestLV2ForbiddenZones:
     """Verify all 8 forbidden zones are not breachable."""
@@ -455,6 +483,7 @@ class TestLV2ForbiddenZones:
 # Path 1: Submit -> Ack -> Fill (happy path)
 # ---------------------------------------------------------------------------
 
+
 class TestPathSubmitAckFill:
     """Verify submit -> ack -> fill execution path."""
 
@@ -517,6 +546,7 @@ class TestPathSubmitAckFill:
 # ---------------------------------------------------------------------------
 # Path 2: Submit -> Reject
 # ---------------------------------------------------------------------------
+
 
 class TestPathSubmitReject:
     """Verify submit -> reject execution path."""
@@ -585,6 +615,7 @@ class TestPathSubmitReject:
 # Path 3: Submit -> Ack -> Cancel
 # ---------------------------------------------------------------------------
 
+
 class TestPathSubmitAckCancel:
     """Verify submit -> ack -> cancel execution path."""
 
@@ -638,6 +669,7 @@ class TestPathSubmitAckCancel:
 # ---------------------------------------------------------------------------
 # Path 4: Submit -> Ack -> Partial Fill
 # ---------------------------------------------------------------------------
+
 
 class TestPathSubmitAckPartialFill:
     """Verify submit -> ack -> partial fill execution path."""
@@ -700,6 +732,7 @@ class TestPathSubmitAckPartialFill:
 # Path 5: Submit -> Timeout
 # ---------------------------------------------------------------------------
 
+
 class TestPathSubmitTimeout:
     """Verify submit -> timeout execution path."""
 
@@ -755,6 +788,7 @@ class TestPathSubmitTimeout:
 # Path 6: Submit -> Ack -> Timeout (ack received but fill times out)
 # ---------------------------------------------------------------------------
 
+
 class TestPathSubmitAckTimeout:
     """Verify submit -> ack -> timeout execution path."""
 
@@ -800,16 +834,19 @@ class TestPathSubmitAckTimeout:
 # MANDATORY OUTPUT 6: Per-Path Pass/Fail Criteria
 # ===========================================================================
 
+
 class TestPerPathPassFailCriteria:
     """Verify pass/fail criteria for each execution path."""
 
     def test_submit_ack_fill_pass_criteria(self) -> None:
         """PASS: paths match, quality=1.0, no divergence."""
         obs = ExecutionObservation(
-            order_submit_ts=_now_ts(), venue_ack_ts=_now_ts(),
+            order_submit_ts=_now_ts(),
+            venue_ack_ts=_now_ts(),
             expected_path=ExecutionPath.SUBMIT_ACK_FILL,
             actual_path=ExecutionPath.SUBMIT_ACK_FILL,
-            final_fill_qty=0.001, venue_latency_ms=50.0,
+            final_fill_qty=0.001,
+            venue_latency_ms=50.0,
         )
         interp = compute_execution_interpretation(obs)
         assert interp.order_path_consistency == OrderPathConsistency.CONSISTENT
@@ -831,7 +868,8 @@ class TestPerPathPassFailCriteria:
     def test_cancel_classifiable_pass(self) -> None:
         """PASS: cancel is classifiable."""
         obs = ExecutionObservation(
-            order_submit_ts=_now_ts(), venue_ack_ts=_now_ts(),
+            order_submit_ts=_now_ts(),
+            venue_ack_ts=_now_ts(),
             expected_path=ExecutionPath.SUBMIT_ACK_FILL,
             actual_path=ExecutionPath.SUBMIT_ACK_CANCEL,
             cancel_reason="UNFILLED_TIMEOUT",
@@ -883,6 +921,7 @@ class TestPerPathPassFailCriteria:
 # ===========================================================================
 # MANDATORY OUTPUT 7: Required Data/State/Event/Score/Log/Validation Path
 # ===========================================================================
+
 
 class TestRequiredDataPaths:
     """Verify all required data flows are connected."""
@@ -951,12 +990,15 @@ class TestRequiredDataPaths:
         """PPF state machine (D1-D6) is unchanged for LV-2."""
         sm = PPFStateMachine(_params())
         obs = ObservationFields(
-            pattern_similarity_score=0.8, projection_direction=1,
+            pattern_similarity_score=0.8,
+            projection_direction=1,
             projection_consensus_ratio=0.9,
             expected_adverse_excursion_before_target=0.5,
             expected_favorable_excursion_to_target=2.0,
-            ssl_trend_strength=0.5, volume_force_strength=0.5,
-            recent_swing_distance_pct=1.0, regime_novelty_flag=False,
+            ssl_trend_strength=0.5,
+            volume_force_strength=0.5,
+            recent_swing_distance_pct=1.0,
+            regime_novelty_flag=False,
         )
         scores = compute_scores(obs)
         r = sm.evaluate(obs=obs, scores=scores, risk_filter_pass=True)
@@ -965,7 +1007,8 @@ class TestRequiredDataPaths:
     def test_constitution_check_runs_in_lv2(self) -> None:
         """Constitution checks continue to run in LV-2."""
         result = run_all_checks(
-            params=_params(), regime_novelty_flag=False,
+            params=_params(),
+            regime_novelty_flag=False,
             current_state=PPFState.D1_IDLE,
         )
         assert result.passed is True
@@ -974,6 +1017,7 @@ class TestRequiredDataPaths:
 # ===========================================================================
 # MANDATORY OUTPUT 8: Execution Divergence Ledger (comprehensive tests)
 # ===========================================================================
+
 
 class TestExecutionDivergenceLedger:
     """Comprehensive tests for the Execution Divergence Ledger."""
@@ -1137,6 +1181,7 @@ class TestExecutionDivergenceLedger:
 # Bounded Execution Rules
 # ===========================================================================
 
+
 class TestBoundedExecutionRules:
     """Verify bounded execution constraints are enforceable."""
 
@@ -1191,6 +1236,7 @@ class TestBoundedExecutionRules:
 # Multi-Order Session Simulation
 # ===========================================================================
 
+
 class TestMultiOrderSession:
     """Simulate a bounded LV-2 session with multiple orders."""
 
@@ -1200,16 +1246,20 @@ class TestMultiOrderSession:
 
         # Order 1: happy path
         obs1 = ExecutionObservation(
-            order_submit_ts=_now_ts(), venue_ack_ts=_now_ts(),
+            order_submit_ts=_now_ts(),
+            venue_ack_ts=_now_ts(),
             expected_path=ExecutionPath.SUBMIT_ACK_FILL,
             actual_path=ExecutionPath.SUBMIT_ACK_FILL,
-            final_fill_qty=0.001, venue_latency_ms=50.0,
+            final_fill_qty=0.001,
+            venue_latency_ms=50.0,
         )
         interp1 = compute_execution_interpretation(obs1)
         dtype1 = classify_divergence(obs1)
         ledger.record_divergence(
-            expected=obs1.expected_path, actual=obs1.actual_path,
-            divergence_type=dtype1, severity=interp1.divergence_severity,
+            expected=obs1.expected_path,
+            actual=obs1.actual_path,
+            divergence_type=dtype1,
+            severity=interp1.divergence_severity,
         )
 
         # Order 2: reject
@@ -1222,31 +1272,37 @@ class TestMultiOrderSession:
         interp2 = compute_execution_interpretation(obs2)
         dtype2 = classify_divergence(obs2)
         ledger.record_divergence(
-            expected=obs2.expected_path, actual=obs2.actual_path,
-            divergence_type=dtype2, severity=interp2.divergence_severity,
+            expected=obs2.expected_path,
+            actual=obs2.actual_path,
+            divergence_type=dtype2,
+            severity=interp2.divergence_severity,
             recovery_allowed=True,
         )
 
         # Order 3: partial fill
         obs3 = ExecutionObservation(
-            order_submit_ts=_now_ts(), venue_ack_ts=_now_ts(),
+            order_submit_ts=_now_ts(),
+            venue_ack_ts=_now_ts(),
             expected_path=ExecutionPath.SUBMIT_ACK_FILL,
             actual_path=ExecutionPath.SUBMIT_ACK_PARTIAL_FILL,
-            partial_fill_qty=0.0005, final_fill_qty=0.0005,
+            partial_fill_qty=0.0005,
+            final_fill_qty=0.0005,
             venue_latency_ms=70.0,
         )
         interp3 = compute_execution_interpretation(obs3)
         dtype3 = classify_divergence(obs3)
         ledger.record_divergence(
-            expected=obs3.expected_path, actual=obs3.actual_path,
-            divergence_type=dtype3, severity=interp3.divergence_severity,
+            expected=obs3.expected_path,
+            actual=obs3.actual_path,
+            divergence_type=dtype3,
+            severity=interp3.divergence_severity,
         )
 
         assert ledger.entry_count == 3
         assert not ledger.is_stopped
         counts = ledger.severity_counts()
         assert counts["none"] == 1  # happy path
-        assert counts["low"] == 1   # partial fill
+        assert counts["low"] == 1  # partial fill
         assert counts["medium"] == 1  # reject
 
     def test_session_stops_on_blocker(self) -> None:
@@ -1287,14 +1343,24 @@ class TestMultiOrderSession:
         paths = [
             (ExecutionPath.SUBMIT_ACK_FILL, DivergenceType.NONE, DivergenceSeverity.NONE),
             (ExecutionPath.SUBMIT_ACK_FILL, DivergenceType.NONE, DivergenceSeverity.NONE),
-            (ExecutionPath.SUBMIT_REJECT, DivergenceType.UNEXPECTED_REJECT, DivergenceSeverity.MEDIUM),
-            (ExecutionPath.SUBMIT_ACK_PARTIAL_FILL, DivergenceType.UNEXPECTED_PARTIAL, DivergenceSeverity.LOW),
+            (
+                ExecutionPath.SUBMIT_REJECT,
+                DivergenceType.UNEXPECTED_REJECT,
+                DivergenceSeverity.MEDIUM,
+            ),
+            (
+                ExecutionPath.SUBMIT_ACK_PARTIAL_FILL,
+                DivergenceType.UNEXPECTED_PARTIAL,
+                DivergenceSeverity.LOW,
+            ),
             (ExecutionPath.SUBMIT_ACK_FILL, DivergenceType.NONE, DivergenceSeverity.NONE),
         ]
         for actual, dtype, sev in paths:
             ledger.record_divergence(
                 expected=ExecutionPath.SUBMIT_ACK_FILL,
-                actual=actual, divergence_type=dtype, severity=sev,
+                actual=actual,
+                divergence_type=dtype,
+                severity=sev,
             )
 
         summary = ledger.summary()
@@ -1310,13 +1376,15 @@ class TestMultiOrderSession:
 # High-Latency Venue Degradation
 # ===========================================================================
 
+
 class TestVenueLatencyDegradation:
     """Verify venue latency handling."""
 
     def test_normal_latency_reliable(self) -> None:
         """Normal latency -> RELIABLE."""
         obs = ExecutionObservation(
-            order_submit_ts=_now_ts(), venue_ack_ts=_now_ts(),
+            order_submit_ts=_now_ts(),
+            venue_ack_ts=_now_ts(),
             expected_path=ExecutionPath.SUBMIT_ACK_FILL,
             actual_path=ExecutionPath.SUBMIT_ACK_FILL,
             venue_latency_ms=50.0,
@@ -1327,7 +1395,8 @@ class TestVenueLatencyDegradation:
     def test_high_latency_degraded(self) -> None:
         """High latency -> DEGRADED, quality penalized."""
         obs = ExecutionObservation(
-            order_submit_ts=_now_ts(), venue_ack_ts=_now_ts(),
+            order_submit_ts=_now_ts(),
+            venue_ack_ts=_now_ts(),
             expected_path=ExecutionPath.SUBMIT_ACK_FILL,
             actual_path=ExecutionPath.SUBMIT_ACK_FILL,
             venue_latency_ms=1500.0,  # > 1000ms threshold
@@ -1339,7 +1408,8 @@ class TestVenueLatencyDegradation:
     def test_custom_latency_threshold(self) -> None:
         """Custom latency threshold is respected."""
         obs = ExecutionObservation(
-            order_submit_ts=_now_ts(), venue_ack_ts=_now_ts(),
+            order_submit_ts=_now_ts(),
+            venue_ack_ts=_now_ts(),
             expected_path=ExecutionPath.SUBMIT_ACK_FILL,
             actual_path=ExecutionPath.SUBMIT_ACK_FILL,
             venue_latency_ms=300.0,
@@ -1355,6 +1425,7 @@ class TestVenueLatencyDegradation:
 # ===========================================================================
 # PPF Gate Integration with Execution Observation
 # ===========================================================================
+
 
 class TestGateExecutionIntegration:
     """Verify PPF gate output feeds execution observation correctly."""
@@ -1416,6 +1487,7 @@ class TestGateExecutionIntegration:
 # LV-2: Baseline Fingerprint Drift Detection
 # ===========================================================================
 
+
 class TestLV2BaselineFingerprint:
     """Verify source files match pre-LV2 baseline (source drift = 0 for existing files)."""
 
@@ -1443,6 +1515,7 @@ class TestLV2BaselineFingerprint:
     def test_execution_ledger_is_new_file(self) -> None:
         """execution_ledger.py is a NEW file (not modifying existing baseline)."""
         import os
+
         path = "strategies/ppf/execution_ledger.py"
         assert os.path.exists(path), "execution_ledger.py must exist"
         # This is an additive file, not a modification to sealed baseline

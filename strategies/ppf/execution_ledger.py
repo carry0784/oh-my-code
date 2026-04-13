@@ -56,6 +56,7 @@ from typing import Optional
 # Enums
 # ---------------------------------------------------------------------------
 
+
 class ExecutionPath(str, enum.Enum):
     """Canonical execution paths for LV-2 verification."""
 
@@ -86,9 +87,9 @@ class DivergenceSeverity(str, enum.Enum):
     """Severity classification of divergence."""
 
     NONE = "none"
-    LOW = "low"          # cosmetic, no impact on verification
-    MEDIUM = "medium"    # investigation required, stage may continue
-    HIGH = "high"        # investigation required, stage paused
+    LOW = "low"  # cosmetic, no impact on verification
+    MEDIUM = "medium"  # investigation required, stage may continue
+    HIGH = "high"  # investigation required, stage paused
     BLOCKER = "blocker"  # stage must stop, correction chain required
 
 
@@ -110,6 +111,7 @@ class VenueReliabilityState(str, enum.Enum):
 # ---------------------------------------------------------------------------
 # Execution Observation (per-order)
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ExecutionObservation:
@@ -134,6 +136,7 @@ class ExecutionObservation:
 # Execution Interpretation (per-order)
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ExecutionInterpretation:
     """LV-2 interpretation scores for a single order lifecycle."""
@@ -147,6 +150,7 @@ class ExecutionInterpretation:
 # ---------------------------------------------------------------------------
 # Divergence Ledger Entry
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DivergenceLedgerEntry:
@@ -167,14 +171,13 @@ class DivergenceLedgerEntry:
     stop_triggered: bool
     recovery_allowed: bool
     receipt_id: str = field(default_factory=lambda: f"LV2-{uuid.uuid4().hex[:12]}")
-    event_ts: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    event_ts: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 # ---------------------------------------------------------------------------
 # Execution Divergence Ledger
 # ---------------------------------------------------------------------------
+
 
 class ExecutionDivergenceLedger:
     """Accumulates divergence entries for LV-2 verification.
@@ -205,10 +208,7 @@ class ExecutionDivergenceLedger:
 
     @property
     def blocker_count(self) -> int:
-        return sum(
-            1 for e in self._entries
-            if e.divergence_severity == DivergenceSeverity.BLOCKER
-        )
+        return sum(1 for e in self._entries if e.divergence_severity == DivergenceSeverity.BLOCKER)
 
     @property
     def has_blockers(self) -> bool:
@@ -225,8 +225,7 @@ class ExecutionDivergenceLedger:
         if entry.divergence_severity == DivergenceSeverity.BLOCKER:
             self._stopped = True
             self._stop_reason = (
-                f"BLOCKER divergence: {entry.divergence_type.value} "
-                f"(receipt={entry.receipt_id})"
+                f"BLOCKER divergence: {entry.divergence_type.value} (receipt={entry.receipt_id})"
             )
 
     def record_divergence(
@@ -283,6 +282,7 @@ class ExecutionDivergenceLedger:
 # Interpretation Functions
 # ---------------------------------------------------------------------------
 
+
 def compute_execution_interpretation(
     obs: ExecutionObservation,
     latency_threshold_ms: float = 1000.0,
@@ -307,8 +307,7 @@ def compute_execution_interpretation(
         reliability = VenueReliabilityState.DEGRADED
     elif obs.reject_code is not None:
         reliability = VenueReliabilityState.DEGRADED
-    elif (obs.venue_latency_ms is not None
-          and obs.venue_latency_ms > latency_threshold_ms):
+    elif obs.venue_latency_ms is not None and obs.venue_latency_ms > latency_threshold_ms:
         reliability = VenueReliabilityState.DEGRADED
     else:
         reliability = VenueReliabilityState.RELIABLE
@@ -343,13 +342,11 @@ def compute_execution_interpretation(
         quality -= 0.3
 
     # Penalize high latency
-    if (obs.venue_latency_ms is not None
-            and obs.venue_latency_ms > latency_threshold_ms):
+    if obs.venue_latency_ms is not None and obs.venue_latency_ms > latency_threshold_ms:
         quality -= 0.2
 
     # Penalize partial fill (incomplete)
-    if (obs.partial_fill_qty > 0
-            and obs.final_fill_qty < obs.partial_fill_qty):
+    if obs.partial_fill_qty > 0 and obs.final_fill_qty < obs.partial_fill_qty:
         quality -= 0.1
 
     # Clamp
@@ -387,10 +384,12 @@ def classify_divergence(
         return DivergenceType.UNEXPECTED_PARTIAL
 
     # Check for missing ack
-    if (obs.order_submit_ts is not None
-            and obs.venue_ack_ts is None
-            and not obs.timeout_flag
-            and obs.reject_code is None):
+    if (
+        obs.order_submit_ts is not None
+        and obs.venue_ack_ts is None
+        and not obs.timeout_flag
+        and obs.reject_code is None
+    ):
         return DivergenceType.MISSING_ACK
 
     return DivergenceType.PATH_MISMATCH

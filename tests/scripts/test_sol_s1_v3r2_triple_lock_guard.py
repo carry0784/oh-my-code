@@ -55,9 +55,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 FORK_PATH = REPO_ROOT / "scripts" / "sol_s1_v3r2_shadow_run.py"
 FROZEN_PATH = REPO_ROOT / "scripts" / "sol_s1_v3_shadow_run.py"
 
-EXPECTED_FROZEN_SHA256 = (
-    "94110d249fb8d6b371dbcfa1b922b45018eb567ac23c9d0afa82e184163c3f4a"
-)
+EXPECTED_FROZEN_SHA256 = "94110d249fb8d6b371dbcfa1b922b45018eb567ac23c9d0afa82e184163c3f4a"
 
 
 def _load_fork_module() -> ModuleType:
@@ -99,9 +97,7 @@ class TestLock1CliRunFlag(unittest.TestCase):
         self.assertEqual(result, _FORK.EXIT_LOCK_1_FAILED)
 
     def test_argv_without_run_flag_rejected(self) -> None:
-        result = _FORK.triple_lock_pre_flight_guard(
-            ["prog", "--other"], {}
-        )
+        result = _FORK.triple_lock_pre_flight_guard(["prog", "--other"], {})
         self.assertEqual(result, _FORK.EXIT_LOCK_1_FAILED)
 
     def test_run_flag_alone_then_lock2_fires(self) -> None:
@@ -155,14 +151,10 @@ class TestLock2RunAuthorizedEnvVar(unittest.TestCase):
         self.assertEqual(result, _FORK.EXIT_LOCK_3_FAILED)
 
     def test_env_key_constant(self) -> None:
-        self.assertEqual(
-            _FORK.RUN_AUTHORIZATION_ENV_KEY, "SOL_S1_V3_RUN_AUTHORIZED"
-        )
+        self.assertEqual(_FORK.RUN_AUTHORIZATION_ENV_KEY, "SOL_S1_V3_RUN_AUTHORIZED")
 
     def test_expected_value_constant(self) -> None:
-        self.assertEqual(
-            _FORK.RUN_AUTHORIZATION_EXPECTED, "v3_run_go_granted"
-        )
+        self.assertEqual(_FORK.RUN_AUTHORIZATION_EXPECTED, "v3_run_go_granted")
 
 
 # ---------------------------------------------------------------------------
@@ -189,48 +181,34 @@ class TestLock3ExecutionModeEnvVar(unittest.TestCase):
         return env
 
     def test_missing_rejected(self) -> None:
-        result = _FORK.triple_lock_pre_flight_guard(
-            ["prog", "--run"], self._env(None)
-        )
+        result = _FORK.triple_lock_pre_flight_guard(["prog", "--run"], self._env(None))
         self.assertEqual(result, _FORK.EXIT_LOCK_3_FAILED)
 
     def test_empty_rejected(self) -> None:
-        result = _FORK.triple_lock_pre_flight_guard(
-            ["prog", "--run"], self._env("")
-        )
+        result = _FORK.triple_lock_pre_flight_guard(["prog", "--run"], self._env(""))
         self.assertEqual(result, _FORK.EXIT_LOCK_3_FAILED)
 
     def test_whitespace_only_rejected(self) -> None:
-        result = _FORK.triple_lock_pre_flight_guard(
-            ["prog", "--run"], self._env("   ")
-        )
+        result = _FORK.triple_lock_pre_flight_guard(["prog", "--run"], self._env("   "))
         self.assertEqual(result, _FORK.EXIT_LOCK_3_FAILED)
 
     def test_ambiguous_rejected(self) -> None:
         # 'ambiguous' is an internal classification label, NOT a valid
         # declared execution_mode. Slot 3 explicitly rejects it.
-        result = _FORK.triple_lock_pre_flight_guard(
-            ["prog", "--run"], self._env("ambiguous")
-        )
+        result = _FORK.triple_lock_pre_flight_guard(["prog", "--run"], self._env("ambiguous"))
         self.assertEqual(result, _FORK.EXIT_LOCK_3_FAILED)
 
     def test_arbitrary_string_rejected(self) -> None:
-        result = _FORK.triple_lock_pre_flight_guard(
-            ["prog", "--run"], self._env("FAKE_VALUE")
-        )
+        result = _FORK.triple_lock_pre_flight_guard(["prog", "--run"], self._env("FAKE_VALUE"))
         self.assertEqual(result, _FORK.EXIT_LOCK_3_FAILED)
 
     def test_case_sensitive_rejected(self) -> None:
         # Upper-case variant must NOT be accepted.
-        result = _FORK.triple_lock_pre_flight_guard(
-            ["prog", "--run"], self._env("REALTIME_SHADOW")
-        )
+        result = _FORK.triple_lock_pre_flight_guard(["prog", "--run"], self._env("REALTIME_SHADOW"))
         self.assertEqual(result, _FORK.EXIT_LOCK_3_FAILED)
 
     def test_realtime_shadow_accepted(self) -> None:
-        result = _FORK.triple_lock_pre_flight_guard(
-            ["prog", "--run"], self._env("realtime_shadow")
-        )
+        result = _FORK.triple_lock_pre_flight_guard(["prog", "--run"], self._env("realtime_shadow"))
         self.assertEqual(result, _FORK.EXIT_OK)
 
     def test_historical_replay_accepted(self) -> None:
@@ -248,28 +226,20 @@ class TestLock3ExecutionModeEnvVar(unittest.TestCase):
         self.assertEqual(result, _FORK.EXIT_OK)
 
     def test_env_key_constant(self) -> None:
-        self.assertEqual(
-            _FORK.EXECUTION_MODE_ENV_KEY, "SOL_S1_V3_EXECUTION_MODE"
-        )
+        self.assertEqual(_FORK.EXECUTION_MODE_ENV_KEY, "SOL_S1_V3_EXECUTION_MODE")
 
     def test_allowed_values_frozenset(self) -> None:
         self.assertEqual(
             _FORK.EXECUTION_MODE_ALLOWED_VALUES,
             frozenset({"realtime_shadow", "historical_replay"}),
         )
-        self.assertIsInstance(
-            _FORK.EXECUTION_MODE_ALLOWED_VALUES, frozenset
-        )
+        self.assertIsInstance(_FORK.EXECUTION_MODE_ALLOWED_VALUES, frozenset)
 
     def test_realtime_shadow_value_constant(self) -> None:
-        self.assertEqual(
-            _FORK.EXECUTION_MODE_VALUE_REALTIME_SHADOW, "realtime_shadow"
-        )
+        self.assertEqual(_FORK.EXECUTION_MODE_VALUE_REALTIME_SHADOW, "realtime_shadow")
 
     def test_historical_replay_value_constant(self) -> None:
-        self.assertEqual(
-            _FORK.EXECUTION_MODE_VALUE_HISTORICAL_REPLAY, "historical_replay"
-        )
+        self.assertEqual(_FORK.EXECUTION_MODE_VALUE_HISTORICAL_REPLAY, "historical_replay")
 
 
 # ---------------------------------------------------------------------------
@@ -287,16 +257,12 @@ class TestTripleLockAndCombination(unittest.TestCase):
     }
 
     def test_all_three_locks_satisfied(self) -> None:
-        result = _FORK.triple_lock_pre_flight_guard(
-            self._good_argv, self._good_env
-        )
+        result = _FORK.triple_lock_pre_flight_guard(self._good_argv, self._good_env)
         self.assertEqual(result, _FORK.EXIT_OK)
 
     def test_lock1_failure_alone(self) -> None:
         # --run missing, env fully valid — should still fail on Lock 1.
-        result = _FORK.triple_lock_pre_flight_guard(
-            ["prog"], self._good_env
-        )
+        result = _FORK.triple_lock_pre_flight_guard(["prog"], self._good_env)
         self.assertEqual(result, _FORK.EXIT_LOCK_1_FAILED)
 
     def test_lock2_failure_alone(self) -> None:
@@ -426,9 +392,7 @@ class TestFrozenSha256ConstantEquality(unittest.TestCase):
     """
 
     def test_constant_matches_expected_literal(self) -> None:
-        self.assertEqual(
-            _FORK.FORK_OF_ORIGINAL_SHA256, EXPECTED_FROZEN_SHA256
-        )
+        self.assertEqual(_FORK.FORK_OF_ORIGINAL_SHA256, EXPECTED_FROZEN_SHA256)
 
     def test_constant_matches_file_on_disk(self) -> None:
         self.assertTrue(
@@ -453,9 +417,7 @@ class TestForkProvenanceConstants(unittest.TestCase):
     """Fork provenance constants form the fork's audit trail."""
 
     def test_fork_of_original_path(self) -> None:
-        self.assertEqual(
-            _FORK.FORK_OF_ORIGINAL_PATH, "scripts/sol_s1_v3_shadow_run.py"
-        )
+        self.assertEqual(_FORK.FORK_OF_ORIGINAL_PATH, "scripts/sol_s1_v3_shadow_run.py")
 
     def test_fork_chain_id(self) -> None:
         self.assertEqual(
@@ -513,10 +475,7 @@ class TestGuardIsolationInvariants(unittest.TestCase):
             "SOL_S1_V3_RUN_AUTHORIZED": "v3_run_go_granted",
             "SOL_S1_V3_EXECUTION_MODE": "realtime_shadow",
         }
-        results = [
-            _FORK.triple_lock_pre_flight_guard(good_argv, good_env)
-            for _ in range(5)
-        ]
+        results = [_FORK.triple_lock_pre_flight_guard(good_argv, good_env) for _ in range(5)]
         self.assertEqual(results, [_FORK.EXIT_OK] * 5)
 
 

@@ -178,8 +178,9 @@ def test_5_batch_indicator_accuracy():
     # RSI: valid range 0-100 after warmup
     valid_rsi = rsi[~np.isnan(rsi)]
     assert len(valid_rsi) > 0, "No valid RSI values"
-    assert np.all(valid_rsi >= 0) and np.all(valid_rsi <= 100), \
+    assert np.all(valid_rsi >= 0) and np.all(valid_rsi <= 100), (
         f"RSI out of range: min={np.min(valid_rsi)}, max={np.max(valid_rsi)}"
+    )
 
     # ATR: positive after warmup
     valid_atr = atr[~np.isnan(atr)]
@@ -274,8 +275,9 @@ def test_9_no_runtime_coupling():
     detector.detect_batch(ohlcv)
 
     # _history should NOT be modified by batch detection
-    assert len(detector._history) == 0, \
+    assert len(detector._history) == 0, (
         f"detect_batch polluted _history: len={len(detector._history)}"
+    )
 
     print("  _history unchanged after batch: PASS")
     return True

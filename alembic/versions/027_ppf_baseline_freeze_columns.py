@@ -31,7 +31,9 @@ def upgrade() -> None:
         sa.Column("gate_allowed", sa.Boolean(), nullable=False),
         sa.Column("manifest_name", sa.String(32), nullable=False),
         sa.Column("observation_window_bars", sa.Integer(), nullable=False, server_default="20"),
-        sa.Column("observation_window_closed", sa.Boolean(), nullable=False, server_default="false"),
+        sa.Column(
+            "observation_window_closed", sa.Boolean(), nullable=False, server_default="false"
+        ),
         sa.Column("bars_elapsed", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("judgment", sa.String(16), nullable=True),
         sa.Column("judgment_ts", sa.DateTime(), nullable=True),
@@ -43,7 +45,9 @@ def upgrade() -> None:
     )
     op.create_index("ix_ppf_novelty_symbol_ts", "ppf_novelty_events", ["symbol", "event_ts"])
     op.create_index("ix_ppf_novelty_judgment", "ppf_novelty_events", ["judgment"])
-    op.create_index("ix_ppf_novelty_window_closed", "ppf_novelty_events", ["observation_window_closed"])
+    op.create_index(
+        "ix_ppf_novelty_window_closed", "ppf_novelty_events", ["observation_window_closed"]
+    )
 
     # ── ppf_backtest_baselines (with freeze/seal columns) ───────────
     op.create_table(
@@ -82,7 +86,11 @@ def upgrade() -> None:
         # Metadata
         sa.Column("created_at", sa.DateTime(), nullable=False),
     )
-    op.create_index("ix_ppf_baseline_symbol_exchange_tf", "ppf_backtest_baselines", ["symbol", "exchange", "timeframe"])
+    op.create_index(
+        "ix_ppf_baseline_symbol_exchange_tf",
+        "ppf_backtest_baselines",
+        ["symbol", "exchange", "timeframe"],
+    )
     op.create_index("ix_ppf_baseline_params_hash", "ppf_backtest_baselines", ["ppf_params_hash"])
 
 

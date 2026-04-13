@@ -99,51 +99,33 @@ class PPFParameters:
             )
 
         if self.correlation_length <= 0:
-            violations.append(
-                f"correlation_length={self.correlation_length} must be > 0"
-            )
+            violations.append(f"correlation_length={self.correlation_length} must be > 0")
 
         if self.projection_horizon <= 0:
-            violations.append(
-                f"projection_horizon={self.projection_horizon} must be > 0"
-            )
+            violations.append(f"projection_horizon={self.projection_horizon} must be > 0")
 
         if not (0 < self.similarity_min <= 1.0):
-            violations.append(
-                f"similarity_min={self.similarity_min} must be in (0, 1]"
-            )
+            violations.append(f"similarity_min={self.similarity_min} must be in (0, 1]")
 
         if self.rr_min <= 0:
             violations.append(f"rr_min={self.rr_min} must be > 0")
 
         if not (0 < self.projection_bias_min <= 1.0):
-            violations.append(
-                f"projection_bias_min={self.projection_bias_min} "
-                f"must be in (0, 1]"
-            )
+            violations.append(f"projection_bias_min={self.projection_bias_min} must be in (0, 1]")
 
         if not (0 < self.novelty_threshold <= 1.0):
-            violations.append(
-                f"novelty_threshold={self.novelty_threshold} "
-                f"must be in (0, 1]"
-            )
+            violations.append(f"novelty_threshold={self.novelty_threshold} must be in (0, 1]")
 
         if self.watch_timeout_bars <= 0:
-            violations.append(
-                f"watch_timeout_bars={self.watch_timeout_bars} must be > 0"
-            )
+            violations.append(f"watch_timeout_bars={self.watch_timeout_bars} must be > 0")
 
         if self.candidate_timeout_bars <= 0:
-            violations.append(
-                f"candidate_timeout_bars={self.candidate_timeout_bars} "
-                f"must be > 0"
-            )
+            violations.append(f"candidate_timeout_bars={self.candidate_timeout_bars} must be > 0")
 
         if violations:
             raise ValueError(
                 f"PPFParameters validation failed for "
-                f"{self.market_profile.value}:\n"
-                + "\n".join(f"  - {v}" for v in violations)
+                f"{self.market_profile.value}:\n" + "\n".join(f"  - {v}" for v in violations)
             )
 
 
@@ -187,15 +169,9 @@ def load_parameters_from_env(
         rr_min=_get_float("RR_MIN", DEFAULT_RR_MIN),
         similarity_min=_get_float("SIMILARITY_MIN", DEFAULT_SIMILARITY_MIN),
         novelty_threshold=_get_float("NOVELTY_THRESHOLD", DEFAULT_NOVELTY_THRESHOLD),
-        projection_bias_min=_get_float(
-            "PROJECTION_BIAS_MIN", DEFAULT_PROJECTION_BIAS_MIN
-        ),
-        watch_timeout_bars=_get_int(
-            "WATCH_TIMEOUT_BARS", DEFAULT_WATCH_TIMEOUT_BARS
-        ),
-        candidate_timeout_bars=_get_int(
-            "CANDIDATE_TIMEOUT_BARS", DEFAULT_CANDIDATE_TIMEOUT_BARS
-        ),
+        projection_bias_min=_get_float("PROJECTION_BIAS_MIN", DEFAULT_PROJECTION_BIAS_MIN),
+        watch_timeout_bars=_get_int("WATCH_TIMEOUT_BARS", DEFAULT_WATCH_TIMEOUT_BARS),
+        candidate_timeout_bars=_get_int("CANDIDATE_TIMEOUT_BARS", DEFAULT_CANDIDATE_TIMEOUT_BARS),
     )
 
 
@@ -210,29 +186,15 @@ def load_parameters_from_dict(
     """
     return PPFParameters(
         market_profile=market_profile,
-        correlation_length=int(
-            config.get("correlation_length", DEFAULT_CORRELATION_LENGTH)
-        ),
-        projection_horizon=int(
-            config.get("projection_horizon", DEFAULT_PROJECTION_HORIZON)
-        ),
+        correlation_length=int(config.get("correlation_length", DEFAULT_CORRELATION_LENGTH)),
+        projection_horizon=int(config.get("projection_horizon", DEFAULT_PROJECTION_HORIZON)),
         k=int(config.get("k", DEFAULT_K)),
-        path_quality_min=float(
-            config.get("path_quality_min", DEFAULT_PATH_QUALITY_MIN)
-        ),
+        path_quality_min=float(config.get("path_quality_min", DEFAULT_PATH_QUALITY_MIN)),
         rr_min=float(config.get("rr_min", DEFAULT_RR_MIN)),
-        similarity_min=float(
-            config.get("similarity_min", DEFAULT_SIMILARITY_MIN)
-        ),
-        novelty_threshold=float(
-            config.get("novelty_threshold", DEFAULT_NOVELTY_THRESHOLD)
-        ),
-        projection_bias_min=float(
-            config.get("projection_bias_min", DEFAULT_PROJECTION_BIAS_MIN)
-        ),
-        watch_timeout_bars=int(
-            config.get("watch_timeout_bars", DEFAULT_WATCH_TIMEOUT_BARS)
-        ),
+        similarity_min=float(config.get("similarity_min", DEFAULT_SIMILARITY_MIN)),
+        novelty_threshold=float(config.get("novelty_threshold", DEFAULT_NOVELTY_THRESHOLD)),
+        projection_bias_min=float(config.get("projection_bias_min", DEFAULT_PROJECTION_BIAS_MIN)),
+        watch_timeout_bars=int(config.get("watch_timeout_bars", DEFAULT_WATCH_TIMEOUT_BARS)),
         candidate_timeout_bars=int(
             config.get("candidate_timeout_bars", DEFAULT_CANDIDATE_TIMEOUT_BARS)
         ),

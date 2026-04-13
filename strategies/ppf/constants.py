@@ -17,6 +17,7 @@ from typing import Final
 # Decision States (D1-D6) - Regular FSM States
 # ---------------------------------------------------------------------------
 
+
 class PPFState(enum.Enum):
     """PPF decision states. D1-D6 are regular FSM states."""
 
@@ -32,6 +33,7 @@ class PPFState(enum.Enum):
 # Transition Outcome (R1) - NOT a regular state
 # ---------------------------------------------------------------------------
 
+
 class TransitionOutcome(enum.Enum):
     """Transition outcomes. R1 is a separate outcome, not a regular state."""
 
@@ -41,6 +43,7 @@ class TransitionOutcome(enum.Enum):
 # ---------------------------------------------------------------------------
 # Rejection Reason Codes (7 types)
 # ---------------------------------------------------------------------------
+
 
 class RejectionCode(enum.Enum):
     """Rejection reason codes for L4 audit logging."""
@@ -58,18 +61,15 @@ class RejectionCode(enum.Enum):
 # Observation Field Names (O1-O9)
 # ---------------------------------------------------------------------------
 
+
 class ObsField(str, enum.Enum):
     """Canonical observation field names. Aliases are prohibited."""
 
     O1_PATTERN_SIMILARITY_SCORE = "pattern_similarity_score"
     O2_PROJECTION_DIRECTION = "projection_direction"
     O3_PROJECTION_CONSENSUS_RATIO = "projection_consensus_ratio"
-    O4_EXPECTED_ADVERSE_EXCURSION_BEFORE_TARGET = (
-        "expected_adverse_excursion_before_target"
-    )
-    O5_EXPECTED_FAVORABLE_EXCURSION_TO_TARGET = (
-        "expected_favorable_excursion_to_target"
-    )
+    O4_EXPECTED_ADVERSE_EXCURSION_BEFORE_TARGET = "expected_adverse_excursion_before_target"
+    O5_EXPECTED_FAVORABLE_EXCURSION_TO_TARGET = "expected_favorable_excursion_to_target"
     O6_SSL_TREND_STRENGTH = "ssl_trend_strength"
     O7_VOLUME_FORCE_STRENGTH = "volume_force_strength"
     O8_RECENT_SWING_DISTANCE_PCT = "recent_swing_distance_pct"
@@ -79,6 +79,7 @@ class ObsField(str, enum.Enum):
 # ---------------------------------------------------------------------------
 # Interpretation Score Names (I1-I5)
 # ---------------------------------------------------------------------------
+
 
 class InterpScore(str, enum.Enum):
     """Interpretation score names with role separation.
@@ -140,6 +141,7 @@ MIN_K: Final[int] = 2
 # ---------------------------------------------------------------------------
 # Market Profile Identifiers (M1-M3)
 # ---------------------------------------------------------------------------
+
 
 class MarketProfile(str, enum.Enum):
     """Market profile identifiers for parameter separation (C3)."""

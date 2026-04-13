@@ -157,8 +157,7 @@ class PPFIntegratedBacktester:
         )
 
         logger.info(
-            "ppf_integrated_backtest_replay_done "
-            "total=%d evaluated=%d allow=%d deny=%d novelty=%d",
+            "ppf_integrated_backtest_replay_done total=%d evaluated=%d allow=%d deny=%d novelty=%d",
             replay_result.total_bars,
             replay_result.evaluated_bars,
             replay_result.allow_count,
@@ -177,8 +176,7 @@ class PPFIntegratedBacktester:
         )
 
         logger.info(
-            "ppf_integrated_backtest_judgment_done "
-            "total=%d tp=%d fp=%d unresolved=%d fpr=%.4f",
+            "ppf_integrated_backtest_judgment_done total=%d tp=%d fp=%d unresolved=%d fpr=%.4f",
             judgment_report.total_events,
             judgment_report.tp_count,
             judgment_report.fp_count,
@@ -261,12 +259,8 @@ class PPFIntegratedBacktester:
 
         # Serialize distributions as JSON
         full_stats = ppf.segment_stats.get("full")
-        deny_dist_json = json.dumps(
-            full_stats.deny_reason_distribution if full_stats else {}
-        )
-        state_dist_json = json.dumps(
-            full_stats.state_distribution if full_stats else {}
-        )
+        deny_dist_json = json.dumps(full_stats.deny_reason_distribution if full_stats else {})
+        state_dist_json = json.dumps(full_stats.state_distribution if full_stats else {})
 
         # Serialize full result
         result_dict = {

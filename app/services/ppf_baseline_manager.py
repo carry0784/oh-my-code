@@ -52,16 +52,25 @@ class PPFBaselineManager:
         """
         baseline = await self._load_baseline(session, baseline_id)
         if baseline is None:
-            return {"success": False, "seal_hash": None,
-                    "error": f"baseline_id={baseline_id} not found"}
+            return {
+                "success": False,
+                "seal_hash": None,
+                "error": f"baseline_id={baseline_id} not found",
+            }
 
         if baseline.frozen:
-            return {"success": False, "seal_hash": baseline.seal_hash,
-                    "error": "ALREADY_FROZEN: baseline cannot be frozen twice"}
+            return {
+                "success": False,
+                "seal_hash": baseline.seal_hash,
+                "error": "ALREADY_FROZEN: baseline cannot be frozen twice",
+            }
 
         if baseline.invalidated:
-            return {"success": False, "seal_hash": None,
-                    "error": "INVALIDATED: cannot freeze an invalidated baseline"}
+            return {
+                "success": False,
+                "seal_hash": None,
+                "error": "INVALIDATED: cannot freeze an invalidated baseline",
+            }
 
         seal_hash = self._compute_seal_hash(baseline)
 
@@ -96,12 +105,20 @@ class PPFBaselineManager:
         """
         baseline = await self._load_baseline(session, baseline_id)
         if baseline is None:
-            return {"valid": False, "stored_hash": None, "computed_hash": None,
-                    "error": f"baseline_id={baseline_id} not found"}
+            return {
+                "valid": False,
+                "stored_hash": None,
+                "computed_hash": None,
+                "error": f"baseline_id={baseline_id} not found",
+            }
 
         if not baseline.frozen:
-            return {"valid": False, "stored_hash": None, "computed_hash": None,
-                    "error": "NOT_FROZEN: baseline has no seal to verify"}
+            return {
+                "valid": False,
+                "stored_hash": None,
+                "computed_hash": None,
+                "error": "NOT_FROZEN: baseline has no seal to verify",
+            }
 
         computed = self._compute_seal_hash(baseline)
         stored = baseline.seal_hash or ""
@@ -141,20 +158,19 @@ class PPFBaselineManager:
         """
         baseline = await self._load_baseline(session, baseline_id)
         if baseline is None:
-            return {"success": False,
-                    "error": f"baseline_id={baseline_id} not found"}
+            return {"success": False, "error": f"baseline_id={baseline_id} not found"}
 
         if not baseline.frozen:
-            return {"success": False,
-                    "error": "NOT_FROZEN: Phase B requires a frozen baseline"}
+            return {"success": False, "error": "NOT_FROZEN: Phase B requires a frozen baseline"}
 
         if baseline.invalidated:
-            return {"success": False,
-                    "error": "INVALIDATED: cannot start Phase B on invalidated baseline"}
+            return {
+                "success": False,
+                "error": "INVALIDATED: cannot start Phase B on invalidated baseline",
+            }
 
         if baseline.phase_b_started:
-            return {"success": False,
-                    "error": "ALREADY_STARTED: Phase B already in progress"}
+            return {"success": False, "error": "ALREADY_STARTED: Phase B already in progress"}
 
         baseline.phase_b_started = True
         baseline.phase_b_started_at = datetime.utcnow()
@@ -181,12 +197,10 @@ class PPFBaselineManager:
         """
         baseline = await self._load_baseline(session, baseline_id)
         if baseline is None:
-            return {"success": False,
-                    "error": f"baseline_id={baseline_id} not found"}
+            return {"success": False, "error": f"baseline_id={baseline_id} not found"}
 
         if baseline.invalidated:
-            return {"success": False,
-                    "error": "ALREADY_INVALIDATED"}
+            return {"success": False, "error": "ALREADY_INVALIDATED"}
 
         baseline.invalidated = True
         baseline.invalidated_reason = reason[:500]
@@ -230,9 +244,7 @@ class PPFBaselineManager:
         baseline_id: str,
     ) -> PPFBacktestBaseline | None:
         """Load a baseline by ID."""
-        stmt = select(PPFBacktestBaseline).where(
-            PPFBacktestBaseline.id == baseline_id
-        )
+        stmt = select(PPFBacktestBaseline).where(PPFBacktestBaseline.id == baseline_id)
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
 

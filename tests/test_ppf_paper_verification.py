@@ -52,6 +52,7 @@ from strategies.ppf.parameters import PPFParameters
 # Paper Trading Simulation Helpers
 # ===========================================================================
 
+
 def _params(**overrides) -> PPFParameters:
     defaults = dict(
         market_profile=MarketProfile.M1_CRYPTO_FUTURES,
@@ -112,6 +113,7 @@ def _scores(**overrides) -> InterpretationScores:
 @dataclass
 class PaperTrade:
     """Simulated paper trade for verification."""
+
     side: str
     symbol: str
     size: float
@@ -179,6 +181,7 @@ class PaperTradingEngine:
 # SECTION 1: Paper Candidate Accepted Flow (Bullish)
 # ===========================================================================
 
+
 class TestPaperCandidateAccepted:
     """Paper flow: engine candidate → PPF D6 → execute (paper)."""
 
@@ -188,8 +191,7 @@ class TestPaperCandidateAccepted:
         gate = PPFGate(params, "paper:SOL/USDT:1h")
         engine = PaperTradingEngine()
 
-        candidate = {"side": "buy", "symbol": "SOL/USDT", "size": 1.0,
-                     "entry_price": 150.0}
+        candidate = {"side": "buy", "symbol": "SOL/USDT", "size": 1.0, "entry_price": 150.0}
         engine.set_next_candidate(candidate)
         engine.set_risk_filter(True)
 
@@ -214,8 +216,7 @@ class TestPaperCandidateAccepted:
         gate = PPFGate(params, "paper:SOL/USDT:1h")
         engine = PaperTradingEngine()
 
-        candidate = {"side": "sell", "symbol": "SOL/USDT", "size": 1.0,
-                     "entry_price": 150.0}
+        candidate = {"side": "sell", "symbol": "SOL/USDT", "size": 1.0, "entry_price": 150.0}
         engine.set_next_candidate(candidate)
         engine.set_risk_filter(True)
 
@@ -234,6 +235,7 @@ class TestPaperCandidateAccepted:
 # ===========================================================================
 # SECTION 2: Paper Candidate Denied Flow
 # ===========================================================================
+
 
 class TestPaperCandidateDenied:
     """Paper flow: engine candidate → PPF denies → candidate discarded."""
@@ -309,6 +311,7 @@ class TestPaperCandidateDenied:
 # SECTION 3: Paper Fill / Cancel / No-Fill Scenarios
 # ===========================================================================
 
+
 class TestPaperTradeLifecycle:
     """Paper trade lifecycle: fill, cancel, no-fill."""
 
@@ -353,6 +356,7 @@ class TestPaperTradeLifecycle:
 # SECTION 4: Paper PnL / False Positive Pipeline
 # ===========================================================================
 
+
 class TestPaperFalsePositivePipeline:
     """L3 false_positive_flag pipeline in paper mode."""
 
@@ -365,7 +369,9 @@ class TestPaperFalsePositivePipeline:
             allow_entry=True,
         )
         entry = build_log_entry(
-            obs=obs, scores=scores, result=result,
+            obs=obs,
+            scores=scores,
+            result=result,
             asset_timeframe_tag="paper:SOL/USDT:1h",
         )
         # L3 is initially None (filled post-hoc)
@@ -378,7 +384,8 @@ class TestPaperFalsePositivePipeline:
     def test_true_positive_flag_on_win(self) -> None:
         """D6 approved trade that wins → false_positive_flag = False."""
         entry = build_log_entry(
-            obs=_obs(), scores=_scores(),
+            obs=_obs(),
+            scores=_scores(),
             result=DecisionResult(state=PPFState.D6_EXECUTE_READY, allow_entry=True),
             asset_timeframe_tag="paper:SOL/USDT:1h",
         )
@@ -388,7 +395,8 @@ class TestPaperFalsePositivePipeline:
     def test_l1_projection_actual_error_post_hoc(self) -> None:
         """L1 projection_actual_error filled after projection horizon."""
         entry = build_log_entry(
-            obs=_obs(), scores=_scores(),
+            obs=_obs(),
+            scores=_scores(),
             result=DecisionResult(state=PPFState.D6_EXECUTE_READY, allow_entry=True),
             asset_timeframe_tag="paper:SOL/USDT:1h",
         )
@@ -400,7 +408,8 @@ class TestPaperFalsePositivePipeline:
     def test_rejected_trade_no_false_positive(self) -> None:
         """R1 rejected trade → false_positive_flag stays None (no trade taken)."""
         entry = build_log_entry(
-            obs=_obs(), scores=_scores(),
+            obs=_obs(),
+            scores=_scores(),
             result=DecisionResult(
                 state=PPFState.D1_IDLE,
                 reached_state=PPFState.D5_ARMED,
@@ -417,6 +426,7 @@ class TestPaperFalsePositivePipeline:
 # ===========================================================================
 # SECTION 5: Multi-Candle Paper Sequence
 # ===========================================================================
+
 
 class TestMultiCandlePaperSequence:
     """Simulate multi-candle paper trading sessions."""
@@ -473,7 +483,9 @@ class TestMultiCandlePaperSequence:
         # 3 rejections at D5 (risk filter)
         for i in range(3):
             r = sm.evaluate(
-                obs=_obs(), scores=_scores(), risk_filter_pass=False,
+                obs=_obs(),
+                scores=_scores(),
+                risk_filter_pass=False,
             )
             assert r.state == PPFState.D1_IDLE
             assert r.rejection == TransitionOutcome.R1_REJECT
@@ -527,6 +539,7 @@ class TestMultiCandlePaperSequence:
 # SECTION 6: PPFGate Integration in Paper Mode
 # ===========================================================================
 
+
 class TestPPFGateIntegration:
     """End-to-end PPFGate behavior in paper mode."""
 
@@ -553,7 +566,10 @@ class TestPPFGateIntegration:
         params = _params()
         gate = PPFGate(params, "paper:SOL/USDT:1h")
         result = gate.evaluate(
-            np.array([]), np.array([]), np.array([]), np.array([]),
+            np.array([]),
+            np.array([]),
+            np.array([]),
+            np.array([]),
             risk_filter_pass=True,
         )
         assert result is False
@@ -593,6 +609,7 @@ class TestPPFGateIntegration:
 # SECTION 7: Wrapper End-to-End Paper Flow
 # ===========================================================================
 
+
 class TestWrapperEndToEnd:
     """Full PPFOrchestrationWrapper paper flow."""
 
@@ -602,8 +619,7 @@ class TestWrapperEndToEnd:
         gate = PPFGate(params, "paper:SOL/USDT:1h")
         engine = PaperTradingEngine()
 
-        candidate = {"side": "buy", "symbol": "SOL/USDT", "size": 0.5,
-                     "entry_price": 155.0}
+        candidate = {"side": "buy", "symbol": "SOL/USDT", "size": 0.5, "entry_price": 155.0}
         engine.set_next_candidate(candidate)
         engine.set_risk_filter(True)
 
@@ -680,6 +696,7 @@ class TestWrapperEndToEnd:
 # SECTION 8: Shadow-to-Paper Invariant Continuity
 # ===========================================================================
 
+
 class TestShadowToPaperContinuity:
     """Verify shadow-verified invariants hold in paper mode."""
 
@@ -697,7 +714,8 @@ class TestShadowToPaperContinuity:
         r1 = sm.evaluate(obs=_obs(), scores=_scores(), risk_filter_pass=True)
         assert r1.state == PPFState.D6_EXECUTE_READY
         r2 = sm.evaluate(
-            obs=_obs(pattern_similarity_score=0.1), scores=_scores(),
+            obs=_obs(pattern_similarity_score=0.1),
+            scores=_scores(),
         )
         assert r2.state == PPFState.D1_IDLE
 
@@ -705,7 +723,8 @@ class TestShadowToPaperContinuity:
         """C11: novelty brake forces D1 in paper flow."""
         sm = PPFStateMachine(_params())
         r = sm.evaluate(
-            obs=_obs(regime_novelty_flag=True), scores=_scores(),
+            obs=_obs(regime_novelty_flag=True),
+            scores=_scores(),
             risk_filter_pass=True,
         )
         assert r.state == PPFState.D1_IDLE
@@ -738,6 +757,7 @@ class TestShadowToPaperContinuity:
     def test_c10_frozen_in_paper(self) -> None:
         """C10: parameters frozen in paper mode."""
         from dataclasses import FrozenInstanceError
+
         p = _params()
         with pytest.raises(FrozenInstanceError):
             p.k = 99  # type: ignore[misc]
@@ -755,6 +775,7 @@ class TestShadowToPaperContinuity:
 # ===========================================================================
 # SECTION 9: Paper Logging Completeness
 # ===========================================================================
+
 
 class TestPaperLogging:
     """Verify logging completeness in paper mode."""
@@ -801,7 +822,8 @@ class TestPaperLogging:
     def test_paper_log_reached_state_on_rejection(self) -> None:
         """reached_state logged on R1 rejection in paper."""
         entry = build_log_entry(
-            obs=_obs(), scores=_scores(),
+            obs=_obs(),
+            scores=_scores(),
             result=DecisionResult(
                 state=PPFState.D1_IDLE,
                 reached_state=PPFState.D5_ARMED,
@@ -817,6 +839,7 @@ class TestPaperLogging:
 # ===========================================================================
 # SECTION 10: Engine diff=0 in Paper Mode
 # ===========================================================================
+
 
 class TestEngineDiffZeroPaper:
     """Verify engine files are not modified during paper verification."""

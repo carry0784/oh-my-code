@@ -171,8 +171,7 @@ def triple_lock_pre_flight_guard(
             flush=True,
         )
         print(
-            f"[V-3R2][LOCK-1][ABORT] authority: "
-            f"{AUTHORITY_SOURCE_EXECUTION_MODE_PROTOCOL}",
+            f"[V-3R2][LOCK-1][ABORT] authority: {AUTHORITY_SOURCE_EXECUTION_MODE_PROTOCOL}",
             flush=True,
         )
         return EXIT_LOCK_1_FAILED
@@ -195,8 +194,7 @@ def triple_lock_pre_flight_guard(
             flush=True,
         )
         print(
-            f"[V-3R2][LOCK-2][ABORT] authority: "
-            f"{AUTHORITY_SOURCE_V3R2_RUN_GO_RECEIPT}",
+            f"[V-3R2][LOCK-2][ABORT] authority: {AUTHORITY_SOURCE_V3R2_RUN_GO_RECEIPT}",
             flush=True,
         )
         return EXIT_LOCK_2_FAILED
@@ -215,8 +213,7 @@ def triple_lock_pre_flight_guard(
             flush=True,
         )
         print(
-            f"[V-3R2][LOCK-3][ABORT] allowed: "
-            f"{sorted(EXECUTION_MODE_ALLOWED_VALUES)}",
+            f"[V-3R2][LOCK-3][ABORT] allowed: {sorted(EXECUTION_MODE_ALLOWED_VALUES)}",
             flush=True,
         )
         print(
@@ -226,8 +223,7 @@ def triple_lock_pre_flight_guard(
             flush=True,
         )
         print(
-            f"[V-3R2][LOCK-3][ABORT] authority: "
-            f"{AUTHORITY_SOURCE_EXECUTION_MODE_PROTOCOL}",
+            f"[V-3R2][LOCK-3][ABORT] authority: {AUTHORITY_SOURCE_EXECUTION_MODE_PROTOCOL}",
             flush=True,
         )
         return EXIT_LOCK_3_FAILED

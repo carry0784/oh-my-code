@@ -45,7 +45,10 @@ def upgrade() -> None:
         sa.Column("ingested_at", sa.DateTime(), nullable=False),
         # Constraints
         sa.UniqueConstraint(
-            "exchange", "symbol", "timeframe", "open_time",
+            "exchange",
+            "symbol",
+            "timeframe",
+            "open_time",
             name="uq_ohlcv_canonical_slot",
         ),
     )

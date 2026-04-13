@@ -48,6 +48,7 @@ from strategies.ppf.session_ledger import SessionBudgetConfig, SessionFailureBud
 # Shared helpers (mirrors test_ppf_enforcement_simulation.py pattern)
 # ---------------------------------------------------------------------------
 
+
 def _make_params() -> PPFParameters:
     """Minimal valid PPFParameters for testing."""
     return PPFParameters(
@@ -72,9 +73,9 @@ def _make_session_ledger() -> SessionFailureBudgetLedger:
 
 def _make_ohlcv_provider():
     """Callable that returns minimal valid OHLCV arrays."""
-    highs   = np.linspace(101, 110, 50)
-    lows    = np.linspace(99,  108, 50)
-    closes  = np.linspace(100, 109, 50)
+    highs = np.linspace(101, 110, 50)
+    lows = np.linspace(99, 108, 50)
+    closes = np.linspace(100, 109, 50)
     volumes = np.ones(50) * 500.0
 
     def provider():
@@ -125,9 +126,13 @@ def _make_novelty_log_entry() -> PPFLogEntry:
         ppf_state=PPFState.D1_IDLE.value,
         allow_entry=False,
         filter_contribution_map={
-            "I1": -0.5, "I2": 0.1, "I3": 0.1,
-            "I4": 0.0,  "I5": 0.0,
-            "O4_raw": 0.05, "O5_raw": 0.04,
+            "I1": -0.5,
+            "I2": 0.1,
+            "I3": 0.1,
+            "I4": 0.0,
+            "I5": 0.0,
+            "O4_raw": 0.05,
+            "O5_raw": 0.04,
         },
         rejection_reason_code=RejectionCode.NOVELTY_BRAKE.value,
         reached_state=PPFState.D1_IDLE.value,
@@ -143,9 +148,13 @@ def _make_score_deny_log_entry() -> PPFLogEntry:
         ppf_state=PPFState.D2_WATCH.value,
         allow_entry=False,
         filter_contribution_map={
-            "I1": 0.1, "I2": 0.1, "I3": 0.1,
-            "I4": 0.0,  "I5": 0.0,
-            "O4_raw": 0.05, "O5_raw": 0.04,
+            "I1": 0.1,
+            "I2": 0.1,
+            "I3": 0.1,
+            "I4": 0.0,
+            "I5": 0.0,
+            "O4_raw": 0.05,
+            "O5_raw": 0.04,
         },
         rejection_reason_code=RejectionCode.PATH_QUALITY_FAIL.value,
         reached_state=PPFState.D2_WATCH.value,
@@ -161,9 +170,13 @@ def _make_pass_log_entry() -> PPFLogEntry:
         ppf_state=PPFState.D6_EXECUTE_READY.value,
         allow_entry=True,
         filter_contribution_map={
-            "I1": 0.8, "I2": 0.7, "I3": 0.6,
-            "I4": 0.5, "I5": 0.4,
-            "O4_raw": 0.02, "O5_raw": 0.06,
+            "I1": 0.8,
+            "I2": 0.7,
+            "I3": 0.6,
+            "I4": 0.5,
+            "I5": 0.4,
+            "O4_raw": 0.02,
+            "O5_raw": 0.06,
         },
         rejection_reason_code=None,
         reached_state=PPFState.D6_EXECUTE_READY.value,
@@ -207,6 +220,7 @@ def _make_gate_mock_inactive() -> MagicMock:
 # 1. TestPaperModeGateDeny
 #    PAPER_MANIFEST denies on every reachable DenyReasonCode path.
 # ---------------------------------------------------------------------------
+
 
 class TestPaperModeGateDeny:
     """PAPER_MANIFEST (enforce_deny=True) must produce allowed=False for every
@@ -260,9 +274,7 @@ class TestPaperModeGateDeny:
         handler = PPFGateHandler(
             ppf_gate=gate,
             session_ledger=_make_session_ledger(),
-            ohlcv_provider=lambda: (
-                np.array([]), np.array([]), np.array([]), np.array([])
-            ),
+            ohlcv_provider=lambda: (np.array([]), np.array([]), np.array([]), np.array([])),
             manifest=PAPER_MANIFEST,
         )
         result = handler.check_gate(symbol="SOL/USDT", exchange="binance")
@@ -325,43 +337,46 @@ class TestPaperModeGateDeny:
 
     # -- Parametrize: check deny_reason_code is non-None for all deny paths --
 
-    @pytest.mark.parametrize("deny_code,setup", [
-        (
-            DenyReasonCode.NOVELTY_BRAKE,
-            lambda: _build_handler(PAPER_MANIFEST, False, _make_novelty_log_entry()),
-        ),
-        (
-            DenyReasonCode.SCORE_THRESHOLD_DENY,
-            lambda: _build_handler(PAPER_MANIFEST, False, _make_score_deny_log_entry()),
-        ),
-        (
-            DenyReasonCode.DATA_MISSING,
-            lambda: PPFGateHandler(
-                ppf_gate=_make_gate_mock(False, _make_score_deny_log_entry()),
-                session_ledger=_make_session_ledger(),
-                ohlcv_provider=lambda: None,
-                manifest=PAPER_MANIFEST,
+    @pytest.mark.parametrize(
+        "deny_code,setup",
+        [
+            (
+                DenyReasonCode.NOVELTY_BRAKE,
+                lambda: _build_handler(PAPER_MANIFEST, False, _make_novelty_log_entry()),
             ),
-        ),
-        (
-            DenyReasonCode.CONSTITUTION_DEACTIVATED,
-            lambda: PPFGateHandler(
-                ppf_gate=_make_gate_mock_inactive(),
-                session_ledger=_make_session_ledger(),
-                ohlcv_provider=_make_ohlcv_provider(),
-                manifest=PAPER_MANIFEST,
+            (
+                DenyReasonCode.SCORE_THRESHOLD_DENY,
+                lambda: _build_handler(PAPER_MANIFEST, False, _make_score_deny_log_entry()),
             ),
-        ),
-        (
-            DenyReasonCode.SESSION_ABORTED,
-            lambda: PPFGateHandler(
-                ppf_gate=_make_gate_mock(True, _make_pass_log_entry()),
-                session_ledger=_make_aborted_session_ledger(),
-                ohlcv_provider=_make_ohlcv_provider(),
-                manifest=PAPER_MANIFEST,
+            (
+                DenyReasonCode.DATA_MISSING,
+                lambda: PPFGateHandler(
+                    ppf_gate=_make_gate_mock(False, _make_score_deny_log_entry()),
+                    session_ledger=_make_session_ledger(),
+                    ohlcv_provider=lambda: None,
+                    manifest=PAPER_MANIFEST,
+                ),
             ),
-        ),
-    ])
+            (
+                DenyReasonCode.CONSTITUTION_DEACTIVATED,
+                lambda: PPFGateHandler(
+                    ppf_gate=_make_gate_mock_inactive(),
+                    session_ledger=_make_session_ledger(),
+                    ohlcv_provider=_make_ohlcv_provider(),
+                    manifest=PAPER_MANIFEST,
+                ),
+            ),
+            (
+                DenyReasonCode.SESSION_ABORTED,
+                lambda: PPFGateHandler(
+                    ppf_gate=_make_gate_mock(True, _make_pass_log_entry()),
+                    session_ledger=_make_aborted_session_ledger(),
+                    ohlcv_provider=_make_ohlcv_provider(),
+                    manifest=PAPER_MANIFEST,
+                ),
+            ),
+        ],
+    )
     def test_paper_deny_reason_code_is_set(self, deny_code: DenyReasonCode, setup) -> None:
         """For each deny path, deny_reason_code must equal the expected code."""
         handler = setup()
@@ -371,8 +386,7 @@ class TestPaperModeGateDeny:
             f"Expected allowed=False for {deny_code.value}, got allowed=True"
         )
         assert result.deny_reason_code == deny_code, (
-            f"Expected deny_reason_code={deny_code.value}, "
-            f"got {result.deny_reason_code}"
+            f"Expected deny_reason_code={deny_code.value}, got {result.deny_reason_code}"
         )
 
     def test_paper_deny_reason_code_version_is_v1(self) -> None:
@@ -387,6 +401,7 @@ class TestPaperModeGateDeny:
 # 2. TestPaperModeNoLiveExecution
 #    PAPER_MANIFEST must NOT allow live execution and must NOT require micro size.
 # ---------------------------------------------------------------------------
+
 
 class TestPaperModeNoLiveExecution:
     """PAPER_MANIFEST capability assertions: no live execution, no micro size requirement."""
@@ -432,6 +447,7 @@ class TestPaperModeNoLiveExecution:
 #    PAPER_MANIFEST.allow_session_abort=True.
 #    When session ledger is aborted, check_gate must return deny=SESSION_ABORTED.
 # ---------------------------------------------------------------------------
+
 
 class TestPaperModeSessionAbort:
     """PAPER_MANIFEST session abort behavior."""
@@ -541,6 +557,7 @@ class TestPaperModeSessionAbort:
 #    After check_gate, ppf_log_entry and session_summary must be populated.
 # ---------------------------------------------------------------------------
 
+
 class TestPaperModeRecording:
     """PAPER_MANIFEST recording assertions."""
 
@@ -645,6 +662,7 @@ class TestPaperModeRecording:
 #    For every DenyReasonCode that is reachable, PAPER denies while SHADOW allows.
 # ---------------------------------------------------------------------------
 
+
 class TestPaperVsShadowCompleteness:
     """Comprehensive transition test: PAPER denies on every deny code, SHADOW allows."""
 
@@ -652,78 +670,81 @@ class TestPaperVsShadowCompleteness:
         """Helper: returns (shadow_result, paper_result) for the same gate conditions."""
         raise NotImplementedError
 
-    @pytest.mark.parametrize("deny_code,paper_setup,shadow_setup", [
-        (
-            DenyReasonCode.NOVELTY_BRAKE,
-            lambda: _build_handler(PAPER_MANIFEST, False, _make_novelty_log_entry()),
-            lambda: _build_handler(SHADOW_MANIFEST, False, _make_novelty_log_entry()),
-        ),
-        (
-            DenyReasonCode.SCORE_THRESHOLD_DENY,
-            lambda: _build_handler(PAPER_MANIFEST, False, _make_score_deny_log_entry()),
-            lambda: _build_handler(SHADOW_MANIFEST, False, _make_score_deny_log_entry()),
-        ),
-        (
-            DenyReasonCode.DATA_MISSING,
-            lambda: PPFGateHandler(
-                ppf_gate=_make_gate_mock(False, _make_score_deny_log_entry()),
-                session_ledger=_make_session_ledger(),
-                ohlcv_provider=lambda: None,
-                manifest=PAPER_MANIFEST,
+    @pytest.mark.parametrize(
+        "deny_code,paper_setup,shadow_setup",
+        [
+            (
+                DenyReasonCode.NOVELTY_BRAKE,
+                lambda: _build_handler(PAPER_MANIFEST, False, _make_novelty_log_entry()),
+                lambda: _build_handler(SHADOW_MANIFEST, False, _make_novelty_log_entry()),
             ),
-            lambda: PPFGateHandler(
-                ppf_gate=_make_gate_mock(False, _make_score_deny_log_entry()),
-                session_ledger=_make_session_ledger(),
-                ohlcv_provider=lambda: None,
-                manifest=SHADOW_MANIFEST,
+            (
+                DenyReasonCode.SCORE_THRESHOLD_DENY,
+                lambda: _build_handler(PAPER_MANIFEST, False, _make_score_deny_log_entry()),
+                lambda: _build_handler(SHADOW_MANIFEST, False, _make_score_deny_log_entry()),
             ),
-        ),
-        (
-            DenyReasonCode.CONSTITUTION_DEACTIVATED,
-            lambda: PPFGateHandler(
-                ppf_gate=_make_gate_mock_inactive(),
-                session_ledger=_make_session_ledger(),
-                ohlcv_provider=_make_ohlcv_provider(),
-                manifest=PAPER_MANIFEST,
+            (
+                DenyReasonCode.DATA_MISSING,
+                lambda: PPFGateHandler(
+                    ppf_gate=_make_gate_mock(False, _make_score_deny_log_entry()),
+                    session_ledger=_make_session_ledger(),
+                    ohlcv_provider=lambda: None,
+                    manifest=PAPER_MANIFEST,
+                ),
+                lambda: PPFGateHandler(
+                    ppf_gate=_make_gate_mock(False, _make_score_deny_log_entry()),
+                    session_ledger=_make_session_ledger(),
+                    ohlcv_provider=lambda: None,
+                    manifest=SHADOW_MANIFEST,
+                ),
             ),
-            lambda: PPFGateHandler(
-                ppf_gate=_make_gate_mock_inactive(),
-                session_ledger=_make_session_ledger(),
-                ohlcv_provider=_make_ohlcv_provider(),
-                manifest=SHADOW_MANIFEST,
+            (
+                DenyReasonCode.CONSTITUTION_DEACTIVATED,
+                lambda: PPFGateHandler(
+                    ppf_gate=_make_gate_mock_inactive(),
+                    session_ledger=_make_session_ledger(),
+                    ohlcv_provider=_make_ohlcv_provider(),
+                    manifest=PAPER_MANIFEST,
+                ),
+                lambda: PPFGateHandler(
+                    ppf_gate=_make_gate_mock_inactive(),
+                    session_ledger=_make_session_ledger(),
+                    ohlcv_provider=_make_ohlcv_provider(),
+                    manifest=SHADOW_MANIFEST,
+                ),
             ),
-        ),
-        (
-            DenyReasonCode.SESSION_ABORTED,
-            lambda: PPFGateHandler(
-                ppf_gate=_make_gate_mock(True, _make_pass_log_entry()),
-                session_ledger=_make_aborted_session_ledger(),
-                ohlcv_provider=_make_ohlcv_provider(),
-                manifest=PAPER_MANIFEST,
+            (
+                DenyReasonCode.SESSION_ABORTED,
+                lambda: PPFGateHandler(
+                    ppf_gate=_make_gate_mock(True, _make_pass_log_entry()),
+                    session_ledger=_make_aborted_session_ledger(),
+                    ohlcv_provider=_make_ohlcv_provider(),
+                    manifest=PAPER_MANIFEST,
+                ),
+                lambda: PPFGateHandler(
+                    ppf_gate=_make_gate_mock(True, _make_pass_log_entry()),
+                    session_ledger=_make_aborted_session_ledger(),
+                    ohlcv_provider=_make_ohlcv_provider(),
+                    manifest=SHADOW_MANIFEST,
+                ),
             ),
-            lambda: PPFGateHandler(
-                ppf_gate=_make_gate_mock(True, _make_pass_log_entry()),
-                session_ledger=_make_aborted_session_ledger(),
-                ohlcv_provider=_make_ohlcv_provider(),
-                manifest=SHADOW_MANIFEST,
+            (
+                DenyReasonCode.INTERNAL_GATE_ERROR,
+                lambda: PPFGateHandler(
+                    ppf_gate=_make_raising_gate_mock(),
+                    session_ledger=_make_session_ledger(),
+                    ohlcv_provider=_make_ohlcv_provider(),
+                    manifest=PAPER_MANIFEST,
+                ),
+                lambda: PPFGateHandler(
+                    ppf_gate=_make_raising_gate_mock(),
+                    session_ledger=_make_session_ledger(),
+                    ohlcv_provider=_make_ohlcv_provider(),
+                    manifest=SHADOW_MANIFEST,
+                ),
             ),
-        ),
-        (
-            DenyReasonCode.INTERNAL_GATE_ERROR,
-            lambda: PPFGateHandler(
-                ppf_gate=_make_raising_gate_mock(),
-                session_ledger=_make_session_ledger(),
-                ohlcv_provider=_make_ohlcv_provider(),
-                manifest=PAPER_MANIFEST,
-            ),
-            lambda: PPFGateHandler(
-                ppf_gate=_make_raising_gate_mock(),
-                session_ledger=_make_session_ledger(),
-                ohlcv_provider=_make_ohlcv_provider(),
-                manifest=SHADOW_MANIFEST,
-            ),
-        ),
-    ])
+        ],
+    )
     def test_paper_denies_shadow_allows_for_each_deny_code(
         self,
         deny_code: DenyReasonCode,
@@ -817,6 +838,7 @@ class TestPaperVsShadowCompleteness:
 # Module-level helper used by TestPaperVsShadowCompleteness parametrize
 # (must be defined at module scope so lambda in parametrize can reference it)
 # ---------------------------------------------------------------------------
+
 
 def _make_raising_gate_mock() -> MagicMock:
     """Gate mock whose evaluate() raises RuntimeError (-> INTERNAL_GATE_ERROR path)."""

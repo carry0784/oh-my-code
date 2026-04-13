@@ -358,11 +358,13 @@ class RegimeDetector:
         results: list[BatchRegimeResult] = []
         for i in range(n):
             if i < warmup:
-                results.append(BatchRegimeResult(
-                    timestamp=timestamps[i],
-                    regime=UNKNOWN,
-                    confidence=0.0,
-                ))
+                results.append(
+                    BatchRegimeResult(
+                        timestamp=timestamps[i],
+                        regime=UNKNOWN,
+                        confidence=0.0,
+                    )
+                )
                 continue
 
             # Build simplified feature vector from OHLCV-derived indicators
@@ -373,27 +375,29 @@ class RegimeDetector:
 
             fv = FeatureVector(
                 rsi_norm=float(np.clip(rsi_val / RSI_MAX, 0.0, 1.0)),
-                macd_hist_norm=float(np.clip(
-                    macd_val / price * 100 if price > 0 else 0.0, -1.0, 1.0
-                )),
-                atr_pct=float(np.clip(
-                    atr_val / price if price > 0 else 0.0, 0.0, ATR_PCT_CAP / 100
-                )),
+                macd_hist_norm=float(
+                    np.clip(macd_val / price * 100 if price > 0 else 0.0, -1.0, 1.0)
+                ),
+                atr_pct=float(
+                    np.clip(atr_val / price if price > 0 else 0.0, 0.0, ATR_PCT_CAP / 100)
+                ),
                 volume_ratio=1.0,  # No historical avg available in batch
-                spread_pct=0.0,    # No microstructure in batch
-                fear_greed_norm=0.5,   # Neutral default
+                spread_pct=0.0,  # No microstructure in batch
+                fear_greed_norm=0.5,  # Neutral default
                 btc_dominance_norm=0.5,  # Neutral default
-                mempool_fee_norm=0.0,    # No on-chain in batch
+                mempool_fee_norm=0.0,  # No on-chain in batch
             )
 
             # Classify via centroid distance (no momentum smoothing in batch)
             regime_result = self._cluster_detect(fv)
 
-            results.append(BatchRegimeResult(
-                timestamp=timestamps[i],
-                regime=regime_result.regime,
-                confidence=regime_result.confidence,
-            ))
+            results.append(
+                BatchRegimeResult(
+                    timestamp=timestamps[i],
+                    regime=regime_result.regime,
+                    confidence=regime_result.confidence,
+                )
+            )
 
         # Compute summary statistics
         valid_results = [r for r in results if r.regime != UNKNOWN]
@@ -409,8 +413,7 @@ class RegimeDetector:
                 warmup_bars=warmup,
                 valid_bars=total_valid,
                 regime_distribution={
-                    k: round(v / total_valid, 3)
-                    for k, v in sorted(regime_counts.items())
+                    k: round(v / total_valid, 3) for k, v in sorted(regime_counts.items())
                 },
             )
 
