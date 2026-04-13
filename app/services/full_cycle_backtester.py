@@ -205,9 +205,9 @@ class SegmentSplitter:
 
     @staticmethod
     def split(
-        ohlcv: list[list],
+        ohlcv: list[list[Any]],
         config: FullCycleConfig,
-    ) -> dict[str, list[list]]:
+    ) -> dict[str, list[list[Any]]]:
         """Split candles into 4 segments.
 
         Args:
@@ -306,7 +306,7 @@ class SegmentSplitter:
 
     @staticmethod
     def build_segment_results(
-        segments: dict[str, list[list]],
+        segments: dict[str, list[list[Any]]],
         lookback: int,
     ) -> dict[str, SegmentResult]:
         """Build SegmentResult shells from split candles.
@@ -374,7 +374,7 @@ class SegmentSplitter:
 
     @staticmethod
     def validate_no_leakage(
-        segments: dict[str, list[list]],
+        segments: dict[str, list[list[Any]]],
     ) -> tuple[bool, list[str]]:
         """Validate DL-001 through DL-006 compliance.
 
@@ -656,7 +656,7 @@ class FullCycleBacktester:
     def _compute_regime_diversity(
         self,
         batch_results: list[BatchRegimeResult],
-        segments: dict[str, list[list]],
+        segments: dict[str, list[list[Any]]],
     ) -> float:
         """Compute Regime Diversity Score = 1 - HHI(regime_proportions).
 
@@ -717,7 +717,7 @@ class FullCycleBacktester:
     @staticmethod
     def _fill_segment_regime_distribution(
         batch_results: list[BatchRegimeResult],
-        segments: dict[str, list[list]],
+        segments: dict[str, list[list[Any]]],
         seg_results: dict[str, SegmentResult],
     ) -> None:
         """Write per-segment regime proportions to SegmentResult.regime_distribution.

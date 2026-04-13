@@ -52,11 +52,10 @@ jobs:
       - run: python -m pip install -e .
       - run: pytest --cov=app --cov-report=term-missing --cov-fail-under=65 -q
 
-  typecheck:
-    name: typecheck
+  typecheck-blocking:
+    name: typecheck (tier 1 — blocking)
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v5.0.0
       - uses: actions/setup-python@v6.0.0
@@ -69,7 +68,8 @@ jobs:
           restore-keys: ${{ runner.os }}-pip-typecheck-
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -r requirements.txt mypy
-      - run: >-
+      - name: "Tier 1: strict typecheck (blocking)"
+        run: >-
           mypy
           app/services/data_provider.py
           app/services/strategy_genome.py
@@ -86,9 +86,34 @@ jobs:
           app/services/trend_observation_service.py
           app/services/watch_volume_service.py
           app/services/symbol_screener.py
+          app/services/full_cycle_backtester.py
+          app/services/history_data_manager.py
           --ignore-missing-imports
           --disallow-untyped-defs
           --disallow-incomplete-defs
+          --follow-imports=skip
+
+  typecheck-advisory:
+    name: typecheck (tier 2 — advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5.0.0
+      - uses: actions/setup-python@v6.0.0
+        with:
+          python-version: "3.11"
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-typecheck-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-typecheck-
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements.txt mypy
+      - name: "Tier 2: advisory typecheck (non-blocking)"
+        run: >-
+          mypy app/
+          --ignore-missing-imports
           --follow-imports=skip
           --no-error-summary
 

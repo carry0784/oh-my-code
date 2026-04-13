@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import select, func, text, delete
+from sqlalchemy import select, func, text, delete, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -107,7 +107,7 @@ class HistoryDataManager:
         exchange: str,
         symbol: str,
         timeframe: str,
-        candles: list[list],
+        candles: list[list[Any]],
     ) -> IngestionResult:
         """Bulk-insert OHLCV candles with idempotent upsert.
 
@@ -164,11 +164,11 @@ class HistoryDataManager:
         db_result = await session.execute(stmt)
         await session.flush()
 
-        inserted = db_result.rowcount if db_result.rowcount else 0
+        inserted: int = db_result.rowcount or 0
         result.candles_inserted = inserted
         result.candles_skipped = len(rows) - inserted
-        result.first_ts = int(rows[0]["open_time"])
-        result.last_ts = int(rows[-1]["open_time"])
+        result.first_ts = int(rows[0]["open_time"])  # type: ignore[call-overload]
+        result.last_ts = int(rows[-1]["open_time"])  # type: ignore[call-overload]
 
         logger.info(
             "ohlcv_ingested",
@@ -192,7 +192,7 @@ class HistoryDataManager:
         start_ts: int | None = None,
         end_ts: int | None = None,
         limit: int | None = None,
-    ) -> list[list]:
+    ) -> list[list[Any]]:
         """Retrieve candles in BacktestingEngine-compatible format.
 
         Returns:
@@ -240,7 +240,8 @@ class HistoryDataManager:
             .where(OhlcvHistory.timeframe == timeframe)
         )
         result = await session.execute(stmt)
-        return result.scalar_one()
+        count: int = result.scalar_one()
+        return count
 
     # ── Coverage Analysis ────────────────────────────────────────────
 
@@ -335,7 +336,7 @@ class HistoryDataManager:
             Number of rows updated.
         """
         stmt = (
-            OhlcvHistory.__table__.update()
+            update(OhlcvHistory)
             .where(OhlcvHistory.exchange == exchange)
             .where(OhlcvHistory.symbol == symbol)
             .where(OhlcvHistory.timeframe == timeframe)
@@ -349,7 +350,7 @@ class HistoryDataManager:
         result = await session.execute(stmt)
         await session.flush()
 
-        updated = result.rowcount if result.rowcount else 0
+        updated: int = result.rowcount or 0
         logger.info(
             "event_week_tagged",
             exchange=exchange,
@@ -379,7 +380,7 @@ class HistoryDataManager:
             return 0
 
         stmt = (
-            OhlcvHistory.__table__.update()
+            update(OhlcvHistory)
             .where(OhlcvHistory.exchange == exchange)
             .where(OhlcvHistory.symbol == symbol)
             .where(OhlcvHistory.timeframe == timeframe)
@@ -389,7 +390,7 @@ class HistoryDataManager:
         result = await session.execute(stmt)
         await session.flush()
 
-        updated = result.rowcount if result.rowcount else 0
+        updated: int = result.rowcount or 0
         logger.info(
             "high_volatility_tagged",
             exchange=exchange,
@@ -461,7 +462,7 @@ class HistoryDataManager:
         result = await session.execute(stmt)
         await session.flush()
 
-        deleted = result.rowcount if result.rowcount else 0
+        deleted: int = result.rowcount or 0
         logger.info(
             "symbol_data_deleted",
             exchange=exchange,
