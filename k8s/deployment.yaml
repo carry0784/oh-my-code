@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kdexter-api
+  namespace: kdexter
+  labels:
+    app: kdexter-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kdexter-api
+  template:
+    metadata:
+      labels:
+        app: kdexter-api
+    spec:
+      serviceAccountName: kdexter-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: api
+          image: kdexter/api:latest
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: kdexter-secrets
+            - configMapRef:
+                name: kdexter-config
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /startup
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12
+          volumeMounts:
+            - name: app-data
+              mountPath: /app/data
+            - name: app-logs
+              mountPath: /app/logs
+      volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: kdexter-data-pvc
+        - name: app-logs
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kdexter-worker
+  namespace: kdexter
+  labels:
+    app: kdexter-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kdexter-worker
+  template:
+    metadata:
+      labels:
+        app: kdexter-worker
+    spec:
+      serviceAccountName: kdexter-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: worker
+          image: kdexter/api:latest
+          command: ["python", "-m", "celery", "-A", "workers.celery_app", "worker", "--loglevel=info", "--concurrency=2"]
+          envFrom:
+            - secretRef:
+                name: kdexter-secrets
+            - configMapRef:
+                name: kdexter-config
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            exec:
+              command: ["python", "-c", "import celery; print('ok')"]
+            periodSeconds: 60
+            timeoutSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kdexter-beat
+  namespace: kdexter
+  labels:
+    app: kdexter-beat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kdexter-beat
+  template:
+    metadata:
+      labels:
+        app: kdexter-beat
+    spec:
+      serviceAccountName: kdexter-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: beat
+          image: kdexter/api:latest
+          command: ["python", "-m", "celery", "-A", "workers.celery_app", "beat", "--loglevel=info"]
+          envFrom:
+            - secretRef:
+                name: kdexter-secrets
+            - configMapRef:
+                name: kdexter-config
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"

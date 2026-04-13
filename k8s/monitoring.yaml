@@ -1,0 +1,102 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kdexter-alerting-rules
+  namespace: kdexter
+  labels:
+    app: kdexter
+    component: monitoring
+data:
+  alerts.yaml: |
+    groups:
+      - name: kdexter-health
+        rules:
+          - alert: KdexterAPIDown
+            expr: up{job="kdexter-api"} == 0
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "K-Dexter API is down"
+              description: "API endpoint has been unreachable for 2+ minutes."
+
+          - alert: KdexterNotReady
+            expr: probe_success{job="kdexter-readiness"} == 0
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "K-Dexter readiness probe failing"
+              description: "/ready endpoint returning non-200 for 5+ minutes."
+
+          - alert: KdexterHighLatency
+            expr: histogram_quantile(0.95, rate(kdexter_http_request_duration_seconds_bucket[5m])) > 2.0
+            for: 3m
+            labels:
+              severity: warning
+            annotations:
+              summary: "K-Dexter API p95 latency above 2s"
+              description: "95th percentile latency is {{ $value }}s."
+
+      - name: kdexter-trading
+        rules:
+          - alert: KdexterGovernanceViolation
+            expr: increase(kdexter_governance_violations_total[5m]) > 0
+            labels:
+              severity: critical
+            annotations:
+              summary: "Governance violation detected"
+              description: "{{ $labels.rule_id }} violated (severity: {{ $labels.severity }})."
+
+          - alert: KdexterRegimeFlapping
+            expr: increase(kdexter_regime_transitions_total[1h]) > 5
+            for: 0m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Regime flapping detected for {{ $labels.symbol }}"
+              description: "{{ $value }} regime transitions in the last hour."
+
+          - alert: KdexterOHLCVCoverageLow
+            expr: kdexter_ohlcv_coverage_pct < 90
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "OHLCV coverage below 90% for {{ $labels.symbol }}"
+              description: "Coverage is {{ $value }}%."
+
+      - name: kdexter-infra
+        rules:
+          - alert: KdexterCeleryTaskFailures
+            expr: increase(kdexter_celery_tasks_total{status="failure"}[15m]) > 3
+            labels:
+              severity: warning
+            annotations:
+              summary: "Celery task failures increasing"
+              description: "{{ $value }} failures in 15 minutes for {{ $labels.task_name }}."
+
+          - alert: KdexterDBSlowQueries
+            expr: histogram_quantile(0.95, rate(kdexter_db_query_duration_seconds_bucket[5m])) > 0.5
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Database p95 query latency above 500ms"
+              description: "95th percentile is {{ $value }}s."
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kdexter-api
+  namespace: kdexter
+  labels:
+    app: kdexter-api
+spec:
+  selector:
+    matchLabels:
+      app: kdexter-api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

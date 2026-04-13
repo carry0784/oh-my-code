@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kdexter
+  labels:
+    app.kubernetes.io/name: kdexter
+    app.kubernetes.io/part-of: kdexter-aos
