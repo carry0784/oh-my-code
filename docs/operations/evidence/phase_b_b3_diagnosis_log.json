@@ -1,0 +1,209 @@
+{
+  "diagnosed_at": "2026-04-09T17:59:19.279699+00:00",
+  "assets": {
+    "SOL/USDT:USDT": {
+      "symbol": "SOL/USDT:USDT",
+      "verdict": "FAIL",
+      "reason_codes": [
+        "forward_2_FITNESS_LOW(0.0000<0.25)",
+        "WF_EFFICIENCY_LOW(-0.4959<0.5)",
+        "RDS_LOW(0.2740<0.55)"
+      ],
+      "pass_count": 4,
+      "scarcity": {
+        "symbol": "SOL/USDT:USDT",
+        "segment_trades": {
+          "train": 46,
+          "forward_1": 19,
+          "forward_2": 5,
+          "holdout": 8
+        },
+        "segment_trade_density": {
+          "train": 0.8,
+          "forward_1": 0.99,
+          "forward_2": 0.52,
+          "holdout": 0.83
+        },
+        "min_trades_miss": {
+          "train": false,
+          "forward_1": false,
+          "forward_2": true,
+          "holdout": true
+        },
+        "total_trades": 78,
+        "scarcity_level": "severe"
+      },
+      "regime": {
+        "symbol": "SOL/USDT:USDT",
+        "global_rds": 0.274,
+        "global_regime_mix": {
+          "ranging": 0.8452,
+          "trending_down": 0.0785,
+          "trending_up": 0.0735,
+          "unknown": 0.0027
+        },
+        "segment_rds": {
+          "train": 0.276,
+          "forward_1": 0.2533,
+          "forward_2": 0.3265,
+          "holdout": 0.2482
+        },
+        "segment_regime_mix": {
+          "train": {
+            "ranging": 0.8441,
+            "trending_down": 0.0781,
+            "trending_up": 0.0733,
+            "unknown": 0.0045
+          },
+          "forward_1": {
+            "ranging": 0.8583,
+            "trending_down": 0.0734,
+            "trending_up": 0.0682
+          },
+          "forward_2": {
+            "ranging": 0.8094,
+            "trending_down": 0.1052,
+            "trending_up": 0.0854
+          },
+          "holdout": {
+            "ranging": 0.8615,
+            "trending_down": 0.0646,
+            "trending_up": 0.074
+          }
+        },
+        "dominant_regime": "ranging",
+        "dominant_pct": 84.5,
+        "regime_bias": "severe_bias"
+      },
+      "stability": {
+        "symbol": "SOL/USDT:USDT",
+        "segment_fitness": {
+          "train": 0.4158,
+          "forward_1": 0.3435,
+          "forward_2": 0.0,
+          "holdout": 0.0
+        },
+        "fitness_degradation": {
+          "forward_1": 17.4,
+          "forward_2": 100.0,
+          "holdout": 100.0
+        },
+        "wf_efficiency": -0.4959,
+        "wf_consistency": 0.4,
+        "wf_is_overfit": false,
+        "overall_fitness": 0.2865,
+        "degradation_profile": "cliff"
+      },
+      "failure_signature": "scarcity=severe | regime=severe_bias | stability=cliff | verdict=FAIL"
+    },
+    "BTC/USDT:USDT": {
+      "symbol": "BTC/USDT:USDT",
+      "verdict": "FAIL",
+      "reason_codes": [
+        "forward_2_FITNESS_LOW(0.0000<0.25)",
+        "WF_EFFICIENCY_LOW(-2.9074<0.5)",
+        "RDS_LOW(0.0755<0.55)"
+      ],
+      "pass_count": 4,
+      "scarcity": {
+        "symbol": "BTC/USDT:USDT",
+        "segment_trades": {
+          "train": 24,
+          "forward_1": 12,
+          "forward_2": 8,
+          "holdout": 8
+        },
+        "segment_trade_density": {
+          "train": 0.42,
+          "forward_1": 0.62,
+          "forward_2": 0.83,
+          "holdout": 0.83
+        },
+        "min_trades_miss": {
+          "train": false,
+          "forward_1": false,
+          "forward_2": true,
+          "holdout": true
+        },
+        "total_trades": 52,
+        "scarcity_level": "severe"
+      },
+      "regime": {
+        "symbol": "BTC/USDT:USDT",
+        "global_rds": 0.0755,
+        "global_regime_mix": {
+          "ranging": 0.9611,
+          "trending_down": 0.0179,
+          "trending_up": 0.0182,
+          "unknown": 0.0027
+        },
+        "segment_rds": {
+          "train": 0.0549,
+          "forward_1": 0.0719,
+          "forward_2": 0.1562,
+          "holdout": 0.1207
+        },
+        "segment_regime_mix": {
+          "train": {
+            "ranging": 0.972,
+            "trending_down": 0.0127,
+            "trending_up": 0.0108,
+            "unknown": 0.0045
+          },
+          "forward_1": {
+            "ranging": 0.963,
+            "trending_down": 0.0193,
+            "trending_up": 0.0177
+          },
+          "forward_2": {
+            "ranging": 0.9167,
+            "trending_down": 0.0448,
+            "trending_up": 0.0385
+          },
+          "holdout": {
+            "ranging": 0.9365,
+            "trending_down": 0.0198,
+            "trending_up": 0.0437
+          }
+        },
+        "dominant_regime": "ranging",
+        "dominant_pct": 96.1,
+        "regime_bias": "severe_bias"
+      },
+      "stability": {
+        "symbol": "BTC/USDT:USDT",
+        "segment_fitness": {
+          "train": 0.4522,
+          "forward_1": 0.8711,
+          "forward_2": 0.0,
+          "holdout": 0.0
+        },
+        "fitness_degradation": {
+          "forward_1": -92.6,
+          "forward_2": 100.0,
+          "holdout": 100.0
+        },
+        "wf_efficiency": -2.9074,
+        "wf_consistency": 0.2,
+        "wf_is_overfit": false,
+        "overall_fitness": 0.4857,
+        "degradation_profile": "cliff"
+      },
+      "failure_signature": "scarcity=severe | regime=severe_bias | stability=cliff | verdict=FAIL"
+    }
+  },
+  "common_failures": [
+    "forward_2_FITNESS_LOW(0.0000<0.25)"
+  ],
+  "asset_specific_failures": {
+    "SOL/USDT:USDT": [
+      "RDS_LOW(0.2740<0.55)",
+      "WF_EFFICIENCY_LOW(-0.4959<0.5)"
+    ],
+    "BTC/USDT:USDT": [
+      "RDS_LOW(0.0755<0.55)",
+      "WF_EFFICIENCY_LOW(-2.9074<0.5)"
+    ]
+  },
+  "b3_exit_status": "MAINTAINED_FAIL"
+}

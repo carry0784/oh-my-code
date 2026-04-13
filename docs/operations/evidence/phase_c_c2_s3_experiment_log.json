@@ -1,0 +1,154 @@
+{
+  "experiment_at": "2026-04-09T21:47:02.821121+00:00",
+  "phase": "C",
+  "step": "C-2",
+  "track": "S-track",
+  "candidate": "S-3",
+  "canonical_run_id": "bihlkm8s6",
+  "failed_run_id": "bgbkdmd64",
+  "superseded_reason": "AttributeError: segments dict iteration yielded keys not SegmentResult objects",
+  "overall_verdict": "ASYMMETRIC",
+  "s3_reclassification": "global_candidate -> btc_lane_specific_conditional",
+  "baseline_ratios": {
+    "train": 0.6,
+    "forward1": 0.2,
+    "forward2": 0.1,
+    "holdout": 0.1
+  },
+  "s3_ratios": {
+    "train": 0.6,
+    "forward1": 0.2,
+    "forward2": 0.15,
+    "holdout": 0.05
+  },
+  "assets": {
+    "SOL/USDT:USDT": {
+      "symbol": "SOL/USDT:USDT",
+      "step_verdict": "INFORMATIVE_FAIL",
+      "density_uplift_pass": false,
+      "quality_hold": true,
+      "baseline_verdict": "FAIL",
+      "s3_verdict": "FAIL",
+      "baseline_overall_fitness": 0.2865,
+      "s3_overall_fitness": 0.2865,
+      "segments": {
+        "train": {
+          "baseline_bars": 5760,
+          "s3_bars": 5760,
+          "baseline_trades": 46,
+          "s3_trades": 46,
+          "baseline_fitness": 0.41577811516043356,
+          "s3_fitness": 0.41577811516043356,
+          "trade_uplift": 0,
+          "trade_uplift_pct": 0.0,
+          "fitness_delta": 0.0,
+          "baseline_min_trades_met": true,
+          "s3_min_trades_met": true
+        },
+        "forward_1": {
+          "baseline_bars": 1920,
+          "s3_bars": 1920,
+          "baseline_trades": 19,
+          "s3_trades": 19,
+          "baseline_fitness": 0.3434667191952636,
+          "s3_fitness": 0.3434667191952636,
+          "trade_uplift": 0,
+          "trade_uplift_pct": 0.0,
+          "fitness_delta": 0.0,
+          "baseline_min_trades_met": true,
+          "s3_min_trades_met": true
+        },
+        "forward_2": {
+          "baseline_bars": 960,
+          "s3_bars": 1440,
+          "baseline_trades": 5,
+          "s3_trades": 8,
+          "baseline_fitness": 0.0,
+          "s3_fitness": 0.0,
+          "trade_uplift": 3,
+          "trade_uplift_pct": 60.0,
+          "fitness_delta": 0.0,
+          "baseline_min_trades_met": false,
+          "s3_min_trades_met": false
+        },
+        "holdout": {
+          "baseline_bars": 960,
+          "s3_bars": 480,
+          "baseline_trades": 8,
+          "s3_trades": 4,
+          "baseline_fitness": 0.0,
+          "s3_fitness": 0.0,
+          "trade_uplift": -4,
+          "trade_uplift_pct": -50.0,
+          "fitness_delta": 0.0,
+          "baseline_min_trades_met": false,
+          "s3_min_trades_met": false
+        }
+      }
+    },
+    "BTC/USDT:USDT": {
+      "symbol": "BTC/USDT:USDT",
+      "step_verdict": "PASS",
+      "density_uplift_pass": true,
+      "quality_hold": true,
+      "baseline_verdict": "FAIL",
+      "s3_verdict": "FAIL",
+      "baseline_overall_fitness": 0.4857,
+      "s3_overall_fitness": 0.7102,
+      "segments": {
+        "train": {
+          "baseline_bars": 5760,
+          "s3_bars": 5760,
+          "baseline_trades": 24,
+          "s3_trades": 24,
+          "baseline_fitness": 0.4521697167034443,
+          "s3_fitness": 0.4521697167034443,
+          "trade_uplift": 0,
+          "trade_uplift_pct": 0.0,
+          "fitness_delta": 0.0,
+          "baseline_min_trades_met": true,
+          "s3_min_trades_met": true
+        },
+        "forward_1": {
+          "baseline_bars": 1920,
+          "s3_bars": 1920,
+          "baseline_trades": 12,
+          "s3_trades": 12,
+          "baseline_fitness": 0.8710619746241213,
+          "s3_fitness": 0.8710619746241213,
+          "trade_uplift": 0,
+          "trade_uplift_pct": 0.0,
+          "fitness_delta": 0.0,
+          "baseline_min_trades_met": true,
+          "s3_min_trades_met": true
+        },
+        "forward_2": {
+          "baseline_bars": 960,
+          "s3_bars": 1440,
+          "baseline_trades": 8,
+          "s3_trades": 12,
+          "baseline_fitness": 0.0,
+          "s3_fitness": 0.8976980000000001,
+          "trade_uplift": 4,
+          "trade_uplift_pct": 50.0,
+          "fitness_delta": 0.8977,
+          "baseline_min_trades_met": false,
+          "s3_min_trades_met": true
+        },
+        "holdout": {
+          "baseline_bars": 960,
+          "s3_bars": 480,
+          "baseline_trades": 8,
+          "s3_trades": 5,
+          "baseline_fitness": 0.0,
+          "s3_fitness": 0.0,
+          "trade_uplift": -3,
+          "trade_uplift_pct": -37.5,
+          "fitness_delta": 0.0,
+          "baseline_min_trades_met": false,
+          "s3_min_trades_met": false
+        }
+      }
+    }
+  }
+}

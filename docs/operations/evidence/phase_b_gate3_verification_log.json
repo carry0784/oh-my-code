@@ -1,0 +1,65 @@
+{
+  "gate": "Gate 3 — OHLCV_400D_INGESTION_PATH_VERIFIED",
+  "overall_verdict": "PASS",
+  "verified_at": "2026-04-09T16:54:36.212892+00:00",
+  "symbols": {
+    "SOL/USDT:USDT": {
+      "ingestion_id": "d900215f-ca68-40ef-bab8-2b8bef24473e",
+      "verified_at": "2026-04-09T16:54:36.212892+00:00",
+      "symbol": "SOL/USDT:USDT",
+      "exchange": "binance",
+      "timeframe": "1h",
+      "total_expected_bars": 9600,
+      "total_ingested_bars": 9600,
+      "coverage_pct": 100.0,
+      "gap_count": 0,
+      "gap_details": [],
+      "duplicate_attempted": 168,
+      "duplicate_ignored": 168,
+      "event_week_tagged": true,
+      "high_vol_tagged": true,
+      "monotonic_check": "PASS",
+      "checks": {
+        "V-001": "PASS",
+        "V-002": "PASS",
+        "V-003": "PASS",
+        "V-004": "PASS",
+        "V-005": "PASS",
+        "V-006": "PASS",
+        "V-007": "PASS"
+      },
+      "failure_codes": [],
+      "overall_verdict": "PASS",
+      "ingestion_stats": {}
+    },
+    "BTC/USDT:USDT": {
+      "ingestion_id": "492feaad-4e4d-4f13-b015-2b131316b236",
+      "verified_at": "2026-04-09T16:54:36.212892+00:00",
+      "symbol": "BTC/USDT:USDT",
+      "exchange": "binance",
+      "timeframe": "1h",
+      "total_expected_bars": 9600,
+      "total_ingested_bars": 9600,
+      "coverage_pct": 100.0,
+      "gap_count": 0,
+      "gap_details": [],
+      "duplicate_attempted": 168,
+      "duplicate_ignored": 168,
+      "event_week_tagged": true,
+      "high_vol_tagged": true,
+      "monotonic_check": "PASS",
+      "checks": {
+        "V-001": "PASS",
+        "V-002": "PASS",
+        "V-003": "PASS",
+        "V-004": "PASS",
+        "V-005": "PASS",
+        "V-006": "PASS",
+        "V-007": "PASS"
+      },
+      "failure_codes": [],
+      "overall_verdict": "PASS",
+      "ingestion_stats": {}
+    }
+  }
+}

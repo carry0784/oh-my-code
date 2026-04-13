@@ -1,0 +1,132 @@
+{
+  "fork_version": "V-3R3",
+  "chain_id": "IMPL-C6-BOUNDED-SCOPE-001",
+  "frozen_runner_sha256": "94110d249fb8d6b371dbcfa1b922b45018eb567ac23c9d0afa82e184163c3f4a",
+  "evidence": {
+    "run_id": "v3r3_shadow_20260412T173256Z",
+    "config_fingerprint": "C1C2_N2_v3_34feac2b934e",
+    "design_version": "sol_s1_v3_design.md@2026-04-10",
+    "go_receipt_id": "sol_s1_v3_impl_start_go.md",
+    "bars_observed": 96,
+    "trades_count": 1,
+    "ecr": 100.0,
+    "block_rate": 0.0,
+    "same_direction_ratio": 70.9,
+    "same_direction_delta_pp": 0.0,
+    "yellow_extension_count": 0,
+    "invalid_run_count": 0,
+    "final_state": "GREEN",
+    "receipt_completeness_pct": 100.0,
+    "stop_reason": "STOP_PASS_GREEN",
+    "stop_reason_detail": "completed 96 bars in GREEN",
+    "started_at": "2026-04-12T17:32:56.735571+00:00",
+    "ended_at": "2026-04-12T17:32:56.775669+00:00",
+    "rolling_ecr_12": [
+      100.0,
+      100.0,
+      100.0,
+      100.0,
+      100.0,
+      100.0,
+      100.0,
+      100.0,
+      100.0,
+      100.0,
+      100.0,
+      100.0
+    ],
+    "rolling_block_rate_12": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "rolling_sd_ratio_12": [
+      70.9,
+      70.9,
+      70.9,
+      70.9,
+      70.9,
+      70.9,
+      70.9,
+      70.9,
+      70.9,
+      70.9,
+      70.9,
+      70.9
+    ],
+    "REQUIRED_FIELDS": [
+      "run_id",
+      "config_fingerprint",
+      "design_version",
+      "go_receipt_id",
+      "bars_observed",
+      "trades_count",
+      "ecr",
+      "block_rate",
+      "same_direction_ratio",
+      "same_direction_delta_pp",
+      "yellow_extension_count",
+      "invalid_run_count",
+      "final_state",
+      "receipt_completeness_pct",
+      "stop_reason",
+      "stop_reason_detail",
+      "started_at",
+      "ended_at"
+    ]
+  },
+  "c6_evidence": {
+    "dedup_suppressed_count": 1,
+    "unique_cluster_count": 1,
+    "cooldown_active_bars": 1,
+    "gen_before_grace": 0,
+    "red_deferred_count": 0,
+    "grace_active_bars": 0,
+    "grace_saved_exec_count": 0
+  },
+  "activation_profile": {
+    "c1_mode": "active",
+    "c5_mode": "active",
+    "cooldown_bars": 4,
+    "grace_min_gen": 5
+  },
+  "counterfactual_comparator": {
+    "frozen": {
+      "consensus_generated": 0,
+      "ecr": 50.0,
+      "final_state": "RED",
+      "bars_observed": 92
+    },
+    "c1_only": {
+      "consensus_generated": 1,
+      "ecr": 100.0,
+      "final_state": "GREEN",
+      "bars_observed": 96
+    },
+    "c1_c5": {
+      "consensus_generated": 1,
+      "ecr": 100.0,
+      "final_state": "GREEN",
+      "bars_observed": 96
+    }
+  },
+  "c5_promotion_evaluation": {
+    "evaluable": true,
+    "grace_saved_exec_count": 0,
+    "cond_1_saved_exec_positive": false,
+    "cond_2_no_ecr_damage": true,
+    "cond_3_no_block_rate_worsening": true,
+    "all_conditions_pass": false,
+    "recommendation": "KEEP_DORMANT"
+  },
+  "fork_accumulation_note": "V-3R4 creation prohibited until: (1) V-3R3 comparator evidence secured, (2) C5 promotion evaluated, (3) consolidation necessity demonstrated."
+}
