@@ -182,9 +182,7 @@ class ObservationChainService:
         summary.regime_v2_distribution = v2_dist
 
         if prices and len(prices) >= 2:
-            summary.price_change_pct = round(
-                (prices[-1] - prices[0]) / prices[0] * 100, 4
-            )
+            summary.price_change_pct = round((prices[-1] - prices[0]) / prices[0] * 100, 4)
         if rv_vals:
             summary.avg_realized_vol = round(float(np.mean(rv_vals)), 4)
         if ci_vals:

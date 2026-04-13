@@ -36,6 +36,7 @@ logger = get_logger(__name__)
 
 # ── Case Types ───────────────────────────────────────────────────────
 
+
 class CaseType(str, Enum):
     NOVELTY = "NOVELTY"
     REGIME_SHIFT = "REGIME_SHIFT"
@@ -60,6 +61,7 @@ class CaseResolution(str, Enum):
 
 
 # ── Accumulation Rules ───────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class AccumulationRule:
@@ -128,6 +130,7 @@ ACCUMULATION_RULES: dict[CaseType, AccumulationRule] = {
 
 # ── Case Data Contracts ──────────────────────────────────────────────
 
+
 @dataclass
 class CaseRecord:
     """In-memory case record for processing.
@@ -170,6 +173,7 @@ class CaseRecord:
 
 # ── Case Evaluation Engine ───────────────────────────────────────────
 
+
 class CaseEvaluator:
     """Evaluates cases for resolution based on accumulation rules."""
 
@@ -183,9 +187,7 @@ class CaseEvaluator:
         if case.trigger_price is None or case.resolution_price is None:
             return CaseResolution.UNRESOLVED, "missing_price_data"
 
-        pct_change = abs(
-            (case.resolution_price - case.trigger_price) / case.trigger_price
-        )
+        pct_change = abs((case.resolution_price - case.trigger_price) / case.trigger_price)
 
         if pct_change > 0.03:
             return CaseResolution.TRUE_POSITIVE, f"price_moved_{pct_change:.2%}"
@@ -203,10 +205,7 @@ class CaseEvaluator:
 
         # Count how many observations match the trigger regime
         trigger_regime = case.trigger_reason
-        matching = sum(
-            1 for e in case.evidence
-            if e.get("regime") == trigger_regime
-        )
+        matching = sum(1 for e in case.evidence if e.get("regime") == trigger_regime)
         ratio = matching / len(case.evidence)
 
         if ratio >= 0.6:

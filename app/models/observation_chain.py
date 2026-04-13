@@ -34,9 +34,7 @@ class ObservationChainEntry(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 
     # -- Observation identity --
-    observed_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
-    )
+    observed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
     observation_type: Mapped[str] = mapped_column(
         String(32), nullable=False, default="hourly"
     )  # hourly, daily, weekly, manual
@@ -61,18 +59,14 @@ class ObservationChainEntry(Base):
     ppf_baseline_active: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
     # -- Novelty / anomaly --
-    novelty_detected: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
+    novelty_detected: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     anomaly_flag: Mapped[str | None] = mapped_column(
         String(64), nullable=True
     )  # PRICE_SPIKE, VOLUME_SURGE, REGIME_SHIFT, etc.
 
     # -- Metadata --
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
 
     __table_args__ = (
         Index("ix_obs_chain_symbol_ts", "symbol", "observed_at"),

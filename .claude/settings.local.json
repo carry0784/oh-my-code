@@ -224,7 +224,22 @@
       "Bash(python -m pytest tests/test_c04_operator_ui.py --tb=short -q)",
       "Bash(python -m pytest tests/test_c04_*.py tests/test_tab3_safe_cards.py tests/test_c04_ssot_drift_sentinel.py --tb=line -q)",
       "Bash(python -m pytest tests/test_c04_*.py tests/test_tab3_safe_cards.py --tb=line -q)",
-      "Bash(C:/Python314/python.exe -m celery -A workers.celery_app inspect ping)"
+      "Bash(C:/Python314/python.exe -m celery -A workers.celery_app inspect ping)",
+      "Bash(git rebase:*)",
+      "Bash(git log:*)",
+      "Bash(git checkout:*)",
+      "Bash(git cherry-pick:*)",
+      "Bash(git add:*)",
+      "Bash(python -m ruff check alembic/env.py app/models/__init__.py)",
+      "Bash(python -m ruff format --check alembic/env.py app/models/__init__.py)",
+      "Bash(python -m pytest tests/test_data_infra.py -v --tb=short)",
+      "Bash(gh run:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh api:*)",
+      "Bash(python -c ':*)",
+      "Bash(python -m ruff format alembic/env.py app/models/__init__.py app/models/observation_chain.py app/services/case_accumulation.py app/services/observation_chain_service.py tests/test_data_infra.py alembic/versions/028_observation_chain.py)",
+      "Bash(python -m ruff check alembic/env.py app/models/__init__.py app/models/observation_chain.py app/services/case_accumulation.py app/services/observation_chain_service.py tests/test_data_infra.py alembic/versions/028_observation_chain.py)",
+      "Bash(git commit -m ':*)"
     ]
   }
 }
