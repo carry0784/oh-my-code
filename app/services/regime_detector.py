@@ -51,6 +51,15 @@ class RegimeResult:
 
 
 @dataclass
+class BatchRegimeResult:
+    """Single-bar regime result for batch detection (Phase A)."""
+
+    timestamp: int = 0
+    regime: str = UNKNOWN
+    confidence: float = 0.0
+
+
+@dataclass
 class FeatureVector:
     """Normalized feature vector for clustering."""
 
@@ -297,3 +306,217 @@ class RegimeDetector:
             "btc_dominance_norm": round(fv.btc_dominance_norm, 4),
             "mempool_fee_norm": round(fv.mempool_fee_norm, 4),
         }
+
+    # ── Phase A: Batch Detection (backtest data plane) ───────────────
+
+    def detect_batch(
+        self,
+        ohlcv: list[list],
+        rsi_period: int = 14,
+        atr_period: int = 14,
+    ) -> list[BatchRegimeResult]:
+        """Classify regime for each bar in a historical OHLCV series.
+
+        Pure computation — no I/O, no side effects.
+        Uses simplified feature extraction from OHLCV data only
+        (no sentiment, on-chain, or microstructure — those are unavailable
+        in historical replay context).
+
+        Design constraint: batch results are NOT connected to real-time
+        execution path. Read-only analysis for backtest data plane.
+
+        Args:
+            ohlcv: List of [timestamp_ms, open, high, low, close, volume].
+                   Must be sorted by timestamp ASC.
+            rsi_period: RSI lookback period.
+            atr_period: ATR lookback period.
+
+        Returns:
+            List of BatchRegimeResult, one per input bar.
+            Bars before warmup period get regime=UNKNOWN, confidence=0.
+        """
+        n = len(ohlcv)
+        if n == 0:
+            return []
+
+        # Extract price arrays
+        timestamps = [int(bar[0]) for bar in ohlcv]
+        opens = np.array([float(bar[1]) for bar in ohlcv])
+        highs = np.array([float(bar[2]) for bar in ohlcv])
+        lows = np.array([float(bar[3]) for bar in ohlcv])
+        closes = np.array([float(bar[4]) for bar in ohlcv])
+        volumes = np.array([float(bar[5]) for bar in ohlcv])
+
+        # Pre-compute indicators over full series
+        rsi_arr = self._batch_rsi(closes, rsi_period)
+        atr_arr = self._batch_atr(highs, lows, closes, atr_period)
+        macd_hist_arr = self._batch_macd_histogram(closes)
+
+        # Warmup: need max(rsi_period, atr_period, 26) bars
+        warmup = max(rsi_period, atr_period, 26)
+
+        results: list[BatchRegimeResult] = []
+        for i in range(n):
+            if i < warmup:
+                results.append(BatchRegimeResult(
+                    timestamp=timestamps[i],
+                    regime=UNKNOWN,
+                    confidence=0.0,
+                ))
+                continue
+
+            # Build simplified feature vector from OHLCV-derived indicators
+            rsi_val = rsi_arr[i] if not np.isnan(rsi_arr[i]) else 50.0
+            macd_val = macd_hist_arr[i] if not np.isnan(macd_hist_arr[i]) else 0.0
+            atr_val = atr_arr[i] if not np.isnan(atr_arr[i]) else 0.0
+            price = closes[i]
+
+            fv = FeatureVector(
+                rsi_norm=float(np.clip(rsi_val / RSI_MAX, 0.0, 1.0)),
+                macd_hist_norm=float(np.clip(
+                    macd_val / price * 100 if price > 0 else 0.0, -1.0, 1.0
+                )),
+                atr_pct=float(np.clip(
+                    atr_val / price if price > 0 else 0.0, 0.0, ATR_PCT_CAP / 100
+                )),
+                volume_ratio=1.0,  # No historical avg available in batch
+                spread_pct=0.0,    # No microstructure in batch
+                fear_greed_norm=0.5,   # Neutral default
+                btc_dominance_norm=0.5,  # Neutral default
+                mempool_fee_norm=0.0,    # No on-chain in batch
+            )
+
+            # Classify via centroid distance (no momentum smoothing in batch)
+            regime_result = self._cluster_detect(fv)
+
+            results.append(BatchRegimeResult(
+                timestamp=timestamps[i],
+                regime=regime_result.regime,
+                confidence=regime_result.confidence,
+            ))
+
+        # Compute summary statistics
+        valid_results = [r for r in results if r.regime != UNKNOWN]
+        if valid_results:
+            regime_counts: dict[str, int] = {}
+            for r in valid_results:
+                regime_counts[r.regime] = regime_counts.get(r.regime, 0) + 1
+            total_valid = len(valid_results)
+
+            logger.info(
+                "batch_regime_detected",
+                total_bars=n,
+                warmup_bars=warmup,
+                valid_bars=total_valid,
+                regime_distribution={
+                    k: round(v / total_valid, 3)
+                    for k, v in sorted(regime_counts.items())
+                },
+            )
+
+        return results
+
+    # ── Batch Indicator Helpers (vectorized) ─────────────────────────
+
+    @staticmethod
+    def _batch_rsi(closes: np.ndarray, period: int = 14) -> np.ndarray:
+        """Compute RSI over full series. Returns NaN for warmup bars."""
+        n = len(closes)
+        rsi = np.full(n, np.nan)
+        if n < period + 1:
+            return rsi
+
+        deltas = np.diff(closes)
+        gains = np.where(deltas > 0, deltas, 0.0)
+        losses = np.where(deltas < 0, -deltas, 0.0)
+
+        avg_gain = np.mean(gains[:period])
+        avg_loss = np.mean(losses[:period])
+
+        for i in range(period, n - 1):
+            if avg_loss == 0:
+                rsi[i + 1] = 100.0
+            else:
+                rs = avg_gain / avg_loss
+                rsi[i + 1] = 100.0 - (100.0 / (1.0 + rs))
+
+            # Wilder's smoothing
+            avg_gain = (avg_gain * (period - 1) + gains[i]) / period
+            avg_loss = (avg_loss * (period - 1) + losses[i]) / period
+
+        # First valid RSI
+        if avg_loss == 0:
+            rsi[period] = 100.0
+        else:
+            rsi[period] = 100.0 - (100.0 / (1.0 + avg_gain / avg_loss))
+
+        return rsi
+
+    @staticmethod
+    def _batch_atr(
+        highs: np.ndarray,
+        lows: np.ndarray,
+        closes: np.ndarray,
+        period: int = 14,
+    ) -> np.ndarray:
+        """Compute ATR over full series. Returns NaN for warmup bars."""
+        n = len(highs)
+        atr = np.full(n, np.nan)
+        if n < period + 1:
+            return atr
+
+        # True Range
+        tr = np.zeros(n)
+        tr[0] = highs[0] - lows[0]
+        for i in range(1, n):
+            tr[i] = max(
+                highs[i] - lows[i],
+                abs(highs[i] - closes[i - 1]),
+                abs(lows[i] - closes[i - 1]),
+            )
+
+        # Initial ATR = SMA of first `period` TRs
+        atr[period] = np.mean(tr[1 : period + 1])
+
+        # Wilder's smoothing
+        for i in range(period + 1, n):
+            atr[i] = (atr[i - 1] * (period - 1) + tr[i]) / period
+
+        return atr
+
+    @staticmethod
+    def _batch_macd_histogram(
+        closes: np.ndarray,
+        fast: int = 12,
+        slow: int = 26,
+        signal: int = 9,
+    ) -> np.ndarray:
+        """Compute MACD histogram over full series."""
+        n = len(closes)
+        hist = np.full(n, np.nan)
+        if n < slow + signal:
+            return hist
+
+        # EMA helper
+        def ema(data: np.ndarray, period: int) -> np.ndarray:
+            result = np.full(len(data), np.nan)
+            result[period - 1] = np.mean(data[:period])
+            mult = 2.0 / (period + 1)
+            for i in range(period, len(data)):
+                result[i] = (data[i] - result[i - 1]) * mult + result[i - 1]
+            return result
+
+        ema_fast = ema(closes, fast)
+        ema_slow = ema(closes, slow)
+        macd_line = ema_fast - ema_slow
+
+        # Signal line (EMA of MACD line, starting from first valid MACD)
+        valid_start = slow - 1
+        macd_valid = macd_line[valid_start:]
+        signal_line_valid = ema(macd_valid, signal)
+
+        for i in range(len(signal_line_valid)):
+            if not np.isnan(signal_line_valid[i]):
+                hist[valid_start + i] = macd_valid[i] - signal_line_valid[i]
+
+        return hist
