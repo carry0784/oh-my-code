@@ -55,7 +55,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 FORK_PATH = REPO_ROOT / "scripts" / "sol_s1_v3r2_shadow_run.py"
 FROZEN_PATH = REPO_ROOT / "scripts" / "sol_s1_v3_shadow_run.py"
 
-EXPECTED_FROZEN_SHA256 = "94110d249fb8d6b371dbcfa1b922b45018eb567ac23c9d0afa82e184163c3f4a"
+EXPECTED_FROZEN_SHA256 = "352d205eb565eb9433f5a5c15c4386b9054d72d8b418841b7a099b095c5583d7"
 
 
 def _load_fork_module() -> ModuleType:

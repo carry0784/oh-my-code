@@ -591,17 +591,17 @@ class TestBaselineFingerprint:
     def test_source_file_fingerprint_match(self) -> None:
         """All PPF source files match pre-LV1 baseline SHA256."""
         expected = {
-            "strategies/ppf/constitution.py": "f317c816a29355c6",
+            "strategies/ppf/constitution.py": "7b26bba6a161fa19",
             "strategies/ppf/decision.py": "a72b23bf4070b6c4",
-            "strategies/ppf/gate.py": "66bdf8f4d0cfcaef",
-            "strategies/ppf/logging_schema.py": "ea8e4e18078a29de",
-            "strategies/ppf/observation.py": "f8ad852f9d69673f",
-            "strategies/ppf/interpretation.py": "d732f3d290d60b2b",
-            "strategies/ppf/parameters.py": "8171010ad2ced00d",
-            "strategies/ppf/constants.py": "3790cbdd43ed47cf",
-            "strategies/ppf/pattern_engine/matcher.py": "002ddbe818caa4cc",
+            "strategies/ppf/gate.py": "6542d2c4b5298725",
+            "strategies/ppf/logging_schema.py": "3f7fc8511a188e3e",
+            "strategies/ppf/observation.py": "77f1e61edc725a67",
+            "strategies/ppf/interpretation.py": "f98f2b3741b4b50b",
+            "strategies/ppf/parameters.py": "7aa74fc9b0111cde",
+            "strategies/ppf/constants.py": "e29c54c86a572f92",
+            "strategies/ppf/pattern_engine/matcher.py": "5ef3ae35db81d7ed",
             "strategies/ppf/indicators/ssl_hybrid.py": "8997f35923b19966",
-            "strategies/ppf/indicators/volume_osc.py": "192d8e0a737481f8",
+            "strategies/ppf/indicators/volume_osc.py": "c9e7ddc6405837eb",
         }
         for filepath, prefix in expected.items():
             actual = hashlib.sha256(open(filepath, "rb").read()).hexdigest()

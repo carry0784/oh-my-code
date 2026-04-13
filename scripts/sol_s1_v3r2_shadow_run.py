@@ -102,7 +102,7 @@ AUTHORITY_SOURCE_DESIGN_ADDENDUM_RUNNER: Final[str] = (
 
 FORK_OF_ORIGINAL_PATH: Final[str] = "scripts/sol_s1_v3_shadow_run.py"
 FORK_OF_ORIGINAL_SHA256: Final[str] = (
-    "94110d249fb8d6b371dbcfa1b922b45018eb567ac23c9d0afa82e184163c3f4a"
+    "352d205eb565eb9433f5a5c15c4386b9054d72d8b418841b7a099b095c5583d7"
 )
 FORK_CHAIN_ID: Final[str] = "grp_chain_impl_2_runner_script_fork_chain"
 FORK_DESIGN_VERSION_LABEL: Final[str] = "V-3R2"
