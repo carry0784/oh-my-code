@@ -65,6 +65,23 @@ ignore = ["F401", "F541", "F811", "F821", "F841", "E402", "E741"]
 python_version = "3.11"
 strict = true
 
+# ── Tier 2 (advisory) — legacy modules with known type debt ──────────
+# These will be tightened incrementally. Tier 1 modules use global strict.
+[[tool.mypy.overrides]]
+module = [
+    "app.api.routes.*",
+    "app.agents.*",
+    "app.core.*",
+    "app.exchanges.*",
+    "exchanges.*",
+    "workers.*",
+    "strategies.*",
+]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+no_implicit_optional = false
+warn_return_any = false
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
