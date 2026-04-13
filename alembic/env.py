@@ -14,6 +14,7 @@ from app.models import (
     OhlcvHistory,
     PPFNoveltyEvent,
     PPFBacktestBaseline,
+    ObservationChainEntry,
 )
 
 config = context.config
