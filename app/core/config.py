@@ -87,6 +87,21 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         return self.app_env == "production"
 
+    def validate_production(self) -> list[str]:
+        """Check production-critical settings. Returns list of violations."""
+        errors: list[str] = []
+        if not self.is_production:
+            return errors
+        if self.secret_key in ("change-me-in-production", ""):
+            errors.append("SECRET_KEY must be set to a unique value in production")
+        if self.debug:
+            errors.append("DEBUG must be false in production")
+        if not self.governance_enabled:
+            errors.append("GOVERNANCE_ENABLED must be true in production")
+        if not self.evidence_db_path:
+            errors.append("EVIDENCE_DB_PATH must be set for durable evidence in production")
+        return errors
+
 
 @lru_cache
 def get_settings() -> Settings:

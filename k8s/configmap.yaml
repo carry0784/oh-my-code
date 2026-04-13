@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kdexter-config
+  namespace: kdexter
+data:
+  APP_ENV: "production"
+  DEBUG: "false"
+  LOG_LEVEL: "INFO"
+  LOG_FILE_PATH: "/app/logs/prod.log"
+  EVIDENCE_DB_PATH: "/app/data/prod_evidence.db"
+  RECEIPT_FILE_PATH: "/app/data/prod_receipts.jsonl"
+  GOVERNANCE_ENABLED: "true"
+  DEFAULT_EXCHANGE: "binance"
+  EXCHANGE_MODE: "DATA_ONLY"
+  BINANCE_TESTNET: "true"
+  MAX_POSITION_SIZE_USD: "1000"
+  RISK_LIMIT_PERCENT: "2.0"

@@ -1,0 +1,43 @@
+# Git
+.git
+.gitignore
+
+# Python artifacts
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+dist/
+build/
+
+# Virtual environments
+.venv
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment files (secrets)
+.env
+.env.production
+.env.staging
+
+# Tests and docs (not needed in production image)
+tests/
+docs/
+scripts/
+*.md
+
+# CI/CD configs
+.github/
+.claude/
+
+# Data volumes (mounted at runtime)
+data/
+logs/
+*.db
+*.sqlite

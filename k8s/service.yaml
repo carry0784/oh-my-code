@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kdexter-api
+  namespace: kdexter
+  labels:
+    app: kdexter-api
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP
+      name: http
+  selector:
+    app: kdexter-api
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kdexter-sa
+  namespace: kdexter
