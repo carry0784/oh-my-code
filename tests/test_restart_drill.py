@@ -118,7 +118,7 @@ class TestDrillBeatScheduleRecovery:
         """Active beat task count must be 13 after reload."""
         from workers.celery_app import celery_app
 
-        assert len(celery_app.conf.beat_schedule) == 14
+        assert len(celery_app.conf.beat_schedule) == 15
 
     def test_drill_beat_all_dry_run(self):
         """All strategy-cycle tasks must have dry_run=True after reload."""

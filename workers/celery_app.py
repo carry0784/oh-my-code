@@ -23,6 +23,7 @@ celery_app = Celery(
         "workers.tasks.shadow_observation_tasks",  # CR-048 2A P3-B: shadow observation (dry-run)
         "workers.tasks.sol_paper_tasks",  # CR-046 Phase 5a-B: SOL paper trading (dry_run=True)
         "workers.tasks.cycle_runner_tasks",  # CR-048: strategy cycle runner (dry_run=True)
+        "workers.tasks.ppf_shadow_tasks",  # PPF: shadow gate evaluation (SHADOW_MANIFEST)
     ],
 )
 
@@ -115,6 +116,12 @@ celery_app.conf.beat_schedule = {
         "task": "workers.tasks.cycle_runner_tasks.run_strategy_cycle",
         "schedule": 300.0,  # 5min
         "kwargs": {"market": "US_STOCK", "dry_run": True},
+    },
+    # PPF: shadow gate evaluation (SHADOW_MANIFEST, hourly, SOL only)
+    "ppf-shadow-eval-hourly": {
+        "task": "workers.tasks.ppf_shadow_tasks.run_ppf_shadow_eval",
+        "schedule": 3600.0,  # 1h — matches PPF 1H candle cadence
+        "kwargs": {"symbol": "SOL/USDT", "exchange_name": "binance"},
     },
 }
 

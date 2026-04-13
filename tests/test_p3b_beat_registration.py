@@ -73,8 +73,8 @@ class TestActiveBeatCountDelta:
         from workers.celery_app import celery_app
 
         schedule = celery_app.conf.beat_schedule or {}
-        assert len(schedule) == 14, (
-            f"Expected 14 beat entries (13 base + Stage B SOL), got {len(schedule)}"
+        assert len(schedule) == 15, (
+            f"Expected 15 beat entries (13 base + Stage B SOL + PPF shadow), got {len(schedule)}"
         )
 
     def test_shadow_observation_is_active(self):
