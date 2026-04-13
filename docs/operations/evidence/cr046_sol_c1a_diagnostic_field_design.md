@@ -269,5 +269,223 @@ def _compute_near_miss_type(smc_sig: int, wt_sig: int) -> str | None:
 | 4 | 테스트 (기존 전수 통과 + 신규 진단 필드 검증) | 구현 완료 |
 | 5 | PR → CI green → merge | 테스트 통과 |
 | 6 | worker/beat 재시작 | merge |
-| 7 | 7일 관측 (168 bars) → smc_sig=0/wt_sig=0 비율 집계 | 재시작 |
-| 8 | Phase 3 대조 리포트 | 관측 완료 |
+| 7 | 24-bar post-merge 활성화 검증 | 재시작 |
+| 8 | 168-bar 운영 관측 → replay 대비 분포 비교 | 24-bar PASS |
+| 9 | Phase 3 대조 리포트 | 관측 완료 |
+
+---
+
+## Merge 봉인 (2026-04-08)
+
+```
+CR-046 SOL C1-A = MERGED (PR #92, squash, CI 4/4 green)
+Runtime implementation scope = 6 files
+  strategies/base.py
+  strategies/smc_wavetrend_strategy.py
+  app/services/paper_trading_session_cr046.py
+  workers/tasks/sol_paper_tasks.py
+  workers/tasks/btc_paper_tasks.py
+  tests/test_diagnostic_fields.py
+Governance evidence carry-in = 5 sealed documents
+  cr046_sol_c1_skip_signal_analysis.md
+  cr046_sol_c1_normal_confirmation.md
+  cr046_sol_c1_frequency_baseline.md
+  cr046_sol_c1b_replay_result.md
+  cr046_sol_c1a_diagnostic_field_design.md
+Logic scope drift = none
+Next chain = restart + 24-bar post-merge observation
+```
+
+## Post-Merge Activation 봉인 (2026-04-09)
+
+### Canonical Timestamps
+
+```
+Worker ready  = 2026-04-08 15:56:41 UTC  (log: 2026-04-09 00:56:41 KST)
+Beat start    = 2026-04-08 15:59:27 UTC  (log: 2026-04-09 00:59:27 KST)
+Canonical activation timestamp = 2026-04-08 15:59:27 UTC
+```
+
+### Old-Code Cutoff
+
+```
+Last old-code receipt (diagnostic=NULL):
+  receipt_id = d2193dc9-216d-4e24-bc43-74258c96cc5b
+  bar_ts     = 1775660400000 (2026-04-08 15:00:00 UTC)
+  action     = SKIP_SIGNAL_NONE
+
+First expected diagnostic-enabled bar = 2026-04-08 16:50 UTC ± jitter
+```
+
+### 24-Bar 검증 기준 (잠금)
+
+| 항목 | 성공 기준 |
+|------|-----------|
+| `diagnostic_populated=True` rate | >= 95% |
+| `diagnostic_version=1` consistency | 100% |
+| receipt 생성 실패 | 0 |
+| ERROR count | 0 |
+| replay 대비 병목 방향 | SMC_ZERO 우세, WT_ZERO 차선 |
+
+### Activation Smoke Window (첫 3 bars)
+
+| bar | 검증 항목 |
+|-----|-----------|
+| 1 | diagnostic 필드 존재 + populated + version=1 |
+| 2 | populated 연속성 + skip_reason_codes 채워짐 |
+| 3 | near_miss_type 규칙 일관성 |
+
+### Out-of-Scope (별도 체인)
+
+- `market_states` INSERT `np.float64` schema error: noise-only, C1-A 판정과 무관
+
+
+---
+
+## C1-A 24-Bar 관측 진행 현황 (2026-04-08 19:29 UTC)
+
+### 요약
+
+- **상태:** IN_PROGRESS
+- **분석 bars:** 3/24
+- **총 수집 bars:** 3
+- **smoke 판정:** PASS
+- **internal gap:** 0건 (analysis 기준)
+- **trailing overdue:** 0건 (observed 기준)
+- **leading gap:** 0건
+- **error:** 0건
+- **verdict_reasons:** `['WINDOW_INCOMPLETE']`
+
+### Smoke Window 결과
+
+| bar | bar_ts (UTC) | 검증 항목 | 결과 |
+|-----|-------------|-----------|------|
+| 1 | 2026-04-08 16:00 UTC | diagnostic 존재 + populated + version=1 | PASS |
+| 2 | 2026-04-08 17:00 UTC | populated 연속성 + skip_reason_codes 채워짐 | PASS |
+| 3 | 2026-04-08 18:00 UTC | near_miss_type 규칙 일관성 | PASS |
+
+### 24-Bar 기준 진행 현황 (3/24 bars)
+
+| 항목 | 성공 기준 | 현재 관측값 | 판정 |
+|------|-----------|------------|------|
+| `diagnostic_populated=True rate` | >= 95% | 100.0% (3/3) | PASS |
+| `diagnostic_version=1 consistency` | 100% | 100.0% (3/3) | PASS |
+| `receipt 생성 실패 (internal gap)` | 0 | 0건 | PASS |
+| `ERROR count` | 0 | 0건 | PASS |
+| `replay 대비 병목 방향` | SMC_ZERO 우세 | SMC:3 WT:3 | PASS |
+
+### Gap 분석
+
+| gap 유형 | 건수 | 상세 |
+|----------|------|------|
+| leading | 0 | — |
+| internal | 0 | — |
+| trailing overdue | 0 | — |
+
+### 진단 필드 원시값
+
+| bar# | bar_ts (UTC) | action | smc_sig | wt_sig | skip_codes | near_miss | bottleneck | rule_check |
+|------|-------------|--------|---------|--------|------------|-----------|------------|------------|
+| 1 | 2026-04-08 16:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 2 | 2026-04-08 17:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 3 | 2026-04-08 18:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+
+### 관측 Fingerprint
+
+- generated_at: 2026-04-08 19:29 UTC
+- window: 24
+- bars_observed_total: 3
+- bars_analyzed: 3
+- first_bar_ts: 2026-04-08 16:00 UTC
+- last_bar_ts: 2026-04-08 18:00 UTC
+
+### 최종 판정
+
+**IN_PROGRESS** (3/24 bars)
+- verdict_reasons: ['WINDOW_INCOMPLETE']
+
+
+---
+
+## C1-A 24-Bar 최종 관측 결과 (2026-04-09 16:02 UTC)
+
+### 요약
+
+- **상태:** PASS
+- **분석 bars:** 24/24
+- **총 수집 bars:** 24
+- **smoke 판정:** PASS
+- **internal gap:** 0건 (analysis 기준)
+- **trailing overdue:** N/A (final)
+- **leading gap:** 0건
+- **error:** 0건
+- **verdict_reasons:** `[]`
+
+### Smoke Window 결과
+
+| bar | bar_ts (UTC) | 검증 항목 | 결과 |
+|-----|-------------|-----------|------|
+| 1 | 2026-04-08 16:00 UTC | diagnostic 존재 + populated + version=1 | PASS |
+| 2 | 2026-04-08 17:00 UTC | populated 연속성 + skip_reason_codes 채워짐 | PASS |
+| 3 | 2026-04-08 18:00 UTC | near_miss_type 규칙 일관성 | PASS |
+
+### 24-Bar 기준 진행 현황 (24/24 bars)
+
+| 항목 | 성공 기준 | 현재 관측값 | 판정 |
+|------|-----------|------------|------|
+| `diagnostic_populated=True rate` | >= 95% | 100.0% (24/24) | PASS |
+| `diagnostic_version=1 consistency` | 100% | 100.0% (24/24) | PASS |
+| `receipt 생성 실패 (internal gap)` | 0 | 0건 | PASS |
+| `ERROR count` | 0 | 0건 | PASS |
+| `replay 대비 병목 방향` | SMC_ZERO 우세 | SMC:23 WT:21 | PASS |
+
+### Gap 분석
+
+| gap 유형 | 건수 | 상세 |
+|----------|------|------|
+| leading | 0 | — |
+| internal | 0 | — |
+| trailing overdue | N/A | final — 범위 밖 검사 제외 |
+
+### 진단 필드 원시값
+
+| bar# | bar_ts (UTC) | action | smc_sig | wt_sig | skip_codes | near_miss | bottleneck | rule_check |
+|------|-------------|--------|---------|--------|------------|-----------|------------|------------|
+| 1 | 2026-04-08 16:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 2 | 2026-04-08 17:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 3 | 2026-04-08 18:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 4 | 2026-04-08 19:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 5 | 2026-04-08 20:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 6 | 2026-04-08 21:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 7 | 2026-04-08 22:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 8 | 2026-04-08 23:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 9 | 2026-04-09 00:00 UTC | SKIP_SIGNAL_NONE | -1 | 0 | WT_ZERO | SMC_ONLY | WT_ZERO | PASS |
+| 10 | 2026-04-09 01:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 11 | 2026-04-09 02:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 12 | 2026-04-09 03:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 13 | 2026-04-09 04:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 14 | 2026-04-09 05:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 15 | 2026-04-09 06:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 16 | 2026-04-09 07:00 UTC | SKIP_SIGNAL_NONE | 0 | 1 | SMC_ZERO | WT_ONLY | SMC_ZERO | PASS |
+| 17 | 2026-04-09 08:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 18 | 2026-04-09 09:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 19 | 2026-04-09 10:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 20 | 2026-04-09 11:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 21 | 2026-04-09 12:00 UTC | SKIP_SIGNAL_NONE | 0 | -1 | SMC_ZERO | WT_ONLY | SMC_ZERO | PASS |
+| 22 | 2026-04-09 13:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 23 | 2026-04-09 14:00 UTC | SKIP_SIGNAL_NONE | 0 | 0 | SMC_ZERO,WT_ZERO | null | BOTH_ZERO | PASS |
+| 24 | 2026-04-09 15:00 UTC | SKIP_SIGNAL_NONE | 0 | 1 | SMC_ZERO | WT_ONLY | SMC_ZERO | PASS |
+
+### 관측 Fingerprint
+
+- generated_at: 2026-04-09 16:02 UTC
+- window: 24
+- bars_observed_total: 24
+- bars_analyzed: 24
+- first_bar_ts: 2026-04-08 16:00 UTC
+- last_bar_ts: 2026-04-09 15:00 UTC
+- duplicate_ignored: 0
+
+### 최종 판정
+
+**PASS** (24/24 bars)
