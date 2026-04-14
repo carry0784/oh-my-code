@@ -20,17 +20,33 @@ import structlog
 from app.core.config import settings
 
 # Secret field names to redact in structured log output
-_SECRET_FIELDS = frozenset({
-    "api_key", "api_secret", "secret_key", "passphrase",
-    "app_key", "app_secret", "token", "access_token",
-    "binance_api_key", "binance_api_secret",
-    "upbit_api_key", "upbit_api_secret",
-    "bitget_api_key", "bitget_api_secret", "bitget_passphrase",
-    "kis_app_key", "kis_app_secret",
-    "kiwoom_app_key", "kiwoom_app_secret",
-    "openai_api_key", "anthropic_api_key",
-    "password", "secret",
-})
+_SECRET_FIELDS = frozenset(
+    {
+        "api_key",
+        "api_secret",
+        "secret_key",
+        "passphrase",
+        "app_key",
+        "app_secret",
+        "token",
+        "access_token",
+        "binance_api_key",
+        "binance_api_secret",
+        "upbit_api_key",
+        "upbit_api_secret",
+        "bitget_api_key",
+        "bitget_api_secret",
+        "bitget_passphrase",
+        "kis_app_key",
+        "kis_app_secret",
+        "kiwoom_app_key",
+        "kiwoom_app_secret",
+        "openai_api_key",
+        "anthropic_api_key",
+        "password",
+        "secret",
+    }
+)
 
 _SECRET_PATTERN = re.compile(
     r"(api[_-]?key|api[_-]?secret|passphrase|secret[_-]?key|app[_-]?key|app[_-]?secret"
@@ -50,6 +66,7 @@ def _redact_secrets(logger, method_name, event_dict):
             lambda m: m.group(1) + "=***REDACTED***", event_dict["error"]
         )
     return event_dict
+
 
 # Module-level log mode — set during setup_logging(), readable externally
 log_mode: str = "UNKNOWN"
