@@ -78,11 +78,33 @@
 | 필드 | 값 | 상태 |
 |---|---|---|
 | `seal_basis_receipt` | cr_new_p3_window_seal_2026-04-14 | **THIS** (자기참조 앵커, 후속 receipt의 backward-link 기준점) |
-| `fix_commit_sha` | (TBD) | Change-1/2 PR merge 후 기록 |
+| `fix_commit_sha` | `fba493e6f1d69c5f3135e6248296c08597a14442` | **SEALED** (PR #99 squash merge, 2026-04-14T14:23:00Z) |
+| `source_branch_ref` | `origin/cr-new/collector-numpy-leak-fix` | **PRESERVED** (auto-delete 후 즉시 re-push 복구, 2026-04-14) |
+| `pre_squash_commit_chain` | `5ed0171 → ec5384a → 7a23150` | **PRESERVED** (docs receipt → collector fix → CI corrective; source branch에서 fetch 가능) |
+| `merge_method` | `squash` | repo policy `allow_squash_merge=true, allow_merge_commit=false, allow_rebase_merge=false` 하의 유일 허용 경로 |
+| `branch_auto_deleted_recovered` | `true` | repo policy `delete_branch_on_merge=true`로 인한 auto-delete 발생 → local objects 기반 re-push로 회복 |
 | `recovery_smoke_result` | (TBD) | P1 Recovery Smoke receipt 참조 (`cr_new_p1_recovery_smoke_<date>.md`) |
 | `observation_smoke_result` | (TBD) | P2 Observation Integrity 결과 참조 |
 | `new_window_started_at` | (TBD) | P2 PASS 후 새 창 개시 시 기록 |
 | `new_window_baseline_at` | (TBD) | 새 창 baseline 확정 시 기록 |
+
+### 5.1 Squash Merge Recovery Note
+
+저장소 정책이 `squash-only` + `delete_branch_on_merge=true`로 고정되어 있어,
+PR merge 완료 시점에 source branch가 remote에서 자동 소실된다.
+
+본 건은 merge 직후 local objects로부터 즉시 `git push origin cr-new/collector-numpy-leak-fix`
+재푸시를 수행하여 pre-squash 3-commit chain을 remote ref에 복원하였다.
+
+이 저장소에서의 squash merge 표준 시퀀스는 다음과 같다:
+
+```
+PR squash merge → main 반영 SHA 확인 → 즉시 source branch re-push
+→ remote ref 존재 확인 → receipt linkage 봉인
+```
+
+본 시퀀스 미이행 시 pre-squash commit chain이 garbage collection 대상이 되어
+거버넌스 추적성이 영구 손실될 위험이 있다.
 
 ---
 
