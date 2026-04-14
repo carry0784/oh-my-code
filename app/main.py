@@ -92,6 +92,13 @@ async def lifespan(app: FastAPI):
         log_level=settings.log_level,
     )
 
+    # Production fail-fast: reject default secret key
+    if settings.is_production and settings.secret_key in ("change-me-in-production", ""):
+        raise RuntimeError(
+            "FATAL: SECRET_KEY is not set or uses the default value. "
+            "Set a unique SECRET_KEY environment variable for production."
+        )
+
     # Production fail-fast: governance must be enabled
     if settings.is_production and not settings.governance_enabled:
         raise RuntimeError(

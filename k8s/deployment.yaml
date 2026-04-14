@@ -111,11 +111,25 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "1000m"
+          startupProbe:
+            exec:
+              command: ["python", "-c", "from workers.celery_app import app; app.connection_for_read().ensure_connection(max_retries=1)"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 12
           livenessProbe:
             exec:
               command: ["python", "-c", "import celery; print('ok')"]
             periodSeconds: 60
             timeoutSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["python", "-c", "from workers.celery_app import app; app.connection_for_read().ensure_connection(max_retries=1)"]
+            initialDelaySeconds: 5
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -154,3 +168,23 @@ spec:
             limits:
               memory: "256Mi"
               cpu: "250m"
+          startupProbe:
+            exec:
+              command: ["python", "-c", "from workers.celery_app import app; app.connection_for_read().ensure_connection(max_retries=1)"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 12
+          livenessProbe:
+            exec:
+              command: ["python", "-c", "from workers.celery_app import app; app.connection_for_read().ensure_connection(max_retries=1)"]
+            periodSeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command: ["python", "-c", "from workers.celery_app import app; app.connection_for_read().ensure_connection(max_retries=1)"]
+            initialDelaySeconds: 5
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
