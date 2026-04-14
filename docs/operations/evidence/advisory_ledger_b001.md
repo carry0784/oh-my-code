@@ -51,7 +51,9 @@
 | merge_block | **NO** — Rate limiting is additive; absence does not break existing functionality. |
 | production_block | **CONDITIONAL** — Required if API is network-exposed. Not required if API is strictly localhost/pod-internal. |
 | owner | Backend / API |
-| status | OPEN |
+| status | **RESOLVED** |
+| resolved_at | 2026-04-14T02:00:00Z |
+| resolution | Added `slowapi` rate limiting: global Limiter on `app/main.py`, `@limiter.limit("30/minute")` on `POST /orders` and `POST /signals`. 429 handler returns JSON error. |
 | evidence_link | `docs/operations/evidence/step7_security_audit.md` §A2 |
 
 ---
@@ -89,7 +91,9 @@
 | merge_block | **NO** — Absence of audit tooling does not affect code correctness. |
 | production_block | **CONDITIONAL** — Recommended before production. Not a hard blocker if dependencies are manually reviewed. |
 | owner | Infrastructure / CI |
-| status | OPEN |
+| status | **RESOLVED** |
+| resolved_at | 2026-04-14T02:00:00Z |
+| resolution | Added `dependency-audit` job to `.github/workflows/ci.yml`: `pip-audit --strict --desc` as advisory (continue-on-error: true). Scans all requirements.txt dependencies for known CVEs. |
 | evidence_link | `docs/operations/evidence/step7_security_audit.md` §A4 |
 
 ---
@@ -127,7 +131,9 @@
 | merge_block | **NO** — Structured logging is already in place. |
 | production_block | **CONDITIONAL** — Recommended audit before production log aggregation is enabled. |
 | owner | Backend / Observability |
-| status | OPEN |
+| status | **RESOLVED** |
+| resolved_at | 2026-04-14T02:00:00Z |
+| resolution | Added `_redact_secrets` structlog processor in `app/core/logging.py`: redacts 20+ known secret field names and scrubs `api_key=...` patterns from error strings. Processor runs before stack/exception rendering. |
 | evidence_link | `docs/operations/evidence/step7_security_audit.md` §A6 |
 
 ---
@@ -158,18 +164,18 @@
 | ID | Severity | merge_block | production_block | Status |
 |---|---|---|---|---|
 | A1 | Medium | NO | **YES** | **RESOLVED** |
-| A2 | Medium | NO | CONDITIONAL | OPEN |
+| A2 | Medium | NO | CONDITIONAL | **RESOLVED** |
 | A3 | Low | NO | NO | ACCEPTED_RISK |
-| A4 | Medium | NO | CONDITIONAL | OPEN |
+| A4 | Medium | NO | CONDITIONAL | **RESOLVED** |
 | A5 | Low | NO | NO | ACCEPTED_RISK |
-| A6 | Low | NO | CONDITIONAL | OPEN |
+| A6 | Low | NO | CONDITIONAL | **RESOLVED** |
 | A7 | Medium | NO | **YES** | **RESOLVED** |
 
 ### Aggregate Judgment
 
 - **merge_block = NO** for all 7 advisories. Phase A merges were correctly executed.
 - **production_block = YES** for 2 advisories (A1, A7). Both RESOLVED (2026-04-14).
-- **production_block = CONDITIONAL** for 3 advisories (A2, A4, A6). Resolution depends on deployment topology.
+- **production_block = CONDITIONAL** for 3 advisories (A2, A4, A6). All RESOLVED (2026-04-14).
 - **production_block = NO** for 2 advisories (A3, A5). Accepted risk, no action required.
 - **production_authorized = FALSE** remains unchanged. This ledger does not grant authorization.
 
@@ -177,7 +183,7 @@
 
 | Category | Count |
 |---|---|
-| OPEN | 3 |
+| OPEN | 0 |
 | ACCEPTED_RISK | 2 |
-| RESOLVED | 2 |
+| RESOLVED | 5 |
 | Total | 7 |

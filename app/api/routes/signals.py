@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -6,10 +8,13 @@ from app.schemas.signal import SignalCreate, SignalResponse, SignalList
 from app.services.signal_service import SignalService
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/", response_model=SignalResponse)
+@limiter.limit("30/minute")
 async def create_signal(
+    request: Request,
     signal: SignalCreate,
     db: AsyncSession = Depends(get_db),
 ):

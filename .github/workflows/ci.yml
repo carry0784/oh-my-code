@@ -117,6 +117,27 @@ jobs:
           --follow-imports=skip
           --no-error-summary
 
+  dependency-audit:
+    name: dependency audit (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5.0.0
+      - uses: actions/setup-python@v6.0.0
+        with:
+          python-version: "3.11"
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-audit-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-audit-
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install pip-audit
+      - run: python -m pip install -r requirements.txt
+      - name: "pip-audit: scan for known vulnerabilities"
+        run: pip-audit --strict --desc
+
   build:
     name: build
     runs-on: ubuntu-latest
