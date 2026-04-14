@@ -6,8 +6,10 @@ Read-only — never modifies exchange state.
 
 import asyncio
 from datetime import datetime, timezone
+from typing import Any
 
 from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 
 from workers.celery_app import celery_app
@@ -32,6 +34,76 @@ _sync_engine = create_engine(
     pool_recycle=1800,
 )
 _SyncSessionFactory = sessionmaker(bind=_sync_engine)
+
+
+# CR-NEW Change-1: numpy/pandas scalar → Python native conversion
+# Prevents psycopg2 InvalidSchemaName("np") from numpy.float64 leaking
+# into SQL parameter binding. Applied defensively to all MarketState
+# scalar fields. See docs/operations/evidence/cr_new_p3_window_seal_2026-04-14.md
+def _to_native(value: Any) -> Any:
+    """
+    Convert numpy/pandas scalar to Python native scalar.
+    Pass-through for None and already-native types.
+    Preserves NaN semantics (numpy.float64('nan').item() == nan).
+    """
+    if value is None:
+        return None
+    # numpy scalars and 0-d arrays expose .item() returning Python native
+    item = getattr(value, "item", None)
+    if callable(item):
+        try:
+            return item()
+        except (ValueError, TypeError):
+            return value
+    return value
+
+
+# CR-NEW Change-2: deterministic vs transient failure classifier
+# Deterministic failures skip retry to avoid log storms and preserve
+# terminal_failure visibility in logs and Celery backend (no success disguise).
+_DETERMINISTIC_SCHEMA_MARKERS = (
+    'schema "np"',
+    'schema "pd"',
+    'schema "numpy"',
+    'schema "pandas"',
+)
+
+
+def _classify_failure(exc: BaseException) -> tuple[str, bool]:
+    """
+    Classify exception → (failure_class, retryable).
+
+    Classification strategy:
+      - Fast path: exception type-name match
+        (InvalidSchemaName, asyncio.TimeoutError, OperationalError)
+      - Fallback: schema marker string match in str(exc) for wrapped
+        DBAPI errors (e.g. SQLAlchemy-wrapped psycopg2 InvalidSchemaName)
+
+    Returns:
+        ("deterministic_type_schema", False)  # no retry, terminal_failure
+        ("transient_network", True)            # retry scheduled
+        ("transient_db", True)                 # retry scheduled
+        ("unknown", True)                      # retry (backward-compat default)
+    """
+    exc_type_name = type(exc).__name__
+    exc_str = str(exc).lower()
+
+    # Deterministic: numpy/pandas scalar leak → psycopg2 InvalidSchemaName
+    if exc_type_name == "InvalidSchemaName":
+        return ("deterministic_type_schema", False)
+    if any(marker in exc_str for marker in _DETERMINISTIC_SCHEMA_MARKERS):
+        return ("deterministic_type_schema", False)
+    if isinstance(exc, TypeError) and "numpy" in exc_str:
+        return ("deterministic_type_schema", False)
+
+    # Transient: network / DB
+    if isinstance(exc, asyncio.TimeoutError):
+        return ("transient_network", True)
+    if isinstance(exc, OperationalError):
+        return ("transient_db", True)
+
+    # Default: retry (preserves prior behavior for unknown errors)
+    return ("unknown", True)
 
 
 @celery_app.task(bind=True, max_retries=2, default_retry_delay=30)
@@ -77,42 +149,46 @@ def collect_market_state(
         # Persist to DB
         sess = _SyncSessionFactory()
         try:
+            # CR-NEW Change-1: defensive _to_native() wrap on all scalar fields
+            # Root cause was snapshot.indicators.obv returning numpy.float64;
+            # wrapping all indicator/sentiment/on_chain/microstructure scalars
+            # prevents future numpy leak regressions.
             state = MarketState(
                 exchange=snapshot.exchange,
                 symbol=snapshot.symbol,
-                price=snapshot.price_data.price,
-                bid=snapshot.microstructure.bid,
-                ask=snapshot.microstructure.ask,
-                spread_pct=snapshot.microstructure.spread_pct,
-                volume_24h=snapshot.price_data.volume_24h,
-                rsi_14=snapshot.indicators.rsi_14,
-                macd_line=snapshot.indicators.macd_line,
-                macd_signal=snapshot.indicators.macd_signal,
-                macd_histogram=snapshot.indicators.macd_histogram,
-                bb_upper=snapshot.indicators.bb_upper,
-                bb_middle=snapshot.indicators.bb_middle,
-                bb_lower=snapshot.indicators.bb_lower,
-                atr_14=snapshot.indicators.atr_14,
-                adx_14=snapshot.indicators.adx_14,
-                obv=snapshot.indicators.obv,
-                sma_20=snapshot.indicators.sma_20,
-                sma_50=snapshot.indicators.sma_50,
-                sma_200=snapshot.indicators.sma_200,
-                ema_12=snapshot.indicators.ema_12,
-                ema_26=snapshot.indicators.ema_26,
-                fear_greed_index=snapshot.sentiment.fear_greed_index,
-                fear_greed_label=snapshot.sentiment.fear_greed_label,
-                hash_rate=snapshot.on_chain.hash_rate,
-                difficulty=snapshot.on_chain.difficulty,
-                tx_count_24h=snapshot.on_chain.tx_count_24h,
-                mempool_size=snapshot.on_chain.mempool_size,
-                mempool_fee_fast=snapshot.on_chain.mempool_fee_fast,
-                mempool_fee_medium=snapshot.on_chain.mempool_fee_medium,
-                btc_dominance=snapshot.on_chain.btc_dominance,
-                total_market_cap_usd=snapshot.on_chain.total_market_cap_usd,
-                funding_rate=snapshot.microstructure.funding_rate,
-                open_interest=snapshot.microstructure.open_interest,
-                regime=snapshot.regime,
+                price=_to_native(snapshot.price_data.price),
+                bid=_to_native(snapshot.microstructure.bid),
+                ask=_to_native(snapshot.microstructure.ask),
+                spread_pct=_to_native(snapshot.microstructure.spread_pct),
+                volume_24h=_to_native(snapshot.price_data.volume_24h),
+                rsi_14=_to_native(snapshot.indicators.rsi_14),
+                macd_line=_to_native(snapshot.indicators.macd_line),
+                macd_signal=_to_native(snapshot.indicators.macd_signal),
+                macd_histogram=_to_native(snapshot.indicators.macd_histogram),
+                bb_upper=_to_native(snapshot.indicators.bb_upper),
+                bb_middle=_to_native(snapshot.indicators.bb_middle),
+                bb_lower=_to_native(snapshot.indicators.bb_lower),
+                atr_14=_to_native(snapshot.indicators.atr_14),
+                adx_14=_to_native(snapshot.indicators.adx_14),
+                obv=_to_native(snapshot.indicators.obv),  # <- original leak field
+                sma_20=_to_native(snapshot.indicators.sma_20),
+                sma_50=_to_native(snapshot.indicators.sma_50),
+                sma_200=_to_native(snapshot.indicators.sma_200),
+                ema_12=_to_native(snapshot.indicators.ema_12),
+                ema_26=_to_native(snapshot.indicators.ema_26),
+                fear_greed_index=_to_native(snapshot.sentiment.fear_greed_index),
+                fear_greed_label=snapshot.sentiment.fear_greed_label,  # str, no wrap
+                hash_rate=_to_native(snapshot.on_chain.hash_rate),
+                difficulty=_to_native(snapshot.on_chain.difficulty),
+                tx_count_24h=_to_native(snapshot.on_chain.tx_count_24h),
+                mempool_size=_to_native(snapshot.on_chain.mempool_size),
+                mempool_fee_fast=_to_native(snapshot.on_chain.mempool_fee_fast),
+                mempool_fee_medium=_to_native(snapshot.on_chain.mempool_fee_medium),
+                btc_dominance=_to_native(snapshot.on_chain.btc_dominance),
+                total_market_cap_usd=_to_native(snapshot.on_chain.total_market_cap_usd),
+                funding_rate=_to_native(snapshot.microstructure.funding_rate),
+                open_interest=_to_native(snapshot.microstructure.open_interest),
+                regime=snapshot.regime,  # str, no wrap
                 snapshot_at=snapshot.snapshot_at or datetime.now(timezone.utc),
             )
             sess.add(state)
@@ -135,10 +211,31 @@ def collect_market_state(
         }
 
     except Exception as e:
+        # CR-NEW Change-2: classify deterministic vs transient failure.
+        # Deterministic → no retry, but raise to preserve terminal_failure
+        # visibility (Celery records FAILURE; no success disguise).
+        # Transient → existing retry path (max_retries=2, default_retry_delay=30).
+        failure_class, retryable = _classify_failure(e)
+        if not retryable:
+            logger.error(
+                "collect_market_state_terminal_failure",
+                symbol=symbol,
+                exchange=exchange_name,
+                failure_class=failure_class,
+                retryable=False,
+                action="no_retry",
+                terminal_failure=True,
+                error=str(e),
+            )
+            raise  # preserve Celery FAILURE state, no retry
         logger.error(
             "market_state_collection_failed",
             symbol=symbol,
             exchange=exchange_name,
+            failure_class=failure_class,
+            retryable=True,
+            action="retry_scheduled",
+            terminal_failure=False,
             error=str(e),
         )
         raise self.retry(exc=e)
