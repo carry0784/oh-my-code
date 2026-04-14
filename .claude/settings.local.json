@@ -239,7 +239,8 @@
       "Bash(python -c ':*)",
       "Bash(python -m ruff format alembic/env.py app/models/__init__.py app/models/observation_chain.py app/services/case_accumulation.py app/services/observation_chain_service.py tests/test_data_infra.py alembic/versions/028_observation_chain.py)",
       "Bash(python -m ruff check alembic/env.py app/models/__init__.py app/models/observation_chain.py app/services/case_accumulation.py app/services/observation_chain_service.py tests/test_data_infra.py alembic/versions/028_observation_chain.py)",
-      "Bash(git commit -m ':*)"
+      "Bash(git commit -m ':*)",
+      "Bash(python -m ruff format strategies/ tests/test_strategy_expansion.py app/services/regime_detector_v2.py scripts/track_b_eth_smc_macd_backtest.py scripts/track_c_v2_regime_validation.py)"
     ]
   }
 }

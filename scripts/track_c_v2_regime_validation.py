@@ -143,9 +143,9 @@ async def run_comparison(symbol: str, bars: int) -> RegimeComparisonResult:
     result.elapsed_seconds = round(time.monotonic() - start, 2)
 
     # Report
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  Track C-v2 Regime Comparison: {symbol}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  Bars:        {result.total_bars}")
     print(f"  V1 dist:     {v1_dist}")
     print(f"  V2 dist:     {v2_dist}")
@@ -155,7 +155,7 @@ async def run_comparison(symbol: str, bars: int) -> RegimeComparisonResult:
     print(f"  V1 entropy:  {result.v1_entropy}")
     print(f"  V2 entropy:  {result.v2_entropy}")
     print(f"  Elapsed:     {result.elapsed_seconds}s")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     return result
 
@@ -167,6 +167,7 @@ def main():
     args = parser.parse_args()
 
     from dataclasses import asdict
+
     result = asyncio.run(run_comparison(args.symbol, args.bars))
 
     out_path = "docs/operations/evidence/track_c_v2_regime_comparison_log.json"

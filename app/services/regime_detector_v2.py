@@ -89,23 +89,31 @@ class RegimeDetectorV2:
 
         Requires enough history for all indicator periods.
         """
-        min_bars = max(
-            self.config.ci_period,
-            self.config.der_period,
-            self.config.rv_period,
-        ) + 1
+        min_bars = (
+            max(
+                self.config.ci_period,
+                self.config.der_period,
+                self.config.rv_period,
+            )
+            + 1
+        )
 
         if len(closes) < min_bars:
             return RegimeV2Result()
 
         ci_arr = calc_choppiness_index(
-            highs, lows, closes, period=self.config.ci_period,
+            highs,
+            lows,
+            closes,
+            period=self.config.ci_period,
         )
         der_arr = calc_directional_efficiency(
-            closes, period=self.config.der_period,
+            closes,
+            period=self.config.der_period,
         )
         rv_arr = calc_realized_volatility(
-            closes, period=self.config.rv_period,
+            closes,
+            period=self.config.rv_period,
         )
 
         ci_val = ci_arr[-1] if not np.isnan(ci_arr[-1]) else 50.0
@@ -153,13 +161,18 @@ class RegimeDetectorV2:
         closes = np.array([bar[4] for bar in ohlcv], dtype=np.float64)
 
         ci_arr = calc_choppiness_index(
-            highs, lows, closes, period=self.config.ci_period,
+            highs,
+            lows,
+            closes,
+            period=self.config.ci_period,
         )
         der_arr = calc_directional_efficiency(
-            closes, period=self.config.der_period,
+            closes,
+            period=self.config.der_period,
         )
         rv_arr = calc_realized_volatility(
-            closes, period=self.config.rv_period,
+            closes,
+            period=self.config.rv_period,
         )
 
         results = []
@@ -187,13 +200,15 @@ class RegimeDetectorV2:
             # Resolve trending direction using local close comparison
             regime = self._resolve_direction_at(raw_regime, closes, i)
 
-            results.append(RegimeV2Result(
-                regime=regime,
-                confidence=confidence,
-                choppiness_index=ci_val,
-                directional_efficiency=der_val,
-                realized_volatility=rv_val,
-            ))
+            results.append(
+                RegimeV2Result(
+                    regime=regime,
+                    confidence=confidence,
+                    choppiness_index=ci_val,
+                    directional_efficiency=der_val,
+                    realized_volatility=rv_val,
+                )
+            )
 
         return results
 

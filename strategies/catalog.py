@@ -91,7 +91,6 @@ STRATEGY_CATALOG: dict[str, StrategyEntry] = {
         min_bars=50,
         indicators_used=("SMC_pure_causal", "WaveTrend"),
     ),
-
     # ── EXPERIMENTAL (Track B / Track C-v2) ──────────────────────────
     "SMC_MACD_1H": StrategyEntry(
         name="SMC_MACD_1H",
@@ -109,7 +108,6 @@ STRATEGY_CATALOG: dict[str, StrategyEntry] = {
         min_bars=50,
         indicators_used=("SMC_pure_causal", "MACD"),
     ),
-
     "RSI_14_70_30": StrategyEntry(
         name="RSI_14_70_30",
         compute_module="strategies.rsi_strategy",
@@ -131,6 +129,7 @@ STRATEGY_CATALOG: dict[str, StrategyEntry] = {
 
 # ── Lookup helpers ───────────────────────────────────────────────────────
 
+
 def get_entry(name: str) -> StrategyEntry | None:
     """Look up a strategy by name."""
     return STRATEGY_CATALOG.get(name)
@@ -144,14 +143,10 @@ def list_by_track(track: Track) -> list[StrategyEntry]:
 def list_by_regime(regime: str) -> list[StrategyEntry]:
     """List strategies with affinity for a given regime."""
     return [
-        e for e in STRATEGY_CATALOG.values()
-        if not e.regime_affinity or regime in e.regime_affinity
+        e for e in STRATEGY_CATALOG.values() if not e.regime_affinity or regime in e.regime_affinity
     ]
 
 
 def list_by_symbol(symbol: str) -> list[StrategyEntry]:
     """List strategies eligible for a given symbol."""
-    return [
-        e for e in STRATEGY_CATALOG.values()
-        if not e.symbols or symbol in e.symbols
-    ]
+    return [e for e in STRATEGY_CATALOG.values() if not e.symbols or symbol in e.symbols]

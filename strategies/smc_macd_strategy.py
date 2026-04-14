@@ -73,7 +73,10 @@ class SMCMACDStrategy(BaseStrategy):
 
         # Indicator 1: SMC pure-causal
         smc_trend, smc_signals = calc_smc_pure_causal(
-            highs, lows, closes, internal_length=self.internal_length,
+            highs,
+            lows,
+            closes,
+            internal_length=self.internal_length,
         )
 
         # Indicator 2: MACD
