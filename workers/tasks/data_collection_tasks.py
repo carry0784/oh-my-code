@@ -25,15 +25,35 @@ from exchanges.factory import ExchangeFactory
 logger = get_logger(__name__)
 
 # Module-level bounded engine: pool_size=1, max_overflow=0
-# Prevents per-invocation engine leak (CR-048 DB saturation fix)
-_sync_engine = create_engine(
-    settings.database_url_sync,
-    pool_pre_ping=True,
-    pool_size=1,
-    max_overflow=0,
-    pool_recycle=1800,
-)
-_SyncSessionFactory = sessionmaker(bind=_sync_engine)
+# Prevents per-invocation engine leak (CR-048 DB saturation fix).
+# Lazy-initialized on first task call so importing this module does
+# not require a valid DATABASE_URL (CI/unit-test isolation).
+_sync_engine = None
+_SyncSessionFactory = None
+
+
+def _get_session_factory():
+    """
+    Return the bounded sync session factory, initializing on first call.
+
+    Moving create_engine() out of module scope prevents import-time DB
+    side effects: unit tests that exercise pure helpers (_to_native,
+    _classify_failure) can import this module without a valid
+    DATABASE_URL. Runtime semantics are preserved — the pool is bounded
+    to size=1, max_overflow=0, pre-ping enabled, recycle=1800 — and the
+    engine/session factory are created once per process.
+    """
+    global _sync_engine, _SyncSessionFactory
+    if _SyncSessionFactory is None:
+        _sync_engine = create_engine(
+            settings.database_url_sync,
+            pool_pre_ping=True,
+            pool_size=1,
+            max_overflow=0,
+            pool_recycle=1800,
+        )
+        _SyncSessionFactory = sessionmaker(bind=_sync_engine)
+    return _SyncSessionFactory
 
 
 # CR-NEW Change-1: numpy/pandas scalar → Python native conversion
@@ -146,8 +166,8 @@ def collect_market_state(
 
         snapshot = asyncio.run(_collect())
 
-        # Persist to DB
-        sess = _SyncSessionFactory()
+        # Persist to DB — lazy-init session factory on first call
+        sess = _get_session_factory()()
         try:
             # CR-NEW Change-1: defensive _to_native() wrap on all scalar fields
             # Root cause was snapshot.indicators.obv returning numpy.float64;
