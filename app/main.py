@@ -1,9 +1,13 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from app.core.config import settings
 from app.core.logging import setup_logging, get_logger
@@ -91,6 +95,13 @@ async def lifespan(app: FastAPI):
         log_file_path=settings.log_file_path or "(none)",
         log_level=settings.log_level,
     )
+
+    # Production fail-fast: reject default secret key
+    if settings.is_production and settings.secret_key in ("change-me-in-production", ""):
+        raise RuntimeError(
+            "FATAL: SECRET_KEY is not set or uses the default value. "
+            "Set a unique SECRET_KEY environment variable for production."
+        )
 
     # Production fail-fast: governance must be enabled
     if settings.is_production and not settings.governance_enabled:
@@ -180,6 +191,8 @@ async def lifespan(app: FastAPI):
     logger.info("database_pool_disposed")
 
 
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(
     title="AI Trading System",
     version="0.1.0",
@@ -187,6 +200,17 @@ app = FastAPI(
     docs_url="/docs" if settings.debug else None,
     redoc_url="/redoc" if settings.debug else None,
 )
+
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def _rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Rate limit exceeded. Try again later."},
+    )
+
 
 app.add_middleware(
     CORSMiddleware,

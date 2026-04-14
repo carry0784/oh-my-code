@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -6,10 +8,13 @@ from app.schemas.order import OrderCreate, OrderResponse, OrderList
 from app.services.order_service import OrderService
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/", response_model=OrderResponse)
+@limiter.limit("30/minute")
 async def create_order(
+    request: Request,
     order: OrderCreate,
     db: AsyncSession = Depends(get_db),
 ):

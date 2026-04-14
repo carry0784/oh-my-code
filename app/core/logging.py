@@ -12,11 +12,61 @@ multiple times (tests, reloads).
 """
 
 import logging
+import re
 import sys
 from logging.handlers import RotatingFileHandler
 
 import structlog
 from app.core.config import settings
+
+# Secret field names to redact in structured log output
+_SECRET_FIELDS = frozenset(
+    {
+        "api_key",
+        "api_secret",
+        "secret_key",
+        "passphrase",
+        "app_key",
+        "app_secret",
+        "token",
+        "access_token",
+        "binance_api_key",
+        "binance_api_secret",
+        "upbit_api_key",
+        "upbit_api_secret",
+        "bitget_api_key",
+        "bitget_api_secret",
+        "bitget_passphrase",
+        "kis_app_key",
+        "kis_app_secret",
+        "kiwoom_app_key",
+        "kiwoom_app_secret",
+        "openai_api_key",
+        "anthropic_api_key",
+        "password",
+        "secret",
+    }
+)
+
+_SECRET_PATTERN = re.compile(
+    r"(api[_-]?key|api[_-]?secret|passphrase|secret[_-]?key|app[_-]?key|app[_-]?secret"
+    r"|access[_-]?token|password)[=:]\s*\S+",
+    re.IGNORECASE,
+)
+
+
+def _redact_secrets(logger, method_name, event_dict):
+    """Structlog processor: redact known secret fields from log events."""
+    for key in list(event_dict.keys()):
+        if key.lower() in _SECRET_FIELDS:
+            event_dict[key] = "***REDACTED***"
+    # Scrub secrets from error message strings
+    if "error" in event_dict and isinstance(event_dict["error"], str):
+        event_dict["error"] = _SECRET_PATTERN.sub(
+            lambda m: m.group(1) + "=***REDACTED***", event_dict["error"]
+        )
+    return event_dict
+
 
 # Module-level log mode — set during setup_logging(), readable externally
 log_mode: str = "UNKNOWN"
@@ -70,6 +120,7 @@ def setup_logging() -> None:
         structlog.contextvars.merge_contextvars,
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
+        _redact_secrets,
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
     ]

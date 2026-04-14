@@ -1,0 +1,231 @@
+# K8s NetworkPolicy for kdexter namespace
+# Advisory A7: Restrict pod-to-pod traffic to only required communication paths.
+#
+# Allowed flows:
+#   API    → DB (PostgreSQL 5432)
+#   API    → Redis (6379)
+#   Worker → DB (PostgreSQL 5432)
+#   Worker → Redis (6379)
+#   Beat   → Redis (6379)
+#   Prometheus → API (8000, metrics scrape)
+#   Ingress → API (8000, external traffic)
+#
+# All other intra-namespace traffic is denied by default.
+
+# --- Default deny all ingress/egress within namespace ---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: kdexter
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+# --- API pod policy ---
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api
+  namespace: kdexter
+spec:
+  podSelector:
+    matchLabels:
+      app: kdexter-api
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow ingress from ingress controller (external traffic)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow Prometheus scrape
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8000
+  egress:
+    # API → PostgreSQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    # API → Redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    # DNS resolution
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+# --- Worker pod policy ---
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-worker
+  namespace: kdexter
+spec:
+  podSelector:
+    matchLabels:
+      app: kdexter-worker
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress:
+    # Worker → PostgreSQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Worker → Redis (broker + result backend)
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    # DNS resolution
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+# --- Beat pod policy ---
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-beat
+  namespace: kdexter
+spec:
+  podSelector:
+    matchLabels:
+      app: kdexter-beat
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress:
+    # Beat → Redis (scheduler lock + task dispatch)
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    # DNS resolution
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+# --- PostgreSQL pod policy ---
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-postgres
+  namespace: kdexter
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Only API and Worker can connect to DB
+    - from:
+        - podSelector:
+            matchLabels:
+              app: kdexter-api
+        - podSelector:
+            matchLabels:
+              app: kdexter-worker
+      ports:
+        - protocol: TCP
+          port: 5432
+  egress:
+    # DNS resolution
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+# --- Redis pod policy ---
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-redis
+  namespace: kdexter
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # API, Worker, Beat can connect to Redis
+    - from:
+        - podSelector:
+            matchLabels:
+              app: kdexter-api
+        - podSelector:
+            matchLabels:
+              app: kdexter-worker
+        - podSelector:
+            matchLabels:
+              app: kdexter-beat
+      ports:
+        - protocol: TCP
+          port: 6379
+  egress:
+    # DNS resolution
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
