@@ -2,7 +2,8 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: timescale/timescaledb:latest-pg16
+    command: ["postgres", "-c", "shared_preload_libraries=timescaledb"]
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
