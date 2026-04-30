@@ -163,3 +163,59 @@ It sits above the execution engine as an external orchestration wrapper.
 - BTC latency guard: `cr046_btc_latency_guard_checklist.md`
 - Deployment readiness: `cr046_deployment_readiness_table.md`
 - Three-tier judgment: `cr046_three_tier_judgment.md`
+
+## Coding Principles
+
+These four principles are derived from Andrej Karpathy's guidelines for working
+with AI coding assistants (forrestchang/karpathy-claude-md). Apply them to every
+task in this repository.
+
+### 1. Think Before Coding
+Don't guess. Don't hide confusion. Surface tradeoffs explicitly before writing
+any code.
+
+- State assumptions out loud before execution.
+- If multiple interpretations are possible, present all of them — do not silently
+  pick one.
+- If a simpler approach exists, mention it. Push back if a request seems wrong.
+- If something is unclear, stop and ask what is confusing rather than guessing.
+
+### 2. Simplicity First
+Write the minimum code needed to solve the problem.
+
+- No features beyond what was requested.
+- No abstractions for one-off code (no interfaces/factories for a 3-line helper).
+- No unrequested flexibility, configurability, or "future-proofing".
+- If 200 lines can be 50, rewrite it.
+- If a senior developer would call it "complex", simplify.
+
+### 3. Surgical Changes
+Only modify what is strictly necessary. Stay inside the scope of the request.
+
+- Every changed line must connect directly to the user's request. If it doesn't,
+  don't touch it.
+- When editing existing code, do not improve nearby code, comments, or
+  formatting. Do not refactor working code. Preserve the existing style.
+- If unrelated unused code is found, **report it — do not delete it**.
+  (e.g. "This file has an unused import — should I remove it?")
+- Do not create files the user did not ask for, and do not delete files for
+  things you were not asked to change.
+- At the end, confirm: only what was requested was changed.
+
+### 4. Goal-Driven Execution
+Define success criteria. Iterate until they are met. Convert tasks into
+**verifiable** goals.
+
+- Instead of "fix the bug" → "write a test that reproduces the bug, then make
+  it pass, then confirm existing tests still pass."
+- Instead of "refactor this" → "ensure tests pass before and after the refactor."
+- For multi-step work, present a brief plan and include a verification step at
+  each stage.
+- Don't declare a task done until the verification step actually passes — not
+  just because the change "looks right".
+
+### Expected Outcome
+- Fewer unnecessary changes outside the requested scope.
+- Less excessive complexity that hurts readability.
+- Claude asks clarifying questions *before* implementing, not after writing 200
+  lines of the wrong thing.
