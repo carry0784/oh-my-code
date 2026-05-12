@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
+from typing import Any
 
 from app.core.logging import get_logger
 from app.schemas.executor_schema import (
@@ -141,7 +142,7 @@ def validate_execution_preconditions(
 # ---------------------------------------------------------------------------
 
 
-def _collect_approval() -> dict | None:
+def _collect_approval() -> dict[str, Any] | None:
     try:
         from app.core.operator_approval import issue_approval
         from app.schemas.operator_approval_schema import ApprovalScope, ApprovalDecision
@@ -168,7 +169,7 @@ def _collect_approval() -> dict | None:
         return None
 
 
-def _collect_policy() -> dict | None:
+def _collect_policy() -> dict[str, Any] | None:
     try:
         from app.core.execution_policy import evaluate_execution_policy
 
@@ -183,8 +184,8 @@ def _collect_policy() -> dict | None:
 
 
 def _build_evidence_chain(
-    approval: dict | None,
-    policy: dict | None,
+    approval: dict[str, Any] | None,
+    policy: dict[str, Any] | None,
 ) -> EvidenceChainRef | None:
     try:
         return EvidenceChainRef(
@@ -203,7 +204,7 @@ def _build_evidence_chain(
 def _store_execution_evidence(
     execution_id: str,
     state: ExecutionState,
-    fail_reasons: list,
+    fail_reasons: list[ExecutionFailReason],
     now: datetime,
 ) -> str:
     try:
