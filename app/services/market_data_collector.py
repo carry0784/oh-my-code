@@ -66,7 +66,8 @@ class MarketDataCollector:
 
     async def _fetch_ticker(self, symbol: str) -> dict[str, Any] | None:
         try:
-            return await self.client.fetch_ticker(symbol)
+            ticker: dict[str, Any] | None = await self.client.fetch_ticker(symbol)
+            return ticker
         except Exception as e:
             logger.warning("ticker_fetch_failed", symbol=symbol, error=str(e))
             return None
@@ -93,7 +94,8 @@ class MarketDataCollector:
         try:
             if not self.client.has.get("fetchOrderBook", False):
                 return None
-            return await self.client.fetch_order_book(symbol, limit)
+            order_book: dict[str, Any] | None = await self.client.fetch_order_book(symbol, limit)
+            return order_book
         except Exception as e:
             logger.warning("order_book_fetch_failed", symbol=symbol, error=str(e))
             return None
@@ -102,7 +104,8 @@ class MarketDataCollector:
         try:
             if not self.client.has.get("fetchTrades", False):
                 return []
-            return await self.client.fetch_trades(symbol, limit=limit)
+            trades: list[dict[str, Any]] = await self.client.fetch_trades(symbol, limit=limit)
+            return trades
         except Exception as e:
             logger.warning("trades_fetch_failed", symbol=symbol, error=str(e))
             return []
@@ -112,7 +115,8 @@ class MarketDataCollector:
             if not self.client.has.get("fetchFundingRate", False):
                 return None
             data = await self.client.fetch_funding_rate(symbol)
-            return data.get("fundingRate")
+            funding_rate: float | None = data.get("fundingRate")
+            return funding_rate
         except Exception as e:
             logger.debug("funding_rate_not_available", symbol=symbol, error=str(e))
             return None
@@ -122,7 +126,8 @@ class MarketDataCollector:
             if not self.client.has.get("fetchOpenInterest", False):
                 return None
             data = await self.client.fetch_open_interest(symbol)
-            return data.get("openInterest") or data.get("openInterestAmount")
+            open_interest: float | None = data.get("openInterest") or data.get("openInterestAmount")
+            return open_interest
         except Exception as e:
             logger.debug("open_interest_not_available", symbol=symbol, error=str(e))
             return None
