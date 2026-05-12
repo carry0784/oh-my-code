@@ -40,7 +40,7 @@ class StageResult:
     name: str
     status: StageStatus = StageStatus.NOT_RUN
     reason: str = ""
-    metrics: dict = field(default_factory=dict)
+    metrics: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -98,7 +98,7 @@ class ValidationPipeline:
     def validate(
         self,
         strategy: BaseStrategy,
-        ohlcv: list[list],
+        ohlcv: list[list[Any]],
         lookback: int = 50,
     ) -> ValidationResult:
         """
@@ -181,7 +181,7 @@ class ValidationPipeline:
         self,
         engine: BacktestingEngine,
         strategy: BaseStrategy,
-        data: list[list],
+        data: list[list[Any]],
         lookback: int,
     ) -> StageResult:
         """Stage 1: In-sample backtest must meet minimum performance."""
@@ -193,7 +193,7 @@ class ValidationPipeline:
         self,
         engine: BacktestingEngine,
         strategy: BaseStrategy,
-        data: list[list],
+        data: list[list[Any]],
         lookback: int,
     ) -> StageResult:
         """Stage 2: Out-of-sample must show the strategy generalizes."""
@@ -250,7 +250,7 @@ class ValidationPipeline:
         return StageResult(stage, name, StageStatus.PASS, "All thresholds met", metrics)
 
     def _stage3_walk_forward(
-        self, strategy: BaseStrategy, ohlcv: list[list], lookback: int
+        self, strategy: BaseStrategy, ohlcv: list[list[Any]], lookback: int
     ) -> StageResult:
         """Stage 3: Walk-forward analysis."""
         validator = WalkForwardValidator(n_windows=self.wf_windows, config=self.bt_config)
@@ -290,7 +290,7 @@ class ValidationPipeline:
             3, "Walk-Forward Analysis", StageStatus.PASS, "Walk-forward validation passed", metrics
         )
 
-    def _stage4_monte_carlo(self, trades: list) -> StageResult:
+    def _stage4_monte_carlo(self, trades: list[Any]) -> StageResult:
         """Stage 4: Monte Carlo simulation."""
         simulator = MonteCarloSimulator(n_simulations=self.mc_simulations, seed=42)
         mc = simulator.simulate(trades)
