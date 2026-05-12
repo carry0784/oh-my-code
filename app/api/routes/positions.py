@@ -8,7 +8,7 @@ from app.services.position_service import PositionService
 router = APIRouter()
 
 
-@router.get("/", response_model=PositionList)
+@router.get("/", response_model=PositionList)  # type: ignore[untyped-decorator]
 async def list_positions(
     exchange: str | None = None,
     db: AsyncSession = Depends(get_db),
@@ -18,7 +18,7 @@ async def list_positions(
     return PositionList(positions=positions, total=len(positions))
 
 
-@router.get("/sync")
+@router.get("/sync")  # type: ignore[untyped-decorator]
 async def sync_positions(
     exchange: str | None = None,
     db: AsyncSession = Depends(get_db),
@@ -28,7 +28,7 @@ async def sync_positions(
     return {"status": "synced"}
 
 
-@router.post("/{position_id}/close")
+@router.post("/{position_id}/close")  # type: ignore[untyped-decorator]
 async def close_position(
     position_id: str,
     db: AsyncSession = Depends(get_db),
