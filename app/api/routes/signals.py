@@ -11,8 +11,8 @@ router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
 
-@router.post("/", response_model=SignalResponse)
-@limiter.limit("30/minute")
+@router.post("/", response_model=SignalResponse)  # type: ignore[untyped-decorator]
+@limiter.limit("30/minute")  # type: ignore[untyped-decorator]
 async def create_signal(
     request: Request,
     signal: SignalCreate,
@@ -22,7 +22,7 @@ async def create_signal(
     return await service.create_signal(signal)
 
 
-@router.get("/", response_model=SignalList)
+@router.get("/", response_model=SignalList)  # type: ignore[untyped-decorator]
 async def list_signals(
     skip: int = 0,
     limit: int = 100,
@@ -33,7 +33,7 @@ async def list_signals(
     return SignalList(signals=signals, total=len(signals))
 
 
-@router.post("/{signal_id}/validate")
+@router.post("/{signal_id}/validate")  # type: ignore[untyped-decorator]
 async def validate_signal(
     signal_id: str,
     db: AsyncSession = Depends(get_db),
