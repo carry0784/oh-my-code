@@ -1,4 +1,4 @@
-# CR-048: External Artifact Trust Map
+# CR-050: External Artifact Trust Map
 
 Date: 2026-05-12
 Canonical Core: **K-V3 4-Strategy (S1+S2+S3+S4)**
@@ -9,13 +9,13 @@ Status: DRAFT — awaiting operator sign-off
 
 ## 1. Purpose and Scope
 
-CR-048 governs the adoption of strategy concepts from **Uprich Future Bot v1.5.4** (a battle-tested commercial Binance Futures trading bot) into K-V3. The artifact under review is a **decompiled / obfuscated .NET 6 WPF assembly**, not the original source. Before any K-V3 module references, restates, or implements any element of this artifact, that element must be classified into a **trust tier (T0–T4)** defined in this document.
+CR-050 governs the adoption of strategy concepts from **Uprich Future Bot v1.5.4** (a battle-tested commercial Binance Futures trading bot) into K-V3. The artifact under review is a **decompiled / obfuscated .NET 6 WPF assembly**, not the original source. Before any K-V3 module references, restates, or implements any element of this artifact, that element must be classified into a **trust tier (T0–T4)** defined in this document.
 
-This document is the **upstream dependency** for every later CR-048 work item. No interpreter, no parameter slot, no risk gate, no paper rollout proceeds without per-element tier classification recorded here or in a successor map.
+This document is the **upstream dependency** for every later CR-050 work item. No interpreter, no parameter slot, no risk gate, no paper rollout proceeds without per-element tier classification recorded here or in a successor map.
 
 **In scope:** classification rules, per-tier verdicts, boundary enforcement, operator responsibility carve-outs.
 
-**Out of scope:** the clean-room extraction procedure itself (see `cr048_clean_room_injection_policy.md`), constitutional amendments (see `cr048_constitution_amendment_v1.md`), strategy parameter content (see `cr048_strategy_parameter_slots_v1.md`).
+**Out of scope:** the clean-room extraction procedure itself (see `cr050_clean_room_injection_policy.md`), constitutional amendments (see `cr050_constitution_amendment_v1.md`), strategy parameter content (see `cr050_strategy_parameter_slots_v1.md`).
 
 ---
 
@@ -101,21 +101,21 @@ Per the Rev 3 plan, the following analysis activities are reclassified from "pro
 | `DynamicMethod` / `Marshal` runtime analysis (T3 boundary cases) | **Not provided** | Allowed in operator environment; AI helps only with conceptual restatement to Python idioms |
 | Boundary verification (confirming an element is T3/T4, not deeper) | **Read-only triage assistance** | Operator decides final tier |
 
-This carve-out **does not unlock** code-copy, TPM-circumvention code generation, or license-bypass code generation — those remain forbidden under all tiers and all conditions (see `cr048_clean_room_injection_policy.md` §3).
+This carve-out **does not unlock** code-copy, TPM-circumvention code generation, or license-bypass code generation — those remain forbidden under all tiers and all conditions (see `cr050_clean_room_injection_policy.md` §3).
 
 ---
 
 ## 7. Cross-References
 
-**Companion documents (CR-048 set):**
+**Companion documents (CR-050 set):**
 
-- `cr048_clean_room_injection_policy.md` — extraction procedure consuming this tier map
-- `cr048_constitution_amendment_v1.md` (forthcoming) — C7' / C12 / C13 grounding
-- `cr048_operator_responsibility_zone_v1.md` (forthcoming) — fuller carve-out scope
-- `cr048_phase_f_parallel_validation_design.md` (forthcoming) — downstream paper validation
-- `cr048_risk_control_slots_v1.md` (forthcoming) — T1 slots consumed
-- `cr048_strategy_parameter_slots_v1.md` (forthcoming) — T1 slots consumed
-- `cr048_telegram_notification_policy_v1.md` (forthcoming) — T4 boundary-aware telemetry
+- `cr050_clean_room_injection_policy.md` — extraction procedure consuming this tier map
+- `cr050_constitution_amendment_v1.md` (forthcoming) — C7' / C12 / C13 grounding
+- `cr050_operator_responsibility_zone_v1.md` (forthcoming) — fuller carve-out scope
+- `cr050_phase_f_parallel_validation_design.md` (forthcoming) — downstream paper validation
+- `cr050_risk_control_slots_v1.md` (forthcoming) — T1 slots consumed
+- `cr050_strategy_parameter_slots_v1.md` (forthcoming) — T1 slots consumed
+- `cr050_telegram_notification_policy_v1.md` (forthcoming) — T4 boundary-aware telemetry
 
 **Pattern source:**
 
@@ -128,7 +128,7 @@ This carve-out **does not unlock** code-copy, TPM-circumvention code generation,
 ## Signature
 
 ```
-CR-048 External Artifact Trust Map
+CR-050 External Artifact Trust Map
 Canonical Core: K-V3 4-Strategy (S1+S2+S3+S4)
 Tiers Defined: T0 (Native), T1 (Structure-Trusted), T2 (Stub Suspicion), T3 (Runtime Core), T4 (License Boundary)
 Boundary Tiers: T3 (SEALED no-cross), T4 (SEALED operator zone)

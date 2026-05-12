@@ -1,4 +1,4 @@
-# CR-048: Clean-Room Injection Policy
+# CR-050: Clean-Room Injection Policy
 
 Date: 2026-05-12
 Canonical Core: **K-V3 4-Strategy (S1+S2+S3+S4)**
@@ -16,7 +16,7 @@ LICENSE_PROTECTION      = FORBIDDEN
 TPM_CIRCUMVENTION       = FORBIDDEN
 RUNTIME_PATCHING        = FORBIDDEN
 CONCEPT_RESTATEMENT     = REQUIRED before any K-V3 implementation
-TIER_CLASSIFICATION     = REQUIRED for every artifact element (per cr048_external_artifact_trust_map.md)
+TIER_CLASSIFICATION     = REQUIRED for every artifact element (per cr050_external_artifact_trust_map.md)
 ```
 
 Every K-V3 module that derives any concept from the Uprich Future Bot artifact must operate under this APPLY_MODE. There is no exception.
@@ -67,7 +67,7 @@ Every accepted concept passes through three steps. Skipping any step disqualifie
 ### Step A — Extract
 
 1. Identify the artifact element (UI label, setting name, observed behavior).
-2. Look up or assign its tier in `cr048_external_artifact_trust_map.md`.
+2. Look up or assign its tier in `cr050_external_artifact_trust_map.md`.
 3. If tier ∈ {T3, T4}, **stop** — element is boundary, not admissible.
 4. If tier ∈ {T1, T2}, capture **only**: the name, the shape (type / range), and a one-line natural-language description.
 5. Do **not** capture: method body, IL, control-flow, internal field layout, embedded constants.
@@ -103,7 +103,7 @@ The following activities are **operator-zone** — performed (if at all) outside
 | Reading / studying T4 license / Trial logic | None for bypass; conceptual restatement only | None — operator may inform K-V3 telemetry policy in natural language only |
 | Reading / studying T3 `DynamicMethod` / `Marshal` patterns | None for replication | None — operator may decide Python-idiom equivalents (e.g., explicit decorators) **for distinct purposes** |
 | Confirming an element's tier (T3 vs T2 vs T1) | Read-only triage | Tier table entry only, via cr048 trust map |
-| Legal review of artifact license / EULA | None | Sign-off recorded in `cr048_operator_responsibility_zone_v1.md` (forthcoming) |
+| Legal review of artifact license / EULA | None | Sign-off recorded in `cr050_operator_responsibility_zone_v1.md` (forthcoming) |
 
 The carve-out **never authorizes** generation of bypass / circumvention / replication code. Forbidden inputs (§3) remain forbidden inside and outside the operator zone.
 
@@ -129,17 +129,17 @@ Each admitted concept is routed to exactly one K-V3 layer, with allowed source t
 
 ## 7. Audit and Verdict Criteria
 
-Every PR that touches K-V3 code under CR-048 must include an audit block in its description:
+Every PR that touches K-V3 code under CR-050 must include an audit block in its description:
 
 ```
-CR-048 CLEAN-ROOM AUDIT
+CR-050 CLEAN-ROOM AUDIT
 - Concepts injected:        <list of restatement IDs>
 - Source tier (each):       T1 | T2
 - Forbidden inputs (§3):    NONE
 - Operator-zone reliance:   YES | NO
 - 7-layer routing:          <Observation|Interpretation|Decision|Execution|Learning>
 - Independence test:        PASS (implementation runs without artifact reference)
-- Tier-classification doc:  cr048_external_artifact_trust_map.md @ <commit/section>
+- Tier-classification doc:  cr050_external_artifact_trust_map.md @ <commit/section>
 ```
 
 **Per-PR verdict gates:**
@@ -158,15 +158,15 @@ A single failing gate **blocks** the PR. There is no partial pass.
 
 ## 8. Cross-References
 
-**Companion documents (CR-048 set):**
+**Companion documents (CR-050 set):**
 
-- `cr048_external_artifact_trust_map.md` — tier definitions consumed by this policy (T0–T4)
-- `cr048_constitution_amendment_v1.md` (forthcoming) — C7' / C12 / C13 binding
-- `cr048_operator_responsibility_zone_v1.md` (forthcoming) — fuller operator-zone scope
-- `cr048_phase_f_parallel_validation_design.md` (forthcoming) — paper validation consumes this policy
-- `cr048_risk_control_slots_v1.md` (forthcoming) — first downstream slot set, must pass §4 & §7
-- `cr048_strategy_parameter_slots_v1.md` (forthcoming) — strategy slot set, must pass §4 & §7
-- `cr048_telegram_notification_policy_v1.md` (forthcoming) — T4-boundary-aware telemetry policy
+- `cr050_external_artifact_trust_map.md` — tier definitions consumed by this policy (T0–T4)
+- `cr050_constitution_amendment_v1.md` (forthcoming) — C7' / C12 / C13 binding
+- `cr050_operator_responsibility_zone_v1.md` (forthcoming) — fuller operator-zone scope
+- `cr050_phase_f_parallel_validation_design.md` (forthcoming) — paper validation consumes this policy
+- `cr050_risk_control_slots_v1.md` (forthcoming) — first downstream slot set, must pass §4 & §7
+- `cr050_strategy_parameter_slots_v1.md` (forthcoming) — strategy slot set, must pass §4 & §7
+- `cr050_telegram_notification_policy_v1.md` (forthcoming) — T4-boundary-aware telemetry policy
 
 **Pattern source / authority:**
 
@@ -179,7 +179,7 @@ A single failing gate **blocks** the PR. There is no partial pass.
 ## Signature
 
 ```
-CR-048 Clean-Room Injection Policy
+CR-050 Clean-Room Injection Policy
 Canonical Core: K-V3 4-Strategy (S1+S2+S3+S4)
 APPLY_MODE: CLEAN_ROOM_CONCEPT_INJECTION
 Allowed Sources: T1 (Structure-Trusted), T2 (Stub-Suspicion, re-derived)
