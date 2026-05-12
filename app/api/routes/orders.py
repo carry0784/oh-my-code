@@ -11,8 +11,8 @@ router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
 
-@router.post("/", response_model=OrderResponse)
-@limiter.limit("30/minute")
+@router.post("/", response_model=OrderResponse)  # type: ignore[untyped-decorator]
+@limiter.limit("30/minute")  # type: ignore[untyped-decorator]
 async def create_order(
     request: Request,
     order: OrderCreate,
@@ -22,7 +22,7 @@ async def create_order(
     return await service.create_order(order)
 
 
-@router.get("/", response_model=OrderList)
+@router.get("/", response_model=OrderList)  # type: ignore[untyped-decorator]
 async def list_orders(
     skip: int = 0,
     limit: int = 100,
@@ -33,7 +33,7 @@ async def list_orders(
     return OrderList(orders=orders, total=len(orders))
 
 
-@router.get("/{order_id}", response_model=OrderResponse)
+@router.get("/{order_id}", response_model=OrderResponse)  # type: ignore[untyped-decorator]
 async def get_order(
     order_id: str,
     db: AsyncSession = Depends(get_db),
@@ -45,7 +45,7 @@ async def get_order(
     return order
 
 
-@router.delete("/{order_id}")
+@router.delete("/{order_id}")  # type: ignore[untyped-decorator]
 async def cancel_order(
     order_id: str,
     db: AsyncSession = Depends(get_db),
