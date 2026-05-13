@@ -7,7 +7,9 @@ No write operations — observation only.
 from datetime import datetime, timezone, timedelta
 from typing import Any
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.core.logging import get_logger
 from app.schemas.market_state_schema import (
@@ -31,10 +33,13 @@ from exchanges.factory import ExchangeFactory
 
 logger = get_logger(__name__)
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
-@router.get("/snapshot")
+@router.get("/snapshot")  # type: ignore[untyped-decorator]
+@limiter.limit("30/minute")  # type: ignore[untyped-decorator]
 async def get_market_snapshot(
+    request: Request,
     symbol: str = Query(default="BTC/USDT", description="Trading pair"),
     exchange: str = Query(default="binance", description="Exchange name"),
 ) -> dict[str, Any]:
@@ -112,8 +117,10 @@ async def get_market_snapshot(
             await exch.close()
 
 
-@router.get("/regime")
+@router.get("/regime")  # type: ignore[untyped-decorator]
+@limiter.limit("30/minute")  # type: ignore[untyped-decorator]
 async def get_regime(
+    request: Request,
     symbol: str = Query(default="BTC/USDT"),
     exchange: str = Query(default="binance"),
 ) -> dict[str, Any]:
@@ -150,8 +157,10 @@ async def get_regime(
             await exch.close()
 
 
-@router.get("/score")
+@router.get("/score")  # type: ignore[untyped-decorator]
+@limiter.limit("30/minute")  # type: ignore[untyped-decorator]
 async def get_score(
+    request: Request,
     symbol: str = Query(default="BTC/USDT"),
     exchange: str = Query(default="binance"),
 ) -> dict[str, Any]:
