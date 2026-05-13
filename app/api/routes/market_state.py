@@ -5,6 +5,7 @@ No write operations — observation only.
 """
 
 from datetime import datetime, timezone, timedelta
+import re
 from typing import Any
 
 from fastapi import APIRouter, Query, Request
@@ -35,6 +36,28 @@ logger = get_logger(__name__)
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
+# Pre-call input validation (F3). Matches exchanges.factory._FACTORY_REGISTRY
+# exactly; if that registry changes, this set must be updated in lockstep.
+_SUPPORTED_EXCHANGES: frozenset[str] = frozenset({"binance", "upbit", "bitget", "kis", "kiwoom"})
+# Conservative symbol shape: uppercase alphanumeric base/quote separated by "/".
+# Rejects empty, whitespace, lowercase, path-like, and overlong strings.
+_SYMBOL_PATTERN: re.Pattern[str] = re.compile(r"^[A-Z0-9]{1,15}/[A-Z0-9]{1,15}$")
+
+
+def _validate_inputs(exchange: str, symbol: str) -> tuple[str, str] | None:
+    """Validate `exchange` and `symbol` route inputs before any side effect.
+
+    Returns `(error_type, error_message)` on the first failure, or `None`
+    when both inputs are admissible. F3 keeps HTTP semantics unchanged:
+    callers should return their endpoint-specific error envelope rather
+    than raise HTTPException (F2 deferred).
+    """
+    if exchange not in _SUPPORTED_EXCHANGES:
+        return ("INVALID_EXCHANGE", f"unsupported exchange: {exchange!r}")
+    if not _SYMBOL_PATTERN.match(symbol):
+        return ("INVALID_SYMBOL", "invalid symbol format")
+    return None
+
 
 @router.get("/snapshot")  # type: ignore[untyped-decorator]
 @limiter.limit("30/minute")  # type: ignore[untyped-decorator]
@@ -47,6 +70,21 @@ async def get_market_snapshot(
     Collect live market snapshot: price + indicators + sentiment + on-chain + regime + score.
     Read-only — no orders, no side effects.
     """
+    validation_error = _validate_inputs(exchange, symbol)
+    if validation_error is not None:
+        err_type, err_msg = validation_error
+        logger.warning(
+            "market_snapshot_input_invalid",
+            error_type=err_type,
+            exchange=exchange,
+            symbol=symbol,
+        )
+        return {
+            "error": err_msg,
+            "error_type": err_type,
+            "exchange": exchange,
+            "symbol": symbol,
+        }
     exch = None
     try:
         exch = ExchangeFactory.create(exchange)
@@ -125,6 +163,20 @@ async def get_regime(
     exchange: str = Query(default="binance"),
 ) -> dict[str, Any]:
     """Get current market regime detection result."""
+    validation_error = _validate_inputs(exchange, symbol)
+    if validation_error is not None:
+        err_type, err_msg = validation_error
+        logger.warning(
+            "regime_detection_input_invalid",
+            error_type=err_type,
+            exchange=exchange,
+            symbol=symbol,
+        )
+        return {
+            "error": err_msg,
+            "error_type": err_type,
+            "regime": "unknown",
+        }
     exch = None
     try:
         exch = ExchangeFactory.create(exchange)
@@ -165,6 +217,21 @@ async def get_score(
     exchange: str = Query(default="binance"),
 ) -> dict[str, Any]:
     """Get composite market score."""
+    validation_error = _validate_inputs(exchange, symbol)
+    if validation_error is not None:
+        err_type, err_msg = validation_error
+        logger.warning(
+            "score_calculation_input_invalid",
+            error_type=err_type,
+            exchange=exchange,
+            symbol=symbol,
+        )
+        return {
+            "error": err_msg,
+            "error_type": err_type,
+            "total": 0,
+            "grade": "NEUTRAL",
+        }
     exch = None
     try:
         exch = ExchangeFactory.create(exchange)
