@@ -200,6 +200,7 @@ async def get_regime(
             "confidence": result.confidence,
             "method": result.method,
             "features": result.features,
+            "observed_at": datetime.now(timezone.utc).isoformat(),
         }
     except Exception as e:
         logger.error("regime_detection_failed", error=str(e))
@@ -271,6 +272,7 @@ async def get_score(
                 "on_chain": score.on_chain,
                 "sentiment": score.sentiment,
             },
+            "observed_at": datetime.now(timezone.utc).isoformat(),
         }
     except Exception as e:
         logger.error("score_calculation_failed", error=str(e))
