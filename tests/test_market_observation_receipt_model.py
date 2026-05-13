@@ -76,9 +76,9 @@ def test_expected_indexes_present() -> None:
         "ix_market_obs_audit_created_at",
         "ix_market_obs_admissible_at",
     }
-    assert expected_indexes.issubset(
-        index_names
-    ), f"missing indexes: {expected_indexes - index_names}"
+    assert expected_indexes.issubset(index_names), (
+        f"missing indexes: {expected_indexes - index_names}"
+    )
 
 
 def test_receipt_id_is_unique_constraint() -> None:
