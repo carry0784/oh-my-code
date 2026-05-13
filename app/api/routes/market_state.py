@@ -9,10 +9,12 @@ import re
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import get_db
 from app.core.logging import get_logger
 from app.schemas.market_observation_receipt_schema import MarketStateObservationReceipt
 from app.schemas.market_state_schema import (
@@ -27,6 +29,9 @@ from app.schemas.market_state_schema import (
 )
 from app.services.indicator_calculator import IndicatorCalculator
 from app.services.market_data_collector import MarketDataCollector
+from app.services.market_observation_receipt_service import (
+    MarketStateObservationReceiptService,
+)
 from app.services.market_scorer import MarketScorer, ScoreBreakdown
 from app.services.market_state_analyzer import MarketStateAnalyzer, MarketAnalysisResult
 from app.services.market_state_builder import MarketStateBuilder
@@ -45,11 +50,15 @@ _SUPPORTED_EXCHANGES: frozenset[str] = frozenset({"binance", "upbit", "bitget", 
 # Rejects empty, whitespace, lowercase, path-like, and overlong strings.
 _SYMBOL_PATTERN: re.Pattern[str] = re.compile(r"^[A-Z0-9]{1,15}/[A-Z0-9]{1,15}$")
 
-# F5b-LOG observation receipt rollback statement (recorded on every receipt).
+# F5c DB persistence off-switch. When False, behavior reverts to F5b log-only.
+# Operator can flip this constant to disable DB writes without removing code.
+_F5C_DB_PERSIST_ENABLED: bool = True
+
+# F5b/F5c observation receipt rollback statement (recorded on every receipt).
 _RECEIPT_ROLLBACK_NOTE = (
-    "Disable by removing _emit_observation_receipt calls or by filtering "
-    "event=market_observation_receipt at the logger. No DB rollback needed "
-    "in F5b-LOG phase."
+    "Disable by setting _F5C_DB_PERSIST_ENABLED=False (reverts to F5b log-only) "
+    "or by removing _emit_observation_receipt calls. DB rollback: alembic "
+    "downgrade 029_market_observation_receipt."
 )
 
 
@@ -68,7 +77,9 @@ def _validate_inputs(exchange: str, symbol: str) -> tuple[str, str] | None:
     return None
 
 
-def _emit_observation_receipt(
+async def _emit_observation_receipt(
+    *,
+    db: AsyncSession | None,
     endpoint: str,
     exchange: str,
     symbol: str,
@@ -78,10 +89,9 @@ def _emit_observation_receipt(
     validation_status: str,
     error_type: str | None,
 ) -> None:
-    """Emit one F5b-LOG observation receipt via structured logger.
-
-    Admissibility is derived from inputs; FRESH requires every gate to PASS.
-    No DB write, no EvidenceStore write — F5b stops at log emission.
+    """Emit one observation receipt via structured logger (F5b) and persist
+    to DB when enabled (F5c). Fail-open: persistence failure is logged but
+    does not change the API response.
     """
     if (
         observed_at
@@ -109,6 +119,13 @@ def _emit_observation_receipt(
         rollback_note=_RECEIPT_ROLLBACK_NOTE,
     )
     logger.info("market_observation_receipt", **receipt.model_dump())
+    if _F5C_DB_PERSIST_ENABLED and db is not None:
+        try:
+            await MarketStateObservationReceiptService(db).persist(receipt)
+        except Exception as e:
+            # Defense in depth: service is already fail-open; this catch
+            # ensures no persistence error ever escapes to the route caller.
+            logger.warning("market_observation_receipt_persist_unexpected error=%s", str(e))
 
 
 @router.get("/snapshot")  # type: ignore[untyped-decorator]
@@ -117,6 +134,7 @@ async def get_market_snapshot(
     request: Request,
     symbol: str = Query(default="BTC/USDT", description="Trading pair"),
     exchange: str = Query(default="binance", description="Exchange name"),
+    db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """
     Collect live market snapshot: price + indicators + sentiment + on-chain + regime + score.
@@ -132,7 +150,8 @@ async def get_market_snapshot(
             exchange=exchange,
             symbol=symbol,
         )
-        _emit_observation_receipt(
+        await _emit_observation_receipt(
+            db=db,
             endpoint="snapshot",
             exchange=exchange,
             symbol=symbol,
@@ -183,7 +202,8 @@ async def get_market_snapshot(
         )
 
         snapshot_at_iso = snapshot.snapshot_at.isoformat() if snapshot.snapshot_at else ""
-        _emit_observation_receipt(
+        await _emit_observation_receipt(
+            db=db,
             endpoint="snapshot",
             exchange=exchange,
             symbol=symbol,
@@ -219,7 +239,8 @@ async def get_market_snapshot(
         }
     except Exception as e:
         logger.error("market_snapshot_failed", symbol=symbol, exchange=exchange, error=str(e))
-        _emit_observation_receipt(
+        await _emit_observation_receipt(
+            db=db,
             endpoint="snapshot",
             exchange=exchange,
             symbol=symbol,
@@ -245,6 +266,7 @@ async def get_regime(
     request: Request,
     symbol: str = Query(default="BTC/USDT"),
     exchange: str = Query(default="binance"),
+    db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Get current market regime detection result."""
     requested_at = datetime.now(timezone.utc).isoformat()
@@ -257,7 +279,8 @@ async def get_regime(
             exchange=exchange,
             symbol=symbol,
         )
-        _emit_observation_receipt(
+        await _emit_observation_receipt(
+            db=db,
             endpoint="regime",
             exchange=exchange,
             symbol=symbol,
@@ -291,7 +314,8 @@ async def get_regime(
         result = detector.detect(price=price, indicators=indicators)
 
         observed_at = datetime.now(timezone.utc).isoformat()
-        _emit_observation_receipt(
+        await _emit_observation_receipt(
+            db=db,
             endpoint="regime",
             exchange=exchange,
             symbol=symbol,
@@ -310,7 +334,8 @@ async def get_regime(
         }
     except Exception as e:
         logger.error("regime_detection_failed", error=str(e))
-        _emit_observation_receipt(
+        await _emit_observation_receipt(
+            db=db,
             endpoint="regime",
             exchange=exchange,
             symbol=symbol,
@@ -332,6 +357,7 @@ async def get_score(
     request: Request,
     symbol: str = Query(default="BTC/USDT"),
     exchange: str = Query(default="binance"),
+    db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Get composite market score."""
     requested_at = datetime.now(timezone.utc).isoformat()
@@ -344,7 +370,8 @@ async def get_score(
             exchange=exchange,
             symbol=symbol,
         )
-        _emit_observation_receipt(
+        await _emit_observation_receipt(
+            db=db,
             endpoint="score",
             exchange=exchange,
             symbol=symbol,
@@ -391,7 +418,8 @@ async def get_score(
         )
 
         observed_at = datetime.now(timezone.utc).isoformat()
-        _emit_observation_receipt(
+        await _emit_observation_receipt(
+            db=db,
             endpoint="score",
             exchange=exchange,
             symbol=symbol,
@@ -414,7 +442,8 @@ async def get_score(
         }
     except Exception as e:
         logger.error("score_calculation_failed", error=str(e))
-        _emit_observation_receipt(
+        await _emit_observation_receipt(
+            db=db,
             endpoint="score",
             exchange=exchange,
             symbol=symbol,
