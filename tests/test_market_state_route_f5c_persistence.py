@@ -22,7 +22,7 @@ async def test_invalid_exchange_persists_receipt_via_snapshot(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
     resp = await client.get(
-        "/market-state/snapshot",
+        "/api/v1/market-state/snapshot",
         params={"exchange": "not_an_exchange", "symbol": "BTC/USDT"},
     )
     assert resp.status_code == 200
@@ -48,7 +48,7 @@ async def test_invalid_symbol_persists_receipt_via_regime(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
     resp = await client.get(
-        "/market-state/regime",
+        "/api/v1/market-state/regime",
         params={"exchange": "binance", "symbol": "bad symbol"},
     )
     assert resp.status_code == 200
@@ -72,7 +72,7 @@ async def test_invalid_exchange_persists_receipt_via_score(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
     resp = await client.get(
-        "/market-state/score",
+        "/api/v1/market-state/score",
         params={"exchange": "not_an_exchange", "symbol": "BTC/USDT"},
     )
     assert resp.status_code == 200
