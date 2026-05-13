@@ -5,8 +5,18 @@ from app.models.signal import Signal, SignalStatus
 from app.schemas.signal import SignalCreate
 from app.agents.signal_validator import SignalValidatorAgent
 from app.core.logging import get_logger
+from app.services.market_observation_validator import MarketObservationValidator
 
 logger = get_logger(__name__)
+
+# F7-SHADOW consumer wiring. Diagnostic-only consumption of the Market State
+# observation validator from the signal validation flow. The validator's
+# verdict is logged but DOES NOT change `signal.status`, the agent's decision,
+# the response shape, the order flow, or the execution path. F7-LIVE (a real
+# enforcement gate driven by the validator) requires a separate operator
+# approval and is NOT introduced here.
+_F7_SHADOW_ENABLED: bool = True
+_F7_SHADOW_MAX_AGE_SECONDS: int = 300
 
 
 class SignalService:
@@ -61,4 +71,35 @@ class SignalService:
             status=signal.status.value,
             confidence=signal.confidence,
         )
+
+        # ── F7-SHADOW: diagnostic-only validator consumption ────────────── #
+        # Runs AFTER the decision has been recorded on `signal.status`, so it
+        # cannot influence the decision outcome. Any failure here is swallowed
+        # and logged; the original `result` is returned unchanged.
+        if _F7_SHADOW_ENABLED:
+            try:
+                shadow = await MarketObservationValidator(self.db).validate_latest(
+                    endpoint="snapshot",
+                    exchange=signal.exchange,
+                    symbol=signal.symbol,
+                    max_age_seconds=_F7_SHADOW_MAX_AGE_SECONDS,
+                )
+                logger.info(
+                    "f7_shadow_observation_validator",
+                    signal_id=signal_id,
+                    endpoint=shadow.endpoint,
+                    exchange=shadow.exchange,
+                    symbol=shadow.symbol,
+                    verdict=shadow.verdict,
+                    reason=shadow.reason,
+                    receipt_id=shadow.receipt_id,
+                    admissible=shadow.admissible_for_decision,
+                )
+            except Exception as e:
+                logger.warning(
+                    "f7_shadow_observation_validator_error signal_id=%s error=%s",
+                    signal_id,
+                    str(e),
+                )
+
         return result
