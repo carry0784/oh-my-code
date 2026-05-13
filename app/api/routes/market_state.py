@@ -42,6 +42,7 @@ async def get_market_snapshot(
     Collect live market snapshot: price + indicators + sentiment + on-chain + regime + score.
     Read-only — no orders, no side effects.
     """
+    exch = None
     try:
         exch = ExchangeFactory.create(exchange)
         collector = MarketDataCollector(exch.client)
@@ -75,8 +76,6 @@ async def get_market_snapshot(
             on_chain=snapshot.on_chain,
         )
 
-        await exch.close()
-
         return {
             "exchange": snapshot.exchange,
             "symbol": snapshot.symbol,
@@ -108,6 +107,9 @@ async def get_market_snapshot(
             "exchange": exchange,
             "symbol": symbol,
         }
+    finally:
+        if exch is not None:
+            await exch.close()
 
 
 @router.get("/regime")
@@ -116,6 +118,7 @@ async def get_regime(
     exchange: str = Query(default="binance"),
 ) -> dict[str, Any]:
     """Get current market regime detection result."""
+    exch = None
     try:
         exch = ExchangeFactory.create(exchange)
         collector = MarketDataCollector(exch.client)
@@ -133,8 +136,6 @@ async def get_regime(
         detector = RegimeDetector()
         result = detector.detect(price=price, indicators=indicators)
 
-        await exch.close()
-
         return {
             "regime": result.regime,
             "confidence": result.confidence,
@@ -144,6 +145,9 @@ async def get_regime(
     except Exception as e:
         logger.error("regime_detection_failed", error=str(e))
         return {"error": str(e), "regime": "unknown"}
+    finally:
+        if exch is not None:
+            await exch.close()
 
 
 @router.get("/score")
@@ -152,6 +156,7 @@ async def get_score(
     exchange: str = Query(default="binance"),
 ) -> dict[str, Any]:
     """Get composite market score."""
+    exch = None
     try:
         exch = ExchangeFactory.create(exchange)
         collector = MarketDataCollector(exch.client)
@@ -181,8 +186,6 @@ async def get_score(
             on_chain=sentiment.on_chain,
         )
 
-        await exch.close()
-
         return {
             "total": score.total,
             "grade": score.grade,
@@ -196,3 +199,6 @@ async def get_score(
     except Exception as e:
         logger.error("score_calculation_failed", error=str(e))
         return {"error": str(e), "total": 0, "grade": "NEUTRAL"}
+    finally:
+        if exch is not None:
+            await exch.close()
