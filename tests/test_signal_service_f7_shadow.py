@@ -9,23 +9,26 @@ Verifies that `SignalService.validate_with_agent`:
 Shadow contract: validator output is diagnostic-only.
 
 Implementation note:
-Tests use `monkeypatch.setattr` against the live module object rather than
-`@patch("app.services.signal_service.X")` decorators. Other test files in
-this repository stub `app.core.database` etc. via `sys.modules` injection;
-the `@patch` decorator's module-path lookup is fragile in that environment.
-`monkeypatch.setattr` operates directly on the already-loaded module and is
-robust against earlier sys.modules pollution.
+This test file avoids the ORM `Signal` model entirely. Other tests in this
+suite stub `app.core.database.Base` via `sys.modules` injection before the
+real model module is loaded; the resulting `Signal._sa_instance_state` is
+a MagicMock that breaks SQLAlchemy's `db.add()` because dunder attribute
+access on MagicMock raises AttributeError. We therefore use plain stub
+objects with the same attribute surface (`id`, `exchange`, `symbol`,
+`status`, `confidence`) and monkeypatch `SignalService.get_signal` to
+return them.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.signal import Signal, SignalStatus
+from app.models.signal import SignalStatus
 import app.services.signal_service as signal_service_module
 from app.services.market_observation_validator import (
     MarketObservationValidationResult,
@@ -33,18 +36,15 @@ from app.services.market_observation_validator import (
 from app.services.signal_service import SignalService
 
 
-def _make_signal() -> Signal:
-    return Signal(
-        source="manual",
-        exchange="binance",
-        symbol="BTC/USDT",
-        signal_type="long",
-        entry_price=50000.0,
-        stop_loss=49000.0,
-        take_profit=52000.0,
-        confidence=0.7,
-        status=SignalStatus.PENDING,
-    )
+@dataclass
+class _SignalStub:
+    id: str = "stub-signal-id"
+    exchange: str = "binance"
+    symbol: str = "BTC/USDT"
+    signal_type: str = "long"
+    confidence: float = 0.7
+    status: SignalStatus = SignalStatus.PENDING
+    agent_analysis: str | None = None
 
 
 def _approved_agent_result() -> dict[str, Any]:
@@ -97,7 +97,7 @@ class _StubAgent:
     def __init__(self, result: dict[str, Any]) -> None:
         self._result = result
 
-    async def validate(self, signal: Signal) -> dict[str, Any]:
+    async def validate(self, signal: _SignalStub) -> dict[str, Any]:
         return self._result
 
 
@@ -130,17 +130,20 @@ class _StubValidator:
 def _install_stubs(
     monkeypatch: pytest.MonkeyPatch,
     *,
+    signal: _SignalStub,
     agent_result: dict[str, Any],
     validator_result: MarketObservationValidationResult | None = None,
     validator_raises: BaseException | None = None,
 ) -> type[_StubValidator]:
-    """Install stubs for SignalValidatorAgent and MarketObservationValidator.
+    """Install stubs for get_signal, SignalValidatorAgent, and the validator.
 
     Returns the validator stub class so tests can inspect call_count/last_kwargs.
-    Resets per-class state at install time.
     """
     _StubValidator.call_count = 0
     _StubValidator.last_kwargs = {}
+
+    async def _stub_get_signal(self: SignalService, signal_id: str) -> _SignalStub:
+        return signal
 
     def _agent_factory() -> _StubAgent:
         return _StubAgent(agent_result)
@@ -148,31 +151,36 @@ def _install_stubs(
     def _validator_factory(db: AsyncSession) -> _StubValidator:
         return _StubValidator(db, result=validator_result, raise_exc=validator_raises)
 
+    monkeypatch.setattr(SignalService, "get_signal", _stub_get_signal)
     monkeypatch.setattr(signal_service_module, "SignalValidatorAgent", _agent_factory)
     monkeypatch.setattr(signal_service_module, "MarketObservationValidator", _validator_factory)
     return _StubValidator
 
 
-async def _persist_signal(db: AsyncSession) -> Signal:
-    signal = _make_signal()
-    db.add(signal)
-    await db.commit()
-    await db.refresh(signal)
-    return signal
+@pytest.fixture
+def stub_db() -> Any:
+    """Lightweight db replacement; SignalService only passes it to the
+    validator factory in F7-SHADOW path. No SQLAlchemy operations occur."""
+
+    class _StubDB:
+        pass
+
+    return _StubDB()
 
 
 async def test_shadow_validator_is_called_with_signal_fields(
-    db_session: AsyncSession,
     monkeypatch: pytest.MonkeyPatch,
+    stub_db: Any,
 ) -> None:
+    signal = _SignalStub()
     validator_cls = _install_stubs(
         monkeypatch,
+        signal=signal,
         agent_result=_approved_agent_result(),
         validator_result=_pass_validator_result(),
     )
-    signal = await _persist_signal(db_session)
-    service = SignalService(db_session)
 
+    service = SignalService(stub_db)
     await service.validate_with_agent(signal.id)
 
     assert validator_cls.call_count == 1
@@ -182,39 +190,38 @@ async def test_shadow_validator_is_called_with_signal_fields(
 
 
 async def test_shadow_block_verdict_does_not_change_approved_decision(
-    db_session: AsyncSession,
     monkeypatch: pytest.MonkeyPatch,
+    stub_db: Any,
 ) -> None:
+    signal = _SignalStub()
     _install_stubs(
         monkeypatch,
+        signal=signal,
         agent_result=_approved_agent_result(),
         validator_result=_block_validator_result(),
     )
-    signal = await _persist_signal(db_session)
-    service = SignalService(db_session)
 
+    service = SignalService(stub_db)
     result = await service.validate_with_agent(signal.id)
 
     assert result == _approved_agent_result()
-    # SignalService mutates the session-managed signal in-place but does not
-    # commit; assert on the in-memory state directly rather than via refresh
-    # (refresh would reload the pre-mutation DB row).
     assert signal.status == SignalStatus.VALIDATED
     assert signal.confidence == 0.85
 
 
 async def test_shadow_pass_verdict_does_not_change_rejected_decision(
-    db_session: AsyncSession,
     monkeypatch: pytest.MonkeyPatch,
+    stub_db: Any,
 ) -> None:
+    signal = _SignalStub()
     _install_stubs(
         monkeypatch,
+        signal=signal,
         agent_result=_rejected_agent_result(),
         validator_result=_pass_validator_result(),
     )
-    signal = await _persist_signal(db_session)
-    service = SignalService(db_session)
 
+    service = SignalService(stub_db)
     result = await service.validate_with_agent(signal.id)
 
     assert result == _rejected_agent_result()
@@ -222,17 +229,18 @@ async def test_shadow_pass_verdict_does_not_change_rejected_decision(
 
 
 async def test_shadow_validator_failure_does_not_break_decision(
-    db_session: AsyncSession,
     monkeypatch: pytest.MonkeyPatch,
+    stub_db: Any,
 ) -> None:
+    signal = _SignalStub()
     _install_stubs(
         monkeypatch,
+        signal=signal,
         agent_result=_approved_agent_result(),
         validator_raises=RuntimeError("simulated validator failure"),
     )
-    signal = await _persist_signal(db_session)
-    service = SignalService(db_session)
 
+    service = SignalService(stub_db)
     result = await service.validate_with_agent(signal.id)
 
     assert result == _approved_agent_result()
@@ -240,18 +248,19 @@ async def test_shadow_validator_failure_does_not_break_decision(
 
 
 async def test_shadow_disabled_skips_validator(
-    db_session: AsyncSession,
     monkeypatch: pytest.MonkeyPatch,
+    stub_db: Any,
 ) -> None:
+    signal = _SignalStub()
     validator_cls = _install_stubs(
         monkeypatch,
+        signal=signal,
         agent_result=_approved_agent_result(),
         validator_result=_pass_validator_result(),
     )
     monkeypatch.setattr(signal_service_module, "_F7_SHADOW_ENABLED", False)
 
-    signal = await _persist_signal(db_session)
-    service = SignalService(db_session)
+    service = SignalService(stub_db)
     result = await service.validate_with_agent(signal.id)
 
     assert result == _approved_agent_result()
