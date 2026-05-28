@@ -15,6 +15,12 @@ from app.models import (
     PPFNoveltyEvent,
     PPFBacktestBaseline,
     ObservationChainEntry,
+    # Card A — TimescaleDB hypertables
+    OhlcvHyper,
+    FundingRateHyper,
+    OpenInterestHyper,
+    OrderbookSnapshotHyper,
+    SentimentHyper,
 )
 
 config = context.config

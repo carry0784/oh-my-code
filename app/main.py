@@ -224,6 +224,10 @@ app.include_router(api_router, prefix="/api/v1")
 
 # Dashboard: read-only operations board (Track 4)
 app.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])
+
+# Pipeline dashboard: 24-symbol data pipeline status (Card B-7)
+from app.api.routes.pipeline_dashboard import router as pipeline_router
+app.include_router(pipeline_router, prefix="/pipeline", tags=["pipeline"])
 app.mount(
     "/static",
     StaticFiles(directory=str(Path(__file__).resolve().parent / "static")),
