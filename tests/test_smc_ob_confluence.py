@@ -163,6 +163,50 @@ def test_stale_with_another_blocker_is_not_simulated():
     assert not any(k.startswith("cf_") for k in _kinds(ev))
 
 
+# No engulfing candle in the leg (bar 5 no longer covers bar 4's body), but the leg extreme
+# candle (bar 4, bearish, body 101-103) is a valid fallback OB with the same 103/100/118 levels.
+NO_ENGULF = list(BASE)
+NO_ENGULF[5] = (100.8, 104, 100.7, 102.8)
+
+
+def test_no_ltf_ob_setup_is_simulated_with_the_fallback_ob():
+    ev = _run(NO_ENGULF + WIN_TAIL, VARIANTS[1])
+    sig = _by(ev, "signal_event")[0]
+    assert sig["block_reason"] == "NO_LTF_OB" and not sig["gate_passed"]
+    assert sig["counterfactual"] and sig["cf_filter"] == "NO_LTF_OB"
+    assert (sig["entry"], sig["stop"], sig["tp"]) == (103, 100, 118)
+    out = _by(ev, "cf_outcome_event")
+    assert out[0]["reason"] == "TARGET" and out[0]["cf_filter"] == "NO_LTF_OB"
+    assert len(_by(ev, "cf_fill_event")) == 1
+    assert not _kinds(ev) & {"fill_event", "outcome_event", "cancel_event"}
+
+
+def test_no_ltf_ob_counterfactual_stop_is_minus_one_r():
+    out = _by(_run(NO_ENGULF + LOSS_TAIL, VARIANTS[1]), "cf_outcome_event")
+    assert out[0]["reason"] == "STOP" and out[0]["gross_r"] == -1.0
+
+
+def test_no_ltf_ob_with_another_blocker_is_not_simulated():
+    ltf, htf = _bars(NO_ENGULF + WIN_TAIL, LTF_MS, T0), _bars(HTF_ROWS, HTF_MS)
+    ev = scan(ltf, htf, LTF_MS, HTF_MS, VARIANTS[1], min_rr=6.0)  # fallback would fail the gate
+    sig = _by(ev, "signal_event")[0]
+    assert sig["block_reason"] == "NO_LTF_OB" and sig["counterfactual"] is False
+    assert sig["entry"] is None and not any(k.startswith("cf_") for k in _kinds(ev))
+
+
+def test_stale_and_no_ltf_ob_together_are_not_simulated():
+    rows = BASE[:2] + [(109.5, 109.6, 107.5, 108.9), (108.9, 110, 108.6, 109.8)] + NO_ENGULF[2:]
+    sig = _by(_run(rows + WIN_TAIL, OBVariant(1, "gap")), "signal_event")[0]
+    assert sig["block_reason"] == "STALE" and sig["counterfactual"] is False  # two filters at once
+    assert sig["cf_filter"] is None
+
+
+def test_stale_counterfactual_is_tagged_with_its_filter():
+    ev = _run(STALE_PATH + WIN_TAIL, OBVariant(1, "gap"))
+    assert _by(ev, "signal_event")[0]["cf_filter"] == "STALE"
+    assert _by(ev, "cf_outcome_event")[0]["cf_filter"] == "STALE"
+
+
 def test_zone_invalidated_by_close_beyond_far_edge():
     rows = BASE[:4] + [(103, 104, 98, 99)] + BASE[5:]  # closes 99 < lo 100
     ev = _run(rows, VARIANTS[1])
@@ -204,7 +248,13 @@ def test_truncation_equivalence_no_lookahead():
 
 def test_scenario_events_survive_truncation():
     htf = _bars(HTF_ROWS, HTF_MS)
-    for rows in (BASE + WIN_TAIL, STALE_PATH + WIN_TAIL, STALE_PATH + LOSS_TAIL):
+    for rows in (
+        BASE + WIN_TAIL,
+        STALE_PATH + WIN_TAIL,
+        STALE_PATH + LOSS_TAIL,
+        NO_ENGULF + WIN_TAIL,
+        NO_ENGULF + LOSS_TAIL,
+    ):
         ltf = _bars(rows, LTF_MS, T0)
         for v in VARIANTS[:2]:
             assert truncation_audit(ltf, htf, LTF_MS, HTF_MS, v, list(range(0, len(ltf)))) == []
