@@ -120,6 +120,49 @@ def test_stale_zone_differs_between_gap_and_touch():
     assert touch[0]["gate_passed"]
 
 
+STALE_PATH = (
+    BASE[:2]
+    + [(109.5, 109.6, 107.5, 108.9), (108.9, 110, 108.6, 109.8)]  # grazes the gap, then leaves
+    + BASE[2:]
+)
+
+
+def _kinds(ev):
+    return {e["event"] for e in ev}
+
+
+def test_stale_setup_is_simulated_as_counterfactual_win():
+    ev = _run(STALE_PATH + WIN_TAIL, OBVariant(1, "gap"))
+    sig = _by(ev, "signal_event")[0]
+    assert sig["block_reason"] == "STALE" and not sig["gate_passed"] and sig["counterfactual"]
+    assert (sig["entry"], sig["stop"], sig["tp"]) == (103, 100, 118)
+    # simulated end to end, but only under cf_* names: the real event stream stays empty
+    assert len(_by(ev, "cf_fill_event")) == 1
+    out = _by(ev, "cf_outcome_event")
+    assert out[0]["reason"] == "TARGET" and out[0]["gross_r"] == pytest.approx(5.0)
+    assert not _kinds(ev) & {"fill_event", "outcome_event", "cancel_event"}
+
+
+def test_stale_counterfactual_stop_is_minus_one_r():
+    out = _by(_run(STALE_PATH + LOSS_TAIL, OBVariant(1, "gap")), "cf_outcome_event")
+    assert out[0]["reason"] == "STOP" and out[0]["gross_r"] == -1.0
+
+
+def test_non_stale_signal_has_no_counterfactual():
+    ev = _run(STALE_PATH + WIN_TAIL, OBVariant(1, "touch"))  # same path, touch reads it as fresh
+    assert _by(ev, "signal_event")[0]["counterfactual"] is False
+    assert not any(k.startswith("cf_") for k in _kinds(ev))
+    assert len(_by(ev, "outcome_event")) == 1
+
+
+def test_stale_with_another_blocker_is_not_simulated():
+    ltf, htf = _bars(STALE_PATH + WIN_TAIL, LTF_MS, T0), _bars(HTF_ROWS, HTF_MS)
+    ev = scan(ltf, htf, LTF_MS, HTF_MS, OBVariant(1, "gap"), min_rr=6.0)
+    sig = _by(ev, "signal_event")[0]
+    assert sig["block_reason"] == "STALE" and sig["counterfactual"] is False
+    assert not any(k.startswith("cf_") for k in _kinds(ev))
+
+
 def test_zone_invalidated_by_close_beyond_far_edge():
     rows = BASE[:4] + [(103, 104, 98, 99)] + BASE[5:]  # closes 99 < lo 100
     ev = _run(rows, VARIANTS[1])
@@ -160,6 +203,8 @@ def test_truncation_equivalence_no_lookahead():
 
 
 def test_scenario_events_survive_truncation():
-    ltf, htf = _bars(BASE + WIN_TAIL, LTF_MS, T0), _bars(HTF_ROWS, HTF_MS)
-    for v in VARIANTS[:2]:
-        assert truncation_audit(ltf, htf, LTF_MS, HTF_MS, v, list(range(0, len(ltf)))) == []
+    htf = _bars(HTF_ROWS, HTF_MS)
+    for rows in (BASE + WIN_TAIL, STALE_PATH + WIN_TAIL, STALE_PATH + LOSS_TAIL):
+        ltf = _bars(rows, LTF_MS, T0)
+        for v in VARIANTS[:2]:
+            assert truncation_audit(ltf, htf, LTF_MS, HTF_MS, v, list(range(0, len(ltf)))) == []

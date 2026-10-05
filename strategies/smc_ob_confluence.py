@@ -5,6 +5,9 @@ Not a BaseStrategy and never produces orders: it only emits observation events
 against the canonical SMC+WaveTrend strategy.  It does not import or modify any
 execution, PPF or canonical-strategy module.
 
+Setups blocked only by STALE are also simulated as counterfactuals (``cf_*`` events,
+never mixed with the real ``fill/cancel/outcome`` events) to measure the STALE filter.
+
 Causality contract (verified by ``truncation_audit``): every event is stamped
 with ``ts`` = the bar-close time at which it became knowable, and the events
 with ``ts <= T`` are identical whether the series is cut at T or not.
@@ -182,12 +185,15 @@ def scan(
     pending: list[dict] = []
     live: list[dict] = []
 
+    def kind(o: dict, name: str) -> str:
+        return f"cf_{name}" if o["cf"] else name  # counterfactual events never mix with real ones
+
     def resolve(tr: dict, ts: int, reason: str) -> None:
         gross = -1.0 if reason == "STOP" else tr["rr"]
         net = gross - cost_bps / 1e4 * tr["entry"] / tr["risk"]
         emit(
-            ts, "outcome_event", signal_id=tr["signal_id"], reason=reason, gross_r=gross,
-            net_r=net, mfe_r=tr["mfe"], mae_r=tr["mae"],
+            ts, kind(tr, "outcome_event"), signal_id=tr["signal_id"], reason=reason,
+            gross_r=gross, net_r=net, mfe_r=tr["mfe"], mae_r=tr["mae"],
         )  # fmt: skip
 
     for t in range(n):
@@ -214,7 +220,7 @@ def scan(
         for p in pending:
             d = p["d"]
             if _adverse(h, l, p["entry"], d):
-                emit(ct, "fill_event", signal_id=p["signal_id"], price=p["entry"],
+                emit(ct, kind(p, "fill_event"), signal_id=p["signal_id"], price=p["entry"],
                      cost_bps_roundtrip=cost_bps)  # fmt: skip
                 tr = {**p, "mfe": 0.0,
                       "mae": max(0.0, d * (p["entry"] - (l if d == 1 else h)) / p["risk"])}  # fmt: skip
@@ -223,9 +229,11 @@ def scan(
                 else:
                     live.append(tr)
             elif _favorable(h, l, p["tp"], d):
-                emit(ct, "cancel_event", signal_id=p["signal_id"], reason="TARGET_BEFORE_FILL")
+                emit(ct, kind(p, "cancel_event"), signal_id=p["signal_id"],
+                     reason="TARGET_BEFORE_FILL")  # fmt: skip
             elif any(b["d"] == -d for b in bos_now):
-                emit(ct, "cancel_event", signal_id=p["signal_id"], reason="OPPOSITE_BOS")
+                emit(ct, kind(p, "cancel_event"), signal_id=p["signal_id"],
+                     reason="OPPOSITE_BOS")  # fmt: skip
             else:
                 still_pending.append(p)
         pending = still_pending
@@ -262,43 +270,45 @@ def scan(
                     j -= 1
                 stale = z.first_reach is not None and z.first_reach < j + 1
                 entry = stop = tp = rr = ob_ts = None
-                reason = "STALE" if stale else None
-                if reason is None:
-                    ob = next(
-                        (e - 1 for e in range(ls + 1, t + 1) if _engulf(ltf.o, ltf.c, e, d)), None
-                    )
-                    if ob is not None:
-                        ob_lo = float(min(ltf.o[ob], ltf.c[ob]))
-                        ob_hi = float(max(ltf.o[ob], ltf.c[ob]))
-                    if ob is None or ob_hi < z.lo or ob_lo > z.hi:
-                        reason = "NO_LTF_OB"
+                other = None  # first failing gate other than STALE
+                ob = next(
+                    (e - 1 for e in range(ls + 1, t + 1) if _engulf(ltf.o, ltf.c, e, d)), None
+                )
+                if ob is not None:
+                    ob_lo = float(min(ltf.o[ob], ltf.c[ob]))
+                    ob_hi = float(max(ltf.o[ob], ltf.c[ob]))
+                if ob is None or ob_hi < z.lo or ob_lo > z.hi:
+                    other = "NO_LTF_OB"
+                else:
+                    ob_ts = int(ltf.ts[ob])
+                    entry = ob_hi if d == 1 else ob_lo
+                    stop = z.lo * (1 - SL_BUFFER_FRAC) if d == 1 else z.hi * (1 + SL_BUFFER_FRAC)
+                    cands = [
+                        (d * ((o.lo if o.d == -1 else o.hi) - entry), (o.lo if o.d == -1 else o.hi))
+                        for o in zones
+                        if o.d == -d and not o.dead and o.first_reach is None
+                        and o.start_idx <= t and d * ((o.lo if o.d == -1 else o.hi) - entry) > 0
+                    ]  # fmt: skip
+                    if d * (entry - stop) <= 0:
+                        other = "INVALID_RISK"
+                    elif not cands:
+                        other = "NO_TARGET"
                     else:
-                        ob_ts = int(ltf.ts[ob])
-                        entry = ob_hi if d == 1 else ob_lo
-                        stop = (
-                            z.lo * (1 - SL_BUFFER_FRAC) if d == 1 else z.hi * (1 + SL_BUFFER_FRAC)
-                        )
-                        cands = [
-                            (d * ((o.lo if o.d == -1 else o.hi) - entry), (o.lo if o.d == -1 else o.hi))
-                            for o in zones
-                            if o.d == -d and not o.dead and o.first_reach is None
-                            and o.start_idx <= t and d * ((o.lo if o.d == -1 else o.hi) - entry) > 0
-                        ]  # fmt: skip
-                        if d * (entry - stop) <= 0:
-                            reason = "INVALID_RISK"
-                        elif not cands:
-                            reason = "NO_TARGET"
-                        else:
-                            tp = min(cands)[1]
-                            rr = abs(tp - entry) / abs(entry - stop)
-                            if rr < min_rr:
-                                reason = "RR_BELOW_MIN"
+                        tp = min(cands)[1]
+                        rr = abs(tp - entry) / abs(entry - stop)
+                        if rr < min_rr:
+                            other = "RR_BELOW_MIN"
+                reason = "STALE" if stale else other
+                # counterfactual: STALE was the only blocker -> simulate it to measure the filter
+                cf = stale and other is None
                 emit(ct, "signal_event", signal_id=sig_id, zone_id=z.id, bos_id=bos_id, d=d,
                      entry=entry, stop=stop, tp=tp, rr=rr, ob_ts=ob_ts,
-                     gate_passed=reason is None, block_reason=reason)  # fmt: skip
-                if reason is None:
+                     gate_passed=reason is None, block_reason=reason,
+                     counterfactual=cf)  # fmt: skip
+                if reason is None or cf:
                     pending.append({"signal_id": sig_id, "d": d, "entry": entry, "stop": stop,
-                                    "tp": tp, "rr": rr, "risk": abs(entry - stop)})  # fmt: skip
+                                    "tp": tp, "rr": rr, "risk": abs(entry - stop),
+                                    "cf": cf})  # fmt: skip
 
     events.sort(key=lambda e: e["ts"])  # stable: emission order kept within a ts
     return events

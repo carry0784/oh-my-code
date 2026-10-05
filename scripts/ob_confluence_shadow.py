@@ -51,13 +51,18 @@ def main() -> int:
             sig = [e for e in events if e["event"] == "signal_event"]
             out = [e for e in events if e["event"] == "outcome_event"]
             blocked = Counter(e["block_reason"] for e in sig if not e["gate_passed"])
+            cf = [e for e in events if e["event"] == "cf_outcome_event"]
             net = [e["net_r"] for e in out]
+            cf_net = [e["net_r"] for e in cf]
             print(
                 f"{v.id}: audit={'FAIL ' + str(bad) if bad else 'PASS'} "
                 f"signals={len(sig)} passed={sum(e['gate_passed'] for e in sig)} "
                 f"blocked={dict(blocked)} trades={len(out)} "
                 f"win={sum(e['reason'] == 'TARGET' for e in out)} "
-                f"mean_net_R={np.mean(net) if net else float('nan'):.3f}"
+                f"mean_net_R={np.mean(net) if net else float('nan'):.3f} | "
+                f"STALE-counterfactual trades={len(cf)} "
+                f"win={sum(e['reason'] == 'TARGET' for e in cf)} "
+                f"mean_net_R={np.mean(cf_net) if cf_net else float('nan'):.3f}"
             )
     return 1 if failed else 0
 
