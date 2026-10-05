@@ -426,6 +426,93 @@
 | `docs/operations/continuous_progress_plan_v1.md` | v1 plan defining Track B quality items |
 | `docs/operations/evidence/receipt_naming_convention.md` | Canonical naming spec |
 | `CLAUDE.md` §CR-046 | Current operational state |
+| `docs/operations/changelog/` | 최소 안전장치 #2 (변경 로그 + 사유), 2026-04-16 도입 |
+
+---
+
+## 17. Delta since 2026-04-05 (append-only drift reconciliation)
+
+> 본 섹션은 2026-04-05 이후 추가된 파일들을 기존 §3~§15 카테고리에 손대지 않고 append-only 로 반영한다.
+> 기존 카운트와 구조를 불변 유지하면서 drift 를 명시적으로 봉합하는 방식.
+> 최초 delta 기록 일자: **2026-04-16**.
+
+### 17.1 Delta summary (2026-04-05 → 2026-04-16)
+
+| 지표 | 2026-04-05 | 2026-04-16 | 증가 |
+|---|---:|---:|---:|
+| 총 evidence 파일 | 243 | **381** | **+138** |
+| CR-048 cluster | 66 | 77 | +11 |
+| CR-046 cluster | 34 | 41 | +7 |
+| CR-049 cluster | — | 2 | +2 |
+| PPF cluster | — | 5 | +5 |
+| CR-NEW v3.1 cluster | — | 7 | +7 (신규) |
+| K-V3 inspection pack | — | 6 | +6 (신규, 2026-04-16 backfill) |
+| NOIP v1 cluster | — | 4 | +4 |
+| P1 preflight receipts | — | 3 | +3 |
+| LNS/design/misc 기타 | — | +93 | +93 |
+
+### 17.2 CR-NEW v3.1 cluster (7 files, 신규)
+
+CR-NEW v3.1 체인은 `48915d2` baseline 이후 collector 수집기 오염 (`numpy scalar leak`) 해소 → 새 14D P3 window 재개시 → 구조 이슈 해소 선언 흐름.
+
+- `cr_new_change3_local_reflection_2026-04-14.md` (PR #101) — Change-3 local reflection, Trackedness Preflight 규칙 정의 (§7)
+- `cr_new_p1_recovery_smoke_2026-04-14.md` (PR #102) — B1 Recovery Smoke PASS
+- `cr_new_worker_restart_recovery_2026-04-14.md` (PR #103) — 3 gates PASS, operational recovery sealed
+- `cr_new_p2_observation_smoke_2026-04-14.md` (PR #104) — B2 Observation Integrity Smoke PASS (VRL)
+- `cr_new_p3_window_seal_2026-04-14.md` (PR #100) — 기존 P3 창 봉인 (SEALED_CONTAMINATED)
+- `cr_new_p3_new_window_launch_2026-04-14.md` (PR #105) — Layer C 새 14D P3 창 개시 (P3_POSTSEAL_2026-04-15)
+- `cr_new_p3_structural_resolved_declaration_2026-04-15.md` (PR #106) — REGISTRY+DATA 해소 선언, PROBE deferred
+
+### 17.3 K-V3 inspection / governance pack (6 files, 2026-04-14 작성, 2026-04-16 트리 편입)
+
+- `k_v3_integrated_inspection_report.md` — 전체 시스템 통합 검수 (`48915d2`)
+- `k_v3_residual_items_countermeasures.md` — 잔여 40항목 사유·근거·대책 (A-01~A-16, B-01~B-14, C-01~C-10)
+- `k_v3_visualization_layer_governance.md` — VC-01~04, DP-1~4 시각화 헌법
+- `k_v3_dashboard_safe_mode_framework.md` — Dashboard Safe Mode Stage 전환 스펙
+- `k_v3_system_health_card_spec.md` — TRCC System Health Card 스펙
+- `k_v3_preeval_learning_ledger_design.md` — Pre-evaluation learning ledger 설계
+
+관련 스크립트 (`scripts/health_check.py`, `scripts/plral_streak_check.py`) 는 `changelog/0004` 로 별도 편입.
+
+### 17.4 PPF cluster (5 files, 신규)
+
+- `ppf_integrated_governance_spec.md`
+- `ppf_promotion_path_goal3_template.md`
+- `ppf_promotion_path_goal6_enforcement_readiness.md`
+- `ppf_promotion_path_goal7_scheduler_readiness.md`
+- `ppf_promotion_path_goal8_production_assessment.md`
+
+CLAUDE.md §PPF 17 파일 tracking 과 정합. 상세 구조는 CLAUDE.md 참조.
+
+### 17.5 NOIP v1 cluster (4 files, 신규)
+
+Numeric Observation Interpretation Package v1 설계 체인:
+
+- `noip_v1_master_design.md`
+- `noip_v1_observation_field_dictionary.md`
+- `noip_v1_interpretation_scoring_spec.md`
+- `noip_v1_decision_state_transition_spec.md`
+
+### 17.6 CR-049 cluster (2 files, 신규)
+
+- `cr049_phase1_phase2_seal_receipt.md` (DATA_ONLY mode)
+- `cr049_phase3_design_hold_declaration.md` (DESIGN_ONLY, 구현 금지)
+
+### 17.7 Misc 2026-04 추가본
+
+약 93개의 기타 파일이 2026-04-06 이후 추가됨 (Advisory remediation, P1 preflight, LNS 설계, operations tools, k_v3 cross-reference 등). 본 17절은 클러스터 단위만 명시하고 세부 파일은 해당 시점 receipt / PR 로 역추적.
+
+### 17.8 Operations changelog (신설, 2026-04-16)
+
+- `docs/operations/changelog/README.md`
+- `docs/operations/changelog/0001_minimum-safety-framework-adoption_2026-04-16.md`
+- `docs/operations/changelog/0002_flower-basic-auth-required_2026-04-16.md`
+- `docs/operations/changelog/0003_k-v3-inspection-governance-backfill_2026-04-16.md`
+- `docs/operations/changelog/0004_trcc-health-check-scripts-commit_2026-04-16.md`
+
+역할 구분 (2026-04-16 명문화):
+- `changelog/` = 실행자의 변경 이력 (what/why/reversibility)
+- `evidence/` = 거버넌스 / 검증 receipts (VRL 등 ledger class, 헌법 대조)
 
 ---
 
@@ -435,10 +522,12 @@
 Evidence Directory Index
 Plan ref         : AELP v1 / Plan B / Item Q-1
 Created          : 2026-04-05
-Files indexed    : 243
-Groups           : 14 (CR-048, CR-046, C-04, Shadow, M2, CR-039, Sprint,
+Files indexed    : 243 (original) + 138 delta = 381 (2026-04-16)
+Groups (original): 14 (CR-048, CR-046, C-04, Shadow, M2, CR-039, Sprint,
                        Guarded release, Other CRs, Controlled restart batch,
                        Conventions, Misc, Seals 2026-03-30, Seals 2026-03-31)
-Content changes  : 0 (index only, no artifact modified)
+Delta groups     : +5 (CR-NEW v3.1, K-V3 inspection pack, PPF, NOIP v1, CR-049)
+Content changes  : §17 append-only drift reconciliation (original §1~§16 불변)
+Last drift sync  : 2026-04-16
 Track A impact   : none
 ```

@@ -1,14 +1,14 @@
 """028: Create observation_chain table for long-term time-series state tracking.
 
 Revision ID: 028_observation_chain
-Revises: 027_ppf_baseline_freeze_columns
+Revises: 027_ppf_baseline_freeze
 """
 
 from alembic import op
 import sqlalchemy as sa
 
 revision = "028_observation_chain"
-down_revision = "027_ppf_baseline_freeze_columns"
+down_revision = "027_ppf_baseline_freeze"
 branch_labels = None
 depends_on = None
 
