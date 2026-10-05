@@ -208,3 +208,109 @@ def test_scenario_events_survive_truncation():
         ltf = _bars(rows, LTF_MS, T0)
         for v in VARIANTS[:2]:
             assert truncation_audit(ltf, htf, LTF_MS, HTF_MS, v, list(range(0, len(ltf)))) == []
+
+
+# --- planted-structure tests: the same setup at other price scales / mirrored / time ratios ---
+# Recall: the detector must find the planted setup exactly once. Precision: breaking one
+# ingredient of the structure must yield no signal. Needs no market data.
+
+PLANT_PRICES = [(1.0, 200.0), (0.0001, 1.0), (250.0, 60000.0)]  # (scale, offset), FX/BTC-like
+PLANT_TIMES = [(300_000, 12), (300_000, 48), (60_000, 15)]  # (ltf_ms, htf/ltf ratio)
+
+
+def _xf(rows, scale, offset, mirror):
+    s = -scale if mirror else scale  # mirror turns the bullish setup into a bearish one
+    out = []
+    for row in rows:
+        o, h, l, c = (s * x + offset for x in row)  # noqa: E741
+        out.append((o, max(h, l), min(h, l), c))
+    return out
+
+
+def _planted(prices, mirror, times, variant, htf_rows=HTF_ROWS, ltf_rows=BASE + WIN_TAIL):
+    scale, offset = prices
+    ltf_ms, ratio = times
+    htf_ms = ratio * ltf_ms
+    htf = _bars(_xf(htf_rows, scale, offset, mirror), htf_ms)
+    ltf = _bars(_xf(ltf_rows, scale, offset, mirror), ltf_ms, 6 * htf_ms)
+    return scan(ltf, htf, ltf_ms, htf_ms, variant)
+
+
+@pytest.mark.parametrize("variant", VARIANTS[:2], ids=lambda v: v.id)
+@pytest.mark.parametrize("times", PLANT_TIMES, ids=lambda t: f"{t[0] // 1000}s-x{t[1]}")
+@pytest.mark.parametrize("mirror", [False, True], ids=["long", "short"])
+@pytest.mark.parametrize("prices", PLANT_PRICES, ids=["unit", "fx", "btc"])
+def test_planted_setup_is_found_exactly_once(prices, mirror, times, variant):
+    ev = _planted(prices, mirror, times, variant)
+    sig = _by(ev, "signal_event")
+    assert len(sig) == 1 and sig[0]["gate_passed"] and sig[0]["d"] == (-1 if mirror else 1)
+    scale, offset = prices
+    s = -scale if mirror else scale
+    expected = [s * x + offset for x in (103, 100, 118)]
+    assert [sig[0]["entry"], sig[0]["stop"], sig[0]["tp"]] == pytest.approx(expected, rel=1e-9)
+    assert sig[0]["rr"] == pytest.approx(5.0)
+    assert len(_by(ev, "fill_event")) == 1
+    out = _by(ev, "outcome_event")
+    assert len(out) == 1 and out[0]["reason"] == "TARGET"
+    assert not any(e["event"].startswith("cf_") for e in ev)
+
+
+@pytest.mark.parametrize("mirror", [False, True], ids=["long", "short"])
+@pytest.mark.parametrize("prices", PLANT_PRICES, ids=["unit", "fx", "btc"])
+@pytest.mark.parametrize("variant", VARIANTS[:2], ids=lambda v: v.id)
+def test_planted_structure_with_a_missing_ingredient_gives_no_signal(variant, prices, mirror):
+    no_imbalance = list(HTF_ROWS)
+    no_imbalance[5] = (110, 115, 105.5, 114)  # low 105.5 <= high[3] 106: no gap, no demand zone
+    no_bos = list(BASE)
+    no_bos[8] = (108.5, 110.9, 108.4, 110.8)  # never closes above the swing high 111 ...
+    no_bos_tail = [(103.2, 110.5, 103, 110.4)]  # ... and neither does the last bar
+    for htf_rows, ltf_rows in ((no_imbalance, BASE + WIN_TAIL), (HTF_ROWS, no_bos + no_bos_tail)):
+        ev = _planted(prices, mirror, PLANT_TIMES[0], variant, htf_rows, ltf_rows)
+        assert _by(ev, "signal_event") == []
+
+
+# --- cost option ---
+
+
+def test_cost_bps_zero_means_net_equals_gross_and_cost_lowers_net():
+    ltf, htf = _bars(BASE + WIN_TAIL, LTF_MS, T0), _bars(HTF_ROWS, HTF_MS)
+
+    def outcome(cost_bps):
+        ev = scan(ltf, htf, LTF_MS, HTF_MS, VARIANTS[1], cost_bps=cost_bps)
+        return _by(ev, "outcome_event")[0]
+
+    assert outcome(0.0)["net_r"] == pytest.approx(outcome(0.0)["gross_r"])
+    assert outcome(50.0)["net_r"] < outcome(10.0)["net_r"] < outcome(0.0)["net_r"]
+
+
+def test_shadow_script_cost_bps_flag(tmp_path):
+    import csv
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    def dump(path, rows, ms, t0=0):
+        with open(path, "w", newline="") as f:
+            w = csv.writer(f)
+            for i, r in enumerate(rows):
+                w.writerow([t0 + i * ms, *r, 1.0])
+
+    dump(tmp_path / "htf.csv", HTF_ROWS, HTF_MS)
+    dump(tmp_path / "ltf.csv", BASE + WIN_TAIL, LTF_MS, T0)
+    root = Path(__file__).resolve().parent.parent
+
+    def run(*extra):
+        r = subprocess.run(
+            [sys.executable, str(root / "scripts" / "ob_confluence_shadow.py"),
+             "--ltf", str(tmp_path / "ltf.csv"), "--htf", str(tmp_path / "htf.csv"),
+             "--ltf-ms", str(LTF_MS), "--htf-ms", str(HTF_MS), "--out", str(tmp_path / "e.jsonl"),
+             "--audit-cuts", "3", *extra],
+            capture_output=True, text=True, cwd=root,
+        )  # fmt: skip
+        assert r.returncode == 0, r.stderr
+        return r.stdout
+
+    free = run("--cost-bps", "0")
+    assert "cost_bps_roundtrip=0.0" in free and "mean_net_R=5.000" in free  # TARGET = +5R gross
+    default = run()
+    assert "cost_bps_roundtrip=10.0" in default and "mean_net_R=5.000" not in default

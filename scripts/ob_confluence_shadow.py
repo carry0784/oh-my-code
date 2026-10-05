@@ -21,7 +21,13 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from strategies.smc_ob_confluence import VARIANTS, Bars, scan, truncation_audit  # noqa: E402
+from strategies.smc_ob_confluence import (  # noqa: E402
+    COST_BPS_ROUNDTRIP,
+    VARIANTS,
+    Bars,
+    scan,
+    truncation_audit,
+)
 
 
 def _load(path: str) -> Bars:
@@ -36,7 +42,14 @@ def main() -> int:
     ap.add_argument("--htf-ms", type=int, default=3_600_000)
     ap.add_argument("--out", required=True)
     ap.add_argument("--audit-cuts", type=int, default=20)
+    ap.add_argument(
+        "--cost-bps",
+        type=float,
+        default=COST_BPS_ROUNDTRIP,
+        help="round-trip cost in bps charged to net R (default is a crypto assumption)",
+    )
     a = ap.parse_args()
+    print(f"cost_bps_roundtrip={a.cost_bps}")
 
     ltf, htf = _load(a.ltf), _load(a.htf)
     cuts = sorted(set(np.linspace(2 * 5 + 1, len(ltf) - 1, a.audit_cuts, dtype=int).tolist()))
@@ -45,7 +58,7 @@ def main() -> int:
         for v in VARIANTS:
             bad = truncation_audit(ltf, htf, a.ltf_ms, a.htf_ms, v, cuts)
             failed |= bool(bad)
-            events = scan(ltf, htf, a.ltf_ms, a.htf_ms, v)
+            events = scan(ltf, htf, a.ltf_ms, a.htf_ms, v, cost_bps=a.cost_bps)
             for e in events:
                 f.write(json.dumps(e) + "\n")
             sig = [e for e in events if e["event"] == "signal_event"]
