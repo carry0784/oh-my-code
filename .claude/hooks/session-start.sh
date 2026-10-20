@@ -1,5 +1,5 @@
 #!/bin/bash
-# SessionStart hook: install the 8 Claude Code tools and the project's
+# SessionStart hook: install the Claude Code tools (8 tools + Karpathy guidelines) and the project's
 # test environment in cloud sessions.
 # Idempotent: each step is skipped when already installed.
 # One failing step does not stop the others.
@@ -26,6 +26,7 @@ step superpowers install_plugin superpowers@claude-plugins-official claude-plugi
 step mattpocock-skills install_plugin mattpocock-skills@claude-plugins-official claude-plugins-official anthropics/claude-plugins-official
 step addyosmani-agent-skills install_plugin agent-skills@addy-agent-skills addy-agent-skills https://github.com/addyosmani/agent-skills.git
 step ecc install_plugin ecc@ecc ecc https://github.com/affaan-m/ECC.git
+step karpathy-skills install_plugin andrej-karpathy-skills@karpathy-skills karpathy-skills https://github.com/multica-ai/andrej-karpathy-skills.git
 
 # --- skills CLI (user-level skills) ------------------------------------------
 install_skills() { # <repo> <marker skill dir>
