@@ -109,13 +109,24 @@ jobs:
           key: ${{ runner.os }}-pip-typecheck-${{ hashFiles('requirements.txt') }}
           restore-keys: ${{ runner.os }}-pip-typecheck-
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -r requirements.txt mypy
-      - name: "Tier 2: advisory typecheck (non-blocking)"
-        run: >-
-          mypy app/
-          --ignore-missing-imports
-          --follow-imports=skip
-          --no-error-summary
+      # mypy is pinned so the baseline below does not drift with new releases.
+      - run: python -m pip install -r requirements.txt mypy==2.4.0
+      - name: "Tier 2: advisory typecheck (non-blocking, fails only on new errors)"
+        env:
+          LC_ALL: C
+        run: |
+          rc=0
+          mypy app/ --ignore-missing-imports --follow-imports=skip --no-error-summary > tier2.txt || rc=$?
+          if [ "$rc" -gt 1 ]; then cat tier2.txt; echo "mypy crashed (exit $rc)"; exit "$rc"; fi
+          # Line numbers are stripped so unrelated edits do not shift baseline entries.
+          grep ': error:' tier2.txt | sed -E 's/^([^:]+):[0-9]+: /\1: /' | sort > tier2.norm || true
+          new=$(comm -13 .github/mypy-tier2-baseline.txt tier2.norm)
+          if [ -n "$new" ]; then
+            echo "New tier-2 mypy errors not in .github/mypy-tier2-baseline.txt:"
+            echo "$new"
+            exit 1
+          fi
+          echo "No new tier-2 errors ($(wc -l < tier2.norm) current, $(wc -l < .github/mypy-tier2-baseline.txt) in baseline)."
 
   dependency-audit:
     name: dependency audit (advisory)
