@@ -1,5 +1,6 @@
 #!/bin/bash
-# SessionStart hook: install the 8 Claude Code tools in cloud sessions.
+# SessionStart hook: install the 8 Claude Code tools and the project's
+# test environment in cloud sessions.
 # Idempotent: each step is skipped when already installed.
 # One failing step does not stop the others.
 set -uo pipefail
@@ -83,5 +84,18 @@ install_rea() {
 }
 
 step rea install_rea
+
+# --- Project test environment (mirrors .github/workflows/ci.yml) --------------
+install_test_env() {
+  cd "${CLAUDE_PROJECT_DIR:-$(pwd)}" || return 1
+  python -m pip install -q -r requirements.txt aiosqlite ruff==0.15.9 >&2 &&
+    python -m pip install -q -e . >&2 || return 1
+  # A preinstalled uv-tool ruff shadows pip's on PATH; pin it to CI's version.
+  if command -v uv >/dev/null && uv tool list 2>/dev/null | grep -q '^ruff '; then
+    uv tool list | grep -q '^ruff v0.15.9$' || uv tool install -q --force ruff==0.15.9 >&2
+  fi
+}
+
+step test-env install_test_env
 
 exit 0
