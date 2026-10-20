@@ -24,6 +24,7 @@ celery_app = Celery(
         "workers.tasks.sol_paper_tasks",  # CR-046 Phase 5a-B: SOL paper trading (dry_run=True)
         "workers.tasks.cycle_runner_tasks",  # CR-048: strategy cycle runner (dry_run=True)
         "workers.tasks.ppf_shadow_tasks",  # PPF: shadow gate evaluation (SHADOW_MANIFEST)
+        "workers.tasks.multi_symbol_collection_tasks",  # Card B-7: 24-symbol data collection
     ],
 )
 
@@ -122,6 +123,15 @@ celery_app.conf.beat_schedule = {
         "task": "workers.tasks.ppf_shadow_tasks.run_ppf_shadow_eval",
         "schedule": 3600.0,  # 1h — matches PPF 1H candle cadence
         "kwargs": {"symbol": "SOL/USDT", "exchange_name": "binance"},
+    },
+    # ── Card B-7: 24-symbol multi-source data collection ──
+    "multi-symbol-market-data-5m": {
+        "task": "workers.tasks.multi_symbol_collection_tasks.collect_all_market_data",
+        "schedule": 300.0,  # 5min — 24 symbols × (OHLCV + funding + OI + orderbook)
+    },
+    "multi-symbol-sentiment-hourly": {
+        "task": "workers.tasks.multi_symbol_collection_tasks.collect_extended_sentiment",
+        "schedule": 3600.0,  # 1h — CryptoPanic + LunarCrush + DefiLlama + Messari
     },
 }
 

@@ -61,6 +61,7 @@
   <button id="tab1-btn" class="tab-btn tab-active" onclick="switchTab(1)">Exchange Comparison Board</button>
   <button id="tab2-btn" class="tab-btn" onclick="switchTab(2)">Operator + AI Workspace</button>
   <button id="tab3-btn" class="tab-btn" onclick="switchTab(3)">운영 상태</button>
+  <button id="tab4-btn" class="tab-btn" onclick="switchTab(4)">Data Pipeline</button>
 </div>
 
 <!-- =============================================================== -->
@@ -974,6 +975,95 @@
 
 </div><!-- /tab3-content -->
 
+<!-- =============================================================== -->
+<!-- TAB 4: DATA PIPELINE — 24-Symbol Hypertable Monitoring           -->
+<!-- =============================================================== -->
+<div id="tab4-content" class="tab-content">
+
+  <div class="t2-section" style="margin-bottom:16px;">
+    <div class="t2-section-label">Pipeline Summary</div>
+    <div class="t2-section-body" style="display:flex; gap:24px; flex-wrap:wrap;">
+      <div class="t2-block" style="flex:1; min-width:180px;">
+        <div class="t2-block-title">Total Candles</div>
+        <div id="pl-total-candles" class="ops-metric-value" style="font-size:28px; color:#4fc3f7;">-</div>
+      </div>
+      <div class="t2-block" style="flex:1; min-width:180px;">
+        <div class="t2-block-title">Symbols (Fresh / Total)</div>
+        <div id="pl-fresh-ratio" class="ops-metric-value" style="font-size:28px; color:#81c784;">-</div>
+      </div>
+      <div class="t2-block" style="flex:1; min-width:180px;">
+        <div class="t2-block-title">Coverage</div>
+        <div id="pl-coverage" class="ops-metric-value" style="font-size:28px; color:#fff176;">-</div>
+      </div>
+      <div class="t2-block" style="flex:1; min-width:180px;">
+        <div class="t2-block-title">Pipeline Status</div>
+        <div id="pl-status" class="ops-metric-value" style="font-size:28px;">-</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="t2-section" style="margin-bottom:16px;">
+    <div class="t2-section-label">Hypertable Counts</div>
+    <div class="t2-section-body">
+      <table class="ops-table" style="width:100%;">
+        <thead><tr>
+          <th>Table</th><th>Rows</th>
+        </tr></thead>
+        <tbody id="pl-hypertables">
+          <tr><td colspan="2" style="color:#888;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="t2-section" style="margin-bottom:16px;">
+    <div class="t2-section-label">Tier Breakdown</div>
+    <div class="t2-section-body" style="display:flex; gap:16px; flex-wrap:wrap;">
+      <div class="t2-block" style="flex:1; min-width:220px;" id="pl-tier1-card">
+        <div class="t2-block-title" style="color:#4fc3f7;">Tier 1 (Blue Chip)</div>
+        <div id="pl-tier1-detail" style="font-size:13px;">-</div>
+      </div>
+      <div class="t2-block" style="flex:1; min-width:220px;" id="pl-tier2-card">
+        <div class="t2-block-title" style="color:#fff176;">Tier 2 (Mid-Cap)</div>
+        <div id="pl-tier2-detail" style="font-size:13px;">-</div>
+      </div>
+      <div class="t2-block" style="flex:1; min-width:220px;" id="pl-tier3-card">
+        <div class="t2-block-title" style="color:#e57373;">Tier 3 (Emerging)</div>
+        <div id="pl-tier3-detail" style="font-size:13px;">-</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="t2-section">
+    <div class="t2-section-label">Per-Symbol Status (24 Symbols)</div>
+    <div class="t2-section-body" style="overflow-x:auto;">
+      <table class="ops-table" style="width:100%; font-size:12px;">
+        <thead><tr>
+          <th>Symbol</th><th>Candles</th><th>First</th><th>Last</th><th>Age</th><th>Status</th>
+        </tr></thead>
+        <tbody id="pl-symbols">
+          <tr><td colspan="6" style="color:#888;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="t2-section" style="margin-top:16px;">
+    <div class="t2-section-label">Continuous Aggregates &amp; Policies</div>
+    <div class="t2-section-body" style="display:flex; gap:16px; flex-wrap:wrap;">
+      <div class="t2-block" style="flex:1; min-width:250px;">
+        <div class="t2-block-title">Aggregates</div>
+        <div id="pl-aggregates" style="font-size:12px; color:#aaa;">-</div>
+      </div>
+      <div class="t2-block" style="flex:1; min-width:250px;">
+        <div class="t2-block-title">Active Policies</div>
+        <div id="pl-policies" style="font-size:12px; color:#aaa;">-</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /tab4-content -->
+
 <!-- ===== FOOTER ===== -->
 <div class="board-footer">
   <span>K-Dexter AOS v0.2.0 &nbsp;|&nbsp; Baseline: governance-go-baseline (7eb9ad8)</span>
@@ -1016,13 +1106,14 @@ let consecutiveFailures = 0;     // count of consecutive fetch failures
 // Tab switching
 // ---------------------------------------------------------------------------
 function switchTab(n) {
-  document.getElementById('tab1-content').classList.toggle('active', n === 1);
-  document.getElementById('tab2-content').classList.toggle('active', n === 2);
-  document.getElementById('tab3-content').classList.toggle('active', n === 3);
-  document.getElementById('tab1-btn').classList.toggle('tab-active', n === 1);
-  document.getElementById('tab2-btn').classList.toggle('tab-active', n === 2);
-  document.getElementById('tab3-btn').classList.toggle('tab-active', n === 3);
+  for (let i = 1; i <= 4; i++) {
+    const content = document.getElementById('tab' + i + '-content');
+    const btn = document.getElementById('tab' + i + '-btn');
+    if (content) content.classList.toggle('active', n === i);
+    if (btn) btn.classList.toggle('tab-active', n === i);
+  }
   if (n === 3) { fetchB14SafetySummary(); fetchB12Health(); fetchOpsDispatch(); fetchOpsActivation(); fetchOpsPolicy(); fetchOpsApproval(); fetchOpsGate(); fetchOpsStatus(); fetchOpsAlerts(); fetchOpsChecks(); fetchOpsPreflight(); fetchOpsPlayback(); renderTab3SafeCards(); }
+  if (n === 4) { fetchPipelineStatus(); }
 }
 
 // ---------------------------------------------------------------------------
@@ -5313,10 +5404,99 @@ async function fetchOpsAlerts() {
 }
 
 // ---------------------------------------------------------------------------
+// Tab 4: Data Pipeline — fetch & render
+// ---------------------------------------------------------------------------
+async function fetchPipelineStatus() {
+  try {
+    const resp = await fetch('/pipeline/status');
+    const d = await resp.json();
+
+    // Summary cards
+    document.getElementById('pl-total-candles').textContent =
+      d.summary.total_candles ? d.summary.total_candles.toLocaleString() : '0';
+    document.getElementById('pl-fresh-ratio').textContent =
+      d.summary.fresh_symbols + ' / ' + d.summary.total_symbols;
+    document.getElementById('pl-coverage').textContent =
+      d.summary.coverage_pct + '%';
+    const statusEl = document.getElementById('pl-status');
+    statusEl.textContent = d.pipeline_status;
+    statusEl.style.color = d.pipeline_status === 'ACTIVE' ? '#81c784' : '#e57373';
+
+    // Hypertable counts
+    const htBody = document.getElementById('pl-hypertables');
+    let htHtml = '';
+    for (const [tbl, cnt] of Object.entries(d.hypertables || {})) {
+      const nice = tbl.replace(/_/g, ' ');
+      htHtml += '<tr><td>' + nice + '</td><td style="text-align:right;color:#4fc3f7;">' +
+        cnt.toLocaleString() + '</td></tr>';
+    }
+    htBody.innerHTML = htHtml || '<tr><td colspan="2">No data</td></tr>';
+
+    // Tier breakdown
+    for (const tier of ['tier1', 'tier2', 'tier3']) {
+      const td = d.tiers[tier];
+      if (!td) continue;
+      const el = document.getElementById('pl-' + tier + '-detail');
+      el.innerHTML =
+        '<b>' + td.total_candles.toLocaleString() + '</b> candles &nbsp;|&nbsp; ' +
+        '<span style="color:#81c784;">' + td.fresh + ' fresh</span> / ' +
+        td.symbols + ' symbols';
+    }
+
+    // Per-symbol table
+    const symBody = document.getElementById('pl-symbols');
+    let symHtml = '';
+    const sortedSyms = Object.entries(d.symbols || {}).sort((a, b) => a[0].localeCompare(b[0]));
+    for (const [sym, info] of sortedSyms) {
+      const freshBadge = info.is_fresh
+        ? '<span style="color:#81c784;">FRESH</span>'
+        : '<span style="color:#e57373;">STALE</span>';
+      const ageStr = info.age_seconds != null
+        ? (info.age_seconds < 60 ? info.age_seconds + 's' :
+           Math.round(info.age_seconds / 60) + 'm')
+        : '-';
+      const firstStr = info.first_candle
+        ? info.first_candle.substring(0, 10) : '-';
+      const lastStr = info.last_candle
+        ? info.last_candle.substring(0, 16).replace('T', ' ') : '-';
+      symHtml += '<tr>' +
+        '<td><b>' + sym + '</b></td>' +
+        '<td style="text-align:right;">' + info.candle_count.toLocaleString() + '</td>' +
+        '<td>' + firstStr + '</td>' +
+        '<td>' + lastStr + '</td>' +
+        '<td style="text-align:right;">' + ageStr + '</td>' +
+        '<td>' + freshBadge + '</td></tr>';
+    }
+    symBody.innerHTML = symHtml || '<tr><td colspan="6">No symbols</td></tr>';
+
+    // Aggregates
+    const aggEl = document.getElementById('pl-aggregates');
+    aggEl.innerHTML = (d.continuous_aggregates || [])
+      .map(a => '<span style="color:#4fc3f7;">' + a + '</span>')
+      .join(' &nbsp; ') || 'None';
+
+    // Policies
+    const polEl = document.getElementById('pl-policies');
+    polEl.innerHTML = (d.policies || [])
+      .map(p => '<div>' + p.name + ' <span style="color:#888;">(' + p.interval + ')</span></div>')
+      .join('') || 'None';
+
+  } catch (err) {
+    console.error('pipeline-status fetch failed:', err);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Init + auto-refresh
 // ---------------------------------------------------------------------------
 refreshDashboard();
 setInterval(refreshDashboard, 30000);
+// Pipeline tab auto-refresh if active
+setInterval(function() {
+  if (document.getElementById('tab4-content').classList.contains('active')) {
+    fetchPipelineStatus();
+  }
+}, 30000);
 </script>
 
 </body>
